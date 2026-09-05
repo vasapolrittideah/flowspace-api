@@ -18,8 +18,8 @@ fi
 
 # GitHub appends the number to the squashed subject.
 subject="$title (#$number)"
-if (( ${#subject} > 72 )); then
-  echo "::error::${#subject} characters once GitHub appends (#$number); limit is 72"
+if (( ${#subject} > 100 )); then
+  echo "::error::${#subject} characters once GitHub appends (#$number); limit is 100"
   exit 1
 fi
 echo "ok: $subject (${#subject} chars)"

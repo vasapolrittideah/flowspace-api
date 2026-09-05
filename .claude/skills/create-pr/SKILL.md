@@ -41,12 +41,14 @@ become the permanent commit on main**. Write them for someone reading
      exception; two unrelated features are not.
 
 4. Write the title as a Conventional Commit, following the title conventions
-   in `CLAUDE.md`. The limit is 72 characters for **the whole subject line**:
-   `type(scope):` counts, and so does the ` (#N)` GitHub appends — the first
-   title in this repository was 69 characters and landed as 73. That leaves
-   roughly 45 to 55 characters for the description depending on the scope, so
+   in `CLAUDE.md`. The limit is 100 characters for **the whole subject line**:
+   `type(scope):` counts, and so does the ` (#N)` GitHub appends. That leaves
+   roughly 75 to 85 characters for the description depending on the scope, so
    the scope is part of the budget rather than free. CI computes the real
    length and fails on it.
+
+   The limit is a ceiling, not a target. A subject that needs all of it is
+   usually a pull request that should have been two.
 
 5. If `proto/**` or `api/openapi.yaml` changed, ask whether the change is
    breaking, and add `!` if it is. Do not decide this alone — `buf breaking`

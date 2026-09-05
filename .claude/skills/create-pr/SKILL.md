@@ -41,8 +41,11 @@ become the permanent commit on main**. Write them for someone reading
      exception; two unrelated features are not.
 
 4. Write the title as a Conventional Commit, imperative, and 72 characters or
-   fewer **including the ` (#N)` GitHub appends** — a 68-character title lands
-   as 73. CI computes the real length and fails on it.
+   fewer. **That is the whole subject line**: `type(scope):` counts, and so
+   does the ` (#N)` GitHub appends — the first title in this repository was 69
+   characters and landed as 73. What is left for the description is roughly 45
+   to 55 characters depending on the scope, so the scope is part of the budget
+   rather than free. CI computes the real length and fails on it.
 
    The title is lower case throughout, with no trailing period:
    `feat(workitem): add status transitions`. Two things keep their own casing,

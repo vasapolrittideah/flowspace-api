@@ -40,8 +40,16 @@ become the permanent commit on main**. Write them for someone reading
      A contract change with its producer and consumer is a legitimate
      exception; two unrelated features are not.
 
-4. Write the title as a Conventional Commit, imperative, 72 characters or
-   fewer: `feat(workitem): add status transitions`.
+4. Write the title as a Conventional Commit, imperative, and 72 characters or
+   fewer **including the ` (#N)` GitHub appends** — a 68-character title lands
+   as 73. CI computes the real length and fails on it.
+
+   The title is lower case throughout, with no trailing period:
+   `feat(workitem): add status transitions`. Two things keep their own casing,
+   because changing it would make them wrong rather than merely inconsistent:
+
+   - proper nouns — `GitHub`, `gRPC`, `PostgreSQL`, `Cloudflare`, `OpenFGA`
+   - identifiers copied from the code — `verifyEmail`, `firstName`
 
 5. If `proto/**` or `api/openapi.yaml` changed, ask whether the change is
    breaking, and add `!` if it is. Do not decide this alone — `buf breaking`

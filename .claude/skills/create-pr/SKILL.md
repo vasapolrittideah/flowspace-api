@@ -53,9 +53,13 @@ become the permanent commit on main**. Write them for someone reading
    and `oasdiff` will block the merge either way, but the `!` in history is the
    author's claim, not the tool's.
 
-6. Write the body as **why**, not what. The diff already says what. Three or
-   four sentences. Name any ADR this change implements or depends on. No
-   headings, no checklists, no template.
+6. Write the body as **why**, not what. The diff already says what. Name any
+   ADR this change implements or depends on. No headings, no checklists, no
+   template.
+
+   **Four sentences is a hard stop.** If the reasoning needs more, either the
+   pull request is too large or the reasoning is a decision — and a decision
+   belongs in an ADR, not in a description nobody will search.
 
 7. Flag a missing decision. If the diff touches `proto/`, `api/openapi.yaml`,
    `deploy/`, `go.mod`, a migration, or adds a service, and nothing under

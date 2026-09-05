@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  pull_request:
+    paths-ignore: ["deploy/**"]
+  push:
+    branches: [main]
+    paths-ignore: ["deploy/**"]
+
+# Deployment commits are written by CI itself (ADR-0011); reacting to them
+# would make the pipeline trigger itself.
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  markdown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx --yes markdownlint-cli2@0.23.2 "**/*.md"
+
+  adr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/scripts/check-adr.sh
+
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Passed as environment variables: a title interpolated into `run`
+      # would be a script injection.
+      - env:
+          TITLE: ${{ github.event.pull_request.title }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: .github/scripts/check-pr-title.sh

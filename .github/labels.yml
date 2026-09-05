@@ -13,9 +13,15 @@
 - name: "type: refactor"
   color: "fbca04"
   description: Behaviour unchanged, structure changed
+- name: "type: build"
+  color: "d4c5f9"
+  description: Build system, toolchain, dependencies
+- name: "type: ci"
+  color: "006b75"
+  description: Pipelines and workflows under .github/
 - name: "type: chore"
   color: "cfd3d7"
-  description: Tooling, CI, dependencies
+  description: Housekeeping that is neither build nor CI
 
 - name: "area: repo"
   color: "5319e7"

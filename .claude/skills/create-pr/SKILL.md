@@ -60,7 +60,20 @@ become the permanent commit on main**. Write them for someone reading
 8. If a `task check` target exists, run it and stop on failure rather than
    opening a red pull request.
 
-9. `git push -u origin HEAD`, then `gh pr create` with that title and body.
-   Report the URL.
+9. Label the pull request from what steps 3 to 7 already established, not
+   from a fresh reading of the diff. Every label must exist in
+   `.github/labels.yml` — that file is the taxonomy, and `gh pr create` fails
+   the whole call on a name that is not there, so read it rather than
+   inventing one.
+
+   - `type: <type>` matching the Conventional Commit type in the title
+   - `area: <name>` for each top-level area the diff touches; none if the
+     change is confined to one service
+   - `breaking` whenever the title carries `!`
+   - `needs adr` if step 7's question stands unanswered when the pull request
+     opens
+
+10. `git push -u origin HEAD`, then `gh pr create` with that title, body and
+    `--label` for each. Report the URL.
 
 Never merge the pull request. Merging is a separate, deliberate act.

@@ -12,7 +12,8 @@ rule and the test-state rule are in `CLAUDE.md` and are not repeated here.
 2. Read `git status --short` and `git diff --stat`, and list untracked files
    explicitly before staging anything.
 
-3. Stage and commit. Do not push.
+3. Stage and commit. Do not push. Attribution trailers are disabled in
+   `.claude/settings.json`; do not add one by hand.
 
 Unrelated changes in one commit are fine. The commit is discarded at merge, so
 splitting it buys nothing.

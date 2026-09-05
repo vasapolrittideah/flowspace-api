@@ -59,9 +59,11 @@ become the permanent commit on main**. Write them for someone reading
    ADR this change implements or depends on. No headings, no checklists, no
    template.
 
-   **Four sentences is a hard stop.** If the reasoning needs more, either the
-   pull request is too large or the reasoning is a decision — and a decision
-   belongs in an ADR, not in a description nobody will search.
+   **Four sentences by default.** Go past it only to record something the diff
+   cannot show: a deliberate omission, a hazard someone will step on later, a
+   gap left open on purpose. Arguing for the approach is not that — it is a
+   decision, and it belongs in an ADR rather than in a description nobody will
+   search.
 
 7. Flag a missing decision. If the diff touches `proto/`, `api/openapi.yaml`,
    `deploy/`, `go.mod`, a migration, or adds a service, and nothing under

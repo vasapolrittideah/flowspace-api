@@ -1,0 +1,8 @@
+# Slash-command files are prompts, not documents: no H1, no prose width.
+ignores:
+  - ".claude/**"
+
+config:
+  # Table rows cannot be wrapped; everything else stays at 80.
+  MD013:
+    tables: false

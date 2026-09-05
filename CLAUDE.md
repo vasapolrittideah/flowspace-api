@@ -98,6 +98,14 @@ The scope is the service directory, or `repo` for repository-wide changes, and
 feat(workitem)!: replace status enum with lifecycle states
 ```
 
+A title is a headline, not a sentence. Drop an article when removing it changes
+only the length, and keep it when the phrase becomes ambiguous or means
+something else without it — `revert to enum` and `revert to the enum` are not
+the same claim. This governs pull request titles, branch commit subjects and
+ADR filename slugs, which never carry one. It does not govern prose: an ADR
+heading is read as language, so `0009-one-go-module-for-repository.md` is
+titled "One Go module for the whole repository".
+
 ## Markdown
 
 `markdownlint-cli2 "**/*.md"` must pass. Prose wraps at 80 columns. Tables are

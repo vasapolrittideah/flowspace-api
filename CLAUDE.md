@@ -106,6 +106,11 @@ ADR filename slugs, which never carry one. It does not govern prose: an ADR
 heading is read as language, so `0009-one-go-module-for-repository.md` is
 titled "One Go module for the whole repository".
 
+Titles are lower case throughout, with no trailing period. Two things keep the
+casing they already have, because changing it makes them wrong rather than
+merely inconsistent: proper nouns — `GitHub`, `gRPC`, `PostgreSQL` — and
+identifiers taken from the code, such as `verifyEmail`.
+
 ## Markdown
 
 `markdownlint-cli2 "**/*.md"` must pass. Prose wraps at 80 columns. Tables are

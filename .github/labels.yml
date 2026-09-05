@@ -1,0 +1,44 @@
+# Source of truth for this repository's labels.
+# Synced by .github/workflows/labels.yml — never edit labels in the GitHub UI.
+
+- name: "type: feat"
+  color: "0e8a16"
+  description: New capability or contract addition
+- name: "type: fix"
+  color: "d73a4a"
+  description: Something isn't working
+- name: "type: docs"
+  color: "0075ca"
+  description: Documentation only, ADRs included
+- name: "type: refactor"
+  color: "fbca04"
+  description: Behaviour unchanged, structure changed
+- name: "type: chore"
+  color: "cfd3d7"
+  description: Tooling, CI, dependencies
+
+- name: "area: repo"
+  color: "5319e7"
+  description: Repository-wide — layout, tooling, conventions
+- name: "area: api"
+  color: "1d76db"
+  description: api/openapi.yaml, the public HTTP contract
+- name: "area: proto"
+  color: "1d76db"
+  description: proto/ event and RPC contracts
+- name: "area: deploy"
+  color: "1d76db"
+  description: deploy/ kustomize bases and overlays
+- name: "area: adr"
+  color: "1d76db"
+  description: docs/adr/ decision records
+
+- name: "breaking"
+  color: "b60205"
+  description: Breaking contract change
+- name: "needs adr"
+  color: "e99695"
+  description: Needs a decision recorded before it can land
+- name: "blocked"
+  color: "e99695"
+  description: Waiting on something else

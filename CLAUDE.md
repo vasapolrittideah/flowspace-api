@@ -82,6 +82,8 @@ Do not run the suite to find out and do not guess — omit the clause instead. A
 wrong claim about test state is worse than none, because it is what gets
 trusted when scanning back for a point to return to.
 
+Read `git status --short` before staging anything. `git add -A` without
+looking is how the next sentence gets violated, and it is violated silently.
 Never stage anything resembling a credential, a `.env` file, a build artifact,
 a vendored directory, or a file over 1 MB. Name it and ask. A secret that
 reaches a pushed branch is on the remote whether or not the squash carries it

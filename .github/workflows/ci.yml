@@ -2,6 +2,10 @@ name: ci
 
 on:
   pull_request:
+    # `edited` fires when the title or body changes. Both become the commit
+    # message on main under squash merging, so both are worth rechecking;
+    # without it a title can be edited to anything after the checks go green.
+    types: [opened, synchronize, reopened, edited]
     paths-ignore: ["deploy/**"]
   push:
     branches: [main]

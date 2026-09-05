@@ -40,19 +40,13 @@ become the permanent commit on main**. Write them for someone reading
      A contract change with its producer and consumer is a legitimate
      exception; two unrelated features are not.
 
-4. Write the title as a Conventional Commit, imperative, and 72 characters or
-   fewer. **That is the whole subject line**: `type(scope):` counts, and so
-   does the ` (#N)` GitHub appends — the first title in this repository was 69
-   characters and landed as 73. What is left for the description is roughly 45
-   to 55 characters depending on the scope, so the scope is part of the budget
-   rather than free. CI computes the real length and fails on it.
-
-   The title is lower case throughout, with no trailing period:
-   `feat(workitem): add status transitions`. Two things keep their own casing,
-   because changing it would make them wrong rather than merely inconsistent:
-
-   - proper nouns — `GitHub`, `gRPC`, `PostgreSQL`, `Cloudflare`, `OpenFGA`
-   - identifiers copied from the code — `verifyEmail`, `firstName`
+4. Write the title as a Conventional Commit, following the title conventions
+   in `CLAUDE.md`. The limit is 72 characters for **the whole subject line**:
+   `type(scope):` counts, and so does the ` (#N)` GitHub appends — the first
+   title in this repository was 69 characters and landed as 73. That leaves
+   roughly 45 to 55 characters for the description depending on the scope, so
+   the scope is part of the budget rather than free. CI computes the real
+   length and fails on it.
 
 5. If `proto/**` or `api/openapi.yaml` changed, ask whether the change is
    breaking, and add `!` if it is. Do not decide this alone — `buf breaking`

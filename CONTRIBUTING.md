@@ -1,6 +1,10 @@
 # Contributing to FlowSpace
 
-This policy applies to the maintainer and AI agents. Agents prepare and test pull requests; the maintainer reviews and squash merges them. Agents must not merge, enable auto-merge, or push directly to `main`.
+This policy applies to the maintainer and AI agents:
+
+- Agents prepare and test pull requests.
+- The maintainer reviews and squash merges pull requests.
+- Agents must not merge, enable auto-merge, or push directly to `main`.
 
 These rules override generic workflow skill defaults, including branch prefixes and preferences against squash merging.
 
@@ -37,11 +41,23 @@ Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
 <type>(<scope>): <description>
 ```
 
-Use a concise description, not vague text such as `update`, `misc`, or `fix things`. Add a body only when the reason or trade-off is unclear from the title. Explain why, include only information a reviewer can act on, and omit repetition, process history, and arguments against hypothetical objections. Apply the same standard to PR descriptions.
+- Use a concise description, not vague text such as `update`, `misc`, or `fix things`.
+- Add a body only when the reason or trade-off is unclear from the title.
+- Explain why, include only information a reviewer can act on, and omit repetition, process history, and arguments against hypothetical objections.
+- Apply the same standard to PR descriptions.
 
-Wrap commit-body prose at 72 columns while preserving paragraphs, lists, URLs, code, and trailers. This applies to checkpoint commits and suggested squash messages; do not hard-wrap PR descriptions.
+### Formatting
 
-Prepare multiline messages in a file, check their line lengths, and use `git commit --file <message-file>`. Write and commit in separate steps. The `.claude/settings.json` hook rejects commands combining a heredoc with `git commit` or `gh pr create`, including unrelated heredocs that mention those commands.
+- Wrap body prose in checkpoint commits and suggested squash messages at 72 columns while preserving paragraphs, lists, URLs, code, and trailers.
+- Never hard-wrap PR descriptions. Keep each paragraph and list item on one physical line, regardless of length.
+
+For multiline messages:
+
+- Prepare the message in a file.
+- Check its line lengths.
+- Use `git commit --file <message-file>`.
+- Write and commit in separate steps.
+- Never combine a heredoc with `git commit` or `gh pr create`; the `.claude/settings.json` hook rejects the command, including unrelated heredocs that mention either command.
 
 ### Types
 
@@ -134,9 +150,11 @@ Branch: fix/duplicate-notifications
 Title:  fix(notifications): prevent duplicate delivery when an event is retried
 ```
 
-Use the [PR template](.github/pull_request_template.md). Fill in Change, Reason, and Verification; omit Risks or limitations when none apply. Its HTML comments are editing guidance and do not render.
-
-Keep the title and description current with the final implementation. Omit conversation history, abandoned approaches, and lists of unrelated untouched files.
+- Use the [PR template](.github/pull_request_template.md).
+- Fill in Change, Reason, and Verification; omit Risks or limitations when none apply.
+- Treat the template's HTML comments as editing guidance; they do not render.
+- Keep the title and description current with the final implementation.
+- Omit conversation history, abandoned approaches, and lists of unrelated untouched files.
 
 ### Verification
 

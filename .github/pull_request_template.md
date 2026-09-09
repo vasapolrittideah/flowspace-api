@@ -8,7 +8,10 @@
 
 ## Verification
 
-<!-- List the exact checks run and their results. Identify checks not run and why. -->
+<!-- Add one row per check with the exact command and result. Identify checks not run and why. -->
+
+| Check | Result |
+| --- | --- |
 
 ## Risks or limitations
 

@@ -14,29 +14,20 @@ import (
 
 	workspacesqlc "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres/sqlc"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
-)
-
-var (
-	ErrCreateInProgress    = errors.New("workspace create in progress")
-	ErrIdempotencyConflict = errors.New("idempotency key reused with another request")
-	ErrNotFound            = errors.New("workspace not found")
+	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 )
 
 type WorkspaceRepository struct {
 	pool *pgxpool.Pool
 }
 
-type CreateWorkspaceParams struct {
-	Subject        string
-	IdempotencyKey string
-	Name           string
-}
+var _ outbound.WorkspaceRepository = (*WorkspaceRepository)(nil)
 
-func New(pool *pgxpool.Pool) *WorkspaceRepository {
+func NewWorkspaceRepository(pool *pgxpool.Pool) *WorkspaceRepository {
 	return &WorkspaceRepository{pool: pool}
 }
 
-func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, params CreateWorkspaceParams) (domain.Workspace, error) {
+func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, subject, idempotencyKey, name string) (domain.Workspace, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("begin create workspace: %w", err)
@@ -44,22 +35,22 @@ func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, params Create
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	queries := workspacesqlc.New(tx)
-	locked, err := queries.TryCreateWorkspaceLock(ctx, createWorkspaceLockID(params.Subject, params.IdempotencyKey))
+	locked, err := queries.TryCreateWorkspaceLock(ctx, createWorkspaceLockID(subject, idempotencyKey))
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("lock workspace create: %w", err)
 	}
 	if !locked {
-		return domain.Workspace{}, ErrCreateInProgress
+		return domain.Workspace{}, domain.ErrCreateInProgress
 	}
 
-	requestHash := sha256.Sum256([]byte(params.Name))
+	requestHash := sha256.Sum256([]byte(name))
 	creation, err := queries.GetWorkspaceCreation(ctx, workspacesqlc.GetWorkspaceCreationParams{
-		Subject:        params.Subject,
-		IdempotencyKey: params.IdempotencyKey,
+		Subject:        subject,
+		IdempotencyKey: idempotencyKey,
 	})
 	if err == nil {
 		if !bytes.Equal(creation.RequestHash, requestHash[:]) {
-			return domain.Workspace{}, ErrIdempotencyConflict
+			return domain.Workspace{}, domain.ErrIdempotencyConflict
 		}
 		workspace := domain.Workspace{ID: creation.ID, Name: creation.Name, CreatedAt: creation.CreatedAt.Time}
 		if err := tx.Commit(ctx); err != nil {
@@ -71,7 +62,7 @@ func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, params Create
 		return domain.Workspace{}, fmt.Errorf("get workspace creation: %w", err)
 	}
 
-	created, err := queries.CreateWorkspace(ctx, params.Name)
+	created, err := queries.CreateWorkspace(ctx, name)
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("create workspace: %w", err)
 	}
@@ -81,13 +72,13 @@ func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, params Create
 	}
 	if err := queries.CreateWorkspaceOwner(ctx, workspacesqlc.CreateWorkspaceOwnerParams{
 		WorkspaceID: workspaceID,
-		Subject:     params.Subject,
+		Subject:     subject,
 	}); err != nil {
 		return domain.Workspace{}, fmt.Errorf("create workspace owner: %w", err)
 	}
 	if err := queries.RecordWorkspaceCreation(ctx, workspacesqlc.RecordWorkspaceCreationParams{
-		Subject:            params.Subject,
-		IdempotencyKey:     params.IdempotencyKey,
+		Subject:            subject,
+		IdempotencyKey:     idempotencyKey,
 		RequestHash:        requestHash[:],
 		WorkspaceID:        workspaceID,
 		WorkspaceName:      created.Name,
@@ -105,14 +96,14 @@ func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, params Create
 func (r *WorkspaceRepository) GetWorkspace(ctx context.Context, subject, workspaceID string) (domain.Workspace, error) {
 	id, err := parseUUID(workspaceID)
 	if err != nil {
-		return domain.Workspace{}, ErrNotFound
+		return domain.Workspace{}, domain.ErrNotFound
 	}
 	row, err := workspacesqlc.New(r.pool).GetWorkspaceForSubject(ctx, workspacesqlc.GetWorkspaceForSubjectParams{
 		WorkspaceID: id,
 		Subject:     subject,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Workspace{}, ErrNotFound
+		return domain.Workspace{}, domain.ErrNotFound
 	}
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("get workspace: %w", err)

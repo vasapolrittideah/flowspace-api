@@ -16,6 +16,7 @@ import (
 	postgrescontainer "github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	workspacesqlc "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres/sqlc"
+	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
 )
 
 func TestWorkspaceRepository(t *testing.T) {
@@ -49,14 +50,10 @@ func TestWorkspaceRepository(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 
-	repository := New(pool)
+	repository := NewWorkspaceRepository(pool)
 
 	t.Run("creates a workspace and owner atomically", func(t *testing.T) {
-		created, err := repository.CreateWorkspace(ctx, CreateWorkspaceParams{
-			Subject:        "subject-create",
-			IdempotencyKey: "create-key",
-			Name:           "Platform",
-		})
+		created, err := repository.CreateWorkspace(ctx, "subject-create", "create-key", "Platform")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,19 +84,14 @@ func TestWorkspaceRepository(t *testing.T) {
 	})
 
 	t.Run("replays the same idempotent create", func(t *testing.T) {
-		params := CreateWorkspaceParams{
-			Subject:        "subject-replay",
-			IdempotencyKey: "replay-key",
-			Name:           "Replay",
-		}
-		first, err := repository.CreateWorkspace(ctx, params)
+		first, err := repository.CreateWorkspace(ctx, "subject-replay", "replay-key", "Replay")
 		if err != nil {
 			t.Fatal(err)
 		}
 		if _, err := pool.Exec(ctx, `UPDATE workspaces SET name = 'Renamed Later' WHERE id = $1`, first.ID); err != nil {
 			t.Fatal(err)
 		}
-		second, err := repository.CreateWorkspace(ctx, params)
+		second, err := repository.CreateWorkspace(ctx, "subject-replay", "replay-key", "Replay")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -115,11 +107,7 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatalf("workspace count = %d, want 1", count)
 		}
 
-		other, err := repository.CreateWorkspace(ctx, CreateWorkspaceParams{
-			Subject:        "another-subject",
-			IdempotencyKey: params.IdempotencyKey,
-			Name:           params.Name,
-		})
+		other, err := repository.CreateWorkspace(ctx, "another-subject", "replay-key", "Replay")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -129,16 +117,10 @@ func TestWorkspaceRepository(t *testing.T) {
 	})
 
 	t.Run("rejects an idempotency key reused with another request", func(t *testing.T) {
-		params := CreateWorkspaceParams{
-			Subject:        "subject-conflict",
-			IdempotencyKey: "conflict-key",
-			Name:           "Original",
-		}
-		if _, err := repository.CreateWorkspace(ctx, params); err != nil {
+		if _, err := repository.CreateWorkspace(ctx, "subject-conflict", "conflict-key", "Original"); err != nil {
 			t.Fatal(err)
 		}
-		params.Name = "Changed"
-		if _, err := repository.CreateWorkspace(ctx, params); !errors.Is(err, ErrIdempotencyConflict) {
+		if _, err := repository.CreateWorkspace(ctx, "subject-conflict", "conflict-key", "Changed"); !errors.Is(err, domain.ErrIdempotencyConflict) {
 			t.Fatalf("error = %v, want ErrIdempotencyConflict", err)
 		}
 	})
@@ -150,12 +132,7 @@ func TestWorkspaceRepository(t *testing.T) {
 		}
 		defer func() { _ = tx.Rollback(ctx) }()
 
-		params := CreateWorkspaceParams{
-			Subject:        "subject-in-flight",
-			IdempotencyKey: "in-flight-key",
-			Name:           "In Flight",
-		}
-		locked, err := workspacesqlc.New(tx).TryCreateWorkspaceLock(ctx, createWorkspaceLockID(params.Subject, params.IdempotencyKey))
+		locked, err := workspacesqlc.New(tx).TryCreateWorkspaceLock(ctx, createWorkspaceLockID("subject-in-flight", "in-flight-key"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -163,17 +140,13 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatal("failed to acquire setup lock")
 		}
 
-		if _, err := repository.CreateWorkspace(ctx, params); !errors.Is(err, ErrCreateInProgress) {
+		if _, err := repository.CreateWorkspace(ctx, "subject-in-flight", "in-flight-key", "In Flight"); !errors.Is(err, domain.ErrCreateInProgress) {
 			t.Fatalf("error = %v, want ErrCreateInProgress", err)
 		}
 	})
 
 	t.Run("hides workspaces from non-members", func(t *testing.T) {
-		created, err := repository.CreateWorkspace(ctx, CreateWorkspaceParams{
-			Subject:        "subject-read",
-			IdempotencyKey: "read-key",
-			Name:           "Private",
-		})
+		created, err := repository.CreateWorkspace(ctx, "subject-read", "read-key", "Private")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,10 +159,10 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatalf("workspace = %+v, want %+v", got, created)
 		}
 
-		if _, err := repository.GetWorkspace(ctx, "other-subject", created.ID); !errors.Is(err, ErrNotFound) {
+		if _, err := repository.GetWorkspace(ctx, "other-subject", created.ID); !errors.Is(err, domain.ErrNotFound) {
 			t.Fatalf("error = %v, want ErrNotFound", err)
 		}
-		if _, err := repository.GetWorkspace(ctx, "subject-read", "00000000-0000-0000-0000-000000000000"); !errors.Is(err, ErrNotFound) {
+		if _, err := repository.GetWorkspace(ctx, "subject-read", "00000000-0000-0000-0000-000000000000"); !errors.Is(err, domain.ErrNotFound) {
 			t.Fatalf("error = %v, want ErrNotFound", err)
 		}
 	})
@@ -200,11 +173,7 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err := repository.CreateWorkspace(ctx, CreateWorkspaceParams{
-			Subject:        "",
-			IdempotencyKey: "rollback-key",
-			Name:           "Must Roll Back",
-		})
+		_, err := repository.CreateWorkspace(ctx, "", "rollback-key", "Must Roll Back")
 		if err == nil {
 			t.Fatal("create succeeded")
 		}

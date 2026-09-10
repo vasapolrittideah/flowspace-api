@@ -1,7 +1,9 @@
 version: '3.9'
 
 vars:
+  BUF_VERSION: v1.54.0
   CLUSTER_NAME: flowspace
+  SQLC_VERSION: v1.31.1
 
 tasks:
   default:
@@ -29,3 +31,13 @@ tasks:
     desc: Stop the local k3d cluster
     cmds:
       - k3d cluster stop {{.CLUSTER_NAME | shellQuote}}
+
+  buf:
+    desc: Run the pinned Buf CLI
+    cmds:
+      - go run github.com/bufbuild/buf/cmd/buf@{{.BUF_VERSION}} {{.CLI_ARGS}}
+
+  sqlc:
+    desc: Run the pinned sqlc CLI
+    cmds:
+      - go run github.com/sqlc-dev/sqlc/cmd/sqlc@{{.SQLC_VERSION}} {{.CLI_ARGS}}

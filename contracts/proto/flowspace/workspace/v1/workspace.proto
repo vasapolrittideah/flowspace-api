@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package flowspace.workspace.v1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1;workspacev1";
+
+message Workspace {
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 2;
+  google.protobuf.Timestamp created_at = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

@@ -153,6 +153,7 @@ Title:  fix(notifications): prevent duplicate delivery when an event is retried
 - Use the [PR template](.github/pull_request_template.md).
 - Fill in Change, Reason, and Verification; omit Risks or limitations when none apply.
 - Treat the template's HTML comments as editing guidance; they do not render.
+- Apply the matching `type:*` label and any applicable `area:*`, `breaking`, and `migration` labels from [`.github/labels.json`](.github/labels.json); keep them current as the PR changes.
 - Keep the title and description current with the final implementation.
 - Omit conversation history, abandoned approaches, and lists of unrelated untouched files.
 

@@ -1,0 +1,35 @@
+name: Sync labels
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/labels.json
+      - .github/workflows/sync-labels.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync:
+    name: Sync labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Reconcile labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          jq -r '.[] | [.name, .description, .color] | @tsv' .github/labels.json |
+            while IFS=$'\t' read -r name description color; do
+              gh label create "$name" --description "$description" --color "$color" --force --repo "$GITHUB_REPOSITORY"
+            done
+          gh api --paginate "repos/$GITHUB_REPOSITORY/labels?per_page=100" --jq '.[].name' |
+            while IFS= read -r name; do
+              jq -e --arg name "$name" 'any(.[]; .name == $name)' .github/labels.json >/dev/null ||
+                gh label delete "$name" --yes --repo "$GITHUB_REPOSITORY"
+            done

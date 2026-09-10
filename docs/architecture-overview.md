@@ -206,7 +206,6 @@ Required failure experiments:
 
 Keep these here until accepted; then update the owning ADR.
 
-- API conventions: pagination, error schema, deadlines, and HTTP idempotency keys.
 - Edge details: hostnames, access allowlists, proxy headers, origin TLS, and administrative access.
 - Runtime topology: exact namespace, replica, resource, and retention settings.
 - Delivery gates: CI stages, image promotion, smoke-test location, and migration ordering.

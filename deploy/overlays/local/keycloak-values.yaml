@@ -1,0 +1,30 @@
+fullnameOverride: keycloak
+
+command:
+  - /opt/keycloak/bin/kc.sh
+  - start-dev
+
+extraEnv: |
+  - name: KC_BOOTSTRAP_ADMIN_USERNAME
+    value: admin
+  - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: keycloak-admin
+        key: password
+
+cache:
+  stack: custom
+
+# ponytail: local-only H2; add PostgreSQL in the identity persistence slice.
+database:
+  vendor: dev-file
+
+proxy:
+  enabled: false
+  http:
+    enabled: false
+
+secrets:
+  admin:
+    stringData: {}

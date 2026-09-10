@@ -22,6 +22,8 @@ CREATE TABLE workspace_creations (
     idempotency_key text NOT NULL CHECK (char_length(idempotency_key) BETWEEN 1 AND 255),
     request_hash bytea NOT NULL CHECK (octet_length(request_hash) = 32),
     workspace_id uuid NOT NULL REFERENCES workspaces (id),
+    workspace_name text NOT NULL,
+    workspace_created_at timestamptz NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (subject, idempotency_key)
 );

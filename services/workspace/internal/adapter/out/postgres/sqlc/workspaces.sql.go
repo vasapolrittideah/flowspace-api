@@ -47,12 +47,11 @@ func (q *Queries) CreateWorkspaceOwner(ctx context.Context, arg CreateWorkspaceO
 
 const getWorkspaceCreation = `-- name: GetWorkspaceCreation :one
 SELECT
-    wc.request_hash,
-    w.id::text AS id,
-    w.name,
-    w.created_at
+    request_hash,
+    workspace_id::text AS id,
+    workspace_name AS name,
+    workspace_created_at AS created_at
 FROM workspace_creations AS wc
-JOIN workspaces AS w ON w.id = wc.workspace_id
 WHERE wc.subject = $1
   AND wc.idempotency_key = $2
 `
@@ -108,20 +107,31 @@ func (q *Queries) GetWorkspaceForSubject(ctx context.Context, arg GetWorkspaceFo
 }
 
 const recordWorkspaceCreation = `-- name: RecordWorkspaceCreation :exec
-INSERT INTO workspace_creations (subject, idempotency_key, request_hash, workspace_id)
+INSERT INTO workspace_creations (
+    subject,
+    idempotency_key,
+    request_hash,
+    workspace_id,
+    workspace_name,
+    workspace_created_at
+)
 VALUES (
     $1,
     $2,
     $3,
-    $4::uuid
+    $4::uuid,
+    $5,
+    $6
 )
 `
 
 type RecordWorkspaceCreationParams struct {
-	Subject        string
-	IdempotencyKey string
-	RequestHash    []byte
-	WorkspaceID    pgtype.UUID
+	Subject            string
+	IdempotencyKey     string
+	RequestHash        []byte
+	WorkspaceID        pgtype.UUID
+	WorkspaceName      string
+	WorkspaceCreatedAt pgtype.Timestamptz
 }
 
 func (q *Queries) RecordWorkspaceCreation(ctx context.Context, arg RecordWorkspaceCreationParams) error {
@@ -130,6 +140,8 @@ func (q *Queries) RecordWorkspaceCreation(ctx context.Context, arg RecordWorkspa
 		arg.IdempotencyKey,
 		arg.RequestHash,
 		arg.WorkspaceID,
+		arg.WorkspaceName,
+		arg.WorkspaceCreatedAt,
 	)
 	return err
 }

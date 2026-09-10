@@ -15,11 +15,13 @@ type Workspace struct {
 }
 
 type WorkspaceCreation struct {
-	Subject        string
-	IdempotencyKey string
-	RequestHash    []byte
-	WorkspaceID    pgtype.UUID
-	CreatedAt      pgtype.Timestamptz
+	Subject            string
+	IdempotencyKey     string
+	RequestHash        []byte
+	WorkspaceID        pgtype.UUID
+	WorkspaceName      string
+	WorkspaceCreatedAt pgtype.Timestamptz
+	CreatedAt          pgtype.Timestamptz
 }
 
 type WorkspaceMembership struct {

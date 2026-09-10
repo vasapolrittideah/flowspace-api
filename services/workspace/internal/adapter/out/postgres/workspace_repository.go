@@ -22,7 +22,7 @@ var (
 	ErrNotFound            = errors.New("workspace not found")
 )
 
-type Store struct {
+type WorkspaceRepository struct {
 	pool *pgxpool.Pool
 }
 
@@ -32,12 +32,12 @@ type CreateWorkspaceParams struct {
 	Name           string
 }
 
-func New(pool *pgxpool.Pool) *Store {
-	return &Store{pool: pool}
+func New(pool *pgxpool.Pool) *WorkspaceRepository {
+	return &WorkspaceRepository{pool: pool}
 }
 
-func (s *Store) CreateWorkspace(ctx context.Context, params CreateWorkspaceParams) (domain.Workspace, error) {
-	tx, err := s.pool.Begin(ctx)
+func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, params CreateWorkspaceParams) (domain.Workspace, error) {
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("begin create workspace: %w", err)
 	}
@@ -102,12 +102,12 @@ func (s *Store) CreateWorkspace(ctx context.Context, params CreateWorkspaceParam
 	return domain.Workspace{ID: created.ID, Name: created.Name, CreatedAt: created.CreatedAt.Time}, nil
 }
 
-func (s *Store) GetWorkspace(ctx context.Context, subject, workspaceID string) (domain.Workspace, error) {
+func (r *WorkspaceRepository) GetWorkspace(ctx context.Context, subject, workspaceID string) (domain.Workspace, error) {
 	id, err := parseUUID(workspaceID)
 	if err != nil {
 		return domain.Workspace{}, ErrNotFound
 	}
-	row, err := workspacesqlc.New(s.pool).GetWorkspaceForSubject(ctx, workspacesqlc.GetWorkspaceForSubjectParams{
+	row, err := workspacesqlc.New(r.pool).GetWorkspaceForSubject(ctx, workspacesqlc.GetWorkspaceForSubjectParams{
 		WorkspaceID: id,
 		Subject:     subject,
 	})

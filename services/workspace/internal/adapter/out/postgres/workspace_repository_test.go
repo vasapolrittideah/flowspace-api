@@ -18,7 +18,7 @@ import (
 	workspacesqlc "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres/sqlc"
 )
 
-func TestStore(t *testing.T) {
+func TestWorkspaceRepository(t *testing.T) {
 	ctx := context.Background()
 	container, err := postgrescontainer.Run(
 		ctx,
@@ -49,10 +49,10 @@ func TestStore(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 
-	store := New(pool)
+	repository := New(pool)
 
 	t.Run("creates a workspace and owner atomically", func(t *testing.T) {
-		created, err := store.CreateWorkspace(ctx, CreateWorkspaceParams{
+		created, err := repository.CreateWorkspace(ctx, CreateWorkspaceParams{
 			Subject:        "subject-create",
 			IdempotencyKey: "create-key",
 			Name:           "Platform",
@@ -92,14 +92,14 @@ func TestStore(t *testing.T) {
 			IdempotencyKey: "replay-key",
 			Name:           "Replay",
 		}
-		first, err := store.CreateWorkspace(ctx, params)
+		first, err := repository.CreateWorkspace(ctx, params)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if _, err := pool.Exec(ctx, `UPDATE workspaces SET name = 'Renamed Later' WHERE id = $1`, first.ID); err != nil {
 			t.Fatal(err)
 		}
-		second, err := store.CreateWorkspace(ctx, params)
+		second, err := repository.CreateWorkspace(ctx, params)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -115,7 +115,7 @@ func TestStore(t *testing.T) {
 			t.Fatalf("workspace count = %d, want 1", count)
 		}
 
-		other, err := store.CreateWorkspace(ctx, CreateWorkspaceParams{
+		other, err := repository.CreateWorkspace(ctx, CreateWorkspaceParams{
 			Subject:        "another-subject",
 			IdempotencyKey: params.IdempotencyKey,
 			Name:           params.Name,
@@ -134,11 +134,11 @@ func TestStore(t *testing.T) {
 			IdempotencyKey: "conflict-key",
 			Name:           "Original",
 		}
-		if _, err := store.CreateWorkspace(ctx, params); err != nil {
+		if _, err := repository.CreateWorkspace(ctx, params); err != nil {
 			t.Fatal(err)
 		}
 		params.Name = "Changed"
-		if _, err := store.CreateWorkspace(ctx, params); !errors.Is(err, ErrIdempotencyConflict) {
+		if _, err := repository.CreateWorkspace(ctx, params); !errors.Is(err, ErrIdempotencyConflict) {
 			t.Fatalf("error = %v, want ErrIdempotencyConflict", err)
 		}
 	})
@@ -163,13 +163,13 @@ func TestStore(t *testing.T) {
 			t.Fatal("failed to acquire setup lock")
 		}
 
-		if _, err := store.CreateWorkspace(ctx, params); !errors.Is(err, ErrCreateInProgress) {
+		if _, err := repository.CreateWorkspace(ctx, params); !errors.Is(err, ErrCreateInProgress) {
 			t.Fatalf("error = %v, want ErrCreateInProgress", err)
 		}
 	})
 
 	t.Run("hides workspaces from non-members", func(t *testing.T) {
-		created, err := store.CreateWorkspace(ctx, CreateWorkspaceParams{
+		created, err := repository.CreateWorkspace(ctx, CreateWorkspaceParams{
 			Subject:        "subject-read",
 			IdempotencyKey: "read-key",
 			Name:           "Private",
@@ -178,7 +178,7 @@ func TestStore(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		got, err := store.GetWorkspace(ctx, "subject-read", created.ID)
+		got, err := repository.GetWorkspace(ctx, "subject-read", created.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,10 +186,10 @@ func TestStore(t *testing.T) {
 			t.Fatalf("workspace = %+v, want %+v", got, created)
 		}
 
-		if _, err := store.GetWorkspace(ctx, "other-subject", created.ID); !errors.Is(err, ErrNotFound) {
+		if _, err := repository.GetWorkspace(ctx, "other-subject", created.ID); !errors.Is(err, ErrNotFound) {
 			t.Fatalf("error = %v, want ErrNotFound", err)
 		}
-		if _, err := store.GetWorkspace(ctx, "subject-read", "00000000-0000-0000-0000-000000000000"); !errors.Is(err, ErrNotFound) {
+		if _, err := repository.GetWorkspace(ctx, "subject-read", "00000000-0000-0000-0000-000000000000"); !errors.Is(err, ErrNotFound) {
 			t.Fatalf("error = %v, want ErrNotFound", err)
 		}
 	})
@@ -200,7 +200,7 @@ func TestStore(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err := store.CreateWorkspace(ctx, CreateWorkspaceParams{
+		_, err := repository.CreateWorkspace(ctx, CreateWorkspaceParams{
 			Subject:        "",
 			IdempotencyKey: "rollback-key",
 			Name:           "Must Roll Back",

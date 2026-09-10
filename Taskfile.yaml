@@ -1,0 +1,31 @@
+version: '3.9'
+
+vars:
+  CLUSTER_NAME: flowspace
+
+tasks:
+  default:
+    desc: Show available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  cluster:create:
+    desc: Create the local k3d cluster
+    cmds:
+      - k3d cluster create {{.CLUSTER_NAME | shellQuote}}
+
+  cluster:delete:
+    desc: Delete the local k3d cluster
+    cmds:
+      - k3d cluster delete {{.CLUSTER_NAME | shellQuote}}
+
+  cluster:start:
+    desc: Start the local k3d cluster
+    cmds:
+      - k3d cluster start {{.CLUSTER_NAME | shellQuote}}
+
+  cluster:stop:
+    desc: Stop the local k3d cluster
+    cmds:
+      - k3d cluster stop {{.CLUSTER_NAME | shellQuote}}

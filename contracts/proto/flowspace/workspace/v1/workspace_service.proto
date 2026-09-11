@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package flowspace.workspace.v1;
+
+import "flowspace/workspace/v1/workspace.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+
+option go_package = "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1;workspacev1";
+
+service WorkspaceService {
+  // Creates a workspace owned by the authenticated subject.
+  // Requires Authorization and Idempotency-Key HTTP headers.
+  rpc CreateWorkspace(CreateWorkspaceRequest) returns (CreateWorkspaceResponse) {
+    option (google.api.http) = {
+      post: "/v1/workspaces"
+      body: "*"
+    };
+  }
+
+  // Gets a workspace visible to the authenticated subject.
+  rpc GetWorkspace(GetWorkspaceRequest) returns (GetWorkspaceResponse) {
+    option (google.api.http) = {get: "/v1/workspaces/{workspace_id}"};
+  }
+}
+
+message CreateWorkspaceRequest {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CreateWorkspaceResponse {
+  Workspace workspace = 1;
+}
+
+message GetWorkspaceRequest {
+  string workspace_id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetWorkspaceResponse {
+  Workspace workspace = 1;
+}

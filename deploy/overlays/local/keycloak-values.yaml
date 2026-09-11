@@ -3,6 +3,7 @@ fullnameOverride: keycloak
 command:
   - /opt/keycloak/bin/kc.sh
   - start-dev
+  - --import-realm
 
 extraEnv: |
   - name: KC_BOOTSTRAP_ADMIN_USERNAME
@@ -12,6 +13,23 @@ extraEnv: |
       secretKeyRef:
         name: keycloak-admin
         key: password
+  - name: KC_HOSTNAME
+    value: http://localhost:8080/auth
+  - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+    value: "true"
+
+extraVolumes: |
+  - name: realm
+    secret:
+      secretName: keycloak-realm
+      items:
+        - key: realm
+          path: flowspace-realm.json
+
+extraVolumeMounts: |
+  - name: realm
+    mountPath: /opt/keycloak/data/import
+    readOnly: true
 
 cache:
   stack: custom
@@ -27,4 +45,6 @@ proxy:
 
 secrets:
   admin:
+    stringData: {}
+  realm:
     stringData: {}

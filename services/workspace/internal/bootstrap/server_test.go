@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func TestServerHandlerServesREST(t *testing.T) {
+func TestHandlerServesREST(t *testing.T) {
 	server := &fakeWorkspaceServer{create: func(ctx context.Context, request *workspacev1.CreateWorkspaceRequest) (*workspacev1.CreateWorkspaceResponse, error) {
 		if got := metadata.ValueFromIncomingContext(ctx, "authorization"); len(got) != 1 || got[0] != "Bearer token" {
 			t.Fatalf("authorization metadata = %v", got)
@@ -24,9 +25,9 @@ func TestServerHandlerServesREST(t *testing.T) {
 		}
 		return &workspacev1.CreateWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: "workspace-1", Name: request.GetName()}}, nil
 	}}
-	handler, err := NewServer(context.Background(), server)
+	handler, err := newHandler(context.Background(), server)
 	if err != nil {
-		t.Fatalf("NewServer() error = %v", err)
+		t.Fatalf("newHandler() error = %v", err)
 	}
 	request := httptest.NewRequest(http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":"Flow Space"}`))
 	request.Header.Set("Content-Type", "application/json")
@@ -41,10 +42,10 @@ func TestServerHandlerServesREST(t *testing.T) {
 	}
 }
 
-func TestServerHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
-	handler, err := NewServer(context.Background(), httptransport.NewWorkspaceHandler(nil, nil))
+func TestHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
+	handler, err := newHandler(context.Background(), httptransport.NewWorkspaceHandler(nil, nil))
 	if err != nil {
-		t.Fatalf("NewServer() error = %v", err)
+		t.Fatalf("newHandler() error = %v", err)
 	}
 	request := httptest.NewRequest(http.MethodGet, "/v1/workspaces/workspace-1", nil)
 	response := httptest.NewRecorder()
@@ -56,13 +57,13 @@ func TestServerHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
 	}
 }
 
-func TestServerHandlerServesConnectClientOverGRPC(t *testing.T) {
+func TestHandlerServesConnectClientOverGRPC(t *testing.T) {
 	server := &fakeWorkspaceServer{get: func(_ context.Context, request *workspacev1.GetWorkspaceRequest) (*workspacev1.GetWorkspaceResponse, error) {
 		return &workspacev1.GetWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: request.GetWorkspaceId(), Name: "Flow Space"}}, nil
 	}}
-	handler, err := NewServer(context.Background(), server)
+	handler, err := newHandler(context.Background(), server)
 	if err != nil {
-		t.Fatalf("NewServer() error = %v", err)
+		t.Fatalf("newHandler() error = %v", err)
 	}
 	client := workspacev1connect.NewWorkspaceServiceClient(&http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
 		request.Proto = "HTTP/2.0"
@@ -80,6 +81,22 @@ func TestServerHandlerServesConnectClientOverGRPC(t *testing.T) {
 	}
 	if got := response.Msg.GetWorkspace(); got.GetId() != "workspace-1" || got.GetName() != "Flow Space" {
 		t.Fatalf("workspace = %+v", got)
+	}
+}
+
+func TestServeWaitsForShutdown(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	shutdownErr := errors.New("shutdown timed out")
+
+	err := serve(ctx, func() error {
+		return http.ErrServerClosed
+	}, func(context.Context) error {
+		return shutdownErr
+	})
+
+	if !errors.Is(err, shutdownErr) {
+		t.Fatalf("serve() error = %v, want %v", err, shutdownErr)
 	}
 }
 

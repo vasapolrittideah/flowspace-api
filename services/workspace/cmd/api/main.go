@@ -57,7 +57,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 	workspaceService := app.NewWorkspaceService(postgres.NewWorkspaceRepository(pool))
-	handler, err := bootstrap.NewServerHandler(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier))
+	handler, err := bootstrap.NewServer(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier))
 	if err != nil {
 		return fmt.Errorf("configure transport: %w", err)
 	}

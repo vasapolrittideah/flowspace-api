@@ -24,9 +24,9 @@ func TestServerHandlerServesREST(t *testing.T) {
 		}
 		return &workspacev1.CreateWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: "workspace-1", Name: request.GetName()}}, nil
 	}}
-	handler, err := NewServerHandler(context.Background(), server)
+	handler, err := NewServer(context.Background(), server)
 	if err != nil {
-		t.Fatalf("NewServerHandler() error = %v", err)
+		t.Fatalf("NewServer() error = %v", err)
 	}
 	request := httptest.NewRequest(http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":"Flow Space"}`))
 	request.Header.Set("Content-Type", "application/json")
@@ -42,9 +42,9 @@ func TestServerHandlerServesREST(t *testing.T) {
 }
 
 func TestServerHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
-	handler, err := NewServerHandler(context.Background(), httptransport.NewWorkspaceHandler(nil, nil))
+	handler, err := NewServer(context.Background(), httptransport.NewWorkspaceHandler(nil, nil))
 	if err != nil {
-		t.Fatalf("NewServerHandler() error = %v", err)
+		t.Fatalf("NewServer() error = %v", err)
 	}
 	request := httptest.NewRequest(http.MethodGet, "/v1/workspaces/workspace-1", nil)
 	response := httptest.NewRecorder()
@@ -60,9 +60,9 @@ func TestServerHandlerServesConnectClientOverGRPC(t *testing.T) {
 	server := &fakeWorkspaceServer{get: func(_ context.Context, request *workspacev1.GetWorkspaceRequest) (*workspacev1.GetWorkspaceResponse, error) {
 		return &workspacev1.GetWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: request.GetWorkspaceId(), Name: "Flow Space"}}, nil
 	}}
-	handler, err := NewServerHandler(context.Background(), server)
+	handler, err := NewServer(context.Background(), server)
 	if err != nil {
-		t.Fatalf("NewServerHandler() error = %v", err)
+		t.Fatalf("NewServer() error = %v", err)
 	}
 	client := workspacev1connect.NewWorkspaceServiceClient(&http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
 		request.Proto = "HTTP/2.0"

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewServerHandler(ctx context.Context, handler workspacev1.WorkspaceServiceServer) (http.Handler, error) {
+func NewServer(ctx context.Context, handler workspacev1.WorkspaceServiceServer) (http.Handler, error) {
 	grpcServer := grpc.NewServer()
 	workspacev1.RegisterWorkspaceServiceServer(grpcServer, handler)
 

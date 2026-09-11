@@ -19,7 +19,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-const serverTimeout = 5 * time.Second
+const (
+	serverTimeout       = 5 * time.Second
+	idleTimeout         = 30 * time.Second
+	maxRequestBodyBytes = 1 << 20
+)
 
 type Server struct {
 	httpServer *http.Server
@@ -59,6 +63,9 @@ func NewServer(ctx context.Context, config Config) (*Server, error) {
 		Handler:           handler,
 		Protocols:         protocols,
 		ReadHeaderTimeout: serverTimeout,
+		ReadTimeout:       serverTimeout,
+		WriteTimeout:      serverTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 	keepPool = true
 	return &Server{
@@ -102,13 +109,14 @@ func newHandler(ctx context.Context, handler workspacev1.WorkspaceServiceServer)
 		return nil, err
 	}
 
-	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+	httpHandler := http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		if request.ProtoMajor == 2 && strings.HasPrefix(strings.ToLower(request.Header.Get("Content-Type")), "application/grpc") {
 			grpcServer.ServeHTTP(response, request)
 			return
 		}
 		gateway.ServeHTTP(response, request)
-	}), nil
+	})
+	return http.MaxBytesHandler(httpHandler, maxRequestBodyBytes), nil
 }
 
 func incomingHeader(key string) (string, bool) {

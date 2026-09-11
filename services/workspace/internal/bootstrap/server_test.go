@@ -57,6 +57,30 @@ func TestHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
 	}
 }
 
+func TestHandlerRejectsOversizedRESTBody(t *testing.T) {
+	called := false
+	server := &fakeWorkspaceServer{create: func(context.Context, *workspacev1.CreateWorkspaceRequest) (*workspacev1.CreateWorkspaceResponse, error) {
+		called = true
+		return &workspacev1.CreateWorkspaceResponse{}, nil
+	}}
+	handler, err := newHandler(context.Background(), server)
+	if err != nil {
+		t.Fatalf("newHandler() error = %v", err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":"`+strings.Repeat("x", maxRequestBodyBytes)+`"}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if response.Code < http.StatusBadRequest {
+		t.Fatalf("status = %d, want request rejection", response.Code)
+	}
+	if called {
+		t.Fatal("oversized request reached the RPC handler")
+	}
+}
+
 func TestHandlerServesConnectClientOverGRPC(t *testing.T) {
 	server := &fakeWorkspaceServer{get: func(_ context.Context, request *workspacev1.GetWorkspaceRequest) (*workspacev1.GetWorkspaceResponse, error) {
 		return &workspacev1.GetWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: request.GetWorkspaceId(), Name: "Flow Space"}}, nil

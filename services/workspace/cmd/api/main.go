@@ -71,16 +71,27 @@ func run(ctx context.Context) error {
 		Protocols:         protocols,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
+
+	log.Printf("workspace API listening on %s", server.Addr)
+	return serve(ctx, server.ListenAndServe, server.Shutdown)
+}
+
+func serve(ctx context.Context, listenAndServe func() error, shutdown func(context.Context) error) error {
+	shutdownResult := make(chan error, 1)
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_ = server.Shutdown(shutdownCtx)
+		shutdownResult <- shutdown(shutdownCtx)
 	}()
 
-	log.Printf("workspace API listening on %s", server.Addr)
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := listenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("serve workspace API: %w", err)
+	}
+	if ctx.Err() != nil {
+		if err := <-shutdownResult; err != nil {
+			return fmt.Errorf("shut down workspace API: %w", err)
+		}
 	}
 	return nil
 }

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workspace-postgres
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: workspace-postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: workspace-postgres
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          image: postgres:18.6-alpine
+          env:
+            - name: POSTGRES_DB
+              value: workspace
+            - name: POSTGRES_USER
+              value: workspace
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: workspace-database
+                  key: PGPASSWORD
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - workspace
+                - -d
+                - workspace
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - workspace
+                - -d
+                - workspace
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workspace-postgres
+spec:
+  selector:
+    app.kubernetes.io/name: workspace-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

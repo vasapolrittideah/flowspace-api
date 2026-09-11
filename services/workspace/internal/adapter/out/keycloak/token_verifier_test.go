@@ -3,10 +3,37 @@ package keycloak
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 )
+
+func TestNewTokenVerifierUsesSeparateDiscoveryURL(t *testing.T) {
+	const issuer = "https://identity.test/realms/flowspace"
+	client := &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		body := fmt.Sprintf(`{"issuer":%q,"jwks_uri":%q,"id_token_signing_alg_values_supported":["RS256"]}`, issuer, "https://identity.test/keys")
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	})}
+	ctx := oidc.ClientContext(context.Background(), client)
+
+	if _, err := NewTokenVerifier(ctx, "http://keycloak/realms/flowspace", issuer, "workspace-api"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (fn roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return fn(request)
+}
 
 func TestTokenVerifier(t *testing.T) {
 	t.Run("returns the verified subject", func(t *testing.T) {

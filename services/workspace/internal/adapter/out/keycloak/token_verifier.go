@@ -16,11 +16,14 @@ type TokenVerifier struct {
 
 var _ outbound.TokenVerifier = (*TokenVerifier)(nil)
 
-func NewTokenVerifier(ctx context.Context, issuer, audience string) (*TokenVerifier, error) {
-	if issuer == "" || audience == "" {
-		return nil, errors.New("OIDC issuer and audience are required")
+func NewTokenVerifier(ctx context.Context, discoveryURL, issuer, audience string) (*TokenVerifier, error) {
+	if discoveryURL == "" || issuer == "" || audience == "" {
+		return nil, errors.New("OIDC discovery URL, issuer, and audience are required")
 	}
-	provider, err := oidc.NewProvider(ctx, issuer)
+	if discoveryURL != issuer {
+		ctx = oidc.InsecureIssuerURLContext(ctx, issuer)
+	}
+	provider, err := oidc.NewProvider(ctx, discoveryURL)
 	if err != nil {
 		return nil, fmt.Errorf("discover OIDC provider: %w", err)
 	}

@@ -41,7 +41,7 @@ func NewServer(ctx context.Context, config Config) (*Server, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	verifier, err := keycloak.NewTokenVerifier(ctx, config.OIDCIssuer, config.OIDCAudience)
+	verifier, err := keycloak.NewTokenVerifier(ctx, config.OIDCDiscoveryURL, config.OIDCIssuer, config.OIDCAudience)
 	if err != nil {
 		return nil, fmt.Errorf("configure authentication: %w", err)
 	}

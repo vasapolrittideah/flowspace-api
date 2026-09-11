@@ -6,7 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,6 +14,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	postgrescontainer "github.com/testcontainers/testcontainers-go/modules/postgres"
 
+	"github.com/vasapolrittideah/flowspace-api/services/workspace/db/migrations"
 	workspacesqlc "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres/sqlc"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
 )
@@ -200,8 +200,8 @@ func applyMigrations(t *testing.T, ctx context.Context, dsn string) {
 	if err := goose.SetDialect("postgres"); err != nil {
 		t.Fatal(err)
 	}
-	migrations := filepath.Join("..", "..", "..", "..", "db", "migrations")
-	if err := goose.UpContext(ctx, db, migrations); err != nil {
+	goose.SetBaseFS(migrations.Files)
+	if err := goose.UpContext(ctx, db, "."); err != nil {
 		t.Fatal(err)
 	}
 }

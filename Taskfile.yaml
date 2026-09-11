@@ -3,6 +3,7 @@ version: '3.9'
 vars:
   BUF_VERSION: v1.54.0
   CLUSTER_NAME: flowspace
+  REGISTRY_PORT: 5001
   SQLC_VERSION: v1.31.1
 
 tasks:
@@ -15,7 +16,7 @@ tasks:
   cluster:create:
     desc: Create the local k3d cluster
     cmds:
-      - k3d cluster create {{.CLUSTER_NAME | shellQuote}}
+      - k3d cluster create {{.CLUSTER_NAME | shellQuote}} --registry-create {{printf "%s-registry.localhost:0.0.0.0:%v" .CLUSTER_NAME .REGISTRY_PORT | shellQuote}}
 
   cluster:delete:
     desc: Delete the local k3d cluster

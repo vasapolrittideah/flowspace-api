@@ -11,18 +11,22 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	config, err := bootstrap.LoadConfig()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	server, err := bootstrap.NewServer(ctx, config)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	if err := server.Run(ctx); err != nil {
-		log.Fatal(err)
-	}
+	return server.Run(ctx)
 }

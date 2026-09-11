@@ -14,7 +14,7 @@ import (
 
 func TestNewTokenVerifierUsesSeparateDiscoveryURL(t *testing.T) {
 	const issuer = "https://identity.test/realms/flowspace"
-	client := &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+	client := &http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
 		body := fmt.Sprintf(`{"issuer":%q,"jwks_uri":%q,"id_token_signing_alg_values_supported":["RS256"]}`, issuer, "https://identity.test/keys")
 		return &http.Response{
 			StatusCode: http.StatusOK,

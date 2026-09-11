@@ -18,6 +18,6 @@ type GetWorkspaceInput struct {
 }
 
 type WorkspaceUsecase interface {
-	CreateWorkspace(context.Context, CreateWorkspaceInput) (domain.Workspace, error)
-	GetWorkspace(context.Context, GetWorkspaceInput) (domain.Workspace, error)
+	CreateWorkspace(ctx context.Context, input CreateWorkspaceInput) (domain.Workspace, error)
+	GetWorkspace(ctx context.Context, input GetWorkspaceInput) (domain.Workspace, error)
 }

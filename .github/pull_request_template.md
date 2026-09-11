@@ -8,10 +8,10 @@
 
 ## Verification
 
-<!-- Add one row per check with the exact command and result. Collapse long commands with <details><summary>Short check name</summary><code>exact command</code></details>, and encode literal pipes as &#124;. Identify checks not run and why. -->
+<!-- Add one row per warranted check. Use a short human label, the exact reproducible command when applicable, and a concise outcome. Do not paste routine logs; link or explain only when a result needs context. Identify checks not run and why. Collapse long commands with <details><summary>Command</summary><code>exact command</code></details>, and encode literal pipes as &#124;. -->
 
-| Check | Result |
-| --- | --- |
+| Check | Command | Result |
+| --- | --- | --- |
 
 ## Risks or limitations
 

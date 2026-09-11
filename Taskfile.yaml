@@ -42,3 +42,13 @@ tasks:
     desc: Run the pinned sqlc CLI
     cmds:
       - go run github.com/sqlc-dev/sqlc/cmd/sqlc@{{.SQLC_VERSION}} {{.CLI_ARGS}}
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - golangci-lint fmt
+
+  lint:
+    desc: Lint Go code
+    cmds:
+      - golangci-lint run

@@ -16,12 +16,16 @@ import (
 )
 
 func main() {
+	if err := migrate(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func migrate() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := run(ctx); err != nil {
-		log.Fatal(err)
-	}
+	return run(ctx)
 }
 
 func run(ctx context.Context) error {

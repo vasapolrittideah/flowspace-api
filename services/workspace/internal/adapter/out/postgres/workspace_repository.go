@@ -113,7 +113,7 @@ func (r *WorkspaceRepository) GetWorkspace(ctx context.Context, subject, workspa
 
 func createWorkspaceLockID(subject, idempotencyKey string) int64 {
 	hash := sha256.Sum256([]byte("flowspace.workspace.v1.WorkspaceService/CreateWorkspace\x00" + subject + "\x00" + idempotencyKey))
-	return int64(binary.BigEndian.Uint64(hash[:8]))
+	return int64(binary.BigEndian.Uint64(hash[:8])) //nolint:gosec // PostgreSQL advisory locks accept signed bit patterns.
 }
 
 func parseUUID(value string) (pgtype.UUID, error) {

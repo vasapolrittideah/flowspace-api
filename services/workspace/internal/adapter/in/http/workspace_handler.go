@@ -6,15 +6,16 @@ import (
 	"strings"
 	"time"
 
-	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
-	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
-	inbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/in"
-	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
+	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
+	inbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/in"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 )
 
 const (
@@ -116,8 +117,7 @@ func rpcError(err error) error {
 	case errors.Is(err, domain.ErrUnauthenticated):
 		return status.Error(codes.Unauthenticated, "authentication required")
 	case errors.Is(err, domain.ErrInvalidArgument):
-		var invalid *domain.InvalidArgumentError
-		if errors.As(err, &invalid) {
+		if invalid, ok := errors.AsType[*domain.InvalidArgumentError](err); ok {
 			return invalidArgument(invalid.Field, invalid.Reason)
 		}
 		return status.Error(codes.InvalidArgument, "invalid request")

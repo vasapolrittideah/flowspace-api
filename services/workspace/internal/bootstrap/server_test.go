@@ -9,10 +9,11 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"google.golang.org/grpc/metadata"
+
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	"github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1/workspacev1connect"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
-	"google.golang.org/grpc/metadata"
 )
 
 func TestHandlerServesREST(t *testing.T) {
@@ -29,7 +30,7 @@ func TestHandlerServesREST(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newHandler() error = %v", err)
 	}
-	request := httptest.NewRequest(http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":"Flow Space"}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":"Flow Space"}`))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", "Bearer token")
 	request.Header.Set("Idempotency-Key", "request-1")
@@ -47,7 +48,7 @@ func TestHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newHandler() error = %v", err)
 	}
-	request := httptest.NewRequest(http.MethodGet, "/v1/workspaces/workspace-1", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/v1/workspaces/workspace-1", nil)
 	response := httptest.NewRecorder()
 
 	handler.ServeHTTP(response, request)
@@ -67,7 +68,7 @@ func TestHandlerRejectsOversizedRESTBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newHandler() error = %v", err)
 	}
-	request := httptest.NewRequest(http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":"`+strings.Repeat("x", maxRequestBodyBytes)+`"}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":"`+strings.Repeat("x", maxRequestBodyBytes)+`"}`))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 

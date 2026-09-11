@@ -11,12 +11,13 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"google.golang.org/grpc"
+
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/keycloak"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/app"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -84,7 +85,7 @@ func serve(ctx context.Context, listenAndServe func() error, shutdown func(conte
 	shutdownResult := make(chan error, 1)
 	go func() {
 		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), serverTimeout)
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), serverTimeout)
 		defer cancel()
 		shutdownResult <- shutdown(shutdownCtx)
 	}()

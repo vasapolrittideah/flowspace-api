@@ -1,0 +1,145 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - cyclop
+    - depguard
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - exptostd
+    - fatcontext
+    - forcetypeassert
+    - gocheckcompilerdirectives
+    - gochecknoinits
+    - gochecksumtype
+    - goconst
+    - gocritic
+    - godoclint
+    - gomoddirectives
+    - goprintffuncname
+    - gosec
+    - govet
+    - iface
+    - importas
+    - inamedparam
+    - ineffassign
+    - interfacebloat
+    - intrange
+    - iotamixing
+    - loggercheck
+    - makezero
+    - mirror
+    - misspell
+    - modernize
+    - musttag
+    - nakedret
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - noctx
+    - nolintlint
+    - nosprintfhostport
+    - perfsprint
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - tagalign
+    - tagliatelle
+    - testableexamples
+    - testifylint
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unqueryvet
+    - unused
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+    - whitespace
+    - zerologlint
+  settings:
+    cyclop:
+      max-complexity: 15
+    depguard:
+      rules:
+        domain:
+          list-mode: strict
+          files:
+            - "**/internal/domain/*.go"
+            - "**/internal/domain/**/*.go"
+          allow:
+            - $gostd
+            - github.com/vasapolrittideah/flowspace-api
+        workspace-service:
+          list-mode: lax
+          files:
+            - "**/services/workspace/*.go"
+            - "**/services/workspace/**/*.go"
+          allow:
+            - github.com/vasapolrittideah/flowspace-api/services/workspace
+          deny:
+            - pkg: github.com/vasapolrittideah/flowspace-api/services
+              desc: services must not import other services
+        work-service:
+          list-mode: lax
+          files:
+            - "**/services/work/*.go"
+            - "**/services/work/**/*.go"
+          allow:
+            - github.com/vasapolrittideah/flowspace-api/services/work
+          deny:
+            - pkg: github.com/vasapolrittideah/flowspace-api/services
+              desc: services must not import other services
+        notifications-service:
+          list-mode: lax
+          files:
+            - "**/services/notifications/*.go"
+            - "**/services/notifications/**/*.go"
+          allow:
+            - github.com/vasapolrittideah/flowspace-api/services/notifications
+          deny:
+            - pkg: github.com/vasapolrittideah/flowspace-api/services
+              desc: services must not import other services
+    goconst:
+      min-occurrences: 4
+  exclusions:
+    presets:
+      - comments
+    rules:
+      - path: _test\.go
+        linters:
+          - goconst
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/vasapolrittideah/flowspace-api

@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
-	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
-	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
-	inbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/in"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
+	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
+	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
+	inbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/in"
 )
 
 func TestWorkspaceHandlerCreateWorkspace(t *testing.T) {
@@ -26,7 +27,7 @@ func TestWorkspaceHandlerCreateWorkspace(t *testing.T) {
 		fakeTokenVerifier{subject: "user-1"},
 	)
 
-	response, err := handler.CreateWorkspace(authenticatedContext("token", "request-1"), &workspacev1.CreateWorkspaceRequest{Name: " Flow Space "})
+	response, err := handler.CreateWorkspace(authenticatedContext("request-1"), &workspacev1.CreateWorkspaceRequest{Name: " Flow Space "})
 	if err != nil {
 		t.Fatalf("CreateWorkspace() error = %v", err)
 	}
@@ -48,7 +49,7 @@ func TestWorkspaceHandlerGetWorkspace(t *testing.T) {
 		fakeTokenVerifier{subject: "user-1"},
 	)
 
-	_, err := handler.GetWorkspace(authenticatedContext("token", ""), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
+	_, err := handler.GetWorkspace(authenticatedContext(""), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
 	if err != nil {
 		t.Fatalf("GetWorkspace() error = %v", err)
 	}
@@ -67,7 +68,7 @@ func TestWorkspaceHandlerRejectsInvalidRequestBeforeUsecase(t *testing.T) {
 		fakeTokenVerifier{subject: "user-1"},
 	)
 
-	_, err := handler.CreateWorkspace(authenticatedContext("token", ""), &workspacev1.CreateWorkspaceRequest{Name: "Workspace"})
+	_, err := handler.CreateWorkspace(authenticatedContext(""), &workspacev1.CreateWorkspaceRequest{Name: "Workspace"})
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("code = %v, want InvalidArgument", status.Code(err))
 	}
@@ -108,7 +109,7 @@ func TestWorkspaceHandlerMapsDomainErrors(t *testing.T) {
 				fakeTokenVerifier{subject: "user-1"},
 			)
 
-			_, err := handler.GetWorkspace(authenticatedContext("token", ""), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
+			_, err := handler.GetWorkspace(authenticatedContext(""), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
 			if status.Code(err) != tt.code {
 				t.Fatalf("code = %v, want %v", status.Code(err), tt.code)
 			}
@@ -116,8 +117,8 @@ func TestWorkspaceHandlerMapsDomainErrors(t *testing.T) {
 	}
 }
 
-func authenticatedContext(token, idempotencyKey string) context.Context {
-	pairs := []string{"authorization", "Bearer " + token}
+func authenticatedContext(idempotencyKey string) context.Context {
+	pairs := []string{"authorization", "Bearer token"}
 	if idempotencyKey != "" {
 		pairs = append(pairs, "idempotency-key", idempotencyKey)
 	}
@@ -127,7 +128,7 @@ func authenticatedContext(token, idempotencyKey string) context.Context {
 func assertFieldViolation(t *testing.T, err error, field string) {
 	t.Helper()
 	for _, detail := range status.Convert(err).Details() {
-		if badRequest, ok := detail.(*errdetails.BadRequest); ok && len(badRequest.FieldViolations) == 1 && badRequest.FieldViolations[0].Field == field {
+		if badRequest, ok := detail.(*errdetails.BadRequest); ok && len(badRequest.GetFieldViolations()) == 1 && badRequest.GetFieldViolations()[0].GetField() == field {
 			return
 		}
 	}

@@ -17,6 +17,7 @@ import (
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/keycloak"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/app"
+	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/bootstrap"
 )
 
 func main() {
@@ -56,7 +57,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 	workspaceService := app.NewWorkspaceService(postgres.NewWorkspaceRepository(pool))
-	handler, err := httptransport.NewServerHandler(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier))
+	handler, err := bootstrap.NewServerHandler(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier))
 	if err != nil {
 		return fmt.Errorf("configure transport: %w", err)
 	}

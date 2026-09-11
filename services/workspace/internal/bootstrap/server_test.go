@@ -1,4 +1,4 @@
-package httptransport
+package bootstrap
 
 import (
 	"context"
@@ -10,20 +10,21 @@ import (
 	"connectrpc.com/connect"
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	"github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1/workspacev1connect"
-	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
-	inbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/in"
+	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
+	"google.golang.org/grpc/metadata"
 )
 
-func TestServerHandlerServesAuthenticatedREST(t *testing.T) {
-	var gotInput inbound.CreateWorkspaceInput
-	workspaceHandler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{create: func(_ context.Context, input inbound.CreateWorkspaceInput) (domain.Workspace, error) {
-			gotInput = input
-			return domain.Workspace{ID: "workspace-1", Name: input.Name}, nil
-		}},
-		fakeTokenVerifier{subject: "user-1"},
-	)
-	handler, err := NewServerHandler(context.Background(), workspaceHandler)
+func TestServerHandlerServesREST(t *testing.T) {
+	server := &fakeWorkspaceServer{create: func(ctx context.Context, request *workspacev1.CreateWorkspaceRequest) (*workspacev1.CreateWorkspaceResponse, error) {
+		if got := metadata.ValueFromIncomingContext(ctx, "authorization"); len(got) != 1 || got[0] != "Bearer token" {
+			t.Fatalf("authorization metadata = %v", got)
+		}
+		if got := metadata.ValueFromIncomingContext(ctx, "idempotency-key"); len(got) != 1 || got[0] != "request-1" {
+			t.Fatalf("idempotency metadata = %v", got)
+		}
+		return &workspacev1.CreateWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: "workspace-1", Name: request.GetName()}}, nil
+	}}
+	handler, err := NewServerHandler(context.Background(), server)
 	if err != nil {
 		t.Fatalf("NewServerHandler() error = %v", err)
 	}
@@ -38,13 +39,10 @@ func TestServerHandlerServesAuthenticatedREST(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body)
 	}
-	if gotInput != (inbound.CreateWorkspaceInput{Subject: "user-1", IdempotencyKey: "request-1", Name: "Flow Space"}) {
-		t.Fatalf("input = %+v", gotInput)
-	}
 }
 
 func TestServerHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
-	handler, err := NewServerHandler(context.Background(), NewWorkspaceHandler(&fakeWorkspaceUsecase{}, fakeTokenVerifier{subject: "user-1"}))
+	handler, err := NewServerHandler(context.Background(), httptransport.NewWorkspaceHandler(nil, nil))
 	if err != nil {
 		t.Fatalf("NewServerHandler() error = %v", err)
 	}
@@ -59,13 +57,10 @@ func TestServerHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
 }
 
 func TestServerHandlerServesConnectClientOverGRPC(t *testing.T) {
-	workspaceHandler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{get: func(_ context.Context, input inbound.GetWorkspaceInput) (domain.Workspace, error) {
-			return domain.Workspace{ID: input.WorkspaceID, Name: "Flow Space"}, nil
-		}},
-		fakeTokenVerifier{subject: "user-1"},
-	)
-	handler, err := NewServerHandler(context.Background(), workspaceHandler)
+	server := &fakeWorkspaceServer{get: func(_ context.Context, request *workspacev1.GetWorkspaceRequest) (*workspacev1.GetWorkspaceResponse, error) {
+		return &workspacev1.GetWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: request.GetWorkspaceId(), Name: "Flow Space"}}, nil
+	}}
+	handler, err := NewServerHandler(context.Background(), server)
 	if err != nil {
 		t.Fatalf("NewServerHandler() error = %v", err)
 	}
@@ -78,7 +73,6 @@ func TestServerHandlerServesConnectClientOverGRPC(t *testing.T) {
 		return response.Result(), nil
 	})}, "https://workspace.test", connect.WithGRPC())
 	request := connect.NewRequest(&workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
-	request.Header().Set("Authorization", "Bearer token")
 
 	response, err := client.GetWorkspace(context.Background(), request)
 	if err != nil {
@@ -87,6 +81,20 @@ func TestServerHandlerServesConnectClientOverGRPC(t *testing.T) {
 	if got := response.Msg.GetWorkspace(); got.GetId() != "workspace-1" || got.GetName() != "Flow Space" {
 		t.Fatalf("workspace = %+v", got)
 	}
+}
+
+type fakeWorkspaceServer struct {
+	workspacev1.UnimplementedWorkspaceServiceServer
+	create func(context.Context, *workspacev1.CreateWorkspaceRequest) (*workspacev1.CreateWorkspaceResponse, error)
+	get    func(context.Context, *workspacev1.GetWorkspaceRequest) (*workspacev1.GetWorkspaceResponse, error)
+}
+
+func (f *fakeWorkspaceServer) CreateWorkspace(ctx context.Context, request *workspacev1.CreateWorkspaceRequest) (*workspacev1.CreateWorkspaceResponse, error) {
+	return f.create(ctx, request)
+}
+
+func (f *fakeWorkspaceServer) GetWorkspace(ctx context.Context, request *workspacev1.GetWorkspaceRequest) (*workspacev1.GetWorkspaceResponse, error) {
+	return f.get(ctx, request)
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)

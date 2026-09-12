@@ -10,7 +10,7 @@
 
 <!-- Add one row per warranted check. Use a short human label, a visible `task ...` command defined in `Taskfile.yaml`, and a concise outcome. Do not hide commands or paste routine logs; link or explain only when a result needs context. Identify checks not run and why. -->
 
-| Check | Taskfile command | Result |
+| Check | Command | Result |
 | --- | --- | --- |
 
 ## Risks or limitations

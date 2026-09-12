@@ -83,7 +83,7 @@ Root `internal/` is not a default home for helpers. Code with one service owner 
 
 ## 4. Structure inside a service
 
-Each service follows the hexagonal direction accepted in [ADR-001](adr/001-service-architecture-and-boundaries.md): business rules stay at the center and infrastructure stays at the edges.
+Each service follows the hexagonal architecture established in [ADR-002](adr/002-repository-and-go-module-layout.md): business rules stay at the center and infrastructure stays at the edges.
 
 ```text
 services/<service>/

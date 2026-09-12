@@ -6,7 +6,7 @@ Accepted.
 
 ## Date
 
-2026-09-09 (consolidated); API conventions accepted 2026-09-10.
+2026-09-09; API conventions accepted 2026-09-10.
 
 ## Context
 

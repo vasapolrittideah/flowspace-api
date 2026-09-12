@@ -6,7 +6,7 @@ Accepted.
 
 ## Date
 
-2026-09-10 (accepted after consolidation).
+2026-09-10.
 
 ## Context
 

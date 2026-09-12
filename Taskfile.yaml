@@ -48,6 +48,11 @@ tasks:
     cmds:
       - golangci-lint fmt
 
+  format:check:
+    desc: Check Go formatting
+    cmds:
+      - golangci-lint fmt --diff
+
   lint:
     desc: Lint Go code
     cmds:
@@ -67,13 +72,23 @@ tasks:
         go test ./... -coverprofile="$profile"
         node scripts/constraint-check.mjs coverage --profile "$profile" --changed-min 80 --total-min 25
 
+  secrets:
+    desc: Scan the working tree for secrets
+    cmds:
+      - go run github.com/zricethezav/gitleaks/v8@v8.18.4 detect --no-git --source . --redact --no-banner
+
+  vuln:
+    desc: Scan reachable Go dependencies for vulnerabilities
+    cmds:
+      - go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+
   check:fast:
     desc: Run sub-five-second edit checks
     cmds:
       - node --test scripts/constraint-check.test.mjs
       - task: constraints:floor
-      - golangci-lint fmt --diff
-      - go run github.com/zricethezav/gitleaks/v8@v8.18.4 detect --no-git --source . --redact --no-banner
+      - task: format:check
+      - task: secrets
 
   check:task:
     desc: Run all local handoff checks
@@ -83,7 +98,7 @@ tasks:
       - |
         status=0
         task coverage || status=1
-        go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./... || status=1
+        task vuln || status=1
         if [ "$status" -eq 0 ]; then
           exit 0
         fi

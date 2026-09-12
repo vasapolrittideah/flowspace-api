@@ -6,7 +6,7 @@ Unresolved proposals stay in the [architecture overview](../architecture-overvie
 
 | Record | Concern | Status |
 | --- | --- | --- |
-| [ADR-001](001-service-architecture-and-boundaries.md) | Service architecture and boundaries | Accepted |
+| [ADR-001](001-service-architecture.md) | Service architecture and boundaries | Accepted |
 | [ADR-002](002-repository-and-go-module-layout.md) | Repository and Go module layout | Accepted |
 | [ADR-003](003-api-and-contract-architecture.md) | API and contract architecture | Accepted |
 | [ADR-004](004-persistence-architecture.md) | Persistence architecture | Accepted |

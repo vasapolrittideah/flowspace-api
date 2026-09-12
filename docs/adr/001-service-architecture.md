@@ -1,4 +1,4 @@
-# ADR-001: Service architecture and boundaries
+# ADR-001: Service architecture
 
 ## Status
 

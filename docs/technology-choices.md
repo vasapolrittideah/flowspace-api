@@ -4,7 +4,7 @@ This table is the source of truth for replaceable implementation tools. These se
 
 | Area | Selection | Role / replacement boundary | ADR |
 | --- | --- | --- | --- |
-| Application language | Go | Application services; changing language must preserve service contracts and ownership boundaries. | [ADR-001](adr/001-service-architecture-and-boundaries.md), [ADR-002](adr/002-repository-and-go-module-layout.md) |
+| Application language | Go | Application services; changing language must preserve service contracts and ownership boundaries. | [ADR-001](adr/001-service-architecture.md), [ADR-002](adr/002-repository-and-go-module-layout.md) |
 | Internal RPC | ConnectRPC | Generated synchronous service clients and handlers over gRPC. | [ADR-003](adr/003-api-and-contract-architecture.md) |
 | Public API proxy | gRPC-Gateway | Generate annotated REST/JSON routes from Protobuf contracts. | [ADR-003](adr/003-api-and-contract-architecture.md) |
 | Contract tooling | Buf CLI | Generate, lint, and check compatibility for Protobuf contracts. | [ADR-003](adr/003-api-and-contract-architecture.md) |

@@ -1,0 +1,75 @@
+name: Constraints
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  CONSTRAINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+jobs:
+  floor:
+    name: Constraint floor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Test constraint checker
+        run: node --test scripts/constraint-check.test.mjs
+      - name: Enforce constraint floor
+        run: node scripts/constraint-check.mjs floor --base "$CONSTRAINT_BASE"
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Scan for secrets
+        run: |
+          go run github.com/zricethezav/gitleaks/v8@v8.18.4 detect --no-git --source . --redact --no-banner
+          go run github.com/zricethezav/gitleaks/v8@v8.18.4 detect --redact --no-banner
+
+  quality:
+    name: Numbered constraints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - id: coverage
+        name: Test and check coverage
+        continue-on-error: true
+        run: |
+          profile="$(mktemp)"
+          trap 'rm -f "$profile"' EXIT
+          go test ./... -coverprofile="$profile"
+          node scripts/constraint-check.mjs coverage --base "$CONSTRAINT_BASE" --profile "$profile" --changed-min 80 --total-min 25
+      - id: dependencies
+        name: Scan reachable dependencies
+        continue-on-error: true
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+      - name: Apply warning rollout
+        if: always()
+        env:
+          COVERAGE_OUTCOME: ${{ steps.coverage.outcome }}
+          DEPENDENCIES_OUTCOME: ${{ steps.dependencies.outcome }}
+        run: |
+          if [[ "$COVERAGE_OUTCOME" == success && "$DEPENDENCIES_OUTCOME" == success ]]; then
+            exit 0
+          fi
+          if [[ "$(date -u +%F)" < 2026-09-26 ]]; then
+            echo "::warning::One or more numbered constraints failed during the rollout window."
+            exit 0
+          fi
+          echo "::error::One or more numbered constraints failed."
+          exit 1

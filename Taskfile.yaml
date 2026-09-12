@@ -51,4 +51,44 @@ tasks:
   lint:
     desc: Lint Go code
     cmds:
-      - golangci-lint run
+      - golangci-lint run ./...
+
+  constraints:floor:
+    desc: Reject changes that weaken the quality floor
+    cmds:
+      - node scripts/constraint-check.mjs floor
+
+  coverage:
+    desc: Test and enforce coverage constraints
+    cmds:
+      - |
+        profile="$(mktemp)"
+        trap 'rm -f "$profile"' EXIT
+        go test ./... -coverprofile="$profile"
+        node scripts/constraint-check.mjs coverage --profile "$profile" --changed-min 80 --total-min 25
+
+  check:fast:
+    desc: Run sub-five-second edit checks
+    cmds:
+      - node --test scripts/constraint-check.test.mjs
+      - task: constraints:floor
+      - golangci-lint fmt --diff
+      - go run github.com/zricethezav/gitleaks/v8@v8.18.4 detect --no-git --source . --redact --no-banner
+
+  check:task:
+    desc: Run all local handoff checks
+    cmds:
+      - task: check:fast
+      - task: lint
+      - |
+        status=0
+        task coverage || status=1
+        go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./... || status=1
+        if [ "$status" -eq 0 ]; then
+          exit 0
+        fi
+        if [ "$(date -u +%Y%m%d)" -lt 20260926 ]; then
+          echo "warning: a numbered constraint failed during the rollout window"
+          exit 0
+        fi
+        exit 1

@@ -2,6 +2,8 @@
 
 Read and follow [`CONTRIBUTING.md`](CONTRIBUTING.md) before every task in this repository.
 
+Read [`CONSTRAINTS.md`](CONSTRAINTS.md) before writing code. Do not weaken it to make a change pass.
+
 For product, architecture, or implementation work, also read:
 
 - [`docs/architecture-overview.md`](docs/architecture-overview.md) for current scope and system behavior.

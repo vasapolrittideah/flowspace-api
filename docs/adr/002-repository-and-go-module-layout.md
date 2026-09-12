@@ -14,47 +14,11 @@ One developer and AI agents maintain related services, contracts, deployment def
 
 ## Decision
 
-Keep FlowSpace in one repository with one `go.mod` at the root. Each application service has its own binary, container image, database assets, and service-specific `internal` packages. Do not add per-service modules or a `go.work` file initially.
+Keep FlowSpace in one repository with one `go.mod` at the root. Each application service has its own binary, container image, database assets, and service-specific `internal` packages. Organize each service using hexagonal architecture so domain and application code depend on ports rather than transports, storage, or external systems. Do not add per-service modules or a `go.work` file initially.
 
 Root `internal/` is reserved for technical helpers that are genuinely reused across services. Do not share domain models or persistence repositories between services, and create directories only when code needs them.
 
-### Intended layout
-
-```text
-flowspace-api/
-├── go.mod
-├── go.sum
-├── internal/                # Shared technical packages, added only when needed
-├── services/
-│   ├── workspace/
-│   │   ├── cmd/api/main.go
-│   │   ├── internal/
-│   │   │   ├── domain/            # Aggregates, invariants, and domain errors
-│   │   │   ├── port/{in,out}/     # Use-case and repository or gateway contracts
-│   │   │   ├── app/               # Use cases implementing port/in
-│   │   │   ├── adapter/
-│   │   │   │   ├── in/http/         # REST/JSON surface
-│   │   │   │   ├── out/keycloak/
-│   │   │   │   └── out/postgres/    # Repository; sqlc/ holds generated queries
-│   │   │   └── bootstrap/         # Typed configuration and manual wiring
-│   │   ├── db/{migrations,queries}/
-│   │   └── Dockerfile
-│   ├── work/                  # Same layout
-│   └── notifications/         # Same layout
-├── contracts/
-│   ├── http/
-│   ├── proto/
-│   └── events/
-├── tests/
-│   ├── smoke/
-│   └── load/
-├── deploy/
-│   ├── base/
-│   └── overlays/{local,staging,production}/
-├── docs/
-│   └── adr/
-└── .github/workflows/
-```
+The current directory layout and folder responsibilities are documented in [Codebase structure](../codebase-structure.md).
 
 ## Alternatives Considered
 

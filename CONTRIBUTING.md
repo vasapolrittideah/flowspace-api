@@ -107,7 +107,7 @@ Choose a scope in this order:
 3. Use `codegen` when generation tooling or configuration is the focus; otherwise use the matching repository area above.
 4. Omit the scope when no single area helps, including coherent repository-wide changes. Split unrelated work instead of joining scope names.
 
-For one shared technical package under root `internal/`, use its directory name, such as `config` for `internal/config/` or `logging` for `internal/logging/`, and add that scope to the table when introducing the package. Use `shared` only for a coherent change across several shared packages. Changes to one service's settings or logging retain the service scope, including code under `services/workspace/internal/bootstrap/`; see the [repository layout](docs/adr/002-repository-and-go-module-layout.md).
+For one shared technical package under root `internal/`, use its directory name, such as `config` for `internal/config/` or `logging` for `internal/logging/`, and add that scope to the table when introducing the package. Use `shared` only for a coherent change across several shared packages. Changes to one service's settings or logging retain the service scope, including code under `services/workspace/internal/bootstrap/`; see the [codebase structure](docs/codebase-structure.md).
 
 Reuse existing scope names. Propose and document a new scope in the PR that needs it. `ci` is a type, not a scope; use `ci: ...` or an area such as `ci(work): ...`. Documentation uses `docs` with an optional affected-area scope. Agent changes use the `agents` scope and the type matching their purpose; adding a file alone is not necessarily a feature.
 

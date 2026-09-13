@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
@@ -28,10 +28,11 @@ const (
 
 type Server struct {
 	httpServer *http.Server
+	logger     *zap.Logger
 	pool       *pgxpool.Pool
 }
 
-func NewServer(ctx context.Context, config Config) (*Server, error) {
+func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server, error) {
 	pool, err := pgxpool.New(ctx, string(config.DatabaseURL))
 	if err != nil {
 		return nil, fmt.Errorf("configure database: %w", err)
@@ -71,13 +72,14 @@ func NewServer(ctx context.Context, config Config) (*Server, error) {
 	keepPool = true
 	return &Server{
 		httpServer: httpServer,
+		logger:     logger,
 		pool:       pool,
 	}, nil
 }
 
 func (s *Server) Run(ctx context.Context) error {
 	defer s.pool.Close()
-	log.Printf("workspace API listening on %s", s.httpServer.Addr)
+	s.logger.Info("process_listening", zap.String("address", s.httpServer.Addr))
 	return serve(ctx, s.httpServer.ListenAndServe, s.httpServer.Shutdown)
 }
 

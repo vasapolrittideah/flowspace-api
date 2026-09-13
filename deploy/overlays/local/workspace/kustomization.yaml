@@ -8,6 +8,7 @@ resources:
 configMapGenerator:
   - name: workspace-config
     literals:
+      - ENVIRONMENT=local
       - HTTP_ADDR=:8080
       - OIDC_AUDIENCE=workspace-api
       - OIDC_DISCOVERY_URL=http://keycloak-http/auth/realms/flowspace

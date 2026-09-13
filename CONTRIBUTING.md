@@ -89,6 +89,7 @@ Use one lowercase scope when it clarifies the affected area.
 | Scope | Area |
 | --- | --- |
 | `config` | Shared environment configuration under `internal/config/` |
+| `logging` | Shared structured logging under `internal/logging/` |
 | `workspace` | Workspaces, memberships, invitations, roles, and authorization |
 | `work` | Projects, tasks, assignments, status transitions, comments, activity history, and the event outbox |
 | `notifications` | In-app notification inbox, read state, and event deduplication |

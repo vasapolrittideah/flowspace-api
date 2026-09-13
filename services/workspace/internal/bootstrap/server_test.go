@@ -56,6 +56,9 @@ func TestHandlerServesREST(t *testing.T) {
 		if got := metadata.ValueFromIncomingContext(ctx, "idempotency-key"); len(got) != 1 || got[0] != "request-1" {
 			t.Fatalf("idempotency metadata = %v", got)
 		}
+		if got := metadata.ValueFromIncomingContext(ctx, "x-request-id"); len(got) != 1 || got[0] != "request-2" {
+			t.Fatalf("request ID metadata = %v", got)
+		}
 		return &workspacev1.CreateWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: "workspace-1", Name: request.GetName()}}, nil
 	}}
 	handler, err := newHandler(context.Background(), server)
@@ -66,6 +69,7 @@ func TestHandlerServesREST(t *testing.T) {
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", "Bearer token")
 	request.Header.Set("Idempotency-Key", "request-1")
+	request.Header.Set("X-Request-ID", "request-2")
 	response := httptest.NewRecorder()
 
 	handler.ServeHTTP(response, request)
@@ -73,10 +77,24 @@ func TestHandlerServesREST(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body)
 	}
+	if got := response.Header().Get("X-Request-ID"); got != "request-2" {
+		t.Fatalf("X-Request-ID = %q, want request-2", got)
+	}
+}
+
+func TestRequestIDValidatesHeader(t *testing.T) {
+	if got := requestID("request-3"); got != "request-3" {
+		t.Fatalf("requestID() = %q, want request-3", got)
+	}
+	for _, unsafe := range []string{"", "unsafe request id", strings.Repeat("x", 129)} {
+		if got := requestID(unsafe); got == unsafe || !validRequestID(got) {
+			t.Fatalf("requestID(%q) = %q", unsafe, got)
+		}
+	}
 }
 
 func TestHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
-	handler, err := newHandler(context.Background(), httptransport.NewWorkspaceHandler(nil, nil))
+	handler, err := newHandler(context.Background(), httptransport.NewWorkspaceHandler(nil, nil, zap.NewNop()))
 	if err != nil {
 		t.Fatalf("newHandler() error = %v", err)
 	}

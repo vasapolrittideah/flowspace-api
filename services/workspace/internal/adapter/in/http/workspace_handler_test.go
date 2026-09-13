@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -25,6 +27,7 @@ func TestWorkspaceHandlerCreateWorkspace(t *testing.T) {
 			return domain.Workspace{ID: "workspace-1", Name: "Flow Space", CreatedAt: createdAt}, nil
 		}},
 		fakeTokenVerifier{subject: "user-1"},
+		zap.NewNop(),
 	)
 
 	response, err := handler.CreateWorkspace(authenticatedContext("request-1"), &workspacev1.CreateWorkspaceRequest{Name: " Flow Space "})
@@ -47,6 +50,7 @@ func TestWorkspaceHandlerGetWorkspace(t *testing.T) {
 			return domain.Workspace{ID: input.WorkspaceID, Name: "Flow Space"}, nil
 		}},
 		fakeTokenVerifier{subject: "user-1"},
+		zap.NewNop(),
 	)
 
 	_, err := handler.GetWorkspace(authenticatedContext(""), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
@@ -66,6 +70,7 @@ func TestWorkspaceHandlerRejectsInvalidRequestBeforeUsecase(t *testing.T) {
 			return domain.Workspace{}, nil
 		}},
 		fakeTokenVerifier{subject: "user-1"},
+		zap.NewNop(),
 	)
 
 	_, err := handler.CreateWorkspace(authenticatedContext(""), &workspacev1.CreateWorkspaceRequest{Name: "Workspace"})
@@ -79,7 +84,7 @@ func TestWorkspaceHandlerRejectsInvalidRequestBeforeUsecase(t *testing.T) {
 }
 
 func TestWorkspaceHandlerRejectsInvalidBearerToken(t *testing.T) {
-	handler := NewWorkspaceHandler(&fakeWorkspaceUsecase{}, fakeTokenVerifier{err: errors.New("invalid token")})
+	handler := NewWorkspaceHandler(&fakeWorkspaceUsecase{}, fakeTokenVerifier{err: errors.New("invalid token")}, zap.NewNop())
 
 	_, err := handler.GetWorkspace(metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Basic token")), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
 	if status.Code(err) != codes.Unauthenticated {
@@ -107,6 +112,7 @@ func TestWorkspaceHandlerMapsDomainErrors(t *testing.T) {
 					return domain.Workspace{}, tt.err
 				}},
 				fakeTokenVerifier{subject: "user-1"},
+				zap.NewNop(),
 			)
 
 			_, err := handler.GetWorkspace(authenticatedContext(""), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
@@ -117,8 +123,64 @@ func TestWorkspaceHandlerMapsDomainErrors(t *testing.T) {
 	}
 }
 
+func TestWorkspaceHandlerLogsCompletedCreate(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	handler := NewWorkspaceHandler(
+		&fakeWorkspaceUsecase{create: func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error) {
+			return domain.Workspace{ID: "workspace-1", Name: "Flow Space"}, nil
+		}},
+		fakeTokenVerifier{subject: "user-1"},
+		zap.New(core),
+	)
+
+	_, err := handler.CreateWorkspace(requestContext("request-1", "idempotency-1"), &workspacev1.CreateWorkspaceRequest{Name: "Flow Space"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries := logs.AllUntimed()
+	if len(entries) != 1 || entries[0].Message != "request_completed" {
+		t.Fatalf("logs = %v", entries)
+	}
+	completed := entries[0].ContextMap()
+	if completed["operation"] != workspacev1.WorkspaceService_CreateWorkspace_FullMethodName || completed["outcome"] != "success" || completed["code"] != "OK" || completed["request_id"] != "request-1" || completed["workspace_id"] != "workspace-1" || completed["duration"] == nil {
+		t.Fatalf("request_completed fields = %v", completed)
+	}
+}
+
+func TestWorkspaceHandlerLogsInternalFailure(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	handler := NewWorkspaceHandler(
+		&fakeWorkspaceUsecase{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
+			return domain.Workspace{}, errors.New("database unavailable")
+		}},
+		fakeTokenVerifier{subject: "user-1"},
+		zap.New(core),
+	)
+
+	_, err := handler.GetWorkspace(requestContext("request-2", ""), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
+	if status.Code(err) != codes.Internal {
+		t.Fatalf("code = %v, want Internal", status.Code(err))
+	}
+	entries := logs.AllUntimed()
+	if len(entries) != 1 || entries[0].Message != "request_completed" || entries[0].Level != zap.ErrorLevel {
+		t.Fatalf("logs = %v", entries)
+	}
+	fields := entries[0].ContextMap()
+	if fields["operation"] != workspacev1.WorkspaceService_GetWorkspace_FullMethodName || fields["outcome"] != "failure" || fields["code"] != "Internal" || fields["request_id"] != "request-2" || fields["error"] != "database unavailable" {
+		t.Fatalf("request_completed fields = %v", fields)
+	}
+}
+
 func authenticatedContext(idempotencyKey string) context.Context {
 	pairs := []string{"authorization", "Bearer token"}
+	if idempotencyKey != "" {
+		pairs = append(pairs, "idempotency-key", idempotencyKey)
+	}
+	return metadata.NewIncomingContext(context.Background(), metadata.Pairs(pairs...))
+}
+
+func requestContext(requestID, idempotencyKey string) context.Context {
+	pairs := []string{"authorization", "Bearer token", "x-request-id", requestID}
 	if idempotencyKey != "" {
 		pairs = append(pairs, "idempotency-key", idempotencyKey)
 	}

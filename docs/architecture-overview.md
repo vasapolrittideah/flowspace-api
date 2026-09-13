@@ -170,6 +170,7 @@ Event, outbox, deduplication, schema, and backup retention must cover the suppor
 ## 7. Observability and recovery
 
 - Emit structured logs with service, environment, request ID, operation, outcome, and duration.
+- API services accept `X-Request-ID` values containing 1–128 ASCII letters, digits, periods, underscores, or hyphens; missing or invalid values are replaced and the effective ID is returned in the response header.
 - Propagate trace context through synchronous calls and event headers.
 - Track request rate, errors, latency, database-pool waits, outbox age, consumer lag, authorization-watermark age, poison records, disk, restarts, and backup age.
 - Bound telemetry retention, buffering, sampling, and label cardinality. Telemetry failure must not block requests.

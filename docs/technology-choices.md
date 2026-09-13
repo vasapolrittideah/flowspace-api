@@ -42,6 +42,7 @@ These tables are the source of truth for replaceable implementation tools and Go
 | Area | Package | Role / replacement boundary | ADR |
 | --- | --- | --- | --- |
 | Environment configuration | `github.com/caarlos0/env/v11` | Parse typed service settings from environment variables; replacement must preserve validation, defaults, and secret handling. | [ADR-002](adr/002-repository-and-go-module-layout.md), [ADR-007](adr/007-runtime-environments.md) |
+| Structured logging | `go.uber.org/zap` | Emit structured JSON application logs; replacement must preserve stable fields and lifecycle flushing. | [ADR-010](adr/010-observability.md) |
 | Internal RPC | `connectrpc.com/connect` | Generated synchronous service clients and handlers over gRPC. | [ADR-003](adr/003-api-and-contract-architecture.md) |
 | Public API proxy | `github.com/grpc-ecosystem/grpc-gateway/v2` | Generate annotated REST/JSON routes from Protobuf contracts. | [ADR-003](adr/003-api-and-contract-architecture.md) |
 | PostgreSQL driver | `github.com/jackc/pgx/v5` | Runtime database access from Go. | [ADR-004](adr/004-persistence-architecture.md) |

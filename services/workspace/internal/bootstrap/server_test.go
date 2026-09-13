@@ -9,6 +9,9 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
@@ -17,8 +20,31 @@ import (
 )
 
 func TestNewServerRejectsInvalidDatabaseURL(t *testing.T) {
-	if _, err := NewServer(context.Background(), Config{DatabaseURL: "postgres://%"}); err == nil {
+	if _, err := NewServer(context.Background(), Config{DatabaseURL: "postgres://%"}, zap.NewNop()); err == nil {
 		t.Fatal("NewServer() accepted an invalid database URL")
+	}
+}
+
+func TestServerRunLogsListening(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	pool, err := pgxpool.New(ctx, "postgres://workspace@localhost/workspace")
+	if err != nil {
+		t.Fatal(err)
+	}
+	core, logs := observer.New(zap.InfoLevel)
+	server := &Server{
+		httpServer: &http.Server{Addr: "localhost:-1", ReadHeaderTimeout: serverTimeout},
+		logger:     zap.New(core),
+		pool:       pool,
+	}
+
+	if err := server.Run(ctx); err == nil {
+		t.Fatal("Run() accepted an invalid listen address")
+	}
+	entry := logs.AllUntimed()[0]
+	if entry.Message != "process_listening" || entry.ContextMap()["address"] != "localhost:-1" {
+		t.Fatalf("log = %v", entry)
 	}
 }
 

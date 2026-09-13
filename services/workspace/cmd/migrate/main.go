@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,16 +11,24 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
+	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
+	"github.com/vasapolrittideah/flowspace-api/internal/logging"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/db/migrations"
 )
 
+type config struct {
+	Environment string `env:"ENVIRONMENT,required,notEmpty"`
+}
+
 func main() {
-	if err := migrate(); err != nil {
-		log.Fatal(err)
-	}
+	os.Exit(logging.Run(logging.New("workspace-migrate", os.Getenv("ENVIRONMENT")), migrate))
 }
 
 func migrate() error {
+	if _, err := sharedconfig.Load[config](); err != nil {
+		return err
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 

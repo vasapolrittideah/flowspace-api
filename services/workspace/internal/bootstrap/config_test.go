@@ -3,6 +3,7 @@ package bootstrap
 import "testing"
 
 func TestLoadConfig(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "local")
 	t.Setenv("DATABASE_URL", "postgres://workspace")
 	t.Setenv("OIDC_ISSUER", "https://identity.test/realms/flowspace")
 	t.Setenv("OIDC_DISCOVERY_URL", "http://keycloak/realms/flowspace")
@@ -13,12 +14,13 @@ func TestLoadConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadConfig() error = %v", err)
 	}
-	if config.HTTPAddress != ":8080" || config.DatabaseURL != "postgres://workspace" || config.OIDCIssuer != "https://identity.test/realms/flowspace" || config.OIDCDiscoveryURL != "http://keycloak/realms/flowspace" || config.OIDCAudience != "workspace-api" {
+	if config.Environment != "local" || config.HTTPAddress != ":8080" || config.DatabaseURL != "postgres://workspace" || config.OIDCIssuer != "https://identity.test/realms/flowspace" || config.OIDCDiscoveryURL != "http://keycloak/realms/flowspace" || config.OIDCAudience != "workspace-api" {
 		t.Fatalf("config = %+v", config)
 	}
 }
 
 func TestLoadConfigUsesIssuerForDiscoveryByDefault(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "local")
 	t.Setenv("DATABASE_URL", "postgres://workspace")
 	t.Setenv("OIDC_ISSUER", "https://identity.test/realms/flowspace")
 	t.Setenv("OIDC_DISCOVERY_URL", "")
@@ -34,6 +36,7 @@ func TestLoadConfigUsesIssuerForDiscoveryByDefault(t *testing.T) {
 }
 
 func TestLoadConfigAcceptsPostgresEnvironment(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "local")
 	t.Setenv("DATABASE_URL", "")
 	t.Setenv("PGHOST", "workspace-postgres")
 	t.Setenv("PGDATABASE", "workspace")
@@ -48,9 +51,10 @@ func TestLoadConfigAcceptsPostgresEnvironment(t *testing.T) {
 }
 
 func TestLoadConfigRequiresDependencies(t *testing.T) {
-	tests := []string{"DATABASE_URL", "OIDC_ISSUER", "OIDC_AUDIENCE"}
+	tests := []string{"ENVIRONMENT", "DATABASE_URL", "OIDC_ISSUER", "OIDC_AUDIENCE"}
 	for _, missing := range tests {
 		t.Run(missing, func(t *testing.T) {
+			t.Setenv("ENVIRONMENT", "local")
 			t.Setenv("DATABASE_URL", "postgres://workspace")
 			for _, key := range []string{"PGHOST", "PGDATABASE", "PGUSER", "PGPASSWORD"} {
 				t.Setenv(key, "")

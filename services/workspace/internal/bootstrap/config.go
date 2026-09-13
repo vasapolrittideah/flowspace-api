@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	Environment      string              `env:"ENVIRONMENT,required,notEmpty"`
 	HTTPAddress      string              `env:"HTTP_ADDR"                       envDefault:":8080"`
 	DatabaseURL      sharedconfig.Secret `env:"DATABASE_URL"`
 	OIDCDiscoveryURL string              `env:"OIDC_DISCOVERY_URL"`

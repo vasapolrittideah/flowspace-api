@@ -2,21 +2,22 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"go.uber.org/zap"
+
+	"github.com/vasapolrittideah/flowspace-api/internal/logging"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/bootstrap"
 )
 
 func main() {
-	if err := run(); err != nil {
-		log.Fatal(err)
-	}
+	logger := logging.New("workspace-api", os.Getenv("ENVIRONMENT"))
+	os.Exit(logging.Run(logger, func() error { return run(logger) }))
 }
 
-func run() error {
+func run(logger *zap.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -24,7 +25,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	server, err := bootstrap.NewServer(ctx, config)
+	server, err := bootstrap.NewServer(ctx, config, logger)
 	if err != nil {
 		return err
 	}

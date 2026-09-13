@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,6 +25,7 @@ const (
 	serverTimeout       = 5 * time.Second
 	idleTimeout         = 30 * time.Second
 	maxRequestBodyBytes = 1 << 20
+	maxRequestIDBytes   = 128
 )
 
 type Server struct {
@@ -52,7 +54,7 @@ func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server,
 		return nil, fmt.Errorf("configure authentication: %w", err)
 	}
 	workspaceService := app.NewWorkspaceService(postgres.NewWorkspaceRepository(pool))
-	handler, err := newHandler(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier))
+	handler, err := newHandler(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier, logger))
 	if err != nil {
 		return nil, fmt.Errorf("configure transport: %w", err)
 	}
@@ -119,12 +121,44 @@ func newHandler(ctx context.Context, handler workspacev1.WorkspaceServiceServer)
 		}
 		gateway.ServeHTTP(response, request)
 	})
-	return http.MaxBytesHandler(httpHandler, maxRequestBodyBytes), nil
+	return withRequestID(http.MaxBytesHandler(httpHandler, maxRequestBodyBytes)), nil
+}
+
+func withRequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		id := requestID(request.Header.Get("X-Request-ID"))
+		request.Header.Set("X-Request-ID", id)
+		response.Header().Set("X-Request-ID", id)
+		next.ServeHTTP(response, request)
+	})
+}
+
+func requestID(value string) string {
+	if validRequestID(value) {
+		return value
+	}
+	return rand.Text()
+}
+
+func validRequestID(value string) bool {
+	if value == "" || len(value) > maxRequestIDBytes {
+		return false
+	}
+	for _, character := range value {
+		if character >= 'a' && character <= 'z' || character >= 'A' && character <= 'Z' || character >= '0' && character <= '9' || character == '-' || character == '_' || character == '.' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func incomingHeader(key string) (string, bool) {
-	if strings.EqualFold(key, "Idempotency-Key") {
+	switch {
+	case strings.EqualFold(key, "Idempotency-Key"):
 		return "idempotency-key", true
+	case strings.EqualFold(key, "X-Request-ID"):
+		return "x-request-id", true
 	}
 	return runtime.DefaultHeaderMatcher(key)
 }

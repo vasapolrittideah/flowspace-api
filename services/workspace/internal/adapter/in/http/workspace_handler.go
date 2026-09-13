@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -27,15 +28,21 @@ type WorkspaceHandler struct {
 	workspacev1.UnimplementedWorkspaceServiceServer
 	usecase  inbound.WorkspaceUsecase
 	verifier outbound.TokenVerifier
+	logger   *zap.Logger
 }
 
 var _ workspacev1.WorkspaceServiceServer = (*WorkspaceHandler)(nil)
 
-func NewWorkspaceHandler(usecase inbound.WorkspaceUsecase, verifier outbound.TokenVerifier) *WorkspaceHandler {
-	return &WorkspaceHandler{usecase: usecase, verifier: verifier}
+func NewWorkspaceHandler(usecase inbound.WorkspaceUsecase, verifier outbound.TokenVerifier, logger *zap.Logger) *WorkspaceHandler {
+	return &WorkspaceHandler{usecase: usecase, verifier: verifier, logger: logger}
 }
 
-func (h *WorkspaceHandler) CreateWorkspace(ctx context.Context, request *workspacev1.CreateWorkspaceRequest) (*workspacev1.CreateWorkspaceResponse, error) {
+func (h *WorkspaceHandler) CreateWorkspace(ctx context.Context, request *workspacev1.CreateWorkspaceRequest) (_ *workspacev1.CreateWorkspaceResponse, err error) {
+	logger := h.requestLogger(ctx, workspacev1.WorkspaceService_CreateWorkspace_FullMethodName)
+	started := time.Now()
+	var cause error
+	defer func() { logRequest(logger, err, cause, time.Since(started)) }()
+
 	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
@@ -58,18 +65,24 @@ func (h *WorkspaceHandler) CreateWorkspace(ctx context.Context, request *workspa
 		return nil, rpcError(err)
 	}
 
-	workspace, err := h.usecase.CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
+	workspace, cause := h.usecase.CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
 		Subject:        subject,
 		IdempotencyKey: idempotencyKey,
 		Name:           newWorkspace.Name,
 	})
-	if err != nil {
-		return nil, rpcError(err)
+	if cause != nil {
+		return nil, rpcError(cause)
 	}
+	logger = logger.With(zap.String("workspace_id", workspace.ID))
 	return &workspacev1.CreateWorkspaceResponse{Workspace: workspaceMessage(workspace)}, nil
 }
 
-func (h *WorkspaceHandler) GetWorkspace(ctx context.Context, request *workspacev1.GetWorkspaceRequest) (*workspacev1.GetWorkspaceResponse, error) {
+func (h *WorkspaceHandler) GetWorkspace(ctx context.Context, request *workspacev1.GetWorkspaceRequest) (_ *workspacev1.GetWorkspaceResponse, err error) {
+	logger := h.requestLogger(ctx, workspacev1.WorkspaceService_GetWorkspace_FullMethodName)
+	started := time.Now()
+	var cause error
+	defer func() { logRequest(logger, err, cause, time.Since(started)) }()
+
 	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
@@ -81,11 +94,47 @@ func (h *WorkspaceHandler) GetWorkspace(ctx context.Context, request *workspacev
 		return nil, invalidArgument("workspace_id", "is required")
 	}
 
-	workspace, err := h.usecase.GetWorkspace(ctx, inbound.GetWorkspaceInput{Subject: subject, WorkspaceID: request.GetWorkspaceId()})
-	if err != nil {
-		return nil, rpcError(err)
+	workspace, cause := h.usecase.GetWorkspace(ctx, inbound.GetWorkspaceInput{Subject: subject, WorkspaceID: request.GetWorkspaceId()})
+	if cause != nil {
+		return nil, rpcError(cause)
 	}
 	return &workspacev1.GetWorkspaceResponse{Workspace: workspaceMessage(workspace)}, nil
+}
+
+func (h *WorkspaceHandler) requestLogger(ctx context.Context, operation string) *zap.Logger {
+	return h.logger.With(
+		zap.String("operation", operation),
+		zap.String("request_id", requestID(ctx)),
+	)
+}
+
+func logRequest(logger *zap.Logger, err, cause error, duration time.Duration) {
+	code := status.Code(err)
+	outcome := "success"
+	if err != nil {
+		outcome = "failure"
+	}
+	fields := []zap.Field{
+		zap.String("code", code.String()),
+		zap.Duration("duration", duration),
+		zap.String("outcome", outcome),
+	}
+	if code == codes.Internal {
+		if cause != nil {
+			fields = append(fields, zap.Error(cause))
+		}
+		logger.Error("request_completed", fields...)
+		return
+	}
+	logger.Info("request_completed", fields...)
+}
+
+func requestID(ctx context.Context) string {
+	values := metadata.ValueFromIncomingContext(ctx, "x-request-id")
+	if len(values) == 1 {
+		return values[0]
+	}
+	return ""
 }
 
 func (h *WorkspaceHandler) authenticate(ctx context.Context) (string, error) {

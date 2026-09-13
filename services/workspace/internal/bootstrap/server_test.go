@@ -16,6 +16,12 @@ import (
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 )
 
+func TestNewServerRejectsInvalidDatabaseURL(t *testing.T) {
+	if _, err := NewServer(context.Background(), Config{DatabaseURL: "postgres://%"}); err == nil {
+		t.Fatal("NewServer() accepted an invalid database URL")
+	}
+}
+
 func TestHandlerServesREST(t *testing.T) {
 	server := &fakeWorkspaceServer{create: func(ctx context.Context, request *workspacev1.CreateWorkspaceRequest) (*workspacev1.CreateWorkspaceResponse, error) {
 		if got := metadata.ValueFromIncomingContext(ctx, "authorization"); len(got) != 1 || got[0] != "Bearer token" {

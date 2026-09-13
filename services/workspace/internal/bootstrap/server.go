@@ -32,7 +32,7 @@ type Server struct {
 }
 
 func NewServer(ctx context.Context, config Config) (*Server, error) {
-	pool, err := pgxpool.New(ctx, config.DatabaseURL)
+	pool, err := pgxpool.New(ctx, string(config.DatabaseURL))
 	if err != nil {
 		return nil, fmt.Errorf("configure database: %w", err)
 	}

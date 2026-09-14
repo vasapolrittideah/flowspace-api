@@ -14,7 +14,7 @@ Operating Kubernetes is part of the project's learning goal, managed application
 
 ## Decision
 
-Run local development in a lightweight Kubernetes cluster inside Docker Desktop on Mac. Run staging and the environment named production on self-hosted Kubernetes on Ubuntu. Keep the selected distributions and local control loop in [technology choices](../technology-choices.md) so they can change without altering the runtime contract.
+Run local development in a lightweight Kubernetes cluster inside Docker Desktop on Mac. Run staging and the environment named production on self-hosted Kubernetes on Ubuntu. Keep the selected distributions and local control loop in the [technology stack](../technology-stack.md) so they can change without altering the runtime contract.
 
 ## Alternatives Considered
 

@@ -14,7 +14,7 @@ The project needs searchable logs, metrics, traces, and dashboards while remaini
 
 ## Decision
 
-Self-host telemetry collection, metrics, logs, traces, and dashboards on the available infrastructure. Introduce each component incrementally when a service emits the signal it consumes. Keep the selected products in [technology choices](../technology-choices.md).
+Self-host telemetry collection, metrics, logs, traces, and dashboards on the available infrastructure. Introduce each component incrementally when a service emits the signal it consumes. Keep the selected products in the [technology stack](../technology-stack.md).
 
 ## Alternatives Considered
 

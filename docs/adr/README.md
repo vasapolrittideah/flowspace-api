@@ -1,8 +1,8 @@
 # Architecture Decision Records
 
-One record documents one architectural decision that would be expensive to reverse. The [architecture overview](../architecture-overview.md) describes the accepted system direction; a record here explains why one part of that direction was chosen and what was rejected instead. Replaceable tools and libraries remain in [technology choices](../technology-choices.md).
+One record documents one architectural decision that would be expensive to reverse. The [architecture](../architecture.md) describes the accepted system direction; a record here explains why one part of that direction was chosen and what was rejected instead. Replaceable tools and libraries remain in the [technology stack](../technology-stack.md).
 
-These records were written on 2026-09-14 from the accepted rationale in the [architecture overview](../architecture-overview.md). The date on each record is the recording date, not an implementation or production-readiness date.
+These records were written on 2026-09-14 from the accepted rationale in the [architecture](../architecture.md). The date on each record is the recording date, not an implementation or production-readiness date.
 
 An accepted record is never edited or deleted. When a decision changes, add a new record that identifies the record it supersedes and update the old record's status.
 

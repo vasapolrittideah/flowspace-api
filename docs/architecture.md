@@ -1,10 +1,10 @@
-# FlowSpace architecture overview
+# FlowSpace architecture
 
 Status: accepted direction with implementation proposals still open.
 
 Updated: 2026-09-10.
 
-This document defines product rules, service boundaries, cross-service behavior, and learning evidence. Accepted rationale lives in the [ADR index](adr/README.md); replaceable tools live in [technology choices](technology-choices.md).
+This document defines product rules, service boundaries, cross-service behavior, and learning evidence. Accepted rationale lives in the [ADR index](adr/README.md); replaceable tools live in the [technology stack](technology-stack.md).
 
 ## 1. Goal and constraints
 

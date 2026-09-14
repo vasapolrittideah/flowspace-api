@@ -1,4 +1,4 @@
-# Technology choices
+# Technology stack
 
 These tables are the source of truth for replaceable implementation tools and Go packages. These selections support the accepted architecture but do not each warrant an ADR. Replace one when measured limitations or maintenance cost justify it, while preserving the owning ADR's contract.
 

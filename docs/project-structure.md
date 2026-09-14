@@ -1,10 +1,10 @@
-# FlowSpace backend codebase structure
+# FlowSpace project structure
 
 Status: accepted direction with implementation details still open.
 
 Updated: 2026-09-12.
 
-This document defines where backend code belongs and which dependency directions are allowed. It applies the service boundaries from the [architecture overview](architecture-overview.md), the repository layout from [ADR-0002](adr/0002-one-repository-and-one-go-module.md), and the tools in [technology choices](technology-choices.md).
+This document defines where backend code belongs and which dependency directions are allowed. It applies the service boundaries from the [architecture](architecture.md), the repository layout from [ADR-0002](adr/0002-one-repository-and-one-go-module.md), and the tools in the [technology stack](technology-stack.md).
 
 ## 1. Principles
 

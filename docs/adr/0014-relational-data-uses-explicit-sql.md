@@ -16,7 +16,7 @@ Workspace membership, ownership, projects, tasks, and assignments are relational
 
 Use PostgreSQL for primary relational data. Write SQL explicitly, generate typed Go query methods, and keep versioned SQL migrations with the service that owns the data. Application use cases control business transaction boundaries, and database constraints enforce local invariants.
 
-The selected driver, query generator, and migration runner remain replaceable implementation choices documented in [technology choices](../technology-choices.md).
+The selected driver, query generator, and migration runner remain replaceable implementation choices documented in the [technology stack](../technology-stack.md).
 
 ## Alternatives Considered
 

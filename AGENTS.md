@@ -6,11 +6,11 @@ Read [`CONSTRAINTS.md`](CONSTRAINTS.md) before writing code. Do not weaken it to
 
 For product, architecture, or implementation work, also read:
 
-- [`docs/architecture-overview.md`](docs/architecture-overview.md) for current scope and system behavior.
+- [`docs/architecture.md`](docs/architecture.md) for current scope and system behavior.
 - [`docs/adr/README.md`](docs/adr/README.md) and the ADRs relevant to the change for accepted decisions.
-- [`docs/technology-choices.md`](docs/technology-choices.md) for selected implementation tools.
+- [`docs/technology-stack.md`](docs/technology-stack.md) for selected implementation tools.
 
-Treat the architecture overview's open proposals as unresolved. Do not turn one into an implementation decision without explicit approval.
+Treat the architecture document's open proposals as unresolved. Do not turn one into an implementation decision without explicit approval.
 
 ## Formatting
 

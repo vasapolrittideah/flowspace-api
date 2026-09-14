@@ -1,4 +1,4 @@
-# FlowSpace project structure
+# FlowSpace backend project structure
 
 Status: accepted direction with implementation details still open.
 
@@ -60,7 +60,7 @@ This document defines where backend code belongs and which dependency directions
 
 Tool configuration stays where the owning tool expects it. Optional output such as `contracts/http/`, event schemas, service directories, deployment overlays, and test suites appears only when the corresponding capability is implemented.
 
-## 3. Repository directory ownership
+## 3. Directory ownership
 
 | Path | Owner and contents |
 | --- | --- |

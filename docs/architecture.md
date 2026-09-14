@@ -1,4 +1,4 @@
-# FlowSpace architecture
+# FlowSpace backend architecture
 
 Status: accepted direction with implementation proposals still open.
 

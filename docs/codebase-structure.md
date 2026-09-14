@@ -4,7 +4,7 @@ Status: accepted direction with implementation details still open.
 
 Updated: 2026-09-12.
 
-This document defines where backend code belongs and which dependency directions are allowed. It applies the service boundaries from the [architecture overview](architecture-overview.md), the repository layout from [ADR-002](adr/002-repository-and-go-module-layout.md), and the tools in [technology choices](technology-choices.md).
+This document defines where backend code belongs and which dependency directions are allowed. It applies the service boundaries from the [architecture overview](architecture-overview.md), the repository layout from [ADR-0002](adr/0002-one-repository-and-one-go-module.md), and the tools in [technology choices](technology-choices.md).
 
 ## 1. Principles
 
@@ -83,7 +83,7 @@ Root `internal/` is not a default home for helpers. Code with one service owner 
 
 ## 4. Structure inside a service
 
-Each service follows the hexagonal architecture established in [ADR-002](adr/002-repository-and-go-module-layout.md): business rules stay at the center and infrastructure stays at the edges.
+Each service follows the hexagonal architecture established in [ADR-0003](adr/0003-hexagonal-layers-inside-each-service.md): business rules stay at the center and infrastructure stays at the edges.
 
 ```text
 services/<service>/
@@ -189,7 +189,7 @@ Adapters contain protocol and infrastructure behavior, not product rules. Bootst
 - `contracts/http/` contains generated OpenAPI output only when a consumer or documentation workflow needs it; no handwritten OpenAPI contract duplicates Protobuf.
 - Generated adapters and messages contain no business rules.
 
-Contract changes keep source and generated output in the same change and must preserve the compatibility rules in [ADR-003](adr/003-api-and-contract-architecture.md). Transport-specific translation stays in an adapter instead of leaking into domain types.
+Contract changes keep source and generated output in the same change and must preserve the compatibility rules in [ADR-0007](adr/0007-version-apis-by-compatibility-boundary.md). Transport-specific translation stays in an adapter instead of leaking into domain types.
 
 ## 9. Persistence ownership
 
@@ -219,7 +219,7 @@ Keep migrations, queries, generated query code, and affected adapter behavior co
 - Use root tool configuration for repository-wide generation and checks because the repository has one Go module.
 - Put a script in `scripts/` only when a short command in `Taskfile.yaml` or the owning tool's configuration is insufficient.
 
-Third-party infrastructure uses maintained, pinned packages as accepted in [ADR-008](adr/008-ci-cd-and-deployment.md). Its exact deployment layout is added when that infrastructure is configured rather than reserved in advance.
+Third-party infrastructure uses maintained, pinned packages as accepted in [ADR-0025](adr/0025-environments-overlay-shared-manifests.md). Its exact deployment layout is added when that infrastructure is configured rather than reserved in advance.
 
 ## 12. Placement checklist
 

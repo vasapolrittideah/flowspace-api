@@ -29,7 +29,7 @@ Local development uses macOS with Docker Desktop. Install the tools below before
 | --- | --- | --- |
 | Go | Version 1.27.1 from `go.mod` | [Homebrew formula](https://formulae.brew.sh/formula/go) |
 | Task | Version 3 | [Homebrew formula](https://formulae.brew.sh/formula/go-task) |
-| Node.js | Run the constraint checker and its built-in tests | [Homebrew formula](https://formulae.brew.sh/formula/node) |
+| Node.js | Create local passwords and run the constraint checker and tests | [Homebrew formula](https://formulae.brew.sh/formula/node) |
 | golangci-lint | Version 2.13.2, matching CI | [Homebrew formula](https://formulae.brew.sh/formula/golangci-lint) |
 | Docker Desktop | Run local containers and integration tests | [Docker installation guide](https://docs.docker.com/desktop/setup/install/mac-install/) |
 | k3d | Create the local Kubernetes cluster | [Homebrew formula](https://formulae.brew.sh/formula/k3d) |
@@ -66,18 +66,19 @@ kubectl config use-context k3d-flowspace
 
 If the `flowspace` cluster already exists, run `task cluster:start` instead of creating it again. The default cluster name is `flowspace`, and its registry uses host port `5001`. Tilt requires the `k3d-flowspace` Kubernetes context.
 
-Prepare two password files outside the repository. Each file must contain one password without surrounding whitespace or a trailing newline. The commands below create random passwords only when the files do not exist:
+Create the local password files:
 
 ```sh
-umask 077
-mkdir -p "$HOME/.local/share/flowspace/local"
-export KEYCLOAK_ADMIN_PASSWORD_FILE="$HOME/.local/share/flowspace/local/keycloak-admin-password"
-export WORKSPACE_DATABASE_PASSWORD_FILE="$HOME/.local/share/flowspace/local/workspace-database-password"
-test -f "$KEYCLOAK_ADMIN_PASSWORD_FILE" || openssl rand -hex 32 | tr -d '\n' > "$KEYCLOAK_ADMIN_PASSWORD_FILE"
-test -f "$WORKSPACE_DATABASE_PASSWORD_FILE" || openssl rand -hex 32 | tr -d '\n' > "$WORKSPACE_DATABASE_PASSWORD_FILE"
+task secrets:setup
 ```
 
-Keep the passwords outside Git. Tilt reads the files and creates local Kubernetes Secrets, which hold credentials for the running services. The application receives configuration from the local manifests. Tilt does not load a repository `.env` file.
+The task creates `.secrets/keycloak-admin-password` and `.secrets/workspace-database-password` only when they do not exist. Each new file contains a 64-character random hexadecimal password without a trailing newline. Repeated runs preserve existing values and set directory permissions to `700` and file permissions to `600`. The task does not print passwords.
+
+Tilt reads these paths by default. To use other files, set `KEYCLOAK_ADMIN_PASSWORD_FILE` and `WORKSPACE_DATABASE_PASSWORD_FILE` to their paths before starting Tilt. Tilt accepts repository-local password files only inside `.secrets/` and still accepts files outside the repository. Each file must contain one password without surrounding whitespace or a trailing newline.
+
+Keep the passwords outside Git. `.gitignore` excludes `.secrets/`, and `.dockerignore` excludes it from the Docker build context. The files remain plaintext. Changing a password file does not rotate credentials in an existing database.
+
+Tilt reads the files and creates local Kubernetes Secrets, which hold credentials for the running services. The application receives configuration from the local manifests. Tilt does not load a repository `.env` file. `task secrets` still scans the working directory, including `.secrets/`.
 
 After the image-build limitation is resolved, start the local environment:
 
@@ -90,7 +91,7 @@ Tilt installs Keycloak and deploys Workspace PostgreSQL, the migration job, and 
 | Address | Purpose |
 | --- | --- |
 | `http://localhost:10350` | Tilt dashboard |
-| `http://localhost:8080/auth/admin/` | Keycloak administration, with username `admin` and the password from `KEYCLOAK_ADMIN_PASSWORD_FILE` |
+| `http://localhost:8080/auth/admin/` | Keycloak administration, with username `admin` and the password from `.secrets/keycloak-admin-password` or `KEYCLOAK_ADMIN_PASSWORD_FILE` |
 | `http://localhost:8081` | Workspace REST and gRPC API |
 
 To inspect startup failures, use the Tilt dashboard or inspect the cluster resources:
@@ -101,7 +102,7 @@ kubectl --context k3d-flowspace -n flowspace-local logs deployment/workspace-api
 kubectl --context k3d-flowspace -n flowspace-local logs job/workspace-migrate
 ```
 
-Press Ctrl+C to stop Tilt. Run `task cluster:stop` to stop the local cluster and `task cluster:start` to start it again. Export both password-file variables again before starting Tilt in a new shell. Do not use `task cluster:delete` to pause development because it deletes the cluster and its local data.
+Press Ctrl+C to stop Tilt. Run `task cluster:stop` to stop the local cluster and `task cluster:start` to start it again. If you use custom password paths, export their variables again before starting Tilt in a new shell. Do not use `task cluster:delete` to pause development because it deletes the cluster and its local data.
 
 ## API access
 
@@ -131,13 +132,16 @@ Run `task --list` to see the available repository commands. Integration tests us
 
 | Command | Purpose |
 | --- | --- |
-| `go test ./...` | Run Go tests, including PostgreSQL integration tests |
+| `go test ./...` | Run Go tests without the integration build tag |
+| `go test -tags=integration ./services/workspace/internal/adapter/out/postgres` | Run PostgreSQL integration tests with Docker |
 | `go build ./services/workspace/cmd/...` | Compile the API and migration commands without writing binaries |
 | `task fmt` | Format Go source |
 | `task check:fast` | Run constraint-checker tests, the quality floor, formatting, and secret scanning |
 | `task check:task` | Run local checks, lint, coverage, and reachable dependency vulnerability scanning |
 | `task coverage` | Run Go tests and enforce changed-line and total coverage requirements |
 | `task vuln` | Scan reachable Go dependencies for known vulnerabilities |
+| `task secrets:setup` | Create missing local passwords and set private permissions |
+| `task secrets:local-test` | Test password setup, Tilt paths, and Git and Docker exclusions with Tilt and Docker |
 | `task buf -- lint` | Lint Protobuf contracts |
 | `task buf -- generate` | Regenerate API messages, clients, and adapters |
 | `task sqlc -- generate` | Regenerate PostgreSQL query methods |

@@ -186,7 +186,7 @@ Before review, complete these actions:
 - For documentation-only changes, application tests are unnecessary unless executable behavior changes.
 - Do not weaken commands, hide failures, or discard work from another task.
 
-Record each required command and its exact result in the PR Verification table. If a command did not run, record the reason. Do not report that command as passing. If a command fails, fix the failure or mark the PR as needing attention.
+For each check, use the matching `task ...` command from `Taskfile.yaml` first. If no matching task exists, use another command. Record each required command and its exact result in the PR Verification table, including commands outside Task. If a command did not run, record the reason. Do not report that command as passing. If a command fails, fix the failure or mark the PR as needing attention.
 
 ### Suggested squash commit
 

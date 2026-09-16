@@ -35,7 +35,7 @@ All numbered constraints pass on the 2026-09-12 baseline. C3, C4, C5, and C7 war
 | --- | --- | --- |
 | Edit | `task check:fast` | Under 5 seconds after tools are installed and warm. |
 | Task end | `task check:task` | At most 90 seconds locally. |
-| CI | `.github/workflows/constraints.yml` plus the existing lint workflow | Unrestricted, within the repository's zero-spend hosted-CI limit. |
+| CI | `.github/workflows/ci.yml` | Unrestricted, within the repository's zero-spend hosted-CI limit. |
 
 ## Measured, not yet enforced
 

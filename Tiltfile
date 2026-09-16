@@ -10,20 +10,21 @@ if context != 'k3d-flowspace':
     fail('FlowSpace local development requires the k3d-flowspace Kubernetes context.')
 allow_k8s_contexts(context)
 
-def read_password_file(variable):
-    path = os.getenv(variable)
+def read_password_file(variable, default):
+    path = os.getenv(variable, default)
     if not path or not os.path.exists(path):
-        fail('Set %s to an existing file before running tilt up.' % variable)
+        fail('Run task secrets:setup or set %s to an existing password file.' % variable)
     path = os.path.realpath(path)
-    if path.startswith(os.getcwd() + '/'):
-        fail('%s must be outside the repository.' % variable)
+    repository = os.getcwd() + '/'
+    if path.startswith(repository) and not path.startswith(repository + '.secrets/'):
+        fail('%s must be inside .secrets/ or outside the repository.' % variable)
     password = str(read_file(path))
     if not password or password != password.strip():
         fail('%s must contain one password without surrounding whitespace.' % variable)
     return path, password
 
-keycloak_password_file, _ = read_password_file('KEYCLOAK_ADMIN_PASSWORD_FILE')
-_, workspace_database_password = read_password_file('WORKSPACE_DATABASE_PASSWORD_FILE')
+keycloak_password_file, _ = read_password_file('KEYCLOAK_ADMIN_PASSWORD_FILE', '.secrets/keycloak-admin-password')
+_, workspace_database_password = read_password_file('WORKSPACE_DATABASE_PASSWORD_FILE', '.secrets/workspace-database-password')
 
 k8s_yaml(encode_yaml({
     'apiVersion': 'v1',

@@ -74,8 +74,8 @@ jobs:
           echo "::error::One or more numbered constraints failed."
           exit 1
 
-  golangci-lint:
-    name: GolangCI-Lint
+  go-lint:
+    name: Lint Go code
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -90,8 +90,8 @@ jobs:
           version: v2.13.2
           args: ./...
 
-  markdownlint:
-    name: Markdownlint
+  markdown-lint:
+    name: Lint Markdown
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository

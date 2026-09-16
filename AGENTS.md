@@ -12,6 +12,14 @@ For product, architecture, or implementation work, also read:
 
 Treat the architecture document's open proposals as unresolved. Do not turn one into an implementation decision without explicit approval.
 
+## English prose
+
+Before writing any English prose, read and use the [`simple-english` skill](.agents/skills/simple-english/SKILL.md).
+
+Apply this skill without exception to Markdown, commit messages, PR titles and descriptions, code comments, and agent replies.
+
+Preserve code, identifiers, and tool directives as the skill requires. For Go doc comments, keep the required symbol prefix and comment syntax.
+
 ## Formatting
 
 - Never hard-wrap Markdown files.

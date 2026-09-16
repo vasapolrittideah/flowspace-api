@@ -1,12 +1,12 @@
 # FlowSpace API
 
-FlowSpace is a work-management platform built to learn distributed-system design and failure recovery. This repository contains the Go backend, API contracts, and deployment configuration. The first milestone covers backend APIs without a frontend.
+FlowSpace is a work-management platform for learning how to design distributed systems and recover from failures. This repository contains the Go backend, API contracts, and deployment configuration. The first milestone covers backend APIs and does not include a frontend.
 
-The target architecture has three independently deployable services: Workspace, Work, and Notifications. Each service owns its data. Keycloak owns authentication, and FlowSpace owns workspace access rules.
+The planned architecture has three services that deploy independently: Workspace, Work, and Notifications. Each service owns its data. Keycloak handles authentication, and FlowSpace controls access to workspaces.
 
 ## Current status
 
-The repository currently implements the first Workspace capability. The table describes existing code and configuration, not deployment or production readiness. Planned capabilities remain outside the current API.
+The repository implements the first Workspace capability. The table lists the existing code and configuration. It does not establish deployment or production readiness, and the current API does not include the planned capabilities.
 
 | Area | Current implementation | Remaining work |
 | --- | --- | --- |
@@ -17,13 +17,13 @@ The repository currently implements the first Workspace capability. The table de
 | Local runtime | k3d tasks, a Tilt configuration, PostgreSQL, and Keycloak | Repair the image build described below |
 | Delivery and recovery | CI checks and local deployment manifests | Staging and production deployment, image publishing, deployment from Git, logs, metrics, traces, and tested backups |
 
-The current [Workspace Dockerfile](services/workspace/Dockerfile) omits the shared root `internal/` packages required by both binaries. The image build fails because those packages are absent from its build stage. Tilt also excludes root `internal/` from the files that trigger image builds. The local startup sequence below cannot complete until these build inputs include the shared packages.
+The [Workspace Dockerfile](services/workspace/Dockerfile) leaves out the shared root `internal/` packages that both binaries need. Without these packages in the build stage, the image build fails. Tilt also excludes root `internal/` from the files that trigger image builds. Local setup cannot complete until both build inputs include the shared packages.
 
-Treat local data as disposable. Workspace PostgreSQL uses `emptyDir`, which loses data when its pod is removed. Local Keycloak uses H2 without configured persistent storage. Independent backups and tested restoration are not implemented.
+Treat local data as disposable. Workspace PostgreSQL uses `emptyDir`. Removing its pod deletes its data. Local Keycloak uses H2 without persistent storage configured. The project does not yet have independent backups or tested restoration.
 
 ## Prerequisites
 
-Local development uses macOS with Docker Desktop. Install the tools below before starting the local environment. Task runs repository commands defined in `Taskfile.yaml`.
+Local development uses macOS with Docker Desktop. Before you start the local environment, install the tools below. Task runs the repository commands in `Taskfile.yaml`.
 
 | Tool | Requirement or purpose | Installation |
 | --- | --- | --- |
@@ -37,17 +37,17 @@ Local development uses macOS with Docker Desktop. Install the tools below before
 | Helm | Install the local Keycloak chart | [Homebrew formula](https://formulae.brew.sh/formula/helm) |
 | Tilt | Build, deploy, and forward local service ports | [Homebrew formula](https://formulae.brew.sh/formula/tilt) |
 
-With Homebrew installed, install the command-line tools:
+If Homebrew is installed, use it to install the command-line tools:
 
 ```sh
 brew install go go-task node golangci-lint k3d kubernetes-cli helm tilt
 ```
 
-Make sure that Go and golangci-lint match the repository versions after installation. Buf, sqlc, Gitleaks, and govulncheck run through pinned Go commands in `Taskfile.yaml`. You do not need separate installations for those tools. The first run requires network access to download dependencies, images, charts, and the Tilt extension.
+After installation, make sure that Go and golangci-lint match the repository versions. The Go commands in `Taskfile.yaml` run fixed versions of Buf, sqlc, Gitleaks, and govulncheck. These tools do not need separate installations. The first run needs network access to download dependencies, images, charts, and the Tilt extension.
 
 ## Local setup
 
-Start Docker Desktop before running the commands in this section. Run repository commands from the repository root. The image-build limitation in Current status applies to this sequence.
+Before you run these commands, start Docker Desktop. Run the commands from the repository root. The build problem described in Current status prevents this setup from completing.
 
 Clone the repository:
 
@@ -72,21 +72,21 @@ Create the local password files:
 task secrets:setup
 ```
 
-The task creates `.secrets/keycloak-admin-password` and `.secrets/workspace-database-password` only when they do not exist. Each new file contains a 64-character random hexadecimal password without a trailing newline. Repeated runs preserve existing values and set directory permissions to `700` and file permissions to `600`. The task does not print passwords.
+The task creates `.secrets/keycloak-admin-password` and `.secrets/workspace-database-password` if they do not exist. Each new file contains a 64-character random hexadecimal password without a trailing newline. Running the task again keeps the existing values and sets directory permissions to `700` and file permissions to `600`. The task does not print passwords.
 
-Tilt reads these paths by default. To use other files, set `KEYCLOAK_ADMIN_PASSWORD_FILE` and `WORKSPACE_DATABASE_PASSWORD_FILE` to their paths before starting Tilt. Tilt accepts repository-local password files only inside `.secrets/` and still accepts files outside the repository. Each file must contain one password without surrounding whitespace or a trailing newline.
+Tilt reads these files by default. To use other files, set `KEYCLOAK_ADMIN_PASSWORD_FILE` and `WORKSPACE_DATABASE_PASSWORD_FILE` to their paths before you start Tilt. Password files inside the repository must be in `.secrets/`. Tilt also accepts files outside the repository. Each file must contain one password without surrounding whitespace or a trailing newline.
 
-Keep the passwords outside Git. `.gitignore` excludes `.secrets/`, and `.dockerignore` excludes it from the Docker build context. The files remain plaintext. Changing a password file does not rotate credentials in an existing database.
+Keep the passwords out of Git. `.gitignore` excludes `.secrets/`, and `.dockerignore` excludes it from the Docker build context. The files store passwords as plain text. Changing a password file does not change the credentials in an existing database.
 
-Tilt reads the files and creates local Kubernetes Secrets, which hold credentials for the running services. The application receives configuration from the local manifests. Tilt does not load a repository `.env` file. `task secrets` still scans the working directory, including `.secrets/`.
+Tilt reads the files and creates local Kubernetes Secrets to hold credentials for the running services. The local manifests supply the application configuration. Tilt does not load a repository `.env` file. `task secrets` scans the working directory, including `.secrets/`.
 
-After the image-build limitation is resolved, start the local environment:
+After the build problem is fixed, start the local environment:
 
 ```sh
 tilt up
 ```
 
-Tilt installs Keycloak and deploys Workspace PostgreSQL, the migration job, and the Workspace API. The API depends on Keycloak and completion of the migration job. The resources use the `flowspace-local` namespace.
+Tilt installs Keycloak and deploys Workspace PostgreSQL, the migration job, and the Workspace API. The API needs Keycloak and waits for the migration job to finish. The resources use the `flowspace-local` namespace.
 
 | Address | Purpose |
 | --- | --- |
@@ -94,7 +94,7 @@ Tilt installs Keycloak and deploys Workspace PostgreSQL, the migration job, and 
 | `http://localhost:8080/auth/admin/` | Keycloak administration, with username `admin` and the password from `.secrets/keycloak-admin-password` or `KEYCLOAK_ADMIN_PASSWORD_FILE` |
 | `http://localhost:8081` | Workspace REST and gRPC API |
 
-To inspect startup failures, use the Tilt dashboard or inspect the cluster resources:
+If startup fails, use the Tilt dashboard or inspect the cluster resources:
 
 ```sh
 kubectl --context k3d-flowspace -n flowspace-local get pods,jobs
@@ -102,7 +102,7 @@ kubectl --context k3d-flowspace -n flowspace-local logs deployment/workspace-api
 kubectl --context k3d-flowspace -n flowspace-local logs job/workspace-migrate
 ```
 
-Press Ctrl+C to stop Tilt. Run `task cluster:stop` to stop the local cluster and `task cluster:start` to start it again. If you use custom password paths, export their variables again before starting Tilt in a new shell. Do not use `task cluster:delete` to pause development because it deletes the cluster and its local data.
+Press Ctrl+C to stop Tilt. Run `task cluster:stop` to stop the local cluster. Run `task cluster:start` to start it again. If you use custom password paths, export their variables again before you start Tilt in a new shell. Do not use `task cluster:delete` to pause development. It deletes the cluster and its local data.
 
 ## API access
 
@@ -113,9 +113,9 @@ The current public API exposes two methods. Both require a Keycloak access token
 | `POST` | `/v1/workspaces` | Create a workspace from `{"name":"Example workspace"}` and make the authenticated subject its owner |
 | `GET` | `/v1/workspaces/{workspace_id}` | Read a workspace where the authenticated subject has a membership |
 
-Workspace creation also requires an `Idempotency-Key` header, which identifies one create request across retries. Reuse the same key and name when retrying the same creation. A changed name with the same key or an overlapping creation returns HTTP 409. A new intentional creation requires a new key.
+Workspace creation also requires an `Idempotency-Key` header to identify one create request across retries. When you retry a creation, reuse the same key and name. Changing the name while reusing the key, or sending overlapping creation requests, returns HTTP 409. To create another workspace, use a new key.
 
-For local API experiments, create a user in the `flowspace` realm through Keycloak administration. Set a non-temporary password and complete any required user actions. In your API client, request a token with `POST http://localhost:8080/auth/realms/flowspace/protocol/openid-connect/token` and a form-encoded body:
+To try the local API, create a user in the `flowspace` realm through Keycloak administration. Set a non-temporary password. Complete any required user actions. In your API client, request a token with `POST http://localhost:8080/auth/realms/flowspace/protocol/openid-connect/token` and a form-encoded body:
 
 | Field | Value |
 | --- | --- |
@@ -124,7 +124,7 @@ For local API experiments, create a user in the `flowspace` realm through Keyclo
 | `username` | The local user's username |
 | `password` | The local user's password |
 
-Use the returned `access_token` in the authorization header for Workspace requests. The local realm enables password-based token requests for API experiments. Browser-session handling remains an open proposal in the architecture document. This repository does not currently contain a Postman collection.
+Use the returned `access_token` in the authorization header for Workspace requests. The local realm allows password-based token requests for API experiments. The architecture document leaves browser-session handling open for discussion. The repository does not contain a Postman collection.
 
 ## Development commands
 
@@ -146,11 +146,11 @@ Run `task --list` to see the available repository commands. Integration tests us
 | `task buf -- generate` | Regenerate API messages, clients, and adapters |
 | `task sqlc -- generate` | Regenerate PostgreSQL query methods |
 
-Through September 25, 2026, `task check:task` can return success with warnings from failed coverage or dependency vulnerability commands. Those failures block the command beginning September 26, 2026. Read the individual command results before reporting that all checks pass. Do not edit generated files by hand.
+Through September 25, 2026, `task check:task` can return success even when coverage or dependency vulnerability commands fail. It reports those failures as warnings. Starting September 26, 2026, those failures block the command. Before you report that all checks pass, read each command result. Do not edit generated files by hand.
 
 ## Project documentation
 
-The documents below explain the accepted direction, code placement, and selected tools. Open proposals in the architecture document remain undecided. The project structure describes a target layout, so some directories do not exist yet.
+The documents below explain the accepted decisions, where code belongs, and which tools the project uses. Open proposals in the architecture document remain undecided. The project structure describes the planned layout, so some directories do not exist yet.
 
 | Document | Contents |
 | --- | --- |
@@ -161,4 +161,4 @@ The documents below explain the accepted direction, code placement, and selected
 | [Contributing](CONTRIBUTING.md) | Branches, commits, verification, and pull request requirements |
 | [Constraints](CONSTRAINTS.md) | Quality rules and their enforcement commands |
 
-Staging and the environment named production target one Ubuntu host. Those environments do not provide independent host failure domains. Their deployment and recovery procedures remain unimplemented, and the name production does not imply production readiness.
+Staging and the environment named production are planned for one Ubuntu host. A failure of that host affects both environments. Deployment and recovery procedures are not implemented. The production name does not mean that the system is ready for production.

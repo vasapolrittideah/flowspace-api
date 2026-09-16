@@ -14,11 +14,12 @@ Treat the architecture document's open proposals as unresolved. Do not turn one 
 
 ## English prose
 
-Before writing any English prose, read and use the [`simple-english` skill](.agents/skills/simple-english/SKILL.md).
+Use these rules for all English prose:
 
-Apply this skill without exception to Markdown, commit messages, PR titles and descriptions, code comments, and agent replies.
-
-Preserve code, identifiers, and tool directives as the skill requires. For Go doc comments, keep the required symbol prefix and comment syntax.
+- Before writing any English prose, read and use the [`simple-english` skill](.agents/skills/simple-english/SKILL.md).
+- Apply this skill without exception to Markdown, commit messages, PR titles and descriptions, code comments, and agent replies.
+- Preserve code, identifiers, and tool directives as the skill requires.
+- For Go doc comments, keep the required symbol prefix and comment syntax.
 
 ## Formatting
 

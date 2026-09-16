@@ -37,9 +37,11 @@ docs/git-workflow
 ci/pr-title-validation
 ```
 
-## Commit messages and PR titles
+## Commit messages
 
-Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) for checkpoint commits, squash commits, and PR titles:
+A commit message has a subject and can include a body and footer. The subject is the first line. The body explains the change. The footer holds metadata, such as co-author trailers.
+
+Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) for checkpoint and squash commits. Use this subject format:
 
 ```text
 <type>: <description>
@@ -56,7 +58,6 @@ Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
 
 - In checkpoint commit bodies and suggested squash messages, limit prose lines to 72 characters.
 - Preserve paragraphs and lists. Do not split URLs, code, or trailers.
-- Keep each paragraph and list item in a PR description on one physical line.
 - For multiline commit messages, apply these rules in a message file. Run `git commit --file <message-file>` separately.
 
 ### Types
@@ -147,19 +148,24 @@ Put trailers after a blank line at the end of the message. Preserve existing att
 
 ## Pull requests
 
+- Use the [PR template](.github/pull_request_template.md).
+- Complete Change, Reason, and Verification.
+- Keep each paragraph and list item in a PR description on one physical line.
+- If there are no risks or limitations, omit that section.
+- Apply the matching `type:*` label.
+- Apply relevant `area:*`, `breaking`, and `migration` labels from [`.github/labels.json`](.github/labels.json).
+- Keep the title, description, and labels consistent with the final change.
+
+### PR titles
+
+Use only the [commit subject format](#commit-messages), with the same [types](#types) and [scopes](#scopes). Do not include a body or footer in the title. Put details in the PR description.
+
 Write the PR title to describe the result, not the branch or changed files:
 
 ```text
 Branch: fix/duplicate-notifications
 Title:  fix(notifications): prevent duplicate delivery when an event is retried
 ```
-
-- Use the [PR template](.github/pull_request_template.md).
-- Complete Change, Reason, and Verification.
-- If there are no risks or limitations, omit that section.
-- Apply the matching `type:*` label.
-- Apply relevant `area:*`, `breaking`, and `migration` labels from [`.github/labels.json`](.github/labels.json).
-- Keep the title, description, and labels consistent with the final change.
 
 ### Verification
 
@@ -185,7 +191,7 @@ Prepare the suggested squash message with these rules:
 - Before maintainer review, provide the exact suggested squash message.
 - If the PR changes, update the message.
 - Use the reviewed PR title as the subject.
-- Follow the [message rules](#commit-messages-and-pr-titles), [formatting rules](#formatting), and [AI attribution rules](#ai-co-authorship).
+- Follow the [message rules](#commit-messages), [formatting rules](#formatting), and [AI attribution rules](#ai-co-authorship).
 - If a body is needed, explain the important effects and compatibility or migration information.
 - Do not copy detailed verification from the PR into the body.
 - Use the GitHub Pull request title and description squash default.

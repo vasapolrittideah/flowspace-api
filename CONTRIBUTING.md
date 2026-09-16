@@ -26,6 +26,10 @@ Keep each branch and PR limited to one reviewable change. Split unrelated change
 
 A worktree is a separate checkout of the repository. If tasks run at the same time, use separate worktrees.
 
+## Markdown files
+
+Hard wrapping inserts manual line breaks within paragraphs or list items. Do not hard-wrap Markdown files. Keep each paragraph and list item on one physical line, regardless of length.
+
 ## Branch names
 
 Use `<type>/<short-description>` for a branch name. Select a [commit type](#types). Write the description in lowercase and separate its words with hyphens. Do not add an agent or author prefix.

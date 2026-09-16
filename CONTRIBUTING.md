@@ -54,17 +54,10 @@ Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
 
 ### Formatting
 
-A heredoc passes multiline text from the shell.
-
 - In checkpoint commit bodies and suggested squash messages, limit prose lines to 72 characters.
-- Preserve paragraphs, lists, URLs, code, and trailers when you apply the limit.
+- Preserve paragraphs and lists. Do not split URLs, code, or trailers.
 - Keep each paragraph and list item in a PR description on one physical line.
-- For a multiline commit message, write the message to a file.
-- Make sure that the file uses the required line lengths.
-- Run `git commit --file <message-file>` as a separate step.
-- Do not combine a heredoc with `git commit` or `gh pr create`.
-
-The `.claude/settings.json` hook rejects these combined commands. It also rejects unrelated heredocs that mention either command.
+- For multiline commit messages, apply these rules in a message file. Run `git commit --file <message-file>` separately.
 
 ### Types
 

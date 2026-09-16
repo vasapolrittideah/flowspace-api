@@ -15,6 +15,8 @@ test('local passwords are created safely and excluded from Git and Docker', () =
     mkdirSync(join(root, '.secrets'), { recursive: true });
     mkdirSync(join(root, '.secrets-other'));
     writeFileSync(join(root, 'Taskfile.yaml'), readFileSync(join(repository, 'Taskfile.yaml')));
+    mkdirSync(join(root, 'scripts'));
+    writeFileSync(join(root, 'scripts', 'setup-secrets.mjs'), readFileSync(join(repository, 'scripts', 'setup-secrets.mjs')));
     const passwords = ['keycloak-admin-password', 'workspace-database-password'];
     let previous;
     for (let run = 0; run < 2; run++) {

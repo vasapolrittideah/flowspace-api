@@ -66,11 +66,7 @@ tasks:
   coverage:
     desc: Test and enforce coverage constraints
     cmds:
-      - |
-        profile="$(mktemp)"
-        trap 'rm -f "$profile"' EXIT
-        go test ./... -coverprofile="$profile"
-        node scripts/constraint-check.mjs coverage --profile "$profile" --changed-min 80 --total-min 25
+      - sh scripts/coverage.sh
 
   secrets:
     desc: Scan the working tree for secrets
@@ -80,20 +76,7 @@ tasks:
   secrets:setup:
     desc: Create local password files without replacing existing values
     cmds:
-      - |
-        node --input-type=module <<'NODE'
-        import { randomBytes } from 'node:crypto';
-        import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-        mkdirSync('.secrets', { recursive: true, mode: 0o700 });
-        chmodSync('.secrets', 0o700);
-        for (const name of ['keycloak-admin-password', 'workspace-database-password']) {
-          const path = `.secrets/${name}`;
-          if (!existsSync(path)) {
-            writeFileSync(path, randomBytes(32).toString('hex'), { flag: 'wx', mode: 0o600 });
-          }
-          chmodSync(path, 0o600);
-        }
-        NODE
+      - node scripts/setup-secrets.mjs
 
   secrets:local-test:
     desc: Test local secret paths and Git and Docker exclusions
@@ -118,15 +101,4 @@ tasks:
     cmds:
       - task: check:fast
       - task: lint
-      - |
-        status=0
-        task coverage || status=1
-        task vuln || status=1
-        if [ "$status" -eq 0 ]; then
-          exit 0
-        fi
-        if [ "$(date -u +%Y%m%d)" -lt 20260926 ]; then
-          echo "warning: a numbered constraint failed during the rollout window"
-          exit 0
-        fi
-        exit 1
+      - sh scripts/check-numbered-constraints.sh

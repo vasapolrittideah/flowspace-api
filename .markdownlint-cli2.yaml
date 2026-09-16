@@ -1,5 +1,7 @@
 config:
   MD013: false
+ignores:
+  - .agents/**/*.md
 overrides:
   - filter:
       - .github/pull_request_template.md

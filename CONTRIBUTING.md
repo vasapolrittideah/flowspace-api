@@ -1,27 +1,34 @@
 # Contributing to FlowSpace
 
-This policy applies to the maintainer and AI agents:
+This policy applies to maintainers and AI agents. It replaces general workflow rules when they conflict with this file.
 
-- Agents prepare and test pull requests.
-- The maintainer reviews and squash merges pull requests.
-- Agents must not merge, enable auto-merge, or push directly to `main`.
+A pull request (PR) proposes changes for review. A squash merge combines all commits in a PR into one commit.
 
-These rules override generic workflow skill defaults, including branch prefixes and preferences against squash merging.
+Agents prepare and test PRs. The maintainer reviews and squash merges PRs. Agents must not merge PRs, enable auto-merge, or push directly to `main`.
 
-## Development workflow
+## Workflow
 
-1. Inspect the working tree and project instructions. Preserve work outside the task.
-2. Create a short-lived branch from the current `main` for one focused change. Keep `main` deployable.
-3. Work in small, verified increments with checkpoint commits. Keep unrelated refactoring and formatting separate from behavior changes.
-4. Review the complete diff and run relevant checks before declaring the change ready.
-5. Open a PR to `main` with a descriptive title and verification evidence. Address feedback and rerun affected checks.
-6. After the maintainer merges, remove the branch when it has no work left to preserve.
+The working tree contains local repository files and changes. A branch holds changes outside `main`. A checkpoint commit records one tested work step. A diff shows the changes between two versions.
 
-Keep each PR to one reviewable change; split unrelated concerns rather than enforcing a line limit. Use separate worktrees when concurrent tasks need isolation.
+1. Inspect the working tree and the project instructions.
+2. Preserve work that is outside the task.
+3. Create a short-lived branch from the current `main`.
+4. Keep `main` ready for deployment.
+5. Make small changes and test each change.
+6. Create checkpoint commits for the tested changes.
+7. Keep unrelated refactoring and formatting separate from behavior changes.
+8. Complete the [verification requirements](#verification).
+9. Open a PR to `main`.
+10. Address review comments and rerun the affected commands.
+11. After the maintainer merges the PR, remove the branch if it contains no work to preserve.
+
+Keep each branch and PR limited to one reviewable change. Split unrelated changes into separate PRs.
+
+A worktree is a separate checkout of the repository. If tasks run at the same time, use separate worktrees.
 
 ## Branch names
 
-Use `<type>/<short-description>`, choosing a [commit type](#types) and a lowercase, hyphen-separated description. Do not add an agent or author prefix.
+Use `<type>/<short-description>` for a branch name. Select a [commit type](#types). Write the description in lowercase and separate its words with hyphens. Do not add an agent or author prefix.
 
 ```text
 feat/workspace-invitations
@@ -30,34 +37,34 @@ docs/git-workflow
 ci/pr-title-validation
 ```
 
-The branch name identifies the work; the PR title describes the result and need not repeat it.
-
 ## Commit messages and PR titles
 
-Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) for checkpoint commits and PR titles:
+Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) for checkpoint commits, squash commits, and PR titles:
 
 ```text
 <type>: <description>
 <type>(<scope>): <description>
 ```
 
-- Use a concise description, not vague text such as `update`, `misc`, or `fix things`.
-- Add a body only when the reason or trade-off is unclear from the title.
-- Explain why, include only information a reviewer can act on, and omit repetition, process history, and arguments against hypothetical objections.
-- Apply the same standard to PR descriptions.
+- Write a short and specific description.
+- Do not use vague text such as `update`, `misc`, or `fix things`.
+- If the reason or trade-off is unclear, add a body.
+- Explain the reason and include only information that helps the reviewer act.
+- Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.
 
 ### Formatting
 
-- Wrap body prose in checkpoint commits and suggested squash messages at 72 columns while preserving paragraphs, lists, URLs, code, and trailers.
-- Never hard-wrap PR descriptions. Keep each paragraph and list item on one physical line, regardless of length.
+A heredoc passes multiline text from the shell.
 
-For multiline messages:
+- In checkpoint commit bodies and suggested squash messages, limit prose lines to 72 characters.
+- Preserve paragraphs, lists, URLs, code, and trailers when you apply the limit.
+- Keep each paragraph and list item in a PR description on one physical line.
+- For a multiline commit message, write the message to a file.
+- Make sure that the file uses the required line lengths.
+- Run `git commit --file <message-file>` as a separate step.
+- Do not combine a heredoc with `git commit` or `gh pr create`.
 
-- Prepare the message in a file.
-- Check its line lengths.
-- Use `git commit --file <message-file>`.
-- Write and commit in separate steps.
-- Never combine a heredoc with `git commit` or `gh pr create`; the `.claude/settings.json` hook rejects the command, including unrelated heredocs that mention either command.
+The `.claude/settings.json` hook rejects these combined commands. It also rejects unrelated heredocs that mention either command.
 
 ### Types
 
@@ -74,17 +81,17 @@ For multiline messages:
 | `style` | Change formatting only |
 | `chore` | Maintain the project when no more specific type fits |
 
-Mark a breaking contract change with `!` before the colon and explain the incompatibility and required caller changes in the body:
+A new file alone does not make the change a `feat`.
+
+If a contract change breaks callers, put `!` before the colon. In the body, explain the incompatibility and the required caller changes:
 
 ```text
 feat(workspace)!: require a role when inviting members
 ```
 
-Release versioning is outside this policy.
-
 ### Scopes
 
-Use one lowercase scope when it clarifies the affected area.
+A scope names the repository area that a change affects. Use one lowercase scope when it makes the affected area clear:
 
 | Scope | Area |
 | --- | --- |
@@ -102,50 +109,52 @@ Use one lowercase scope when it clarifies the affected area.
 | `adr` | Architecture decision records |
 | `agents` | Agent instructions, skills, commands, and configuration |
 
-Choose a scope in this order:
+If generated code or OpenAPI output follows a source definition, use the type and scope of that source.
 
-1. Use the service scope for a service change, including its contracts, queries, generated code, and tests.
-2. Use `proto` or `events` when the corresponding contract itself is the focus.
-3. Use `codegen` when generation tooling or configuration is the focus; otherwise use the matching repository area above.
-4. Omit the scope when no single area helps, including coherent repository-wide changes. Split unrelated work instead of joining scope names.
+Choose a scope with these steps. Stop after the first matching step:
 
-For one shared technical package under root `internal/`, use its directory name, such as `config` for `internal/config/` or `logging` for `internal/logging/`, and add that scope to the table when introducing the package. Use `shared` only for a coherent change across several shared packages. Changes to one service's settings or logging retain the service scope, including code under `services/workspace/internal/bootstrap/`; see the [project structure](docs/project-structure.md).
+1. If the main change updates a Protobuf RPC definition or public HTTP annotation, use `proto`.
+2. If the main change updates a published Protobuf event schema, use `events`.
+3. If the main change updates code-generation configuration or tooling, use `codegen`.
+4. If the change belongs to one service, use the service scope.
+   - This scope includes related contracts, queries, generated code, tests, configuration, and logging.
+   - Code under `services/workspace/internal/bootstrap/` uses `workspace`.
+   - For package locations, see the [project structure](docs/project-structure.md).
+5. If the change affects one shared technical package under root `internal/`, use its directory name.
+   - If you introduce a shared package, add its directory name to the table.
+6. If one change affects several shared packages, use `shared`.
+7. If the change affects agent instructions, skills, commands, or configuration, use `agents`.
+8. If another area in the table fits, use that scope.
+9. If no single area fits, omit the scope.
 
-Reuse existing scope names. Propose and document a new scope in the PR that needs it. `ci` is a type, not a scope; use `ci: ...` or an area such as `ci(work): ...`. Documentation uses `docs` with an optional affected-area scope. Agent changes use the `agents` scope and the type matching their purpose; adding a file alone is not necessarily a feature.
+Use these rules for all scopes:
 
-Examples:
+- Reuse an existing scope when it fits.
+- If a PR needs a new scope, define the scope in that PR.
+- Do not combine scope names.
 
 ```text
 feat(workspace): allow owners to invite workspace members
 fix(work): reject task updates based on an outdated version
-feat(config): support loading settings from environment variables
-refactor(shared): standardize initialization across shared packages
 docs(adr): explain the choice of squash merging
 fix(agents): preserve multiline PR descriptions
-feat(events): add correlation IDs to domain events
-fix(proto): document the conflict response for stale task updates
 build(codegen): configure Buf to generate ConnectRPC clients
-chore(deps): update Go dependencies
 ci: add pull request title validation
 ```
 
-Generated code and OpenAPI output belong with their source definition and use that change's type and scope; there is no `generated` or `openapi` scope. Use `codegen` only for generation configuration or tooling. FlowSpace's internal RPC clients use ConnectRPC.
-
 ### AI co-authorship
 
-Every AI-assisted checkpoint and squash commit must include a `Co-authored-by` trailer for each contributing agent. For Codex:
+A co-author trailer identifies a contributor at the end of a commit message. Each AI-assisted checkpoint and squash commit must include one trailer for each contributing agent. Use this trailer for Codex:
 
 ```text
 Co-authored-by: Codex <noreply@openai.com>
 ```
 
-Place trailers after a blank line at the end of the message. Preserve existing attribution when amending or squashing, and use each agent's own identity.
+Put trailers after a blank line at the end of the message. Preserve existing attribution when you amend or squash commits. Use the identity of each agent.
 
 ## Pull requests
 
-### Title and description
-
-Use the intended final squash commit subject as the PR title and describe the result rather than the branch or changed files:
+Write the PR title to describe the result, not the branch or changed files:
 
 ```text
 Branch: fix/duplicate-notifications
@@ -153,34 +162,39 @@ Title:  fix(notifications): prevent duplicate delivery when an event is retried
 ```
 
 - Use the [PR template](.github/pull_request_template.md).
-- Fill in Change, Reason, and Verification; omit Risks or limitations when none apply.
-- Treat the template's HTML comments as editing guidance; they do not render.
-- Apply the matching `type:*` label and any applicable `area:*`, `breaking`, and `migration` labels from [`.github/labels.json`](.github/labels.json); keep them current as the PR changes.
-- Keep the title and description current with the final implementation.
-- Omit conversation history, abandoned approaches, and lists of unrelated untouched files.
+- Complete Change, Reason, and Verification.
+- If there are no risks or limitations, omit that section.
+- Apply the matching `type:*` label.
+- Apply relevant `area:*`, `breaking`, and `migration` labels from [`.github/labels.json`](.github/labels.json).
+- Keep the title, description, and labels consistent with the final change.
 
 ### Verification
 
-Before review:
+Before review, complete these actions:
 
-- Inspect the staged diff before each commit and the complete PR diff before review. Exclude unrelated changes, secrets, local environment files, and unwanted build output.
-- Run relevant tests, linting, builds, and contract checks. Add a focused regression check for behavior fixes.
-- For contract or generator changes, verify regeneration and compatibility, and keep sources and generated output consistent.
-- For documentation-only changes, review accuracy, examples, links, and formatting. Application tests are unnecessary unless executable behavior changes.
-- Never weaken checks, suppress failures, or discard another task's work to appear ready.
+- Inspect the staged diff before each commit.
+- Inspect the complete PR diff before maintainer review.
+- Exclude unrelated changes, secrets, local environment files, and unwanted build output.
+- Run the relevant tests, lint commands, builds, and contract commands.
+- For a behavior fix, add a focused regression test.
+- For a contract or generator change, make sure that regeneration and compatibility succeed.
+- For these changes, make sure that source files and generated output are consistent.
+- For a documentation-only change, make sure that facts, examples, links, and formatting are correct.
+- For documentation-only changes, application tests are unnecessary unless executable behavior changes.
+- Do not weaken commands, hide failures, or discard work from another task.
 
-Record every warranted check in the PR's Verification table with its exact command and result. Include checks that did not run and explain why; never report an unrun check as passing. Resolve failures or mark the PR as needing attention.
+Record each required command and its exact result in the PR Verification table. If a command did not run, record the reason. Do not report that command as passing. If a command fails, fix the failure or mark the PR as needing attention.
 
-### Squash commit message
+### Suggested squash commit
 
-Summarize the PR's final result once, regardless of its checkpoint commits:
+Prepare the suggested squash message with these rules:
 
-- **Subject:** The reviewed Conventional Commit PR title.
-- **Body:** Why the change was needed, its important effects, and compatibility or migration notes. Wrap prose at 72 columns. Omit checkpoint messages, abandoned approaches, repeated descriptions, and detailed verification already in the PR.
-- **Trailers:** Each distinct co-author once, including required AI attribution, after a blank line.
+- Before maintainer review, provide the exact suggested squash message.
+- If the PR changes, update the message.
+- Use the reviewed PR title as the subject.
+- Follow the [message rules](#commit-messages-and-pr-titles), [formatting rules](#formatting), and [AI attribution rules](#ai-co-authorship).
+- If a body is needed, explain the important effects and compatibility or migration information.
+- Do not copy detailed verification from the PR into the body.
+- Use the GitHub Pull request title and description squash default.
 
-Before handoff, review the complete diff, align the title and description, verify body wrapping and trailers, and provide the exact suggested squash message. Refresh it after relevant changes.
-
-Use GitHub's **Pull request title and description** squash default. The copied description is a starting point for the maintainer to shorten while retaining necessary context and trailers; it neither validates the message nor authorizes a merge.
-
-This document defines the workflow, not GitHub protections, automation, deployment gates, or releases.
+The maintainer can shorten the copied description but must keep required context and trailers.

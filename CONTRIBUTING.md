@@ -192,7 +192,8 @@ Record each required command and its exact result in the PR Verification table. 
 
 Prepare the suggested squash message with these rules:
 
-- Before maintainer review, provide the exact suggested squash message.
+- Before maintainer review, provide the exact suggested squash message in the chat.
+- Do not include the suggested squash message in the PR description.
 - If the PR changes, update the message.
 - Use the reviewed PR title as the subject.
 - Follow the [message rules](#commit-messages), [formatting rules](#formatting), and [AI attribution rules](#ai-co-authorship).

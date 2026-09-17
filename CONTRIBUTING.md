@@ -52,16 +52,13 @@ Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
 <type>(<scope>): <description>
 ```
 
-- Write a short and specific description.
-- Do not use vague text such as `update`, `misc`, or `fix things`.
-- If the reason or trade-off is unclear, add a body.
-- Explain the reason and include only information that helps the reviewer act.
+- Write a short and specific description. Do not use vague text such as `update`, `misc`, or `fix things`.
+- If the reason or trade-off is unclear, add a body. Explain the reason and include only information that helps the reviewer act.
 - Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.
 
 ### Formatting
 
-- In checkpoint commit bodies and suggested squash messages, limit prose lines to 72 characters.
-- Preserve paragraphs and lists. Do not split URLs, code, or trailers.
+- In checkpoint commit bodies and suggested squash messages, limit prose lines to 72 characters. Preserve paragraphs and lists. Do not split URLs, code, or trailers.
 - For multiline commit messages, apply these rules in a message file. Run `git commit --file <message-file>` separately.
 
 ### Types
@@ -114,12 +111,8 @@ Choose a scope with these steps. Stop after the first matching step:
 1. If the main change updates a Protobuf RPC definition or public HTTP annotation, use `proto`.
 2. If the main change updates a published Protobuf event schema, use `events`.
 3. If the main change updates code-generation configuration or tooling, use `codegen`.
-4. If the change belongs to one service, use the service scope.
-   - This scope includes related contracts, queries, generated code, tests, configuration, and logging.
-   - Code under `services/workspace/internal/bootstrap/` uses `workspace`.
-   - For package locations, see the [project structure](docs/project-structure.md).
-5. If the change affects one shared technical package under root `internal/`, use its directory name.
-   - If you introduce a shared package, add its directory name to the table.
+4. If the change belongs to one service, use the service scope. This scope includes related contracts, queries, generated code, tests, configuration, and logging. Code under `services/workspace/internal/bootstrap/` uses `workspace`. For package locations, see the [project structure](docs/project-structure.md).
+5. If the change affects one shared technical package under root `internal/`, use its directory name. If you introduce a shared package, add its directory name to the table.
 6. If one change affects several shared packages, use `shared`.
 7. If the change affects agent instructions, skills, commands, or configuration, use `agents`.
 8. If another area in the table fits, use that scope.
@@ -127,8 +120,7 @@ Choose a scope with these steps. Stop after the first matching step:
 
 Use these rules for all scopes:
 
-- Reuse an existing scope when it fits.
-- If a PR needs a new scope, define the scope in that PR.
+- Reuse an existing scope when it fits. If a PR needs a new scope, define the scope in that PR.
 - Do not combine scope names.
 
 ```text
@@ -152,13 +144,10 @@ Put trailers after a blank line at the end of the message. Preserve existing att
 
 ## Pull requests
 
-- Use the [PR template](.github/pull_request_template.md).
-- Complete Change, Reason, and Verification.
+- Use the [PR template](.github/pull_request_template.md). Complete Change, Reason, and Verification.
 - Keep each paragraph and list item in a PR description on one physical line.
 - If there are no risks or limitations, omit that section.
-- Apply the matching `type:*` label.
-- Apply relevant `area:*`, `breaking`, and `migration` labels from [`.github/labels.json`](.github/labels.json).
-- Keep the title, description, and labels consistent with the final change.
+- Apply the matching `type:*` label. Apply relevant `area:*`, `breaking`, and `migration` labels from [`.github/labels.json`](.github/labels.json). Keep the title, description, and labels consistent with the final change.
 
 ### PR titles
 
@@ -175,43 +164,32 @@ Title:  fix(notifications): prevent duplicate delivery when an event is retried
 
 Before review, complete these actions:
 
-- Inspect the staged diff before each commit.
-- Inspect the complete PR diff before maintainer review.
+- Inspect the staged diff before each commit. Inspect the complete PR diff before maintainer review.
 - Exclude unrelated changes, secrets, local environment files, and unwanted build output.
 - Run the relevant tests, lint commands, builds, and contract commands.
 - For a behavior fix, add a focused regression test.
-- For a contract or generator change, make sure that regeneration and compatibility succeed.
-- For these changes, make sure that source files and generated output are consistent.
-- For a documentation-only change, make sure that facts, examples, links, and formatting are correct.
-- For documentation-only changes, application tests are unnecessary unless executable behavior changes.
+- For a contract or generator change, make sure that regeneration and compatibility succeed. For these changes, make sure that source files and generated output are consistent.
+- For a documentation-only change, make sure that facts, examples, links, and formatting are correct. For documentation-only changes, application tests are unnecessary unless executable behavior changes.
 - Do not weaken commands, hide failures, or discard work from another task.
 
 Write the PR Verification table with these rules:
 
 - For each check, use the matching `task ...` command from `Taskfile.yaml` first. If no matching task exists, use another command.
-- Record each required command and its exact result in the PR Verification table, including commands outside Task.
-- For a required check that did not run, use `Not run.` and record the reason.
-- Omit checks that do not apply to the change.
-- Do not report a check that did not run as passing.
+- Record each required command and its exact result in the PR Verification table, including commands outside Task. Omit checks that do not apply to the change.
+- For a required check that did not run, use `Not run.` and record the reason. Do not report a check that did not run as passing.
 - If a command fails, fix the failure or mark the PR as needing attention.
 - Use a short check name in `Check` and the exact command in `Command`.
-- Start `Result` with `Passed.`, `Failed.`, or `Not run.`.
-- Add a short explanation only when it helps review, such as coverage values or a failure cause.
-- Report warnings and unresolved failures even when a command exits successfully.
-- Do not paste routine logs or describe resolved attempts.
-- Link to relevant output when a result needs more context.
+- Start `Result` with `Passed.`, `Failed.`, or `Not run.`. Report warnings and unresolved failures even when a command exits successfully.
+- Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link to relevant output when a result needs more context.
 
 ### Suggested squash commit
 
 Prepare the suggested squash message with these rules:
 
-- Before maintainer review, provide the exact suggested squash message in the chat.
-- Do not include the suggested squash message in the PR description.
-- If the PR changes, update the message.
+- Before maintainer review, provide the exact suggested squash message in the chat. Do not include the suggested squash message in the PR description. If the PR changes, update the message.
 - Use the reviewed PR title as the subject.
 - Follow the [message rules](#commit-messages), [formatting rules](#formatting), and [AI attribution rules](#ai-co-authorship).
-- If a body is needed, explain the important effects and compatibility or migration information.
-- Do not copy detailed verification from the PR into the body.
+- If a body is needed, explain the important effects and compatibility or migration information. Do not copy detailed verification from the PR into the body.
 - Use the GitHub Pull request title and description squash default.
 
 The maintainer can shorten the copied description but must keep required context and trailers.

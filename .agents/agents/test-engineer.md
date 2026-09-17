@@ -90,6 +90,6 @@ When analyzing test coverage:
 
 ## Composition
 
-- **Invoke directly when:** the user asks for test design, coverage analysis, or a Prove-It test for a specific bug.
-- **Invoke via:** `/test` (TDD workflow) or `/ship` (parallel fan-out for coverage gap analysis alongside `code-reviewer` and `security-auditor`).
-- **Do not invoke from another persona.** Recommendations to add tests belong in your report; the user or a slash command decides when to act on them.
+Use this role when the user requests test design, test code, or a test review. `$flowspace-test` runs the TDD workflow. `$flowspace-ship` runs this role alongside `code-reviewer` and `security-auditor` to assess coverage gaps.
+
+Do not start another subagent. Recommend additional tests in the report. The user or the main agent decides how to proceed.

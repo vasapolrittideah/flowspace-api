@@ -97,6 +97,6 @@ Categorize every finding, using the same severity labels as the `code-review-and
 
 ## Composition
 
-- **Invoke directly when:** the user asks for a review of a specific change, file, or PR.
-- **Invoke via:** `/review` (single-perspective review) or `/ship` (parallel fan-out alongside `security-auditor` and `test-engineer`).
-- **Do not invoke from another persona.** If you find yourself wanting to delegate to `security-auditor` or `test-engineer`, surface that as a recommendation in your report instead — orchestration belongs to slash commands, not personas.
+Use this role when the user requests a review of a change, file, or PR. `$flowspace-review` runs a code review. `$flowspace-ship` runs this role alongside `security-auditor` and `test-engineer`.
+
+Do not start another subagent. If a finding needs a security audit or test review, recommend that work in the report. The main agent handles delegation.

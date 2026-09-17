@@ -107,6 +107,6 @@ Map findings to the OWASP Top 10 for LLM Applications where relevant.
 
 ## Composition
 
-- **Invoke directly when:** the user wants a security-focused pass on a specific change, file, or system component.
-- **Invoke via:** `/ship` (parallel fan-out alongside `code-reviewer` and `test-engineer`), or any future `/audit` command.
-- **Do not invoke from another persona.** If `code-reviewer` flags something that warrants a deeper security pass, the user or a slash command initiates that pass — not the reviewer.
+Use this role when the user requests a security review of a change, file, or component. `$flowspace-ship` runs this role alongside `code-reviewer` and `test-engineer`.
+
+Do not start another subagent. If a code review needs a security audit, the user or the main agent initiates that work.

@@ -29,7 +29,7 @@ Local development uses macOS with Docker Desktop. Before you start the local env
 | --- | --- | --- |
 | Go | Version 1.27.1 from `go.mod` | [Homebrew formula](https://formulae.brew.sh/formula/go) |
 | Task | Version 3 | [Homebrew formula](https://formulae.brew.sh/formula/go-task) |
-| Node.js | Create local passwords and run constraint checks, tests, and Taplo | [Homebrew formula](https://formulae.brew.sh/formula/node) |
+| Node.js | Create local passwords and run the constraint checker and tests | [Homebrew formula](https://formulae.brew.sh/formula/node) |
 | golangci-lint | Version 2.13.2, matching CI | [Homebrew formula](https://formulae.brew.sh/formula/golangci-lint) |
 | Docker Desktop | Run local containers and integration tests | [Docker installation guide](https://docs.docker.com/desktop/setup/install/mac-install/) |
 | k3d | Create the local Kubernetes cluster | [Homebrew formula](https://formulae.brew.sh/formula/k3d) |
@@ -43,7 +43,7 @@ If Homebrew is installed, use it to install the command-line tools:
 brew install go go-task node golangci-lint k3d kubernetes-cli helm tilt
 ```
 
-After installation, make sure that Go and golangci-lint match the repository versions. The Go commands in `Taskfile.yaml` run fixed versions of Buf, sqlc, Gitleaks, and govulncheck. Taplo runs through `npx` with `@taplo/cli` pinned to version 0.7.0. The `.taplo.toml` file includes the Codex agent files in the TOML checks. These tools do not need separate installations. The first run needs network access to download dependencies, images, charts, and the Tilt extension.
+After installation, make sure that Go and golangci-lint match the repository versions. The Go commands in `Taskfile.yaml` run fixed versions of Buf, sqlc, Gitleaks, and govulncheck. These tools do not need separate installations. The first run needs network access to download dependencies, images, charts, and the Tilt extension.
 
 ## Local setup
 
@@ -138,11 +138,8 @@ Run `task --list` to see the available repository commands. Integration tests us
 | `go test -tags=integration ./services/workspace/internal/adapter/out/postgres` | Run PostgreSQL integration tests with Docker |
 | `go build ./services/workspace/cmd/...` | Compile the API and migration commands without writing binaries |
 | `task fmt` | Format Go source |
-| `task toml:fmt` | Format TOML files |
-| `task toml:check` | Check TOML syntax and formatting |
-| `task toml:test` | Test TOML checks in hidden directories |
 | `task check:fast` | Run constraint-checker tests, the quality floor, formatting, and secret scanning |
-| `task check:task` | Run local checks, TOML checks and tests, lint, coverage, and reachable dependency vulnerability scanning |
+| `task check:task` | Run local checks, lint, coverage, and reachable dependency vulnerability scanning |
 | `task coverage` | Run Go tests and enforce changed-line and total coverage requirements |
 | `task vuln` | Scan reachable Go dependencies for known vulnerabilities |
 | `task secrets:setup` | Create missing local passwords and set private permissions |

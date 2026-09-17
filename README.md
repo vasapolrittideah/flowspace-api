@@ -72,9 +72,9 @@ Create the local password files:
 task secrets:setup
 ```
 
-The task creates `.secrets/keycloak-admin-password` and `.secrets/workspace-database-password` if they do not exist. Each new file contains a 64-character random hexadecimal password without a trailing newline. Running the task again keeps the existing values and sets directory permissions to `700` and file permissions to `600`. The task does not print passwords.
+The task creates any missing local password files in `.secrets/`. Each new file contains a 64-character random hexadecimal password without a trailing newline. Running the task again keeps the existing values and sets directory permissions to `700` and file permissions to `600`. The task does not print passwords.
 
-Tilt reads these files by default. To use other files, set `KEYCLOAK_ADMIN_PASSWORD_FILE` and `WORKSPACE_DATABASE_PASSWORD_FILE` to their paths before you start Tilt. Password files inside the repository must be in `.secrets/`. Tilt also accepts files outside the repository. Each file must contain one password without surrounding whitespace or a trailing newline.
+Tilt reads these files by default. The [Tiltfile](Tiltfile) defines the current file paths and environment variables. To use other files, set the corresponding environment variables to their paths before you start Tilt. Password files inside the repository must be in `.secrets/`. Tilt also accepts files outside the repository. Each file must contain one password without surrounding whitespace or a trailing newline.
 
 Keep the passwords out of Git. `.gitignore` excludes `.secrets/`, and `.dockerignore` excludes it from the Docker build context. The files store passwords as plain text. Changing a password file does not change the credentials in an existing database.
 
@@ -91,7 +91,7 @@ Tilt installs Keycloak and deploys Workspace PostgreSQL, the migration job, and 
 | Address | Purpose |
 | --- | --- |
 | `http://localhost:10350` | Tilt dashboard |
-| `http://localhost:8080/auth/admin/` | Keycloak administration, with username `admin` and the password from `.secrets/keycloak-admin-password` or `KEYCLOAK_ADMIN_PASSWORD_FILE` |
+| `http://localhost:8080/auth/admin/` | Keycloak administration, with username `admin` and the local administrator password |
 | `http://localhost:8081` | Workspace REST and gRPC API |
 
 If startup fails, use the Tilt dashboard or inspect the cluster resources:

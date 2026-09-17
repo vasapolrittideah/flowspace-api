@@ -188,6 +188,8 @@ Before review, complete these actions:
 
 For each check, use the matching `task ...` command from `Taskfile.yaml` first. If no matching task exists, use another command. Record each required command and its exact result in the PR Verification table, including commands outside Task. If a command did not run, record the reason. Do not report that command as passing. If a command fails, fix the failure or mark the PR as needing attention.
 
+Use a short check name in `Check` and the exact command in `Command`. Start `Result` with `Passed.`, `Failed.`, or `Not run.`. Add a short explanation only when it helps review, such as coverage values or a failure cause. Report warnings and unresolved failures even when a command exits successfully. Do not paste routine logs or describe resolved attempts. Link to relevant output when a result needs more context.
+
 ### Suggested squash commit
 
 Prepare the suggested squash message with these rules:

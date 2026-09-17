@@ -8,7 +8,7 @@
 
 ## Verification
 
-<!-- Add one row per warranted check. Use a short human label and a concise outcome. Use the matching `task ...` command from `Taskfile.yaml` first. If no matching task exists, use another command. Keep every check in this table, including commands outside Task. Do not hide commands or paste routine logs; link or explain only when a result needs context. Identify checks not run and why. -->
+<!-- Follow https://github.com/vasapolrittideah/flowspace-api/blob/main/CONTRIBUTING.md#verification. Add one row per required check. Start Result with Passed., Failed., or Not run. Add a short explanation only when it helps review. -->
 
 | Check | Command | Result |
 | --- | --- | --- |

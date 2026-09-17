@@ -16,6 +16,14 @@ For a review with all three agents, use this prompt:
 Review this branch with three subagents: code-reviewer, security-auditor, and test-engineer. Have each agent report findings without changing files. Wait for all three, then summarize their findings with file paths and line numbers.
 ```
 
-The files do not set a model or reasoning effort. Codex uses the settings from the parent session or the configured subagent defaults. Agents start when the user or applicable project instructions request delegation.
+Each agent sets its model, reasoning effort, and sandbox mode:
+
+| Agent | Model | Reasoning effort | Sandbox mode |
+| --- | --- | --- | --- |
+| `code-reviewer` | `gpt-5.6-sol` | `high` | `read-only` |
+| `security-auditor` | `gpt-5.6-sol` | `high` | `read-only` |
+| `test-engineer` | `gpt-5.6-luna` | `medium` | `read-only` |
+
+All three agents report findings without changing files. When asked for new tests, `test-engineer` includes proposed test code in its report. Each description copies the matching Markdown role description. Agents start when the user or applicable project instructions request delegation.
 
 See the [official OpenAI documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents) for the custom agent format.

@@ -146,6 +146,7 @@ Run commands from the repository root. Go tools need the repository's pinned too
 | Format Go code | `task fmt` |
 | Run edit checks | `task check:fast` |
 | Run repository handoff checks | `task check:task` |
+| Lint Markdown | `task markdown:lint` |
 | Make sure that coverage meets the constraints | `task coverage` |
 | Scan reachable dependency vulnerabilities | `task vuln` |
 | Lint source contracts | `task buf -- lint` |

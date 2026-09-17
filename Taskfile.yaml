@@ -63,6 +63,11 @@ tasks:
     cmds:
       - go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -pyflakes= .github/workflows/*.yml
 
+  markdown:lint:
+    desc: Lint Markdown
+    cmds:
+      - npx --yes markdownlint-cli2@0.23.2 "**/*.md"
+
   constraints:floor:
     desc: Reject changes that weaken the quality floor
     cmds:

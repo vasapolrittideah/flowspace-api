@@ -90,6 +90,21 @@ jobs:
           version: v2.13.2
           args: ./...
 
+  toml-lint:
+    name: Check TOML
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check TOML syntax and formatting
+        run: npx --yes --package @taplo/cli@0.7.0 --call 'taplo check && taplo fmt --check'
+      - name: Set up Task
+        run: |
+          go install github.com/go-task/task/v3/cmd/task@v3.53.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Test TOML checks
+        run: node --test scripts/toml-check.test.mjs
+
   markdown-lint:
     name: Lint Markdown
     runs-on: ubuntu-latest

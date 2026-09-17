@@ -28,6 +28,7 @@ These tables are the source of truth for replaceable implementation tools and Go
 | API smoke tests | Postman + Postman CLI | Author and automate public API smoke collections. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
 | Load tests | k6 | Controlled load experiments with explicit thresholds. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
 | Go static analysis | golangci-lint | Repository-wide formatting and selected analyzers. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
+| TOML checks | Taplo (`@taplo/cli` 0.7.0) | Check TOML syntax and formatting locally and in CI. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
 | Dependency updates | Renovate | Propose reviewed dependency-update pull requests; no automerge. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
 | Public edge | Cloudflare Tunnel + Access | Outbound application ingress and the staging admission gate. | [ADR-0026](adr/0026-an-outbound-tunnel-exposes-selected-routes.md) |
 | Kubernetes secrets | Sealed Secrets | Store encrypted secret manifests for in-cluster decryption. | [ADR-0027](adr/0027-git-contains-only-encrypted-kubernetes-secrets.md) |

@@ -5,6 +5,7 @@ vars:
   CLUSTER_NAME: flowspace
   REGISTRY_PORT: 5001
   SQLC_VERSION: v1.31.1
+  TAPLO_VERSION: 0.7.0
 
 tasks:
   default:
@@ -47,6 +48,21 @@ tasks:
     desc: Format Go code
     cmds:
       - golangci-lint fmt
+
+  toml:fmt:
+    desc: Format TOML files
+    cmds:
+      - npx --yes @taplo/cli@{{.TAPLO_VERSION}} fmt
+
+  toml:check:
+    desc: Check TOML syntax and formatting
+    cmds:
+      - npx --yes --package @taplo/cli@{{.TAPLO_VERSION}} --call 'taplo check && taplo fmt --check'
+
+  toml:test:
+    desc: Test TOML checks in hidden directories
+    cmds:
+      - node --test scripts/toml-check.test.mjs
 
   format:check:
     desc: Check Go formatting
@@ -105,5 +121,7 @@ tasks:
     desc: Run all local handoff checks
     cmds:
       - task: check:fast
+      - task: toml:check
+      - task: toml:test
       - task: lint
       - sh scripts/check-numbered-constraints.sh

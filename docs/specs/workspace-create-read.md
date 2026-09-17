@@ -68,11 +68,15 @@ The same resource wrapper applies to a successful read. Clients do not supply th
 
 A subject is a stable identity identifier. A membership links a subject to a workspace role. Store subjects as identity references instead of email addresses.
 
-The service must make sure that token signature, issuer, audience, expiry, and subject are valid before admitting either operation. Derive the acting subject from that token under [ADR-0013](../adr/0013-acting-identity-comes-from-the-token.md). Keycloak owns authentication under [ADR-0019](../adr/0019-keycloak-owns-authentication-flows.md).
+Apply these identity and access rules:
 
-Any authenticated subject can create a workspace. Creation makes that subject the workspace owner. One subject can own or join multiple workspaces, with a separate role in each.
-
-A read requires a membership for the authenticated subject in the requested workspace. Viewer, member, admin, and owner memberships all allow this read. Client-supplied subjects, workspace IDs, and role claims do not prove access.
+- Make sure that token signature, issuer, audience, expiry, and subject are valid before admitting either operation.
+- Derive the acting subject from that token under [ADR-0013](../adr/0013-acting-identity-comes-from-the-token.md).
+- Keep authentication with Keycloak under [ADR-0019](../adr/0019-keycloak-owns-authentication-flows.md).
+- Allow any authenticated subject to create a workspace. Creation makes that subject the workspace owner.
+- Allow one subject to own or join multiple workspaces, with a separate role in each.
+- Require a membership for the authenticated subject in the requested workspace before a read. Viewer, member, admin, and owner memberships all allow this read.
+- Do not use client-supplied subjects, workspace IDs, or role claims as proof of access.
 
 ### Creation and persistence
 
@@ -88,15 +92,17 @@ Workspace owns its PostgreSQL instance, schema, migrations, and queries under [A
 
 ### Retry protection
 
-Idempotency means that retries preserve one operation's result. Follow [ADR-0011](../adr/0011-idempotency-keys-protect-non-idempotent-creates.md). Require a nonblank key of at most 255 bytes, and treat the accepted key as an opaque value.
+Idempotency means that retries preserve one operation's result. Follow [ADR-0011](../adr/0011-idempotency-keys-protect-non-idempotent-creates.md). Apply these retry rules:
 
-Scope each key to the authenticated subject and `CreateWorkspace` method. Bind it to a hash of the normalized request, after name whitespace removal. Claim it atomically so concurrent requests cannot commit duplicate effects.
-
-If the same subject repeats a completed request with the same key and normalized name, return the original resource and successful status. Preserve its ID, name, and creation time. If the normalized name changes, return a conflict without creating another workspace.
-
-If an attempt still holds the key, reject an overlapping duplicate as a conflict. After a failed attempt releases its claim, a retry can attempt creation again. If a response is lost after commit, a retry must return the committed result.
-
-Different subjects can use the same key independently. Persist completed records across process restarts. Retention must cover the documented maximum retry window, whose duration requires a decision before implementation.
+- Require a nonblank key of at most 255 bytes, and treat the accepted key as an opaque value.
+- Scope each key to the authenticated subject and `CreateWorkspace` method. Different subjects can use the same key independently.
+- Bind the key to a hash of the normalized request, after name whitespace removal.
+- Claim the key atomically so concurrent requests cannot commit duplicate effects.
+- If the subject, key, and normalized name match a completed request, return its original resource and successful status. Preserve its ID, name, and creation time.
+- If the normalized name changes for the same subject and key, return a conflict without creating another workspace.
+- If an attempt still holds the key, reject an overlapping duplicate as a conflict. After a failed attempt releases its claim, a retry can attempt creation again.
+- If a response is lost after commit, return the committed result on retry.
+- Persist completed records across process restarts. Retention must cover the documented maximum retry window, whose duration requires a decision before implementation.
 
 ### Reading and errors
 
@@ -190,21 +196,47 @@ Keep protocol translation in adapters and domain rules in domain or application 
 
 Use Go's `testing` package for domain, use-case, and transport tests. Use Testcontainers with PostgreSQL for behavior that depends on transactions or database constraints. Test the public REST mapping and typed gRPC behavior through generated contracts and adapters.
 
-Domain tests cover whitespace removal, UTF-8, empty names, the 100-code-point boundary, and multibyte names. Use-case tests cover authenticated subjects, input rejection, dependency errors, and cancellation. Token tests cover wrong signatures, issuers, audiences, expired tokens, and missing subjects.
+Cover these concerns at their owning test boundary:
 
-Transport tests cover malformed JSON, oversized bodies, required headers, field error details, status mapping, and header forwarding. Make sure that rejected input never reaches creation. Exercise request IDs, deadlines, and cancellation through the public gateway.
-
-Database tests prove atomic owner creation, rollback, durable replay, conflicts, concurrent duplicate requests, and membership-based reads. Create memberships directly in test setup for each role. This test setup does not introduce membership-management endpoints.
+- Domain tests cover whitespace removal, UTF-8, empty names, the 100-code-point boundary, and multibyte names.
+- Use-case tests cover authenticated subjects, input rejection, dependency errors, and cancellation.
+- Token tests cover wrong signatures, issuers, audiences, expired tokens, and missing subjects.
+- Transport tests cover malformed JSON, oversized bodies, required headers, field error details, status mapping, and header forwarding. Make sure that rejected input never reaches creation. Exercise request IDs, deadlines, and cancellation through the public gateway.
+- Database tests prove atomic owner creation, rollback, durable replay, conflicts, concurrent duplicate requests, and membership-based reads. Create memberships directly in test setup for each role. This test setup does not introduce membership-management endpoints.
 
 Follow every floor rule in [CONSTRAINTS.md](../../CONSTRAINTS.md). Require zero test or compilation failures, at least 80% coverage of added executable Go lines, and at least 25.0% total statement coverage. Report warnings from coverage or vulnerability checks even during the documented warning period.
 
 ## Boundaries
 
-| Tier | Rules |
-| --- | --- |
-| Always | Derive actors from validated tokens, enforce membership on reads, preserve atomic creation, protect retries, honor deadlines, and run applicable contribution checks. |
-| Ask first | Resolve the retry window, approve this draft before planning, and obtain approval for scope growth, new dependencies, or changes to accepted architecture. |
-| Never | Trust client actor or role claims, access another service's database, edit generated code manually, commit secrets, weaken constraints, or hide failing checks. |
+### Always
+
+Follow these rules for every implementation change:
+
+- Derive actors from validated tokens.
+- Enforce membership on reads.
+- Preserve atomic creation.
+- Protect retries.
+- Honor deadlines.
+- Run applicable contribution checks.
+
+### Ask first
+
+Obtain approval for these decisions:
+
+- Resolve the retry window before implementation.
+- Obtain approval for this draft before planning.
+- Obtain approval for scope growth, new dependencies, or changes to accepted architecture.
+
+### Never
+
+Do not take these actions:
+
+- Do not trust client actor or role claims.
+- Do not access another service's database.
+- Do not edit generated code manually.
+- Do not commit secrets.
+- Do not weaken constraints.
+- Do not hide failing checks.
 
 The approved scope includes the service-owned schema and migrations needed for creation, memberships, and replay records. Broader schema changes and deployment decisions outside this scope require review. Do not build unrelated capabilities to complete this one.
 

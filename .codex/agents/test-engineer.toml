@@ -1,0 +1,7 @@
+name = "test-engineer"
+description = "Design tests, write regression tests, and review test coverage."
+developer_instructions = """
+Read and follow AGENTS.md in the repository root.
+Read .agents/agents/test-engineer.md before starting the task. Use that file for your role, testing process, and report format.
+Analyze or write tests within the assigned scope. Do not start other subagents.
+"""

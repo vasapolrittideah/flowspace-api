@@ -47,9 +47,9 @@ After installation, make sure that Go and golangci-lint match the repository ver
 
 ## Local setup
 
-Before you run these commands, start Docker Desktop. Run the commands from the repository root. The build problem described in Current status prevents this setup from completing.
+Before you start, open Docker Desktop. After cloning, run the remaining commands from the repository root. The build problem described in Current status prevents this setup from completing.
 
-Clone the repository:
+### 1. Clone the repository
 
 ```sh
 git clone https://github.com/vasapolrittideah/flowspace-api.git
@@ -57,16 +57,16 @@ cd flowspace-api
 go mod download
 ```
 
-Create the local cluster:
+### 2. Create the local cluster
+
+If the `flowspace` cluster already exists, run `task cluster:start` instead of creating it again. The default cluster name is `flowspace`, and its registry uses host port `5001`. Tilt requires the `k3d-flowspace` Kubernetes context.
 
 ```sh
 task cluster:create
 kubectl config use-context k3d-flowspace
 ```
 
-If the `flowspace` cluster already exists, run `task cluster:start` instead of creating it again. The default cluster name is `flowspace`, and its registry uses host port `5001`. Tilt requires the `k3d-flowspace` Kubernetes context.
-
-Create the local password files:
+### 3. Create the local password files
 
 ```sh
 task secrets:setup
@@ -80,7 +80,9 @@ Keep the passwords out of Git. `.gitignore` excludes `.secrets/`, and `.dockerig
 
 Tilt reads the files and creates local Kubernetes Secrets to hold credentials for the running services. The local manifests supply the application configuration. Tilt does not load a repository `.env` file. `task secrets` scans the working directory, including `.secrets/`.
 
-After the build problem is fixed, start the local environment:
+### 4. Start the local environment
+
+After the build problem described in Current status is fixed, start Tilt:
 
 ```sh
 tilt up

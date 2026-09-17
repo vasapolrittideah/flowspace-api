@@ -18,7 +18,9 @@ Treat open proposals in the architecture document as undecided. Do not use a pro
 
 Use these rules for all English prose:
 
-- Before writing any English prose, read and use the [`simple-english` skill](.agents/skills/simple-english/SKILL.md).
-- Apply this skill without exception to Markdown, commit messages, PR titles and descriptions, code comments, and agent replies.
-- Preserve code, identifiers, and tool directives as the skill requires.
+- Before writing any English prose, read the [`simple-english` skill](.agents/skills/simple-english/SKILL.md) and the [`humanizer` skill](.agents/skills/humanizer/SKILL.md).
+- First, use Simple English to make the text easy to understand with common words and short sentences.
+- Then, use Humanizer to make the text read naturally while keeping the Simple English rules.
+- Apply both skills without exception to Markdown, commit messages, PR titles and descriptions, code comments, and agent replies.
+- Preserve code, identifiers, and tool directives as the skills require.
 - For Go doc comments (comments that document packages or symbols), keep the required symbol prefix and comment syntax.

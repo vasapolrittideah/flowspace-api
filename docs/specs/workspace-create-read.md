@@ -242,18 +242,28 @@ The approved scope includes the service-owned schema and migrations needed for c
 
 ## Success criteria
 
-Completion requires these observable results:
+Each Given cell states the setup and operation. Each Then cell states the required observable result. Completion requires every row:
 
-1. A valid create through REST or RPC returns a normalized resource with a server-generated UUID and timestamp, and persists exactly one owner membership.
-2. Invalid names, invalid keys, and invalid authentication produce their specified statuses without creation effects.
-3. A committed create is readable immediately by its owner and remains readable after service restart with the same database.
-4. A completed retry within the approved retry window returns the original resource without duplicate workspace or membership records.
-5. Changed-payload retries and overlapping attempts conflict, while separate subjects or new keys can create independently.
-6. An injected failure before commit leaves no partial workspace, owner membership, or completed retry record.
-7. Every supported membership role can read its workspace. A subject without membership receives the same 404 as a missing or malformed workspace ID.
-8. Neither method accepts client identity or role claims as access evidence. REST and RPC retain the same authentication and authorization rules.
-9. Shorter deadlines, the five-second cap, cancellation, request IDs, and safe error details work through the generated REST boundary.
-10. Applicable builds, tests, coverage, lint, security, contract generation, and compatibility checks meet the contribution policy and constraints.
+| Given | Then |
+| --- | --- |
+| An authenticated subject sends a valid create through REST or RPC. | The response contains the normalized name, a server-generated UUID, and a creation timestamp. Exactly one owner membership persists for that subject. |
+| An authenticated subject sends a create with an invalid name or idempotency key. | The operation returns `InvalidArgument` (HTTP 400) without creation effects. |
+| A caller uses either method with missing or invalid authentication. | The operation returns `Unauthenticated` (HTTP 401) without creation effects. |
+| A create commits and its owner immediately reads the workspace. | The owner receives the committed resource. |
+| The service restarts with the same database after a committed create, and the owner reads the workspace. | The owner receives the same resource. |
+| The same subject retries a completed create with the same key and normalized name within the approved retry window. | The operation returns the original resource without duplicate workspace or membership records. |
+| A completed creation record exists, and the same subject reuses its key with a different normalized name. | The operation returns `AlreadyExists` (HTTP 409) without creating another workspace. |
+| A duplicate create overlaps an attempt that still holds the same subject's key. | The duplicate returns `Aborted` (HTTP 409), and the attempts cannot commit duplicate effects. |
+| A different subject uses the same key, or the same subject uses a new key, for a valid create. | The operation can create a separate workspace independently. |
+| An injected failure occurs before the creation transaction commits. | The attempt leaves no partial workspace, owner membership, or completed retry record. |
+| A subject with a viewer, member, admin, or owner membership reads that workspace through REST or RPC. | The operation returns the workspace using the same access rules for both transports. |
+| An authenticated subject requests a workspace without membership, a nonexistent workspace, or a malformed UUID. | The operation returns the same `NotFound` (HTTP 404) result without revealing whether an inaccessible workspace exists. |
+| A client supplies identity or role claims to either method through REST or RPC. | Access decisions use the validated token subject and Workspace-owned membership data. Client claims do not prove access. |
+| A request through the generated REST boundary has a shorter caller deadline or exceeds the five-second cap. | The service honors the effective deadline and propagates it to dependencies. Expiry returns `DeadlineExceeded` (HTTP 504). |
+| A caller cancels a request through the generated REST boundary. | Cancellation propagates to token verification and database work. |
+| A request crosses the generated REST boundary with a valid, missing, or invalid request ID. | The service preserves a valid ID or replaces a missing or invalid ID. It forwards and returns the effective ID. |
+| A request fails through the generated REST boundary. | The response uses the specified status and safe error details without exposing internal diagnostics. |
+| The capability is submitted for review. | Applicable builds, tests, coverage, lint, security, contract generation, and compatibility checks meet the contribution policy and constraints. |
 
 These are requirements for future evidence. No criterion is marked complete in this draft.
 

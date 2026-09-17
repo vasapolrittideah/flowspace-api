@@ -184,9 +184,9 @@ This type example shows the intended naming and layout:
 
 ```go
 type Workspace struct {
-	ID        string
-	Name      string
-	CreatedAt time.Time
+    ID        string
+    Name      string
+    CreatedAt time.Time
 }
 ```
 

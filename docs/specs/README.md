@@ -21,4 +21,4 @@ Every specification inherits the sources below. A specification repeats a shared
 | Writing, Git, review, and verification | [Contribution policy](../../CONTRIBUTING.md) |
 | Quality, coverage, and security limits | [Constraints](../../CONSTRAINTS.md) |
 
-Keep feature-specific commands, implementation locations, test cases, and boundaries in the owning specification. Put a project-wide rule in its source document instead of copying it into each specification.
+Keep feature-specific commands, test cases, and boundaries in the owning specification. Put implementation locations in the plan. Put a project-wide rule in its source document instead of copying it into each specification.

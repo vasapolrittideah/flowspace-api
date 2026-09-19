@@ -144,22 +144,6 @@ Run commands from the repository root. Go tools need the repository's pinned too
 
 These commands define future implementation checks. Saving this draft does not mean that the capability passes them.
 
-## Implementation locations
-
-Use the shared [project structure](../project-structure.md) and [ADR-0003](../adr/0003-hexagonal-layers-inside-each-service.md). This capability uses these locations:
-
-| Path | Responsibility |
-| --- | --- |
-| `contracts/proto/flowspace/workspace/v1/` | Resource, request, response, service, and HTTP annotation sources |
-| `gen/go/flowspace/workspace/v1/` | Generated Go messages, clients, and gateway adapters |
-| `services/workspace/internal/domain/` | Workspace invariants and domain errors |
-| `services/workspace/internal/port/in/` and `services/workspace/internal/app/` | Service-owned use-case contracts and coordination |
-| `services/workspace/internal/port/out/` | Real persistence and token-verification boundaries |
-| `services/workspace/internal/adapter/` | Inbound protocol mapping and outbound database and identity integrations |
-| `services/workspace/internal/bootstrap/` and `services/workspace/cmd/` | Configuration, construction, API startup, and migration entry point |
-| `services/workspace/db/migrations/` and `db/queries/` | Versioned SQL migrations and handwritten queries |
-| `services/workspace/internal/adapter/out/postgres/sqlc/` | Generated query methods |
-
 ## Testing strategy
 
 Use Testcontainers with PostgreSQL for behavior that depends on transactions or database constraints. Test the public REST mapping and typed gRPC behavior through generated contracts and adapters.

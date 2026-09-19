@@ -2,7 +2,7 @@
 
 Module id: `workspace-create-read`
 
-Status: Draft for review. Approval is required before planning or implementation.
+Status: Approved. Planning can begin. Implementation requires an approved plan and task list.
 
 ## Objective
 
@@ -16,7 +16,7 @@ Create and read belong to one capability because they share workspace data, owne
 
 The scope covers `CreateWorkspace` and `GetWorkspace`, owner membership at creation, token admission, durable retry protection, and service-owned persistence.
 
-The [specification index](README.md) defines the shared project sources for this spec. The feature details below form the draft contract for review. Open proposals in the [architecture](../architecture.md) remain undecided.
+The [specification index](README.md) defines the shared project sources for this spec. The feature details below form the approved contract. Open proposals in the [architecture](../architecture.md) remain undecided.
 
 This capability excludes workspace listing, updates, archival, invitations, membership management, role changes, and ownership transfer. It also excludes frontend work, new login flows, and Work or Notifications features.
 
@@ -35,7 +35,7 @@ Both methods require exactly one `Authorization: Bearer <access_token>` header. 
 
 A UUID is a unique resource identifier. The server uses it to identify each workspace. Clients use the returned ID for later reads.
 
-Limit public HTTP request bodies to 1 MiB. Reject oversized bodies before they reach the use case. Malformed request bodies must produce a client error without creation effects.
+If a public HTTP request body exceeds 1 MiB, return HTTP 413 before it reaches the use case. If its JSON is malformed, return HTTP 400 without creation effects.
 
 The resource `Workspace` contains these fields:
 
@@ -94,15 +94,17 @@ Workspace owns its PostgreSQL instance, schema, migrations, and queries under [A
 
 Idempotency means that retries preserve one operation's result. Follow [ADR-0011](../adr/0011-idempotency-keys-protect-non-idempotent-creates.md). Apply these retry rules:
 
-- Require a nonblank key of at most 255 bytes, and treat the accepted key as an opaque value.
+- Require 1 to 255 visible ASCII characters (`0x21` through `0x7E`). Treat the accepted key as opaque and compare it byte-for-byte without case folding or normalization.
 - Scope each key to the authenticated subject and `CreateWorkspace` method. Different subjects can use the same key independently.
 - Bind the key to a hash of the normalized request, after name whitespace removal.
 - Claim the key atomically so concurrent requests cannot commit duplicate effects.
 - If the subject, key, and normalized name match a completed request, return its original resource and successful status. Preserve its ID, name, and creation time.
 - If the normalized name changes for the same subject and key, return a conflict without creating another workspace.
-- If an attempt still holds the key, reject an overlapping duplicate as a conflict. After a failed attempt releases its claim, a retry can attempt creation again.
+- If an attempt still holds the key, reject an overlapping duplicate as a conflict.
+- Release an in-progress claim when its transaction rolls back or its database connection closes, including after a process crash. After release, a retry can attempt creation again.
 - If a response is lost after commit, return the committed result on retry.
-- Persist completed records across process restarts. Retention must cover the documented maximum retry window, whose duration requires a decision before implementation.
+- Set the logical expiry of a completed record to 24 hours after its successful commit. Persist the record and original result across process restarts until that expiry.
+- At or after logical expiry, the same subject and key can identify a new operation. Physical cleanup can occur later, but an expired record must not replay or conflict.
 
 ### Reading and errors
 
@@ -114,6 +116,8 @@ Use canonical gRPC errors and the gateway's default HTTP mapping under [ADR-0009
 | --- | --- | --- |
 | Missing or invalid authentication | `Unauthenticated` | 401 |
 | Invalid request field or missing, blank, duplicate, or oversized idempotency key | `InvalidArgument` | 400 |
+| Malformed REST JSON | Not applicable | 400 |
+| REST request body above 1 MiB | Not applicable | 413 |
 | Malformed workspace UUID, missing workspace, or no membership | `NotFound` | 404 |
 | Key reused with a different normalized request | `AlreadyExists` | 409 |
 | Duplicate creation still in progress | `Aborted` | 409 |
@@ -142,7 +146,7 @@ Run commands from the repository root. Go tools need the repository's pinned too
 | Make sure that API compatibility holds against main | `task buf -- breaking --against '.git#branch=main'` |
 | Generate query code | `task sqlc -- generate` |
 
-These commands define future implementation checks. Saving this draft does not mean that the capability passes them.
+These commands define future implementation checks. Approval does not mean that the capability passes them.
 
 ## Testing strategy
 
@@ -151,10 +155,10 @@ Use Testcontainers with PostgreSQL for behavior that depends on transactions or 
 Cover these concerns at their owning test boundary:
 
 - Domain tests cover whitespace removal, UTF-8, empty names, the 100-code-point boundary, and multibyte names.
-- Use-case tests cover authenticated subjects, input rejection, dependency errors, and cancellation.
+- Use-case tests cover authenticated subjects, input rejection, exact idempotency-key validation, dependency errors, and cancellation.
 - Token tests cover wrong signatures, issuers, audiences, expired tokens, and missing subjects.
 - Transport tests cover malformed JSON, oversized bodies, required headers, field error details, status mapping, and header forwarding. Make sure that rejected input never reaches creation. Exercise request IDs, deadlines, and cancellation through the public gateway.
-- Database tests prove atomic owner creation, rollback, durable replay, conflicts, concurrent duplicate requests, and membership-based reads. Create memberships directly in test setup for each role. This test setup does not introduce membership-management endpoints.
+- Database tests prove atomic owner creation, rollback, durable replay, logical expiry, claim release after connection loss, conflicts, concurrent duplicates, and membership-based reads. Create memberships directly in test setup for each role. This test setup does not introduce membership-management endpoints.
 
 ## Boundaries
 
@@ -172,8 +176,7 @@ Follow these rules for every implementation change:
 
 Obtain approval for these decisions:
 
-- Resolve the retry window before implementation.
-- Obtain approval for this draft before planning.
+- Obtain approval before changing the approved scope, contract, retry window, or accepted decisions.
 
 ### Never
 
@@ -195,11 +198,14 @@ Each Given cell states the setup and operation. Each Then cell states the requir
 | A caller uses either method with missing or invalid authentication. | The operation returns `Unauthenticated` (HTTP 401) without creation effects. |
 | A create commits and its owner immediately reads the workspace. | The owner receives the committed resource. |
 | The service restarts with the same database after a committed create, and the owner reads the workspace. | The owner receives the same resource. |
-| The same subject retries a completed create with the same key and normalized name within the approved retry window. | The operation returns the original resource without duplicate workspace or membership records. |
-| A completed creation record exists, and the same subject reuses its key with a different normalized name. | The operation returns `AlreadyExists` (HTTP 409) without creating another workspace. |
+| The same subject retries a completed create with the same key and normalized name within the 24-hour retry window. | The operation returns the original resource without duplicate workspace or membership records. |
+| A completed creation record has not expired, and the same subject reuses its key with a different normalized name. | The operation returns `AlreadyExists` (HTTP 409) without creating another workspace. |
+| A completed creation record reaches its 24-hour logical expiry, and the same subject reuses its key. | The key can identify a new operation even if physical cleanup has not removed the expired record. |
 | A duplicate create overlaps an attempt that still holds the same subject's key. | The duplicate returns `Aborted` (HTTP 409), and the attempts cannot commit duplicate effects. |
+| A process crashes while its create attempt holds an in-progress claim. | The claim is released with the transaction or connection, and a retry can attempt creation without partial effects. |
 | A different subject uses the same key, or the same subject uses a new key, for a valid create. | The operation can create a separate workspace independently. |
 | An injected failure occurs before the creation transaction commits. | The attempt leaves no partial workspace, owner membership, or completed retry record. |
+| A REST create contains malformed JSON or a body above 1 MiB. | Malformed JSON returns HTTP 400. An oversized body returns HTTP 413. Neither request reaches creation. |
 | A subject with a viewer, member, admin, or owner membership reads that workspace through REST or RPC. | The operation returns the workspace using the same access rules for both transports. |
 | An authenticated subject requests a workspace without membership, a nonexistent workspace, or a malformed UUID. | The operation returns the same `NotFound` (HTTP 404) result without revealing whether an inaccessible workspace exists. |
 | A client supplies identity or role claims to either method through REST or RPC. | Access decisions use the validated token subject and Workspace-owned membership data. Client claims do not prove access. |
@@ -209,10 +215,10 @@ Each Given cell states the setup and operation. Each Then cell states the requir
 | A request fails through the generated REST boundary. | The response uses the specified status and safe error details without exposing internal diagnostics. |
 | The capability is submitted for review. | Applicable builds, tests, coverage, lint, security, contract generation, and compatibility checks meet the contribution policy and constraints. |
 
-These are requirements for future evidence. No criterion is marked complete in this draft.
+These are requirements for future evidence. No criterion is marked complete in this approved specification.
 
 ## Open questions and approval
 
-What maximum retry window does `CreateWorkspace` guarantee? Record its duration and replay-retention policy before implementation. The retention must meet [ADR-0011](../adr/0011-idempotency-keys-protect-non-idempotent-creates.md).
+No open questions remain. The contract was approved on 2026-09-19. Approval includes the 24-hour retry window, logical expiry, key format, claim release, HTTP 400 for malformed JSON, and HTTP 413 for oversized bodies.
 
-Review the draft contract, including name normalization, key limits, successful HTTP 200 responses, and inaccessible-resource 404 responses. Approval must cover these feature details as well as the scope. After approval and resolution of the retry window, proceed to planning for module `workspace-create-read`.
+Proceed to planning for module `workspace-create-read`. Implementation begins only after approval of its plan and task list.

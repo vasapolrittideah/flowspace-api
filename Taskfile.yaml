@@ -68,10 +68,21 @@ tasks:
     cmds:
       - npx --yes markdownlint-cli2@0.23.2 "**/*.md"
 
+  markdown:fix:
+    desc: Fix Markdown lint issues
+    cmds:
+      - npx --yes markdownlint-cli2@0.23.2 --fix "**/*.md"
+
   markdown:links:
     desc: Check local Markdown links
     cmds:
       - node scripts/check-local-links.mjs {{.CLI_ARGS}}
+
+  markdown:check:
+    desc: Run all Markdown checks
+    cmds:
+      - task: markdown:lint
+      - task: markdown:links
 
   constraints:floor:
     desc: Reject changes that weaken the quality floor

@@ -16,7 +16,7 @@ Create and read belong to one capability because they share workspace data, owne
 
 The scope covers `CreateWorkspace` and `GetWorkspace`, owner membership at creation, token admission, durable retry protection, and service-owned persistence.
 
-The [architecture](../architecture.md), [project structure](../project-structure.md), and accepted [ADRs](../adr/README.md) govern this spec. The feature details below form the draft contract for review. Open proposals in the architecture remain undecided.
+The [specification index](README.md) defines the shared project sources for this spec. The feature details below form the draft contract for review. Open proposals in the [architecture](../architecture.md) remain undecided.
 
 This capability excludes workspace listing, updates, archival, invitations, membership management, role changes, and ownership transfer. It also excludes frontend work, new login flows, and Work or Notifications features.
 
@@ -128,12 +128,6 @@ Emit structured request logs with service, environment, request ID, operation, o
 
 Propagate trace context through the REST proxy and synchronous calls under [ADR-0028](../adr/0028-telemetry-is-vendor-neutral-and-correlated.md). Keep telemetry bounded and prevent export failures from blocking requests under [ADR-0030](../adr/0030-telemetry-is-bounded-and-non-blocking.md). Collector deployment and storage configuration remain outside this capability.
 
-## Technology stack
-
-Use the tools selected in the [technology stack](../technology-stack.md). Keep Go and dependency versions pinned in `go.mod`, generator configuration, and `Taskfile.yaml`. This spec does not select new versions or packages.
-
-Use Go, Protobuf, Buf, typed gRPC clients, and grpc-gateway for the API. Use PostgreSQL, pgx, sqlc, and Goose for persistence. Use Keycloak for identity and Zap for structured logs.
-
 ## Commands
 
 Run commands from the repository root. Go tools need the repository's pinned toolchain. Integration tests need a running Docker runtime, and generation can need network access.
@@ -143,23 +137,16 @@ Run commands from the repository root. Go tools need the repository's pinned too
 | Compile Workspace binaries without writing output binaries | `go build ./services/workspace/cmd/...` |
 | Run Workspace tests | `go test ./services/workspace/...` |
 | Run real PostgreSQL integration tests | `go test -tags=integration ./services/workspace/internal/adapter/out/postgres` |
-| Format Go code | `task fmt` |
-| Run edit checks | `task check:fast` |
-| Run repository handoff checks | `task check:task` |
-| Make sure that coverage meets the constraints | `task coverage` |
-| Scan reachable dependency vulnerabilities | `task vuln` |
 | Lint source contracts | `task buf -- lint` |
 | Generate API code | `task buf -- generate` |
 | Make sure that API compatibility holds against main | `task buf -- breaking --against '.git#branch=main'` |
 | Generate query code | `task sqlc -- generate` |
 
-For local development, start Docker Desktop and create the k3d cluster with `task cluster:create`. Select it with `kubectl config use-context k3d-flowspace`. Run `task secrets:setup` and then `tilt up` after the service, migration job, and local deployment are available.
+These commands define future implementation checks. Saving this draft does not mean that the capability passes them.
 
-These commands define future implementation checks. Saving this draft does not mean that the capability or local runtime passes them. Documentation-only review does not require application tests under [CONTRIBUTING.md](../../CONTRIBUTING.md).
+## Implementation locations
 
-## Project structure
-
-Follow the [project structure](../project-structure.md) and [ADR-0003](../adr/0003-hexagonal-layers-inside-each-service.md). Add directories only with their first real files. Keep business rules independent of generated messages and infrastructure.
+Use the shared [project structure](../project-structure.md) and [ADR-0003](../adr/0003-hexagonal-layers-inside-each-service.md). This capability uses these locations:
 
 | Path | Responsibility |
 | --- | --- |
@@ -172,29 +159,10 @@ Follow the [project structure](../project-structure.md) and [ADR-0003](../adr/00
 | `services/workspace/internal/bootstrap/` and `services/workspace/cmd/` | Configuration, construction, API startup, and migration entry point |
 | `services/workspace/db/migrations/` and `db/queries/` | Versioned SQL migrations and handwritten queries |
 | `services/workspace/internal/adapter/out/postgres/sqlc/` | Generated query methods |
-| `docs/specs/workspace-create-read.md` | This capability's requirements |
-
-Tests use `*_test.go` beside the code they exercise. Reuse existing technical configuration and logging packages when applicable. Do not create shared domain models or import another service's private packages.
-
-## Code style
-
-Use the repository's Go formatting and lint configuration. Use exported names such as `Workspace` and `CreatedAt`, short local names, and explicit error returns. Wrap infrastructure errors with operation context while preserving their cause.
-
-This type example shows the intended naming and layout:
-
-```go
-type Workspace struct {
-    ID        string
-    Name      string
-    CreatedAt time.Time
-}
-```
-
-Keep protocol translation in adapters and domain rules in domain or application code. Edit source contracts and SQL, then regenerate their output. Keep each Markdown paragraph and list item on one physical line under the contribution policy.
 
 ## Testing strategy
 
-Use Go's `testing` package for domain, use-case, and transport tests. Use Testcontainers with PostgreSQL for behavior that depends on transactions or database constraints. Test the public REST mapping and typed gRPC behavior through generated contracts and adapters.
+Use Testcontainers with PostgreSQL for behavior that depends on transactions or database constraints. Test the public REST mapping and typed gRPC behavior through generated contracts and adapters.
 
 Cover these concerns at their owning test boundary:
 
@@ -203,8 +171,6 @@ Cover these concerns at their owning test boundary:
 - Token tests cover wrong signatures, issuers, audiences, expired tokens, and missing subjects.
 - Transport tests cover malformed JSON, oversized bodies, required headers, field error details, status mapping, and header forwarding. Make sure that rejected input never reaches creation. Exercise request IDs, deadlines, and cancellation through the public gateway.
 - Database tests prove atomic owner creation, rollback, durable replay, conflicts, concurrent duplicate requests, and membership-based reads. Create memberships directly in test setup for each role. This test setup does not introduce membership-management endpoints.
-
-Follow every floor rule in [CONSTRAINTS.md](../../CONSTRAINTS.md). Require zero test or compilation failures, at least 80% coverage of added executable Go lines, and at least 25.0% total statement coverage. Report warnings from coverage or vulnerability checks even during the documented warning period.
 
 ## Boundaries
 
@@ -217,7 +183,6 @@ Follow these rules for every implementation change:
 - Preserve atomic creation.
 - Protect retries.
 - Honor deadlines.
-- Run applicable contribution checks.
 
 ### Ask first
 
@@ -225,7 +190,6 @@ Obtain approval for these decisions:
 
 - Resolve the retry window before implementation.
 - Obtain approval for this draft before planning.
-- Obtain approval for scope growth, new dependencies, or changes to accepted architecture.
 
 ### Never
 
@@ -233,10 +197,6 @@ Do not take these actions:
 
 - Do not trust client actor or role claims.
 - Do not access another service's database.
-- Do not edit generated code manually.
-- Do not commit secrets.
-- Do not weaken constraints.
-- Do not hide failing checks.
 
 The approved scope includes the service-owned schema and migrations needed for creation, memberships, and replay records. Broader schema changes and deployment decisions outside this scope require review. Do not build unrelated capabilities to complete this one.
 

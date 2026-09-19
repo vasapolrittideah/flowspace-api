@@ -63,6 +63,27 @@ tasks:
     cmds:
       - go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -pyflakes= .github/workflows/*.yml
 
+  markdown:lint:
+    desc: Lint Markdown
+    cmds:
+      - npx --yes markdownlint-cli2@0.23.2 "**/*.md"
+
+  markdown:fix:
+    desc: Fix Markdown lint issues
+    cmds:
+      - npx --yes markdownlint-cli2@0.23.2 --fix "**/*.md"
+
+  markdown:links:
+    desc: Check local Markdown links
+    cmds:
+      - node scripts/check-local-links.mjs {{.CLI_ARGS}}
+
+  markdown:check:
+    desc: Run all Markdown checks
+    cmds:
+      - task: markdown:lint
+      - task: markdown:links
+
   constraints:floor:
     desc: Reject changes that weaken the quality floor
     cmds:
@@ -97,6 +118,7 @@ tasks:
     desc: Run sub-five-second edit checks
     cmds:
       - node --test scripts/constraint-check.test.mjs
+      - node --test scripts/check-local-links.test.mjs
       - task: constraints:floor
       - task: format:check
       - task: secrets

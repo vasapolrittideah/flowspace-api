@@ -22,7 +22,7 @@ This capability excludes workspace listing, updates, archival, invitations, memb
 
 Authorization event publication and downstream projections belong to later integration work under [ADR-0020](../adr/0020-services-authorize-from-bounded-local-projections.md). This capability authorizes reads from Workspace-owned membership data. It does not establish readiness for downstream authorization.
 
-## API contract
+## Contract
 
 Use package `flowspace.workspace.v1` and service `WorkspaceService`. Protobuf definitions are the source of truth for RPC and generated REST/JSON under [ADR-0005](../adr/0005-one-protobuf-contract-generates-rest.md). Version routes under `/v1` under [ADR-0007](../adr/0007-version-apis-by-compatibility-boundary.md).
 

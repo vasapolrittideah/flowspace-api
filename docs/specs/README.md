@@ -8,6 +8,24 @@ Each specification defines one capability before implementation. It records scop
 
 Draft specifications require approval before planning. An approved specification permits planning. An implemented specification has evidence for every success criterion.
 
+## Specification format
+
+All capability specifications use these sections in this order. Use subsections under `Required behavior` for topics that are specific to one capability.
+
+| Section | Content |
+| --- | --- |
+| `Objective` | Capability, users, purpose, and success intent |
+| `Scope and decision sources` | Included and excluded work, module dependencies, and relevant decisions |
+| `Contract` | Consumer-visible interfaces, inputs, outputs, data, and errors |
+| `Required behavior` | Business rules, invariants, security, consistency, and operational behavior |
+| `Commands` | Commands that build, test, lint, or generate artifacts for this capability |
+| `Testing strategy` | Feature-specific evidence and its owning test boundaries |
+| `Boundaries` | Capability-specific actions to always do, ask about, or never do |
+| `Success criteria` | Observable Given and Then outcomes required for completion |
+| `Open questions and approval` | Unresolved decisions and the approval required for the next phase |
+
+Technology stack and code style come from shared project sources. Put implementation locations in the plan. Add a new top-level section here before using it in a specification.
+
 ## Shared project sources
 
 Every specification inherits the sources below. A specification repeats a shared rule only when that rule changes observable behavior or completion evidence.
@@ -21,4 +39,4 @@ Every specification inherits the sources below. A specification repeats a shared
 | Writing, Git, review, and verification | [Contribution policy](../../CONTRIBUTING.md) |
 | Quality, coverage, and security limits | [Constraints](../../CONSTRAINTS.md) |
 
-Keep feature-specific commands, test cases, and boundaries in the owning specification. Put implementation locations in the plan. Put a project-wide rule in its source document instead of copying it into each specification.
+Put a project-wide rule in its source document instead of copying it into each specification.

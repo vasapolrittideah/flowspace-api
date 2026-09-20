@@ -12,13 +12,20 @@ Use the full command workflow for a new product capability:
 4. Run `/review` to review correctness, readability, architecture, security, and performance. Resolve important findings before the final checks.
 5. Run `/ship` to run the launch checks and produce a go or no-go decision. Resolve all launch blockers before handoff.
 
-Codex does not expose the files in `.agents/commands/` as slash commands. In Codex, name the matching file and each argument in the prompt:
+Codex does not expose the files in `.agents/commands/` as slash commands. In Codex, use these prompts:
 
-```text
-Read and follow @.agents/commands/build.md. Use `workspace-create-read` as the module id.
-```
+| Command | Codex prompt |
+| --- | --- |
+| `/spec <request>` | `Read and follow @.agents/commands/spec.md. Use <request> as the request.` |
+| `/plan <module-id>` | `Read and follow @.agents/commands/plan.md. Use <module-id> as the module id.` |
+| `/build <module-id>` | `Read and follow @.agents/commands/build.md. Use <module-id> as the module id.` |
+| `/build <module-id> auto` | `Read and follow @.agents/commands/build.md. Use <module-id> as the module id. Use auto mode.` |
+| `/test <request>` | `Read and follow @.agents/commands/test.md for <request>.` |
+| `/review` | `Read and follow @.agents/commands/review.md for the current changes.` |
+| `/ship` | `Read and follow @.agents/commands/ship.md for the current changes.` |
+| `/constraints [check\|guard\|ratchet]` | `Read and follow @.agents/commands/constraints.md. Use check, guard, or ratchet as the argument when needed.` |
 
-The command file supplies the workflow instructions. The prompt supplies the values that the file calls `$ARGUMENTS`.
+The command file supplies the workflow instructions. If the file reads `$ARGUMENTS`, the prompt supplies those values.
 
 The build workflow uses test-driven development and runs the checks from each issue. Use the test workflow for a focused change outside the module workflow.
 

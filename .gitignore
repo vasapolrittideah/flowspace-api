@@ -13,3 +13,6 @@
 .DS_Store
 .idea/
 .vscode/
+
+# Temporary planning files
+/tasks/.todo.md

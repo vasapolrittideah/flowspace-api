@@ -30,9 +30,10 @@ An issue is ready when each issue in its `Blocked by` line is complete. In auton
 6. Implement the minimum change that passes the test.
 7. Run the focused tests, required checks, and build commands from the issue.
 8. Run the affected regression tests.
-9. Inspect the staged diff and exclude unrelated changes.
-10. Commit only the issue changes. Add `Refs: #<issue-number>` before the co-author trailers.
-11. Record the exact verification results for the pull request.
+9. Update the issue description after verification. In `Acceptance criteria` and `Verification`, change each completed checkbox from `[ ]` to `[x]`. Leave failed and unrun items unchecked.
+10. Inspect the staged diff and exclude unrelated changes.
+11. Commit only the issue changes. Add `Refs: #<issue-number>` before the co-author trailers.
+12. Record the exact verification results for the pull request.
 
 Leave the issue open and keep its status as `In Progress`. The pull request closes it after the maintainer merges the change.
 

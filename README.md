@@ -30,7 +30,6 @@ Local development uses macOS with Docker Desktop. Before you start the local env
 | Go | Version 1.27.1 from `go.mod` | [Homebrew formula](https://formulae.brew.sh/formula/go) |
 | Task | Version 3 | [Homebrew formula](https://formulae.brew.sh/formula/go-task) |
 | Node.js | Create local passwords and run the constraint checker and tests | [Homebrew formula](https://formulae.brew.sh/formula/node) |
-| golangci-lint | Version 2.13.2, matching CI | [Homebrew formula](https://formulae.brew.sh/formula/golangci-lint) |
 | Docker Desktop | Run local containers and integration tests | [Docker installation guide](https://docs.docker.com/desktop/setup/install/mac-install/) |
 | k3d | Create the local Kubernetes cluster | [Homebrew formula](https://formulae.brew.sh/formula/k3d) |
 | kubectl | Select and inspect the Kubernetes cluster | [Homebrew formula](https://formulae.brew.sh/formula/kubernetes-cli) |
@@ -40,10 +39,10 @@ Local development uses macOS with Docker Desktop. Before you start the local env
 If Homebrew is installed, use it to install the command-line tools:
 
 ```sh
-brew install go go-task node golangci-lint k3d kubernetes-cli helm tilt
+brew install go go-task node k3d kubernetes-cli helm tilt
 ```
 
-After installation, make sure that Go and golangci-lint match the repository versions. The Go commands in `Taskfile.yaml` run fixed versions of Buf, sqlc, Gitleaks, and govulncheck. These tools do not need separate installations. The first run needs network access to download dependencies, images, charts, and the Tilt extension.
+After installation, make sure that Go matches the repository version. The first setup needs network access to download tools, dependencies, images, charts, and the Tilt extension.
 
 ## Local setup
 
@@ -57,7 +56,15 @@ cd flowspace-api
 go mod download
 ```
 
-### 2. Create the local cluster
+### 2. Install the project tools
+
+```sh
+task tools:install
+```
+
+The task installs pinned versions of Buf, sqlc, golangci-lint, actionlint, Gitleaks, and govulncheck in `bin/`. Taskfile commands call these local binaries. Run the task again after a tool version changes in `Taskfile.yaml`.
+
+### 3. Create the local cluster
 
 If the `flowspace` cluster already exists, run `task cluster:start` instead of creating it again. The default cluster name is `flowspace`, and its registry uses host port `5001`. Tilt requires the `k3d-flowspace` Kubernetes context.
 
@@ -66,7 +73,7 @@ task cluster:create
 kubectl config use-context k3d-flowspace
 ```
 
-### 3. Create the local password files
+### 4. Create the local password files
 
 ```sh
 task secrets:setup
@@ -80,7 +87,7 @@ Keep the passwords out of Git. `.gitignore` excludes `.secrets/`, and `.dockerig
 
 Tilt reads the files and creates local Kubernetes Secrets to hold credentials for the running services. The local manifests supply the application configuration. Tilt does not load a repository `.env` file. `task secrets` scans the working directory, including `.secrets/`.
 
-### 4. Start the local environment
+### 5. Start the local environment
 
 After the build problem described in Current status is fixed, start Tilt:
 
@@ -138,6 +145,7 @@ Run `task --list` to see the available repository commands. Integration tests us
 | `go test -tags=integration ./services/workspace/internal/adapter/out/postgres` | Run PostgreSQL integration tests with Docker |
 | `go build ./services/workspace/cmd/...` | Compile the API and migration commands without writing binaries |
 | `task fmt` | Format Go source |
+| `task tools:install` | Install pinned project tools in `bin/` |
 | `task check:fast` | Run constraint-checker tests, the quality floor, formatting, and secret scanning |
 | `task check:task` | Run local checks, lint, coverage, and reachable dependency vulnerability scanning |
 | `task coverage` | Run Go tests and enforce changed-line and total coverage requirements |

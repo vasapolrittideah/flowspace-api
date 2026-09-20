@@ -27,15 +27,30 @@ func NewWorkspaceRepository(pool *pgxpool.Pool) *WorkspaceRepository {
 	return &WorkspaceRepository{pool: pool}
 }
 
-func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, subject, idempotencyKey, name string) (domain.Workspace, error) {
+func (r *WorkspaceRepository) WithinTransaction(ctx context.Context, fn func(outbound.WorkspaceTransaction) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return domain.Workspace{}, fmt.Errorf("begin create workspace: %w", err)
+		return fmt.Errorf("begin workspace transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	queries := workspacesqlc.New(tx)
-	locked, err := queries.TryCreateWorkspaceLock(ctx, createWorkspaceLockID(subject, idempotencyKey))
+	if err := fn(&workspaceTransaction{queries: workspacesqlc.New(tx)}); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit workspace transaction: %w", err)
+	}
+	return nil
+}
+
+type workspaceTransaction struct {
+	queries *workspacesqlc.Queries
+}
+
+var _ outbound.WorkspaceTransaction = (*workspaceTransaction)(nil)
+
+func (tx *workspaceTransaction) CreateWorkspace(ctx context.Context, subject, idempotencyKey, name string) (domain.Workspace, error) {
+	locked, err := tx.queries.TryCreateWorkspaceLock(ctx, createWorkspaceLockID(subject, idempotencyKey))
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("lock workspace create: %w", err)
 	}
@@ -44,7 +59,7 @@ func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, subject, idem
 	}
 
 	requestHash := sha256.Sum256([]byte(name))
-	creation, err := queries.GetWorkspaceCreation(ctx, workspacesqlc.GetWorkspaceCreationParams{
+	creation, err := tx.queries.GetWorkspaceCreation(ctx, workspacesqlc.GetWorkspaceCreationParams{
 		Subject:        subject,
 		IdempotencyKey: idempotencyKey,
 	})
@@ -52,17 +67,13 @@ func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, subject, idem
 		if !bytes.Equal(creation.RequestHash, requestHash[:]) {
 			return domain.Workspace{}, domain.ErrIdempotencyConflict
 		}
-		workspace := domain.Workspace{ID: creation.ID, Name: creation.Name, CreatedAt: creation.CreatedAt.Time}
-		if err := tx.Commit(ctx); err != nil {
-			return domain.Workspace{}, fmt.Errorf("commit workspace replay: %w", err)
-		}
-		return workspace, nil
+		return domain.Workspace{ID: creation.ID, Name: creation.Name, CreatedAt: creation.CreatedAt.Time}, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return domain.Workspace{}, fmt.Errorf("get workspace creation: %w", err)
 	}
 
-	created, err := queries.CreateWorkspace(ctx, name)
+	created, err := tx.queries.CreateWorkspace(ctx, name)
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("create workspace: %w", err)
 	}
@@ -70,13 +81,13 @@ func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, subject, idem
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("parse created workspace id: %w", err)
 	}
-	if err := queries.CreateWorkspaceOwner(ctx, workspacesqlc.CreateWorkspaceOwnerParams{
+	if err := tx.queries.CreateWorkspaceOwner(ctx, workspacesqlc.CreateWorkspaceOwnerParams{
 		WorkspaceID: workspaceID,
 		Subject:     subject,
 	}); err != nil {
 		return domain.Workspace{}, fmt.Errorf("create workspace owner: %w", err)
 	}
-	if err := queries.RecordWorkspaceCreation(ctx, workspacesqlc.RecordWorkspaceCreationParams{
+	if err := tx.queries.RecordWorkspaceCreation(ctx, workspacesqlc.RecordWorkspaceCreationParams{
 		Subject:            subject,
 		IdempotencyKey:     idempotencyKey,
 		RequestHash:        requestHash[:],
@@ -86,10 +97,6 @@ func (r *WorkspaceRepository) CreateWorkspace(ctx context.Context, subject, idem
 	}); err != nil {
 		return domain.Workspace{}, fmt.Errorf("record workspace creation: %w", err)
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return domain.Workspace{}, fmt.Errorf("commit workspace create: %w", err)
-	}
-
 	return domain.Workspace{ID: created.ID, Name: created.Name, CreatedAt: created.CreatedAt.Time}, nil
 }
 

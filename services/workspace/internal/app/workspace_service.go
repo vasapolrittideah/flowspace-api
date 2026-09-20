@@ -37,7 +37,12 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, input inbound.Cr
 		return domain.Workspace{}, err
 	}
 
-	workspace, err := s.repository.CreateWorkspace(ctx, input.Subject, input.IdempotencyKey, newWorkspace.Name)
+	var workspace domain.Workspace
+	err = s.repository.WithinTransaction(ctx, func(tx outbound.WorkspaceTransaction) error {
+		var createErr error
+		workspace, createErr = tx.CreateWorkspace(ctx, input.Subject, input.IdempotencyKey, newWorkspace.Name)
+		return createErr
+	})
 	if err != nil {
 		return domain.Workspace{}, fmt.Errorf("create workspace: %w", err)
 	}

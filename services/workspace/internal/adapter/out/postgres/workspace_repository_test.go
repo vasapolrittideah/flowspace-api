@@ -17,6 +17,7 @@ import (
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/db/migrations"
 	workspacesqlc "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres/sqlc"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 )
 
 func TestWorkspaceRepository(t *testing.T) {
@@ -53,7 +54,7 @@ func TestWorkspaceRepository(t *testing.T) {
 	repository := NewWorkspaceRepository(pool)
 
 	t.Run("creates a workspace and owner atomically", func(t *testing.T) {
-		created, err := repository.CreateWorkspace(ctx, "subject-create", "create-key", "Platform")
+		created, err := createWorkspace(ctx, repository, "subject-create", "create-key", "Platform")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -84,14 +85,14 @@ func TestWorkspaceRepository(t *testing.T) {
 	})
 
 	t.Run("replays the same idempotent create", func(t *testing.T) {
-		first, err := repository.CreateWorkspace(ctx, "subject-replay", "replay-key", "Replay")
+		first, err := createWorkspace(ctx, repository, "subject-replay", "replay-key", "Replay")
 		if err != nil {
 			t.Fatal(err)
 		}
 		if _, err := pool.Exec(ctx, `UPDATE workspaces SET name = 'Renamed Later' WHERE id = $1`, first.ID); err != nil {
 			t.Fatal(err)
 		}
-		second, err := repository.CreateWorkspace(ctx, "subject-replay", "replay-key", "Replay")
+		second, err := createWorkspace(ctx, repository, "subject-replay", "replay-key", "Replay")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -107,7 +108,7 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatalf("workspace count = %d, want 1", count)
 		}
 
-		other, err := repository.CreateWorkspace(ctx, "another-subject", "replay-key", "Replay")
+		other, err := createWorkspace(ctx, repository, "another-subject", "replay-key", "Replay")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -117,10 +118,10 @@ func TestWorkspaceRepository(t *testing.T) {
 	})
 
 	t.Run("rejects an idempotency key reused with another request", func(t *testing.T) {
-		if _, err := repository.CreateWorkspace(ctx, "subject-conflict", "conflict-key", "Original"); err != nil {
+		if _, err := createWorkspace(ctx, repository, "subject-conflict", "conflict-key", "Original"); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := repository.CreateWorkspace(ctx, "subject-conflict", "conflict-key", "Changed"); !errors.Is(err, domain.ErrIdempotencyConflict) {
+		if _, err := createWorkspace(ctx, repository, "subject-conflict", "conflict-key", "Changed"); !errors.Is(err, domain.ErrIdempotencyConflict) {
 			t.Fatalf("error = %v, want ErrIdempotencyConflict", err)
 		}
 	})
@@ -140,13 +141,13 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatal("failed to acquire setup lock")
 		}
 
-		if _, err := repository.CreateWorkspace(ctx, "subject-in-flight", "in-flight-key", "In Flight"); !errors.Is(err, domain.ErrCreateInProgress) {
+		if _, err := createWorkspace(ctx, repository, "subject-in-flight", "in-flight-key", "In Flight"); !errors.Is(err, domain.ErrCreateInProgress) {
 			t.Fatalf("error = %v, want ErrCreateInProgress", err)
 		}
 	})
 
 	t.Run("hides workspaces from non-members", func(t *testing.T) {
-		created, err := repository.CreateWorkspace(ctx, "subject-read", "read-key", "Private")
+		created, err := createWorkspace(ctx, repository, "subject-read", "read-key", "Private")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -173,7 +174,7 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err := repository.CreateWorkspace(ctx, "", "rollback-key", "Must Roll Back")
+		_, err := createWorkspace(ctx, repository, "", "rollback-key", "Must Roll Back")
 		if err == nil {
 			t.Fatal("create succeeded")
 		}
@@ -186,6 +187,16 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatalf("workspace count = %d, want %d", after, before)
 		}
 	})
+}
+
+func createWorkspace(ctx context.Context, repository *WorkspaceRepository, subject, idempotencyKey, name string) (domain.Workspace, error) {
+	var workspace domain.Workspace
+	err := repository.WithinTransaction(ctx, func(tx outbound.WorkspaceTransaction) error {
+		var createErr error
+		workspace, createErr = tx.CreateWorkspace(ctx, subject, idempotencyKey, name)
+		return createErr
+	})
+	return workspace, err
 }
 
 func applyMigrations(t *testing.T, ctx context.Context, dsn string) {

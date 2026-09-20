@@ -2,7 +2,6 @@
 
 Use these rules before each task:
 
-- Before each task in this repository, read and follow [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - Before writing code, read [`CONSTRAINTS.md`](CONSTRAINTS.md). Do not weaken these constraints to make a change pass.
 
 For product, architecture, or implementation work, also read:

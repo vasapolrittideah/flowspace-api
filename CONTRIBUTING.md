@@ -12,8 +12,16 @@ Use the full command workflow for a new product capability:
 4. Run `/review` to review correctness, readability, architecture, security, and performance. Resolve important findings before the final checks.
 5. Run `/ship` to run the launch checks and produce a go or no-go decision. Resolve all launch blockers before handoff.
 
-The `/build` command uses test-driven development and runs the checks from each issue. Use `/test` for a focused change outside the module workflow.
+Codex does not expose the files in `.agents/commands/` as slash commands. In Codex, name the matching file and each argument in the prompt:
 
-Each command stores durable results in the repository or GitHub. Specifications live in `docs/specs/`, module plans live in `tasks/`, and task status lives in GitHub Projects.
+```text
+Read and follow @.agents/commands/build.md. Use `workspace-create-read` as the module id.
+```
+
+The command file supplies the workflow instructions. The prompt supplies the values that the file calls `$ARGUMENTS`.
+
+The build workflow uses test-driven development and runs the checks from each issue. Use the test workflow for a focused change outside the module workflow.
+
+Each workflow stores durable results in the repository or GitHub. Specifications live in `docs/specs/`, module plans live in `tasks/`, and task status lives in GitHub Projects.
 
 For a small documentation or maintenance change, ask the agent to implement it directly. The change does not need a product specification or module plan.

@@ -8,7 +8,7 @@
 
 ## Verification
 
-<!-- Follow https://github.com/vasapolrittideah/flowspace-api/blob/main/CONTRIBUTING.md#verification. Add one row per required check. Start Result with Passed., Failed., or Not run. Add a short explanation only when it helps review. -->
+<!-- Follow https://github.com/vasapolrittideah/flowspace-api/blob/main/AGENTS.md#verification. Add one row per required check. Start Result with Passed., Failed., or Not run. Add a short explanation only when it helps review. -->
 
 | Check | Command | Result |
 | --- | --- | --- |

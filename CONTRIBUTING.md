@@ -2,7 +2,15 @@
 
 Use this workflow to guide the agent from an idea to a reviewed change.
 
-## Development workflow
+## Choose a workflow
+
+Choose the workflow that matches the change:
+
+- For a new product capability, use the full development workflow.
+- For a focused change outside the module workflow, use `/test <request>`.
+- For a small documentation or maintenance change, ask the agent to implement it directly. The change does not need a specification or module plan.
+
+## Full development workflow
 
 Use the full command workflow for a new product capability:
 
@@ -11,6 +19,12 @@ Use the full command workflow for a new product capability:
 3. Run `/build <module-id>` to implement the next ready issue. Use `/build <module-id> auto` only after you approve the complete plan.
 4. Run `/review` to review correctness, readability, architecture, security, and performance. Resolve important findings before the final checks.
 5. Run `/ship` to run the launch checks and produce a go or no-go decision. Resolve all launch blockers before handoff.
+
+The build workflow uses test-driven development and runs the checks from each issue.
+
+Each workflow stores durable results in the repository or GitHub. Specifications live in `docs/specs/`, module plans live in `tasks/`, and task status lives in GitHub Projects.
+
+## Run workflows in Codex
 
 Codex does not expose the files in `.agents/commands/` as slash commands. In Codex, use these prompts:
 
@@ -26,9 +40,3 @@ Codex does not expose the files in `.agents/commands/` as slash commands. In Cod
 | `/constraints [check\|guard\|ratchet]` | `Read and follow @.agents/commands/constraints.md. Use check, guard, or ratchet as the argument when needed.` |
 
 The command file supplies the workflow instructions. If the file reads `$ARGUMENTS`, the prompt supplies those values.
-
-The build workflow uses test-driven development and runs the checks from each issue. Use the test workflow for a focused change outside the module workflow.
-
-Each workflow stores durable results in the repository or GitHub. Specifications live in `docs/specs/`, module plans live in `tasks/`, and task status lives in GitHub Projects.
-
-For a small documentation or maintenance change, ask the agent to implement it directly. The change does not need a product specification or module plan.

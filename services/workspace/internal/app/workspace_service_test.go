@@ -9,6 +9,7 @@ import (
 
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/in"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 )
 
 func TestWorkspaceServiceCreateWorkspace(t *testing.T) {
@@ -32,6 +33,9 @@ func TestWorkspaceServiceCreateWorkspace(t *testing.T) {
 	}
 	if got != want {
 		t.Fatalf("workspace = %+v, want %+v", got, want)
+	}
+	if repository.transactions != 1 {
+		t.Fatalf("transactions = %d, want 1", repository.transactions)
 	}
 }
 
@@ -136,14 +140,24 @@ func TestWorkspaceServicePreservesRepositoryErrors(t *testing.T) {
 }
 
 type fakeWorkspaceRepository struct {
-	create func(context.Context, string, string, string) (domain.Workspace, error)
-	get    func(context.Context, string, string) (domain.Workspace, error)
+	create       func(context.Context, string, string, string) (domain.Workspace, error)
+	get          func(context.Context, string, string) (domain.Workspace, error)
+	transactions int
 }
 
-func (r *fakeWorkspaceRepository) CreateWorkspace(ctx context.Context, subject, idempotencyKey, name string) (domain.Workspace, error) {
-	return r.create(ctx, subject, idempotencyKey, name)
+func (r *fakeWorkspaceRepository) WithinTransaction(_ context.Context, fn func(outbound.WorkspaceTransaction) error) error {
+	r.transactions++
+	return fn(fakeWorkspaceTransaction{create: r.create})
 }
 
 func (r *fakeWorkspaceRepository) GetWorkspace(ctx context.Context, subject, workspaceID string) (domain.Workspace, error) {
 	return r.get(ctx, subject, workspaceID)
+}
+
+type fakeWorkspaceTransaction struct {
+	create func(context.Context, string, string, string) (domain.Workspace, error)
+}
+
+func (tx fakeWorkspaceTransaction) CreateWorkspace(ctx context.Context, subject, idempotencyKey, name string) (domain.Workspace, error) {
+	return tx.create(ctx, subject, idempotencyKey, name)
 }

@@ -2,7 +2,15 @@
 
 Use this workflow to guide the agent from an idea to a reviewed change.
 
-## Development workflow
+## Choose a workflow
+
+Choose the workflow that matches the change:
+
+- For a new product capability, use the full development workflow.
+- For a focused change outside the module workflow, use `/test <request>`.
+- For a small documentation or maintenance change, ask the agent to implement it directly. The change does not need a specification or module plan.
+
+## Full development workflow
 
 Use the full command workflow for a new product capability:
 
@@ -12,8 +20,23 @@ Use the full command workflow for a new product capability:
 4. Run `/review` to review correctness, readability, architecture, security, and performance. Resolve important findings before the final checks.
 5. Run `/ship` to run the launch checks and produce a go or no-go decision. Resolve all launch blockers before handoff.
 
-The `/build` command uses test-driven development and runs the checks from each issue. Use `/test` for a focused change outside the module workflow.
+The build workflow uses test-driven development and runs the checks from each issue.
 
-Each command stores durable results in the repository or GitHub. Specifications live in `docs/specs/`, module plans live in `tasks/`, and task status lives in GitHub Projects.
+Each workflow stores durable results in the repository or GitHub. Specifications live in `docs/specs/`, module plans live in `tasks/`, and task status lives in GitHub Projects.
 
-For a small documentation or maintenance change, ask the agent to implement it directly. The change does not need a product specification or module plan.
+## Run workflows in Codex
+
+Codex does not expose the files in `.agents/commands/` as slash commands. In Codex, use these prompts:
+
+| Command | Codex prompt |
+| --- | --- |
+| `/spec <request>` | `Read and follow @.agents/commands/spec.md. Use <request> as the request.` |
+| `/plan <module-id>` | `Read and follow @.agents/commands/plan.md. Use <module-id> as the module id.` |
+| `/build <module-id>` | `Read and follow @.agents/commands/build.md. Use <module-id> as the module id.` |
+| `/build <module-id> auto` | `Read and follow @.agents/commands/build.md. Use <module-id> as the module id. Use auto mode.` |
+| `/test <request>` | `Read and follow @.agents/commands/test.md for <request>.` |
+| `/review` | `Read and follow @.agents/commands/review.md for the current changes.` |
+| `/ship` | `Read and follow @.agents/commands/ship.md for the current changes.` |
+| `/constraints [check\|guard\|ratchet]` | `Read and follow @.agents/commands/constraints.md. Use check, guard, or ratchet as the argument when needed.` |
+
+The command file supplies the workflow instructions. If the file reads `$ARGUMENTS`, the prompt supplies those values.

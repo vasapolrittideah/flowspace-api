@@ -2,7 +2,7 @@
 
 Module id: `workspace-create-read`
 
-Status: Approved. Planning can begin. Implementation requires an approved plan and task list.
+Status: Approved.
 
 ## Objective
 
@@ -216,9 +216,3 @@ Each Given cell states the setup and operation. Each Then cell states the requir
 | The capability is submitted for review. | Applicable builds, tests, coverage, lint, security, contract generation, and compatibility checks meet the contribution policy and constraints. |
 
 These are requirements for future evidence. No criterion is marked complete in this approved specification.
-
-## Open questions and approval
-
-No open questions remain. The contract was approved on 2026-09-19. Approval includes the 24-hour retry window, logical expiry, key format, claim release, HTTP 400 for malformed JSON, and HTTP 413 for oversized bodies.
-
-Proceed to planning for module `workspace-create-read`. Implementation begins only after approval of its plan and task list.

@@ -13,6 +13,13 @@ For product, architecture, or implementation work, also read:
 
 Treat open proposals in the architecture document as undecided. Do not use a proposal as an implementation decision without explicit approval.
 
+## Planning and task tracking
+
+- Save each module plan as `tasks/<module-id>.md`.
+- Use `tasks/.todo.md` only as the temporary source for GitHub Issue creation.
+- Track tasks in GitHub Issues and task status in the repository GitHub Project.
+- Delete `tasks/.todo.md` after every task exists in the GitHub Project.
+
 ## English prose
 
 Use these rules for all English prose:

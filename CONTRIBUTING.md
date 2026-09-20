@@ -144,12 +144,18 @@ Co-authored-by: Codex <noreply@openai.com>
 
 Put trailers after a blank line at the end of the message. Preserve existing attribution when you amend or squash commits. Use the identity of each agent.
 
+## Issue and pull request labels
+
+- Apply exactly one matching `type:*` label to each issue and pull request.
+- Apply one or more relevant `area:*` labels. An issue or pull request can have multiple `area:*` labels.
+- Apply `breaking` and `migration` when relevant.
+- Use labels from [`.github/labels.json`](.github/labels.json). Keep each title, description, and set of labels consistent with the final work.
+
 ## Pull requests
 
 - Use the [PR template](.github/pull_request_template.md). Complete Change, Reason, and Verification.
 - Keep each paragraph and list item in a PR description on one physical line.
 - If there are no risks or limitations, omit that section.
-- Apply the matching `type:*` label. Apply relevant `area:*`, `breaking`, and `migration` labels from [`.github/labels.json`](.github/labels.json). Keep the title, description, and labels consistent with the final change.
 
 ### PR titles
 

@@ -36,7 +36,7 @@ Every specification inherits the sources below. A specification repeats a shared
 | Accepted architecture decisions | [Architecture decision records](../adr/README.md) |
 | Tools and versions | [Technology stack](../technology-stack.md) |
 | Source and test locations | [Project structure](../project-structure.md) |
-| Writing, Git, review, and verification | [Contribution policy](../../CONTRIBUTING.md) |
+| Writing, Git, review, and verification | [Agent instructions](../../AGENTS.md) |
 | Quality, coverage, and security limits | [Constraints](../../CONSTRAINTS.md) |
 
 Put a project-wide rule in its source document instead of copying it into each specification.

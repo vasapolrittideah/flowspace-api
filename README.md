@@ -137,7 +137,7 @@ Use the returned `access_token` in the authorization header for Workspace reques
 
 ## Development commands
 
-Run `task --list` to see the available repository commands. Integration tests use Testcontainers and require a running Docker runtime. For contribution and quality requirements, read [CONTRIBUTING.md](CONTRIBUTING.md) and [CONSTRAINTS.md](CONSTRAINTS.md).
+Run `task --list` to see the available repository commands. Integration tests use Testcontainers and require a running Docker runtime. For the human development workflow, read [CONTRIBUTING.md](CONTRIBUTING.md). For quality requirements, read [CONSTRAINTS.md](CONSTRAINTS.md).
 
 | Command | Purpose |
 | --- | --- |
@@ -168,7 +168,8 @@ The documents below explain the accepted decisions, where code belongs, and whic
 | [Project structure](docs/project-structure.md) | Directory ownership, service layers, and dependency rules |
 | [Technology stack](docs/technology-stack.md) | Selected platforms, tools, and Go packages |
 | [Architecture decision records](docs/adr/README.md) | Accepted decisions, their rationale, and rejected alternatives |
-| [Contributing](CONTRIBUTING.md) | Branches, commits, verification, and pull request requirements |
+| [Contributing](CONTRIBUTING.md) | Human workflow for specifications, plans, implementation, review, and launch checks |
+| [Agent instructions](AGENTS.md) | Agent rules for Git, writing, verification, and pull requests |
 | [Constraints](CONSTRAINTS.md) | Quality rules and their enforcement commands |
 
 Staging and the environment named production are planned for one Ubuntu host. A failure of that host affects both environments. Deployment and recovery procedures are not implemented. The production name does not mean that the system is ready for production.

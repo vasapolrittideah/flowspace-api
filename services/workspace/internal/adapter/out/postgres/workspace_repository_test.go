@@ -3,7 +3,9 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"testing"
@@ -75,6 +77,35 @@ func TestWorkspaceRepository(t *testing.T) {
 		if role != "owner" {
 			t.Fatalf("role = %q, want owner", role)
 		}
+
+		var retryWorkspaceID, retryName string
+		var requestHash []byte
+		var retryCreatedAt, completedAt, expiresAt time.Time
+		err = pool.QueryRow(ctx, `
+			SELECT request_hash, workspace_id::text, workspace_name, workspace_created_at, completed_at, expires_at
+			FROM workspace_creations
+			WHERE subject = $1 AND idempotency_key = $2
+		`, "subject-create", "create-key").Scan(
+			&requestHash,
+			&retryWorkspaceID,
+			&retryName,
+			&retryCreatedAt,
+			&completedAt,
+			&expiresAt,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantHash := sha256.Sum256([]byte("Platform"))
+		if !bytes.Equal(requestHash, wantHash[:]) {
+			t.Fatalf("request hash = %x, want %x", requestHash, wantHash)
+		}
+		if retryWorkspaceID != created.ID || retryName != created.Name || !retryCreatedAt.Equal(created.CreatedAt) {
+			t.Fatalf("retry result = %q, %q, %s; want %+v", retryWorkspaceID, retryName, retryCreatedAt, created)
+		}
+		if got := expiresAt.Sub(completedAt); got != 24*time.Hour {
+			t.Fatalf("retry window = %s, want 24h", got)
+		}
 		_, err = pool.Exec(ctx, `
 			INSERT INTO workspace_memberships (workspace_id, subject, role)
 			VALUES ($1, $2, 'viewer')
@@ -123,6 +154,39 @@ func TestWorkspaceRepository(t *testing.T) {
 		if other.ID == first.ID {
 			t.Fatal("idempotency key was not scoped to the subject")
 		}
+
+		differentKey, err := createWorkspace(ctx, repository, "subject-replay", "REPLAY-KEY", "Replay")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if differentKey.ID == first.ID {
+			t.Fatal("idempotency key comparison ignored byte differences")
+		}
+	})
+
+	t.Run("replays a committed create after reopening the pool", func(t *testing.T) {
+		firstPool, err := pgxpool.New(ctx, dsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+		first, createErr := createWorkspace(ctx, NewWorkspaceRepository(firstPool), "subject-reopen", "reopen-key", "Durable")
+		firstPool.Close()
+		if createErr != nil {
+			t.Fatal(createErr)
+		}
+
+		reopenedPool, err := pgxpool.New(ctx, dsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(reopenedPool.Close)
+		second, err := createWorkspace(ctx, NewWorkspaceRepository(reopenedPool), "subject-reopen", "reopen-key", "Durable")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if second != first {
+			t.Fatalf("replay = %+v, want %+v", second, first)
+		}
 	})
 
 	t.Run("rejects an idempotency key reused with another request", func(t *testing.T) {
@@ -151,6 +215,101 @@ func TestWorkspaceRepository(t *testing.T) {
 
 		if _, err := createWorkspace(ctx, repository, "subject-in-flight", "in-flight-key", "In Flight"); !errors.Is(err, domain.ErrCreateInProgress) {
 			t.Fatalf("error = %v, want ErrCreateInProgress", err)
+		}
+	})
+
+	t.Run("allows only one concurrent create for the same key", func(t *testing.T) {
+		blocker, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = blocker.Rollback(ctx) }()
+
+		if _, err := blocker.Exec(ctx, `LOCK TABLE workspaces IN ACCESS EXCLUSIVE MODE`); err != nil {
+			t.Fatal(err)
+		}
+
+		type createResult struct {
+			workspace domain.Workspace
+			err       error
+		}
+		results := make(chan createResult, 2)
+		for range 2 {
+			go func() {
+				workspace, createErr := createWorkspace(ctx, repository, "subject-concurrent", "concurrent-key", "Concurrent")
+				results <- createResult{workspace: workspace, err: createErr}
+			}()
+		}
+
+		var overlap createResult
+		select {
+		case overlap = <-results:
+		case <-time.After(5 * time.Second):
+			t.Fatal("concurrent create did not return")
+		}
+		if !errors.Is(overlap.err, domain.ErrCreateInProgress) {
+			t.Fatalf("overlap error = %v, want ErrCreateInProgress", overlap.err)
+		}
+		if err := blocker.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+
+		var created createResult
+		select {
+		case created = <-results:
+		case <-time.After(5 * time.Second):
+			t.Fatal("winning create did not return")
+		}
+		if created.err != nil {
+			t.Fatal(created.err)
+		}
+		if created.workspace.ID == "" {
+			t.Fatal("winning create returned no workspace ID")
+		}
+
+		var workspaces, owners, retries int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM workspaces WHERE id = $1`, created.workspace.ID).Scan(&workspaces); err != nil {
+			t.Fatal(err)
+		}
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM workspace_memberships WHERE workspace_id = $1 AND role = 'owner'`, created.workspace.ID).Scan(&owners); err != nil {
+			t.Fatal(err)
+		}
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM workspace_creations WHERE subject = $1 AND idempotency_key = $2`, "subject-concurrent", "concurrent-key").Scan(&retries); err != nil {
+			t.Fatal(err)
+		}
+		if workspaces != 1 || owners != 1 || retries != 1 {
+			t.Fatalf("rows = workspaces %d, owners %d, retries %d; want 1 each", workspaces, owners, retries)
+		}
+	})
+
+	t.Run("releases an in-progress claim after connection loss", func(t *testing.T) {
+		connection, err := pool.Acquire(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(connection.Release)
+
+		tx, err := connection.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		locked, err := workspacesqlc.New(tx).TryCreateWorkspaceLock(ctx, createWorkspaceLockID("subject-connection-loss", "connection-loss-key"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !locked {
+			t.Fatal("failed to acquire setup lock")
+		}
+		if err := connection.Conn().Close(ctx); err != nil {
+			t.Fatal(err)
+		}
+
+		created, err := createWorkspace(ctx, repository, "subject-connection-loss", "connection-loss-key", "Recovered")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if created.ID == "" {
+			t.Fatal("retry returned no workspace ID")
 		}
 	})
 
@@ -196,6 +355,36 @@ func TestWorkspaceRepository(t *testing.T) {
 		}
 	})
 
+	t.Run("rolls back an injected failure after create", func(t *testing.T) {
+		rollbackErr := errors.New("injected rollback")
+		var attempted domain.Workspace
+		err := repository.WithinTransaction(ctx, func(tx outbound.WorkspaceTransaction) error {
+			var createErr error
+			attempted, createErr = tx.CreateWorkspace(ctx, "subject-rollback", "rollback-key", "Must Roll Back")
+			if createErr != nil {
+				return createErr
+			}
+			return rollbackErr
+		})
+		if !errors.Is(err, rollbackErr) {
+			t.Fatalf("error = %v, want injected rollback", err)
+		}
+
+		var workspaces, owners, retries int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM workspaces WHERE id = $1`, attempted.ID).Scan(&workspaces); err != nil {
+			t.Fatal(err)
+		}
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM workspace_memberships WHERE workspace_id = $1`, attempted.ID).Scan(&owners); err != nil {
+			t.Fatal(err)
+		}
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM workspace_creations WHERE subject = $1 AND idempotency_key = $2`, "subject-rollback", "rollback-key").Scan(&retries); err != nil {
+			t.Fatal(err)
+		}
+		if workspaces != 0 || owners != 0 || retries != 0 {
+			t.Fatalf("rows = workspaces %d, owners %d, retries %d; want 0 each", workspaces, owners, retries)
+		}
+	})
+
 	t.Run("replaces an expired creation record", func(t *testing.T) {
 		first, err := createWorkspace(ctx, repository, "subject-expired", "expired-key", "First")
 		if err != nil {
@@ -222,9 +411,31 @@ func TestWorkspaceRepository(t *testing.T) {
 		`, "subject-expired", "expired-key"); err != nil {
 			t.Fatal(err)
 		}
+		second, err := createWorkspace(ctx, repository, "subject-expired", "expired-key", "Second")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if second.ID == first.ID {
+			t.Fatal("expired key replayed the original workspace")
+		}
+	})
+
+	t.Run("deletes an expired creation record explicitly", func(t *testing.T) {
+		first, err := createWorkspace(ctx, repository, "subject-cleanup", "cleanup-key", "Cleanup")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pool.Exec(ctx, `
+			UPDATE workspace_creations
+			SET completed_at = statement_timestamp() - INTERVAL '25 hours',
+			    expires_at = statement_timestamp() - INTERVAL '1 hour'
+			WHERE subject = $1 AND idempotency_key = $2
+		`, "subject-cleanup", "cleanup-key"); err != nil {
+			t.Fatal(err)
+		}
 		deleted, err := workspacesqlc.New(pool).DeleteExpiredWorkspaceCreation(ctx, workspacesqlc.DeleteExpiredWorkspaceCreationParams{
-			Subject:        "subject-expired",
-			IdempotencyKey: "expired-key",
+			Subject:        "subject-cleanup",
+			IdempotencyKey: "cleanup-key",
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -233,7 +444,7 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatalf("deleted records = %d, want 1", deleted)
 		}
 
-		second, err := createWorkspace(ctx, repository, "subject-expired", "expired-key", "Second")
+		second, err := createWorkspace(ctx, repository, "subject-cleanup", "cleanup-key", "Cleanup Again")
 		if err != nil {
 			t.Fatal(err)
 		}

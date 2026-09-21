@@ -1,16 +1,19 @@
 package bootstrap
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -113,15 +116,46 @@ func newHandler(ctx context.Context, handler workspacev1.WorkspaceServiceServer)
 	if err := workspacev1.RegisterWorkspaceServiceHandlerServer(ctx, gateway, handler); err != nil {
 		return nil, err
 	}
+	restHandler := withBodyLimit(gateway)
 
 	httpHandler := http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		if request.ProtoMajor == 2 && strings.HasPrefix(strings.ToLower(request.Header.Get("Content-Type")), "application/grpc") {
 			grpcServer.ServeHTTP(response, request)
 			return
 		}
-		gateway.ServeHTTP(response, request)
+		restHandler.ServeHTTP(response, request)
 	})
-	return withRequestID(http.MaxBytesHandler(httpHandler, maxRequestBodyBytes)), nil
+	return withRequestID(withTraceContext(httpHandler)), nil
+}
+
+func withBodyLimit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		if request.Body == nil {
+			next.ServeHTTP(response, request)
+			return
+		}
+		body := request.Body
+		defer func() { _ = body.Close() }()
+		content, err := io.ReadAll(http.MaxBytesReader(response, body, maxRequestBodyBytes))
+		if err != nil {
+			if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+				http.Error(response, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+				return
+			}
+			http.Error(response, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+		request.Body = io.NopCloser(bytes.NewReader(content))
+		next.ServeHTTP(response, request)
+	})
+}
+
+func withTraceContext(next http.Handler) http.Handler {
+	propagator := propagation.TraceContext{}
+	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		ctx := propagator.Extract(request.Context(), propagation.HeaderCarrier(request.Header))
+		next.ServeHTTP(response, request.WithContext(ctx))
+	})
 }
 
 func withRequestID(next http.Handler) http.Handler {
@@ -155,6 +189,9 @@ func validRequestID(value string) bool {
 
 func incomingHeader(key string) (string, bool) {
 	switch {
+	case strings.EqualFold(key, "Authorization"):
+		// grpc-gateway forwards Authorization before it calls this matcher.
+		return "", false
 	case strings.EqualFold(key, "Idempotency-Key"):
 		return "idempotency-key", true
 	case strings.EqualFold(key, "X-Request-ID"):

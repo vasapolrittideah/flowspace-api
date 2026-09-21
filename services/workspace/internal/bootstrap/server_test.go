@@ -7,9 +7,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
@@ -59,6 +61,7 @@ func TestHandlerServesREST(t *testing.T) {
 		if got := metadata.ValueFromIncomingContext(ctx, "x-request-id"); len(got) != 1 || got[0] != "request-2" {
 			t.Fatalf("request ID metadata = %v", got)
 		}
+		assertRESTContext(ctx, t)
 		return &workspacev1.CreateWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: "workspace-1", Name: request.GetName()}}, nil
 	}}
 	handler, err := newHandler(context.Background(), server)
@@ -70,6 +73,9 @@ func TestHandlerServesREST(t *testing.T) {
 	request.Header.Set("Authorization", "Bearer token")
 	request.Header.Set("Idempotency-Key", "request-1")
 	request.Header.Set("X-Request-ID", "request-2")
+	request.Header.Set("Grpc-Timeout", "1S")
+	request.Header.Set("Traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")
+	request.Header.Set("Tracestate", "vendor=value")
 	response := httptest.NewRecorder()
 
 	handler.ServeHTTP(response, request)
@@ -82,13 +88,71 @@ func TestHandlerServesREST(t *testing.T) {
 	}
 }
 
+func assertRESTContext(ctx context.Context, t *testing.T) {
+	t.Helper()
+	if got := trace.SpanContextFromContext(ctx); !got.IsRemote() || got.TraceID().String() != "4bf92f3577b34da6a3ce929d0e0e4736" || got.TraceState().String() != "vendor=value" {
+		t.Fatalf("span context = %v", got)
+	}
+	deadline, ok := ctx.Deadline()
+	if !ok || time.Until(deadline) <= 0 || time.Until(deadline) > time.Second {
+		t.Fatalf("deadline = %v, present = %t", deadline, ok)
+	}
+}
+
 func TestRequestIDValidatesHeader(t *testing.T) {
 	if got := requestID("request-3"); got != "request-3" {
 		t.Fatalf("requestID() = %q, want request-3", got)
 	}
-	for _, unsafe := range []string{"", "unsafe request id", strings.Repeat("x", 129)} {
+	for _, safe := range []string{"a", "Request.ID_3-", strings.Repeat("x", maxRequestIDBytes)} {
+		if got := requestID(safe); got != safe {
+			t.Fatalf("requestID(%q) = %q", safe, got)
+		}
+	}
+	for _, unsafe := range []string{"", "unsafe request id", "request/id", "คำขอ", strings.Repeat("x", maxRequestIDBytes+1)} {
 		if got := requestID(unsafe); got == unsafe || !validRequestID(got) {
 			t.Fatalf("requestID(%q) = %q", unsafe, got)
+		}
+	}
+}
+
+func TestHandlerReplacesInvalidRequestID(t *testing.T) {
+	var forwarded string
+	server := &fakeWorkspaceServer{get: func(ctx context.Context, request *workspacev1.GetWorkspaceRequest) (*workspacev1.GetWorkspaceResponse, error) {
+		values := metadata.ValueFromIncomingContext(ctx, "x-request-id")
+		if len(values) != 1 {
+			t.Fatalf("request ID metadata = %v", values)
+		}
+		forwarded = values[0]
+		return &workspacev1.GetWorkspaceResponse{Workspace: &workspacev1.Workspace{Id: request.GetWorkspaceId()}}, nil
+	}}
+	handler, err := newHandler(context.Background(), server)
+	if err != nil {
+		t.Fatalf("newHandler() error = %v", err)
+	}
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/v1/workspaces/workspace-1", nil)
+	request.Header.Set("X-Request-ID", "unsafe request id")
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body)
+	}
+	if returned := response.Header().Get("X-Request-ID"); returned != forwarded || !validRequestID(returned) {
+		t.Fatalf("returned request ID = %q, forwarded = %q", returned, forwarded)
+	}
+}
+
+func TestIncomingHeaderForwardsRequiredHeaders(t *testing.T) {
+	if got, ok := incomingHeader("Authorization"); ok || got != "" {
+		t.Fatalf("incomingHeader(%q) = %q, %t, want empty, false", "Authorization", got, ok)
+	}
+	for key, want := range map[string]string{
+		"Idempotency-Key": "idempotency-key",
+		"X-Request-ID":    "x-request-id",
+	} {
+		if got, ok := incomingHeader(key); !ok || got != want {
+			t.Fatalf("incomingHeader(%q) = %q, %t, want %q, true", key, got, ok, want)
 		}
 	}
 }
@@ -119,6 +183,7 @@ func TestHandlerRejectsOversizedRESTBody(t *testing.T) {
 		t.Fatalf("newHandler() error = %v", err)
 	}
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":"`+strings.Repeat("x", maxRequestBodyBytes)+`"}`))
+	request.ContentLength = -1
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 
@@ -127,8 +192,35 @@ func TestHandlerRejectsOversizedRESTBody(t *testing.T) {
 	if response.Code < http.StatusBadRequest {
 		t.Fatalf("status = %d, want request rejection", response.Code)
 	}
+	if response.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusRequestEntityTooLarge)
+	}
 	if called {
 		t.Fatal("oversized request reached the RPC handler")
+	}
+}
+
+func TestHandlerRejectsMalformedRESTJSON(t *testing.T) {
+	called := false
+	server := &fakeWorkspaceServer{create: func(context.Context, *workspacev1.CreateWorkspaceRequest) (*workspacev1.CreateWorkspaceResponse, error) {
+		called = true
+		return &workspacev1.CreateWorkspaceResponse{}, nil
+	}}
+	handler, err := newHandler(context.Background(), server)
+	if err != nil {
+		t.Fatalf("newHandler() error = %v", err)
+	}
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/workspaces", strings.NewReader(`{"name":`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusBadRequest)
+	}
+	if called {
+		t.Fatal("malformed request reached the RPC handler")
 	}
 }
 

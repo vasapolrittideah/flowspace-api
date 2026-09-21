@@ -8,7 +8,7 @@ Use the repository commands to move work from a request to a reviewed pull reque
 | --- | --- | --- |
 | `/spec` | `<request>` | Define a product capability, its scope, and its acceptance criteria before implementation. |
 | `/plan` | `<module-id>` | Split an approved specification into ordered GitHub Issues and a module plan. |
-| `/build` | `<module-id> [auto\|all]` | Implement the next ready issue. Use `auto` or `all` to implement every approved issue in dependency order. |
+| `/build` | `[<module-id>] [auto\|all]` | Implement the next ready issue. Use `auto` or `all` to implement every approved issue in dependency order. |
 | `/test` | `<request>` | Use test-driven development for a focused feature or bug fix outside the module workflow. |
 | `/review` | None | Review the current changes for correctness, readability, architecture, security, and performance. |
 | `/ship` | None | Run launch checks and produce a go or no-go decision with a rollback plan. |
@@ -19,28 +19,47 @@ Use the repository commands to move work from a request to a reviewed pull reque
 ```mermaid
 graph TD
     A[Change request] --> B{Type of work}
-    B -->|New product capability| C[/spec request/]
+    B -->|New product capability| C["/spec request"]
     C --> D[Specification files]
-    D --> E[/plan module-id/]
-    E --> F[Module plan and GitHub Issues]
-    F --> G[/build module-id/]
-    B -->|Focused feature or bug fix| H[/test request/]
-    H --> I[Tests and implementation]
-    G --> J[Verified commits and pull request]
-    I --> J
-    J --> K[/review/]
-    K --> L{Important findings?}
-    L -->|Yes| G
-    L -->|No| M[/ship/]
-    M --> N{Decision}
-    N -->|GO| O[Maintainer review and squash merge]
-    N -->|NO-GO| G
-    P[/constraints mode/] -. defines and checks quality rules .-> C
-    P -. defines and checks quality rules .-> E
-    P -. defines and checks quality rules .-> G
-    P -. defines and checks quality rules .-> H
-    P -. defines and checks quality rules .-> K
-    P -. defines and checks quality rules .-> M
+    D --> E{Specification approved?}
+    E -->|No| C
+    E -->|Yes| F["/plan module-id"]
+    F --> G[Module plan and tasks/.todo.md]
+    G --> H{Plan approved?}
+    H -->|No| F
+    H -->|Yes| I[GitHub Issues and project]
+    I --> J["/build module-id [auto or all]"]
+    B -->|Focused feature or bug fix| K["/test request"]
+    B -->|Small docs or maintenance| L[Implement directly]
+    J --> M[Verified issue commits]
+    K --> N[Focused change]
+    L --> N
+    N --> P[Run required checks and commit]
+    M --> Q["/review"]
+    P --> Q
+    Q --> R{Critical or Important findings?}
+    R -->|Yes| S[Fix findings, rerun checks, and commit]
+    S --> Q
+    R -->|No| T["/ship"]
+    T --> U{Ship decision}
+    U -->|NO-GO| V[Fix blockers, rerun checks, and commit]
+    V --> Q
+    U -->|GO| O[Prepare or update pull request]
+    O --> W[Maintainer review and squash merge]
+    W --> W1{More open issues?}
+    W1 -->|Yes| W3[Start the next issue on a new branch from main]
+    W3 --> J
+    W1 -->|No| W2[Done]
+    A -. Quality work as needed .-> X["/constraints mode"]
+    X --> Y{Argument}
+    Y -->|None| Z1[Set up or update quality rules]
+    Y -->|check| Z2[Run current rules]
+    Y -->|guard| Z3[Inspect the diff for a weaker bar]
+    Y -->|ratchet| Z4[Record measured floors]
+    Z1 --> Z5[Quality result]
+    Z2 --> Z5
+    Z3 --> Z5
+    Z4 --> Z5
 ```
 
 ### 1. Define a capability with `/spec`
@@ -57,7 +76,7 @@ After approval, the command creates the GitHub Issues, adds them to the reposito
 
 ### 3. Implement issues with `/build`
 
-Use `/build <module-id>` to implement the next ready issue. Add `auto` or `all` only after the full plan is approved. The command uses the `incremental-implementation` and `test-driven-development` skills. It uses the `debugging-and-error-recovery` skill if a step fails.
+Use `/build <module-id>` to implement the next ready issue. If `tasks/` contains one plan, you can omit `<module-id>`. Add `auto` or `all` only after the full plan is approved. Without either mode, run `/build` again after the maintainer merges the previous issue. The command uses the `incremental-implementation` and `test-driven-development` skills. It uses the `debugging-and-error-recovery` skill if a step fails.
 
 Each issue produces a failing test, the minimum implementation, verification results, and one tested commit. The command changes the source and test files named by the issue. It does not create a fixed set of files. The pull request closes completed issues after the maintainer merges it.
 
@@ -75,7 +94,7 @@ The command returns findings with file and line references. It does not create a
 
 ### 6. Make the launch decision with `/ship`
 
-Use `/ship` after the review findings are resolved. The command uses the `shipping-and-launch` skill. For a change with a larger blast radius, it also runs the `code-reviewer`, `security-auditor`, and `test-engineer` personas.
+Use `/ship` after the review findings are resolved. The command uses the `shipping-and-launch` skill. It runs the `code-reviewer`, `security-auditor`, and `test-engineer` personas unless the change meets every skip condition. A skipped fan-out must touch at most two files, change fewer than 50 lines, and avoid auth, payments, data access, configuration, and environment files.
 
 The command returns a go or no-go decision, blockers, known risks, and a rollback plan. It does not create a repository file. A GO decision prepares the change for maintainer review. It does not merge the pull request.
 
@@ -83,7 +102,7 @@ The command returns a go or no-go decision, blockers, known risks, and a rollbac
 
 Use `/constraints` without an argument to set up the repository quality rules. The command uses the `constraint-driven-development` skill. It creates or updates `CONSTRAINTS.md` and can add the scripts or tool configuration that enforce the selected rules.
 
-Use `/constraints check` to run the current rules. Use `/constraints guard` to find changes that weaken the rules. Use `/constraints ratchet` to record current measured values as new minimum limits. These modes can update `CONSTRAINTS.md` when the selected action requires it.
+Use `/constraints check` to run the current rules. Use `/constraints guard` to find changes that weaken the rules. These two modes report results without changing the quality bar. Use `/constraints ratchet` to record current measured values as new minimum limits in `CONSTRAINTS.md`.
 
 ## Pull request handoff
 
@@ -97,7 +116,7 @@ Some agents do not register repository commands as slash commands. Tell the agen
 | --- | --- | --- |
 | `/spec` | `@.agents/commands/spec.md` | `<request>` |
 | `/plan` | `@.agents/commands/plan.md` | `<module-id>` |
-| `/build` | `@.agents/commands/build.md` | `<module-id> [auto\|all]` |
+| `/build` | `@.agents/commands/build.md` | `[<module-id>] [auto\|all]` |
 | `/test` | `@.agents/commands/test.md` | `<request>` |
 | `/review` | `@.agents/commands/review.md` | None |
 | `/ship` | `@.agents/commands/ship.md` | None |

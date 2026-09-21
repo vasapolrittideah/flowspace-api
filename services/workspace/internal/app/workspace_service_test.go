@@ -14,8 +14,17 @@ import (
 
 func TestWorkspaceServiceCreateWorkspace(t *testing.T) {
 	want := domain.Workspace{ID: "workspace-id", Name: "Platform", CreatedAt: time.Now()}
+	ctx := t.Context()
 	repository := &fakeWorkspaceRepository{
-		create: func(_ context.Context, subject, idempotencyKey, name string) (domain.Workspace, error) {
+		withinTransaction: func(gotContext context.Context) {
+			if gotContext != ctx {
+				t.Fatal("transaction context differs from request context")
+			}
+		},
+		create: func(gotContext context.Context, subject, idempotencyKey, name string) (domain.Workspace, error) {
+			if gotContext != ctx {
+				t.Fatal("create context differs from request context")
+			}
 			if subject != "subject-1" || idempotencyKey != "request-1" || name != "Platform" {
 				t.Fatalf("unexpected create input: %q, %q, %q", subject, idempotencyKey, name)
 			}
@@ -23,7 +32,7 @@ func TestWorkspaceServiceCreateWorkspace(t *testing.T) {
 		},
 	}
 
-	got, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+	got, err := NewWorkspaceService(repository).CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
 		Subject:        "subject-1",
 		IdempotencyKey: "request-1",
 		Name:           "  Platform  ",
@@ -39,6 +48,38 @@ func TestWorkspaceServiceCreateWorkspace(t *testing.T) {
 	}
 }
 
+func TestWorkspaceServiceAcceptsIdempotencyKeyBoundaries(t *testing.T) {
+	tests := []struct {
+		name string
+		key  string
+	}{
+		{name: "one byte", key: "!"},
+		{name: "255 bytes", key: strings.Repeat("~", 255)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repository := &fakeWorkspaceRepository{
+				create: func(_ context.Context, _, idempotencyKey, _ string) (domain.Workspace, error) {
+					if idempotencyKey != tt.key {
+						t.Fatalf("idempotency key = %q, want %q", idempotencyKey, tt.key)
+					}
+					return domain.Workspace{}, nil
+				},
+			}
+
+			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+				Subject:        "subject",
+				IdempotencyKey: tt.key,
+				Name:           "Workspace",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestWorkspaceServiceRejectsInvalidCreate(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -48,6 +89,9 @@ func TestWorkspaceServiceRejectsInvalidCreate(t *testing.T) {
 		{name: "missing subject", input: inbound.CreateWorkspaceInput{IdempotencyKey: "key", Name: "Workspace"}, want: domain.ErrUnauthenticated},
 		{name: "missing idempotency key", input: inbound.CreateWorkspaceInput{Subject: "subject", Name: "Workspace"}, want: domain.ErrInvalidArgument},
 		{name: "long idempotency key", input: inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: strings.Repeat("k", 256), Name: "Workspace"}, want: domain.ErrInvalidArgument},
+		{name: "idempotency key contains space", input: inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "request key", Name: "Workspace"}, want: domain.ErrInvalidArgument},
+		{name: "idempotency key contains delete", input: inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "request\x7fkey", Name: "Workspace"}, want: domain.ErrInvalidArgument},
+		{name: "idempotency key contains non-ASCII", input: inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "request-é", Name: "Workspace"}, want: domain.ErrInvalidArgument},
 		{name: "blank name", input: inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: " \t"}, want: domain.ErrInvalidArgument},
 		{name: "long name", input: inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: strings.Repeat("界", 101)}, want: domain.ErrInvalidArgument},
 		{name: "invalid name encoding", input: inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: string([]byte{0xff})}, want: domain.ErrInvalidArgument},
@@ -64,6 +108,9 @@ func TestWorkspaceServiceRejectsInvalidCreate(t *testing.T) {
 			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), tt.input)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+			if repository.transactions != 0 {
+				t.Fatalf("transactions = %d, want 0", repository.transactions)
 			}
 		})
 	}
@@ -139,14 +186,47 @@ func TestWorkspaceServicePreservesRepositoryErrors(t *testing.T) {
 	}
 }
 
-type fakeWorkspaceRepository struct {
-	create       func(context.Context, string, string, string) (domain.Workspace, error)
-	get          func(context.Context, string, string) (domain.Workspace, error)
-	transactions int
+func TestWorkspaceServicePreservesCreateContextErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		want error
+	}{
+		{name: "canceled", want: context.Canceled},
+		{name: "deadline exceeded", want: context.DeadlineExceeded},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repository := &fakeWorkspaceRepository{
+				create: func(context.Context, string, string, string) (domain.Workspace, error) {
+					return domain.Workspace{}, tt.want
+				},
+			}
+
+			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+				Subject:        "subject",
+				IdempotencyKey: "key",
+				Name:           "Workspace",
+			})
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+		})
+	}
 }
 
-func (r *fakeWorkspaceRepository) WithinTransaction(_ context.Context, fn func(outbound.WorkspaceTransaction) error) error {
+type fakeWorkspaceRepository struct {
+	withinTransaction func(context.Context)
+	create            func(context.Context, string, string, string) (domain.Workspace, error)
+	get               func(context.Context, string, string) (domain.Workspace, error)
+	transactions      int
+}
+
+func (r *fakeWorkspaceRepository) WithinTransaction(ctx context.Context, fn func(outbound.WorkspaceTransaction) error) error {
 	r.transactions++
+	if r.withinTransaction != nil {
+		r.withinTransaction(ctx)
+	}
 	return fn(fakeWorkspaceTransaction{create: r.create})
 }
 

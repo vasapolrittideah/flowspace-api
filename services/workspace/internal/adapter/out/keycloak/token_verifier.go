@@ -33,6 +33,9 @@ func NewTokenVerifier(ctx context.Context, discoveryURL, issuer, audience string
 func (v *TokenVerifier) VerifyToken(ctx context.Context, rawToken string) (string, error) {
 	token, err := v.verify(ctx, rawToken)
 	if err != nil {
+		if contextErr := ctx.Err(); contextErr != nil {
+			return "", fmt.Errorf("verify token: %w", contextErr)
+		}
 		return "", fmt.Errorf("verify token: %w", err)
 	}
 	if token.Subject == "" {

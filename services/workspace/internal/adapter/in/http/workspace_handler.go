@@ -57,6 +57,11 @@ func (h *WorkspaceHandler) CreateWorkspace(ctx context.Context, request *workspa
 	if len(idempotencyKey) > maxIdempotencyKeyBytes {
 		return nil, invalidArgument("idempotency_key", "must be at most 255 bytes")
 	}
+	for index := range len(idempotencyKey) {
+		if idempotencyKey[index] < 0x21 || idempotencyKey[index] > 0x7e {
+			return nil, invalidArgument("idempotency_key", "must contain only visible ASCII characters")
+		}
+	}
 	if request == nil {
 		return nil, invalidArgument("request", "is required")
 	}
@@ -115,7 +120,7 @@ func logRequest(logger *zap.Logger, err, cause error, duration time.Duration) {
 		outcome = "failure"
 	}
 	fields := []zap.Field{
-		zap.String("code", code.String()),
+		zap.String("status", code.String()),
 		zap.Duration("duration", duration),
 		zap.String("outcome", outcome),
 	}
@@ -147,7 +152,13 @@ func (h *WorkspaceHandler) authenticate(ctx context.Context) (string, error) {
 		return "", status.Error(codes.Unauthenticated, "authentication required")
 	}
 	subject, err := h.verifier.VerifyToken(ctx, parts[1])
-	if err != nil || subject == "" {
+	if err != nil {
+		if contextErr := ctx.Err(); contextErr != nil {
+			return "", rpcError(contextErr)
+		}
+		return "", status.Error(codes.Unauthenticated, "authentication required")
+	}
+	if subject == "" {
 		return "", status.Error(codes.Unauthenticated, "authentication required")
 	}
 	return subject, nil

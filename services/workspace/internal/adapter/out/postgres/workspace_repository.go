@@ -57,6 +57,12 @@ func (tx *workspaceTransaction) CreateWorkspace(ctx context.Context, subject, id
 	if !locked {
 		return domain.Workspace{}, domain.ErrCreateInProgress
 	}
+	if _, err := tx.queries.DeleteExpiredWorkspaceCreation(ctx, workspacesqlc.DeleteExpiredWorkspaceCreationParams{
+		Subject:        subject,
+		IdempotencyKey: idempotencyKey,
+	}); err != nil {
+		return domain.Workspace{}, fmt.Errorf("delete expired workspace creation: %w", err)
+	}
 
 	requestHash := sha256.Sum256([]byte(name))
 	creation, err := tx.queries.GetWorkspaceCreation(ctx, workspacesqlc.GetWorkspaceCreationParams{

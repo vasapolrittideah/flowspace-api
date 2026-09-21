@@ -17,49 +17,10 @@ Use the repository commands to move work from a request to a reviewed pull reque
 ## Command workflow
 
 ```mermaid
-graph TD
-    A[Change request] --> B{Type of work}
-    B -->|New product capability| C["/spec request"]
-    C --> D[Specification files]
-    D --> E{Specification approved?}
-    E -->|No| C
-    E -->|Yes| F["/plan module-id"]
-    F --> G[Module plan and tasks/.todo.md]
-    G --> H{Plan approved?}
-    H -->|No| F
-    H -->|Yes| I[GitHub Issues and project]
-    I --> J["/build module-id [auto or all]"]
-    B -->|Focused feature or bug fix| K["/test request"]
-    B -->|Small docs or maintenance| L[Implement directly]
-    J --> M[Verified issue commits]
-    K --> N[Focused change]
-    L --> N
-    N --> P[Run required checks and commit]
-    M --> Q["/review"]
-    P --> Q
-    Q --> R{Critical or Important findings?}
-    R -->|Yes| S[Fix findings, rerun checks, and commit]
-    S --> Q
-    R -->|No| T["/ship"]
-    T --> U{Ship decision}
-    U -->|NO-GO| V[Fix blockers, rerun checks, and commit]
-    V --> Q
-    U -->|GO| O[Prepare or update pull request]
-    O --> W[Maintainer review and squash merge]
-    W --> W1{More open issues?}
-    W1 -->|Yes| W3[Start the next issue on a new branch from main]
-    W3 --> J
-    W1 -->|No| W2[Done]
-    A -. Quality work as needed .-> X["/constraints mode"]
-    X --> Y{Argument}
-    Y -->|None| Z1[Set up or update quality rules]
-    Y -->|check| Z2[Run current rules]
-    Y -->|guard| Z3[Inspect the diff for a weaker bar]
-    Y -->|ratchet| Z4[Record measured floors]
-    Z1 --> Z5[Quality result]
-    Z2 --> Z5
-    Z3 --> Z5
-    Z4 --> Z5
+graph LR
+    A["/spec request"] --> B["/plan module-id"] --> C["/build module-id [auto or all]"] --> D["/review"] --> E["/ship"]
+    F["/test request"] --> D
+    G["/constraints [mode]"] -. use as needed .-> H[Any workflow stage]
 ```
 
 ### 1. Define a capability with `/spec`

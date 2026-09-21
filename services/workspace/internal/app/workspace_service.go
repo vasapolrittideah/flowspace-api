@@ -31,6 +31,11 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, input inbound.Cr
 	if len(input.IdempotencyKey) > maxIdempotencyKeyBytes {
 		return domain.Workspace{}, invalid("idempotency_key", "must be at most 255 bytes")
 	}
+	for index := range len(input.IdempotencyKey) {
+		if input.IdempotencyKey[index] < 0x21 || input.IdempotencyKey[index] > 0x7e {
+			return domain.Workspace{}, invalid("idempotency_key", "must contain only visible ASCII characters")
+		}
+	}
 
 	newWorkspace, err := domain.NewWorkspace(input.Name)
 	if err != nil {

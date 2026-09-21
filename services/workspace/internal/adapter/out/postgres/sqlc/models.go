@@ -21,7 +21,8 @@ type WorkspaceCreation struct {
 	WorkspaceID        pgtype.UUID
 	WorkspaceName      string
 	WorkspaceCreatedAt pgtype.Timestamptz
-	CreatedAt          pgtype.Timestamptz
+	CompletedAt        pgtype.Timestamptz
+	ExpiresAt          pgtype.Timestamptz
 }
 
 type WorkspaceMembership struct {

@@ -118,8 +118,12 @@ func TestWorkspaceServiceRejectsInvalidCreate(t *testing.T) {
 
 func TestWorkspaceServiceGetWorkspace(t *testing.T) {
 	want := domain.Workspace{ID: "workspace-id", Name: "Platform", CreatedAt: time.Now()}
+	ctx := t.Context()
 	repository := &fakeWorkspaceRepository{
-		get: func(_ context.Context, subject, workspaceID string) (domain.Workspace, error) {
+		get: func(gotContext context.Context, subject, workspaceID string) (domain.Workspace, error) {
+			if gotContext != ctx {
+				t.Fatal("get context differs from request context")
+			}
 			if subject != "subject-1" || workspaceID != "workspace-id" {
 				t.Fatalf("unexpected get input: %q, %q", subject, workspaceID)
 			}
@@ -127,7 +131,7 @@ func TestWorkspaceServiceGetWorkspace(t *testing.T) {
 		},
 	}
 
-	got, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{
+	got, err := NewWorkspaceService(repository).GetWorkspace(ctx, inbound.GetWorkspaceInput{
 		Subject:     "subject-1",
 		WorkspaceID: "workspace-id",
 	})
@@ -207,6 +211,34 @@ func TestWorkspaceServicePreservesCreateContextErrors(t *testing.T) {
 				Subject:        "subject",
 				IdempotencyKey: "key",
 				Name:           "Workspace",
+			})
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("error = %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestWorkspaceServicePreservesGetContextErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		want error
+	}{
+		{name: "canceled", want: context.Canceled},
+		{name: "deadline exceeded", want: context.DeadlineExceeded},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repository := &fakeWorkspaceRepository{
+				get: func(context.Context, string, string) (domain.Workspace, error) {
+					return domain.Workspace{}, tt.want
+				},
+			}
+
+			_, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{
+				Subject:     "subject",
+				WorkspaceID: "workspace-id",
 			})
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("error = %v, want %v", err, tt.want)

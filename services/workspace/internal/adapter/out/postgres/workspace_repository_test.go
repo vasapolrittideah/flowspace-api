@@ -180,12 +180,20 @@ func TestWorkspaceRepository(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(reopenedPool.Close)
-		second, err := createWorkspace(ctx, NewWorkspaceRepository(reopenedPool), "subject-reopen", "reopen-key", "Durable")
+		reopenedRepository := NewWorkspaceRepository(reopenedPool)
+		second, err := createWorkspace(ctx, reopenedRepository, "subject-reopen", "reopen-key", "Durable")
 		if err != nil {
 			t.Fatal(err)
 		}
 		if second != first {
 			t.Fatalf("replay = %+v, want %+v", second, first)
+		}
+		read, err := reopenedRepository.GetWorkspace(ctx, "subject-reopen", first.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if read != first {
+			t.Fatalf("read workspace = %+v, want %+v", read, first)
 		}
 	})
 
@@ -332,6 +340,62 @@ func TestWorkspaceRepository(t *testing.T) {
 		}
 		if _, err := repository.GetWorkspace(ctx, "subject-read", "00000000-0000-0000-0000-000000000000"); !errors.Is(err, domain.ErrNotFound) {
 			t.Fatalf("error = %v, want ErrNotFound", err)
+		}
+		if _, err := repository.GetWorkspace(ctx, "subject-read", "not-a-uuid"); !errors.Is(err, domain.ErrNotFound) {
+			t.Fatalf("error = %v, want ErrNotFound", err)
+		}
+	})
+
+	t.Run("allows every membership role to read", func(t *testing.T) {
+		created, err := createWorkspace(ctx, repository, "subject-owner", "roles-key", "Roles")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		members := []struct {
+			subject string
+			role    string
+		}{
+			{subject: "subject-viewer", role: "viewer"},
+			{subject: "subject-member", role: "member"},
+			{subject: "subject-admin", role: "admin"},
+		}
+		for _, member := range members {
+			if _, err := pool.Exec(ctx, `
+				INSERT INTO workspace_memberships (workspace_id, subject, role)
+				VALUES ($1, $2, $3)
+			`, created.ID, member.subject, member.role); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		for _, subject := range []string{"subject-viewer", "subject-member", "subject-admin", "subject-owner"} {
+			got, err := repository.GetWorkspace(ctx, subject, created.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != created {
+				t.Fatalf("workspace for %q = %+v, want %+v", subject, got, created)
+			}
+		}
+	})
+
+	t.Run("preserves canceled and expired contexts", func(t *testing.T) {
+		created, err := createWorkspace(ctx, repository, "subject-context", "context-key", "Context")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		canceledContext, cancel := context.WithCancel(ctx)
+		cancel()
+		if _, err := repository.GetWorkspace(canceledContext, "subject-context", created.ID); !errors.Is(err, context.Canceled) {
+			t.Fatalf("canceled error = %v, want context.Canceled", err)
+		}
+
+		expiredContext, cancel := context.WithDeadline(ctx, time.Now().Add(-time.Second))
+		defer cancel()
+		if _, err := repository.GetWorkspace(expiredContext, "subject-context", created.ID); !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("deadline error = %v, want context.DeadlineExceeded", err)
 		}
 	})
 

@@ -76,6 +76,7 @@ Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
 
 - In commit bodies, limit prose lines to 72 characters. Preserve paragraphs and lists. Do not split URLs, code, or trailers.
 - For multiline commit messages, apply these rules in a message file. Run `git commit --file <message-file>` separately.
+- If a commit belongs to an issue, add `Refs: #<issue-number>` as a footer before the co-author trailers. This reference links the commit to the issue without closing it.
 
 ### Types
 
@@ -175,6 +176,7 @@ Put trailers after a blank line at the end of the message. Preserve existing att
 ## Pull requests
 
 - Use the [PR template](.github/pull_request_template.md). Complete Change, Reason, and Verification.
+- For each issue that the pull request completes, add `Closes #<issue-number>` to the Reason section. GitHub closes the issue after the pull request merges into the default branch.
 - Keep each paragraph and list item in a PR description on one physical line.
 - If there are no risks or limitations, omit that section.
 

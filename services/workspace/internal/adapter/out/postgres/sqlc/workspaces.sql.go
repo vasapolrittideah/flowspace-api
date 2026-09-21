@@ -45,12 +45,34 @@ func (q *Queries) CreateWorkspaceOwner(ctx context.Context, arg CreateWorkspaceO
 	return err
 }
 
+const deleteExpiredWorkspaceCreation = `-- name: DeleteExpiredWorkspaceCreation :execrows
+DELETE FROM workspace_creations AS wc
+WHERE wc.subject = $1
+  AND wc.idempotency_key = $2
+  AND wc.expires_at <= statement_timestamp()
+`
+
+type DeleteExpiredWorkspaceCreationParams struct {
+	Subject        string
+	IdempotencyKey string
+}
+
+func (q *Queries) DeleteExpiredWorkspaceCreation(ctx context.Context, arg DeleteExpiredWorkspaceCreationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredWorkspaceCreation, arg.Subject, arg.IdempotencyKey)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getWorkspaceCreation = `-- name: GetWorkspaceCreation :one
 SELECT
     request_hash,
     workspace_id::text AS id,
     workspace_name AS name,
-    workspace_created_at AS created_at
+    workspace_created_at AS created_at,
+    completed_at,
+    expires_at
 FROM workspace_creations AS wc
 WHERE wc.subject = $1
   AND wc.idempotency_key = $2
@@ -66,6 +88,8 @@ type GetWorkspaceCreationRow struct {
 	ID          string
 	Name        string
 	CreatedAt   pgtype.Timestamptz
+	CompletedAt pgtype.Timestamptz
+	ExpiresAt   pgtype.Timestamptz
 }
 
 func (q *Queries) GetWorkspaceCreation(ctx context.Context, arg GetWorkspaceCreationParams) (GetWorkspaceCreationRow, error) {
@@ -76,6 +100,8 @@ func (q *Queries) GetWorkspaceCreation(ctx context.Context, arg GetWorkspaceCrea
 		&i.ID,
 		&i.Name,
 		&i.CreatedAt,
+		&i.CompletedAt,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
@@ -113,7 +139,9 @@ INSERT INTO workspace_creations (
     request_hash,
     workspace_id,
     workspace_name,
-    workspace_created_at
+    workspace_created_at,
+    completed_at,
+    expires_at
 )
 VALUES (
     $1,
@@ -121,7 +149,9 @@ VALUES (
     $3,
     $4::uuid,
     $5,
-    $6
+    $6,
+    statement_timestamp(),
+    statement_timestamp() + INTERVAL '24 hours'
 )
 `
 

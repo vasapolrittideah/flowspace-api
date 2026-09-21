@@ -6,10 +6,18 @@ SELECT
     request_hash,
     workspace_id::text AS id,
     workspace_name AS name,
-    workspace_created_at AS created_at
+    workspace_created_at AS created_at,
+    completed_at,
+    expires_at
 FROM workspace_creations AS wc
 WHERE wc.subject = sqlc.arg(subject)
   AND wc.idempotency_key = sqlc.arg(idempotency_key);
+
+-- name: DeleteExpiredWorkspaceCreation :execrows
+DELETE FROM workspace_creations AS wc
+WHERE wc.subject = sqlc.arg(subject)
+  AND wc.idempotency_key = sqlc.arg(idempotency_key)
+  AND wc.expires_at <= statement_timestamp();
 
 -- name: CreateWorkspace :one
 INSERT INTO workspaces (name)
@@ -27,7 +35,9 @@ INSERT INTO workspace_creations (
     request_hash,
     workspace_id,
     workspace_name,
-    workspace_created_at
+    workspace_created_at,
+    completed_at,
+    expires_at
 )
 VALUES (
     sqlc.arg(subject),
@@ -35,7 +45,9 @@ VALUES (
     sqlc.arg(request_hash),
     sqlc.arg(workspace_id)::uuid,
     sqlc.arg(workspace_name),
-    sqlc.arg(workspace_created_at)
+    sqlc.arg(workspace_created_at),
+    statement_timestamp(),
+    statement_timestamp() + INTERVAL '24 hours'
 );
 
 -- name: GetWorkspaceForSubject :one

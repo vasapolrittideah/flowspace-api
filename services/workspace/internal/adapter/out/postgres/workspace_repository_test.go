@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -73,6 +74,13 @@ func TestWorkspaceRepository(t *testing.T) {
 		}
 		if role != "owner" {
 			t.Fatalf("role = %q, want owner", role)
+		}
+		_, err = pool.Exec(ctx, `
+			INSERT INTO workspace_memberships (workspace_id, subject, role)
+			VALUES ($1, $2, 'viewer')
+		`, created.ID, "subject-create")
+		if err == nil {
+			t.Fatal("duplicate membership insert succeeded")
 		}
 
 		_, err = pool.Exec(ctx, `
@@ -185,6 +193,101 @@ func TestWorkspaceRepository(t *testing.T) {
 		}
 		if after != before {
 			t.Fatalf("workspace count = %d, want %d", after, before)
+		}
+	})
+
+	t.Run("replaces an expired creation record", func(t *testing.T) {
+		first, err := createWorkspace(ctx, repository, "subject-expired", "expired-key", "First")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var completedAt, expiresAt time.Time
+		if err := pool.QueryRow(ctx, `
+			SELECT completed_at, expires_at
+			FROM workspace_creations
+			WHERE subject = $1 AND idempotency_key = $2
+		`, "subject-expired", "expired-key").Scan(&completedAt, &expiresAt); err != nil {
+			t.Fatal(err)
+		}
+		if got := expiresAt.Sub(completedAt); got != 24*time.Hour {
+			t.Fatalf("retry window = %s, want 24h", got)
+		}
+
+		if _, err := pool.Exec(ctx, `
+			UPDATE workspace_creations
+			SET completed_at = statement_timestamp() - INTERVAL '25 hours',
+			    expires_at = statement_timestamp() - INTERVAL '1 hour'
+			WHERE subject = $1 AND idempotency_key = $2
+		`, "subject-expired", "expired-key"); err != nil {
+			t.Fatal(err)
+		}
+		deleted, err := workspacesqlc.New(pool).DeleteExpiredWorkspaceCreation(ctx, workspacesqlc.DeleteExpiredWorkspaceCreationParams{
+			Subject:        "subject-expired",
+			IdempotencyKey: "expired-key",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if deleted != 1 {
+			t.Fatalf("deleted records = %d, want 1", deleted)
+		}
+
+		second, err := createWorkspace(ctx, repository, "subject-expired", "expired-key", "Second")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if second.ID == first.ID {
+			t.Fatal("expired key replayed the original workspace")
+		}
+	})
+
+	t.Run("rolls back only workspace tables", func(t *testing.T) {
+		db, err := sql.Open("pgx", dsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+
+		if _, err := db.ExecContext(ctx, `CREATE TABLE migration_sentinel (id integer PRIMARY KEY)`); err != nil {
+			t.Fatal(err)
+		}
+		if err := goose.DownToContext(ctx, db, ".", 1); err != nil {
+			t.Fatal(err)
+		}
+		if err := goose.UpToContext(ctx, db, ".", 2); err != nil {
+			t.Fatal(err)
+		}
+		var total, invalid int
+		if err := db.QueryRowContext(ctx, `
+			SELECT count(*), count(*) FILTER (WHERE expires_at <> completed_at + INTERVAL '24 hours')
+			FROM workspace_creations
+		`).Scan(&total, &invalid); err != nil {
+			t.Fatal(err)
+		}
+		if total == 0 || invalid != 0 {
+			t.Fatalf("backfilled records = %d, invalid expiry windows = %d", total, invalid)
+		}
+		if err := goose.DownToContext(ctx, db, ".", 0); err != nil {
+			t.Fatal(err)
+		}
+
+		for _, table := range []string{"workspaces", "workspace_memberships", "workspace_creations"} {
+			var exists bool
+			if err := db.QueryRowContext(ctx, `SELECT to_regclass($1) IS NOT NULL`, table).Scan(&exists); err != nil {
+				t.Fatal(err)
+			}
+			if exists {
+				t.Fatalf("table %q still exists", table)
+			}
+		}
+
+		var sentinelExists bool
+		if err := db.QueryRowContext(ctx, `SELECT to_regclass('migration_sentinel') IS NOT NULL`).Scan(&sentinelExists); err != nil {
+			t.Fatal(err)
+		}
+		if !sentinelExists {
+			t.Fatal("down migration removed an unrelated table")
 		}
 	})
 }

@@ -1,42 +1,104 @@
 # Contributing to FlowSpace
 
-Use this workflow to guide the agent from an idea to a reviewed change.
+Use the repository commands to move work from a request to a reviewed pull request. Choose the shortest workflow that covers the change.
 
-## Choose a workflow
+## Command reference
 
-Choose the workflow that matches the change:
+| Command | Arguments | Purpose |
+| --- | --- | --- |
+| `/spec` | `<request>` | Define a product capability, its scope, and its acceptance criteria before implementation. |
+| `/plan` | `<module-id>` | Split an approved specification into ordered GitHub Issues and a module plan. |
+| `/build` | `<module-id> [auto\|all]` | Implement the next ready issue. Use `auto` or `all` to implement every approved issue in dependency order. |
+| `/test` | `<request>` | Use test-driven development for a focused feature or bug fix outside the module workflow. |
+| `/review` | None | Review the current changes for correctness, readability, architecture, security, and performance. |
+| `/ship` | None | Run launch checks and produce a go or no-go decision with a rollback plan. |
+| `/constraints` | `[check\|guard\|ratchet]` | Set up the quality rules, run them, detect a weaker quality bar, or update measured limits. |
 
-- For a new product capability, use the full development workflow.
-- For a focused change outside the module workflow, use `/test <request>`.
-- For a small documentation or maintenance change, ask the agent to implement it directly. The change does not need a specification or module plan.
+## Command workflow
 
-## Full development workflow
+```mermaid
+graph TD
+    A[Change request] --> B{Type of work}
+    B -->|New product capability| C[/spec request/]
+    C --> D[Specification files]
+    D --> E[/plan module-id/]
+    E --> F[Module plan and GitHub Issues]
+    F --> G[/build module-id/]
+    B -->|Focused feature or bug fix| H[/test request/]
+    H --> I[Tests and implementation]
+    G --> J[Verified commits and pull request]
+    I --> J
+    J --> K[/review/]
+    K --> L{Important findings?}
+    L -->|Yes| G
+    L -->|No| M[/ship/]
+    M --> N{Decision}
+    N -->|GO| O[Maintainer review and squash merge]
+    N -->|NO-GO| G
+    P[/constraints mode/] -. defines and checks quality rules .-> C
+    P -. defines and checks quality rules .-> E
+    P -. defines and checks quality rules .-> G
+    P -. defines and checks quality rules .-> H
+    P -. defines and checks quality rules .-> K
+    P -. defines and checks quality rules .-> M
+```
 
-Use the full command workflow for a new product capability:
+### 1. Define a capability with `/spec`
 
-1. Run `/spec <request>` to define the behavior and acceptance criteria. Review and approve the specification before planning.
-2. Run `/plan <module-id>` to create the module plan and proposed GitHub Issues. Review and approve them before issue creation.
-3. Run `/build <module-id>` to implement the next ready issue. Use `/build <module-id> auto` only after you approve the complete plan.
-4. Run `/review` to review correctness, readability, architecture, security, and performance. Resolve important findings before the final checks.
-5. Run `/ship` to run the launch checks and produce a go or no-go decision. Resolve all launch blockers before handoff.
+Use `/spec <request>` for a new product capability. The command uses the `spec-driven-development` skill to clarify the request, define the scope, and write acceptance criteria. It creates `docs/specs/<module-id>.md` and updates `docs/specs/README.md`. A request with several capabilities can also create `docs/specs/maps/<map-id>.md`.
 
-The build workflow uses test-driven development and runs the checks from each issue.
+Review and approve the specification before you run `/plan`. The command does not change implementation code.
 
-Each workflow stores durable results in the repository or GitHub. Specifications live in `docs/specs/`, module plans live in `tasks/`, and task status lives in GitHub Projects.
+### 2. Plan the module with `/plan`
 
-## Run workflows in Codex
+Use `/plan <module-id>` after the specification is approved. The command uses the `planning-and-task-breakdown` skill to divide the module into small, ordered tasks. It creates `tasks/<module-id>.md` and uses `tasks/.todo.md` as temporary input for GitHub Issue creation.
 
-Codex does not expose the files in `.agents/commands/` as slash commands. In Codex, use these prompts:
+After approval, the command creates the GitHub Issues, adds them to the repository project, and records their dependencies. It then replaces the task list in the plan with issue links and deletes `tasks/.todo.md`.
 
-| Command | Codex prompt |
-| --- | --- |
-| `/spec <request>` | `Read and follow @.agents/commands/spec.md. Use <request> as the request.` |
-| `/plan <module-id>` | `Read and follow @.agents/commands/plan.md. Use <module-id> as the module id.` |
-| `/build <module-id>` | `Read and follow @.agents/commands/build.md. Use <module-id> as the module id.` |
-| `/build <module-id> auto` | `Read and follow @.agents/commands/build.md. Use <module-id> as the module id. Use auto mode.` |
-| `/test <request>` | `Read and follow @.agents/commands/test.md for <request>.` |
-| `/review` | `Read and follow @.agents/commands/review.md for the current changes.` |
-| `/ship` | `Read and follow @.agents/commands/ship.md for the current changes.` |
-| `/constraints [check\|guard\|ratchet]` | `Read and follow @.agents/commands/constraints.md. Use check, guard, or ratchet as the argument when needed.` |
+### 3. Implement issues with `/build`
 
-The command file supplies the workflow instructions. If the file reads `$ARGUMENTS`, the prompt supplies those values.
+Use `/build <module-id>` to implement the next ready issue. Add `auto` or `all` only after the full plan is approved. The command uses the `incremental-implementation` and `test-driven-development` skills. It uses the `debugging-and-error-recovery` skill if a step fails.
+
+Each issue produces a failing test, the minimum implementation, verification results, and one tested commit. The command changes the source and test files named by the issue. It does not create a fixed set of files. The pull request closes completed issues after the maintainer merges it.
+
+### 4. Make a focused change with `/test`
+
+Use `/test <request>` for a focused feature or bug fix that does not need a specification and module plan. The command uses the `test-driven-development` skill. It writes a failing test first, adds the minimum implementation, and runs regression tests.
+
+The command changes the relevant source and test files. It does not create a fixed planning file.
+
+### 5. Review the change with `/review`
+
+Use `/review` after implementation. The command uses the `code-review-and-quality` skill for a five-axis review. It also uses the `security-and-hardening` and `performance-optimization` skills for those parts of the review.
+
+The command returns findings with file and line references. It does not create a repository file. Resolve all Critical and Important findings, then run the affected checks again.
+
+### 6. Make the launch decision with `/ship`
+
+Use `/ship` after the review findings are resolved. The command uses the `shipping-and-launch` skill. For a change with a larger blast radius, it also runs the `code-reviewer`, `security-auditor`, and `test-engineer` personas.
+
+The command returns a go or no-go decision, blockers, known risks, and a rollback plan. It does not create a repository file. A GO decision prepares the change for maintainer review. It does not merge the pull request.
+
+### 7. Manage the quality bar with `/constraints`
+
+Use `/constraints` without an argument to set up the repository quality rules. The command uses the `constraint-driven-development` skill. It creates or updates `CONSTRAINTS.md` and can add the scripts or tool configuration that enforce the selected rules.
+
+Use `/constraints check` to run the current rules. Use `/constraints guard` to find changes that weaken the rules. Use `/constraints ratchet` to record current measured values as new minimum limits. These modes can update `CONSTRAINTS.md` when the selected action requires it.
+
+## Pull request handoff
+
+Keep one reviewable change on each branch and pull request. Run the required checks from `Taskfile.yaml`, inspect the complete diff, and record the exact results in the pull request template. The maintainer reviews and squash merges the pull request.
+
+## Agents without command support
+
+Some agents do not register repository commands as slash commands. Tell the agent to read the matching command file and give it the arguments from the command table. Write the rest of the prompt for your task.
+
+| Command | Command file | Arguments |
+| --- | --- | --- |
+| `/spec` | `@.agents/commands/spec.md` | `<request>` |
+| `/plan` | `@.agents/commands/plan.md` | `<module-id>` |
+| `/build` | `@.agents/commands/build.md` | `<module-id> [auto\|all]` |
+| `/test` | `@.agents/commands/test.md` | `<request>` |
+| `/review` | `@.agents/commands/review.md` | None |
+| `/ship` | `@.agents/commands/ship.md` | None |
+| `/constraints` | `@.agents/commands/constraints.md` | `[check\|guard\|ratchet]` |

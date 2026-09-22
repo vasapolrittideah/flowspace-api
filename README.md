@@ -133,7 +133,7 @@ To try the local API, create a user in the `flowspace` realm through Keycloak ad
 | `username` | The local user's username |
 | `password` | The local user's password |
 
-Use the returned `access_token` in the authorization header for Workspace requests. The local realm allows password-based token requests for API experiments. The architecture document leaves browser-session handling open for discussion. The repository does not contain a Postman collection.
+Use the returned `access_token` in the authorization header for Workspace requests. The local realm allows password-based token requests for API experiments. The architecture document leaves browser-session handling open for discussion. The repository does not contain a Bruno collection.
 
 ## Development commands
 

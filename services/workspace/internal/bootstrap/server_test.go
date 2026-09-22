@@ -18,6 +18,7 @@ import (
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	"github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1/workspacev1connect"
+	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 )
 
@@ -27,9 +28,20 @@ func TestNewServerRejectsInvalidDatabaseURL(t *testing.T) {
 	}
 }
 
+func TestNewServerRedactsInvalidDatabaseURL(t *testing.T) {
+	const secret = "database-secret"
+	_, err := NewServer(context.Background(), Config{DatabaseURL: sharedconfig.Secret("postgres://workspace:" + secret + "@%")}, zap.NewNop())
+	if err == nil {
+		t.Fatal("NewServer() accepted an invalid database URL")
+	}
+	if strings.Contains(err.Error(), secret) {
+		t.Fatalf("NewServer() error contains database credentials: %v", err)
+	}
+}
+
 func TestServerRunLogsListening(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
 	pool, err := pgxpool.New(ctx, "postgres://workspace@localhost/workspace")
 	if err != nil {
 		t.Fatal(err)
@@ -255,8 +267,10 @@ func TestServeWaitsForShutdown(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	shutdownErr := errors.New("shutdown timed out")
+	listened := false
 
 	err := serve(ctx, func() error {
+		listened = true
 		return http.ErrServerClosed
 	}, func(context.Context) error {
 		return shutdownErr
@@ -264,6 +278,26 @@ func TestServeWaitsForShutdown(t *testing.T) {
 
 	if !errors.Is(err, shutdownErr) {
 		t.Fatalf("serve() error = %v, want %v", err, shutdownErr)
+	}
+	if listened {
+		t.Fatal("serve() started listening after cancellation")
+	}
+}
+
+func TestServeShutsDownAfterCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	shutdownCalled := make(chan struct{})
+
+	err := serve(ctx, func() error {
+		cancel()
+		<-shutdownCalled
+		return http.ErrServerClosed
+	}, func(context.Context) error {
+		close(shutdownCalled)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("serve() error = %v", err)
 	}
 }
 

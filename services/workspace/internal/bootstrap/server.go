@@ -89,21 +89,29 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 func serve(ctx context.Context, listenAndServe func() error, shutdown func(context.Context) error) error {
+	if ctx.Err() != nil {
+		return shutDown(ctx, shutdown)
+	}
 	shutdownResult := make(chan error, 1)
 	go func() {
 		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), serverTimeout)
-		defer cancel()
-		shutdownResult <- shutdown(shutdownCtx)
+		shutdownResult <- shutDown(ctx, shutdown)
 	}()
 
 	if err := listenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("serve workspace API: %w", err)
 	}
 	if ctx.Err() != nil {
-		if err := <-shutdownResult; err != nil {
-			return fmt.Errorf("shut down workspace API: %w", err)
-		}
+		return <-shutdownResult
+	}
+	return nil
+}
+
+func shutDown(ctx context.Context, shutdown func(context.Context) error) error {
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), serverTimeout)
+	defer cancel()
+	if err := shutdown(shutdownCtx); err != nil {
+		return fmt.Errorf("shut down workspace API: %w", err)
 	}
 	return nil
 }

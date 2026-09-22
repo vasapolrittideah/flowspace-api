@@ -25,7 +25,7 @@ These tables are the source of truth for replaceable implementation tools and Go
 | GitOps reconciler | Argo CD | Pull desired Kubernetes state from Git. | [ADR-0024](adr/0024-gitops-deploys-versioned-images.md) |
 | Application manifests | Kustomize | Shared base with local, staging, and production overlays. | [ADR-0025](adr/0025-environments-overlay-shared-manifests.md) |
 | Infrastructure packaging | Helm | Reuse maintained, pinned third-party charts. | [ADR-0025](adr/0025-environments-overlay-shared-manifests.md) |
-| API smoke tests | Postman + Postman CLI | Author and automate public API smoke collections. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
+| API client and smoke tests | Bruno + Bruno CLI | Explore public APIs and automate smoke collections. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
 | Load tests | k6 | Controlled load experiments with explicit thresholds. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
 | Go static analysis | golangci-lint | Repository-wide formatting and selected analyzers. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |
 | Dependency updates | Renovate | Propose reviewed dependency-update pull requests; no automerge. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |

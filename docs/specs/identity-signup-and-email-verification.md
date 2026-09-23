@@ -2,7 +2,7 @@
 
 Module id: `identity-signup-and-email-verification`
 
-Status: Draft.
+Status: Approved.
 
 ## Objective
 
@@ -14,13 +14,13 @@ This spec defines the account creation and email verification flow. It does not 
 
 The scope covers signup, the first verification email, requesting a new code, consuming a code, reclaiming an unverified signup when the email owner does not know its password, and the verified-email state that protected services receive from Identity. Account creation and verification form one capability because signup creates the unverified state and its first verification challenge.
 
-The [specification index](README.md) defines shared project sources. [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) owns the service boundary, token model, and verified-email rule. [ADR-0013](../adr/0013-acting-identity-comes-from-the-token.md) owns the acting subject. [Proposed ADR-0032](../adr/0032-identity-signup-recovers-with-login.md) explains the signup retry exception to ADR-0011. Protobuf and generated REST follow [ADR-0005](../adr/0005-one-protobuf-contract-generates-rest.md), [ADR-0007](../adr/0007-version-apis-by-compatibility-boundary.md), and [ADR-0009](../adr/0009-canonical-grpc-errors-map-to-http.md).
+The [specification index](README.md) defines shared project sources. [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) owns the service boundary, token model, and verified-email rule. [ADR-0013](../adr/0013-acting-identity-comes-from-the-token.md) owns the acting subject. [ADR-0032](../adr/0032-identity-signup-recovers-with-login.md) explains the signup retry exception to ADR-0011. Protobuf and generated REST follow [ADR-0005](../adr/0005-one-protobuf-contract-generates-rest.md), [ADR-0007](../adr/0007-version-apis-by-compatibility-boundary.md), and [ADR-0009](../adr/0009-canonical-grpc-errors-map-to-http.md).
 
 Password login after signup, refresh, logout, password reset, provider login and linking, email address changes, and browser token storage are outside this capability. A user who loses the signup response will recover through password login once that capability exists. Until then, this flow uses disposable data. This spec does not choose token lifetimes or signing keys. The later session spec must define those values and refresh behavior without changing the signup outcome agreed here.
 
 ## Contract
 
-Use package `flowspace.identity.v1` and an `IdentityService` contract. The proposed public methods use generated REST/JSON under `/v1`. The final Protobuf definitions are the source of truth.
+Use package `flowspace.identity.v1` and an `IdentityService` contract. The approved public methods use generated REST/JSON under `/v1`. The final Protobuf definitions are the source of truth.
 
 | RPC | Public HTTP route | Request | Successful response |
 | --- | --- | --- | --- |
@@ -32,7 +32,7 @@ Use package `flowspace.identity.v1` and an `IdentityService` contract. The propo
 
 `CreateAccount` and both claim methods are public and do not accept an acting subject. `RequestEmailVerificationCode` and `VerifyEmail` require one `Authorization: Bearer <access_token>` header and derive the subject from the validated token. Clients never send a subject or target email to those authenticated methods. Verification and claim codes are exactly six ASCII digits; leading zeroes remain significant.
 
-The proposed request fields are `email` and `password` for `CreateAccount`, no body fields for `RequestEmailVerificationCode`, `code` for `VerifyEmail`, `email` for `RequestUnverifiedAccountClaimCode`, and `email`, `code`, and `new_password` for `ClaimUnverifiedAccount`. The two code-request methods return `accepted=true`. `VerifyEmail` returns `email_verified=true`. The successful claim response uses the same token and expiry fields as `CreateAccount`, with `email_verified=true` and the new subject. Generated REST/JSON follows Protobuf JSON field naming.
+The request fields are `email` and `password` for `CreateAccount`, no body fields for `RequestEmailVerificationCode`, `code` for `VerifyEmail`, `email` for `RequestUnverifiedAccountClaimCode`, and `email`, `code`, and `new_password` for `ClaimUnverifiedAccount`. The two code-request methods return `accepted=true`. `VerifyEmail` returns `email_verified=true`. The successful claim response uses the same token and expiry fields as `CreateAccount`, with `email_verified=true` and the new subject. Generated REST/JSON follows Protobuf JSON field naming.
 
 A successful `CreateAccount` response contains an access token and an opaque refresh token from one new device session. The access token follows ADR-0031 and is usable immediately for Identity verification requests. The refresh token is sent only to Identity's future refresh endpoint. The response reports `email_verified=false`. `VerifyEmail` does not need to issue replacement tokens: protected services use Identity's current session check to learn that the email is verified.
 
@@ -51,7 +51,7 @@ If the email address already belongs to an account, `CreateAccount` returns `Alr
 - Identity applies Unicode NFC normalization before checking password length, checking a blocklist, or hashing. Its maximum allowed password length is at least 64 Unicode code points. It rejects commonly used or compromised passwords and hashes accepted passwords with Argon2id. The starting cost follows [OWASP's minimum](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html): 19 MiB of memory, two iterations, and one degree of parallelism. Real-user use requires a measured cost choice on the deployment host.
 - Successful signup creates one device session and returns its access and refresh tokens even though the email is not verified.
 - A duplicate signup never returns tokens for the existing account. A user who loses the signup response but knows the password recovers through password login when that capability exists. Until then, API clients use disposable addresses for this failure case.
-- `CreateAccount` does not accept `Idempotency-Key`. It cannot replay its original refresh token because Identity stores only a hash. [Proposed ADR-0032](../adr/0032-identity-signup-recovers-with-login.md) records this scoped exception to ADR-0011.
+- `CreateAccount` does not accept `Idempotency-Key`. It cannot replay its original refresh token because Identity stores only a hash. [ADR-0032](../adr/0032-identity-signup-recovers-with-login.md) records this scoped exception to ADR-0011.
 
 ### Claiming an unverified account
 
@@ -59,7 +59,7 @@ If the email address already belongs to an account, `CreateAccount` returns `Alr
 - A claim code is bound to the email address, pending account, and claim purpose. It is separate from an email verification code. Requesting a claim code does not invalidate an outstanding email verification code. Requesting another claim code invalidates only the previous claim code.
 - `ClaimUnverifiedAccount` accepts the email address, current claim code, and a new password that meets the signup password policy. On success, Identity consumes the code, retires the old unverified account and subject, revokes its sessions and challenges, and creates one new subject with a verified email and one new session. It returns access and refresh tokens immediately.
 - The claim transition is atomic. If email verification commits first, the account is no longer eligible for claim. If claim commits first, old tokens fail the next live session check. Concurrent or repeated claims cannot create a second new account.
-- A lost claim response is recovered through password login with the new password. A retry with a consumed code returns the generic claim error. The claim endpoint does not accept `Idempotency-Key`; proposed ADR-0032 records this exception.
+- A lost claim response is recovered through password login with the new password. A retry with a consumed code returns the generic claim error. The claim endpoint does not accept `Idempotency-Key`; ADR-0032 records this exception.
 
 ### Email code and verification
 
@@ -80,7 +80,7 @@ If the email address already belongs to an account, `CreateAccount` returns `Alr
 
 ## Commands
 
-Run commands from the repository root. These are future implementation checks; this draft does not claim that Identity code or generated contracts already exist.
+Run commands from the repository root. These are future implementation checks; this spec does not claim that Identity code or generated contracts already exist.
 
 | Purpose | Command |
 | --- | --- |
@@ -106,10 +106,10 @@ Test the public generated REST and typed RPC surfaces with API clients. Cover ma
 - Keep unverified accounts out of Workspace even when they hold valid tokens.
 - Hash passwords, protect verification codes with a keyed one-way verifier, enforce finite code lifetimes and attempt limits, and use a shared limit store when more than one replica serves requests.
 - Keep secrets and full email addresses out of application logs and traces.
+- Measure Argon2id cost on the deployment host before real users join.
 
 ### Ask first
 
-- Approve the proposed claim-flow contract and ADR-0032 before this Draft becomes Approved. Measure Argon2id cost on the deployment host before real users join.
 - Obtain approval before changing the token issuance outcome or adding an email-change flow.
 
 ### Never
@@ -120,7 +120,7 @@ Test the public generated REST and typed RPC surfaces with API clients. Cover ma
 
 ## Success criteria
 
-Each row describes an observable result. The open contract choices above must be settled before implementation can claim completion.
+Each row describes an observable result required before implementation can claim completion.
 
 | Given | Then |
 | --- | --- |
@@ -142,8 +142,4 @@ Each row describes an observable result. The open contract choices above must be
 
 ## Open questions and approval
 
-- The owner must review the proposed claim RPCs, request and response fields, retry behavior, and error categories in this spec.
-- The owner must review [proposed ADR-0032](../adr/0032-identity-signup-recovers-with-login.md), which limits the exception to ADR-0011 to signup and unverified-account claim.
-- Before real users join, measure Argon2id on the deployment host under expected login load. Start at the OWASP minimum, choose the strongest cost that keeps one hash under one second without exhausting CPU or memory, and record the chosen parameters and results.
-
-The owner must approve these answers and the final API contract before this Draft becomes Approved. Approval permits planning; it does not mean that the capability is implemented or ready for real users.
+The owner approved this spec, including the claim API and ADR-0032. No approval question remains for planning. Before real users join, measure Argon2id on the deployment host under expected login load. Start at the OWASP minimum, choose the strongest cost that keeps one hash under one second without exhausting CPU or memory, and record the chosen parameters and results. Approval permits planning; it does not mean that the capability is implemented or ready for real users.

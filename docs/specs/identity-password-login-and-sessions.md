@@ -2,7 +2,7 @@
 
 Module id: `identity-password-login-and-sessions`
 
-Status: Draft.
+Status: Approved.
 
 ## Objective
 
@@ -14,7 +14,7 @@ This spec defines the shared session lifecycle for password login and for sessio
 
 The scope covers password login, token issuance, refresh, one-session logout, all-session logout, public signing keys, and an internal session check. These operations share one session record and its expiry and revocation rules.
 
-The [specification index](README.md) defines shared project sources. [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) owns the token and revocation model. [ADR-0032](../adr/0032-identity-signup-recovers-with-login.md) requires password login to recover a lost signup or claim response. The [signup and verification spec](identity-signup-and-email-verification.md) owns password hashing and email comparison. The [Identity threat model](../security/identity-threat-model.md) defines the abuse cases referenced below. Protobuf and generated REST follow [ADR-0005](../adr/0005-one-protobuf-contract-generates-rest.md), [ADR-0007](../adr/0007-version-apis-by-compatibility-boundary.md), and [ADR-0009](../adr/0009-canonical-grpc-errors-map-to-http.md).
+The [specification index](README.md) defines shared project sources. [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) owns the token and revocation model. [ADR-0032](../adr/0032-identity-signup-recovers-with-login.md) requires password login to recover a lost signup or claim response. [ADR-0033](../adr/0033-identity-token-issuance-does-not-replay-responses.md) defines login and refresh retry behavior. The [signup and verification spec](identity-signup-and-email-verification.md) owns password hashing and email comparison. The [Identity threat model](../security/identity-threat-model.md) defines the abuse cases referenced below. Protobuf and generated REST follow [ADR-0005](../adr/0005-one-protobuf-contract-generates-rest.md), [ADR-0007](../adr/0007-version-apis-by-compatibility-boundary.md), and [ADR-0009](../adr/0009-canonical-grpc-errors-map-to-http.md).
 
 Password reset, provider login and linking, email changes, session listing, browser token storage, and MFA are outside this capability. Later login methods must use the session lifetime and revocation rules in this spec. Workspace still owns membership and role decisions.
 
@@ -30,7 +30,7 @@ Use package `flowspace.identity.v1` and the `IdentityService` contract. Public R
 | `LogoutAllSessions` | `POST /v1/account-session-logouts` | Bearer access token, no body fields | Confirmation that every session for the subject was revoked |
 | `CheckSession` | Internal RPC only | Validated `subject` and `session_id` from a protected service | Active session and current `email_verified` state |
 
-Password login and refresh do not require an access token. Refresh tokens appear only in the `RefreshSession` request body and token-issuance responses. Logout methods require exactly one `Authorization: Bearer <access_token>` header. The authenticated token supplies the subject and current session ID; clients cannot choose a target subject or session. `CheckSession` requires an authenticated service caller. The concrete service-authentication method remains open before implementation.
+Password login and refresh do not require an access token and reject the `Idempotency-Key` header under ADR-0033. Refresh tokens appear only in the `RefreshSession` request body and token-issuance responses. Logout methods require exactly one `Authorization: Bearer <access_token>` header. The authenticated token supplies the subject and current session ID; clients cannot choose a target subject or session. `CheckSession` requires an authenticated service caller. The concrete service-authentication method remains open before implementation.
 
 Each successful token-issuance response contains `access_token`, `refresh_token`, `access_token_expires_at`, `refresh_token_expires_at`, and `session_expires_at`. Password login also returns `subject` and `email_verified`. Refresh does not return an email address or workspace role. Tokens are secrets and responses must prevent storage by shared HTTP caches.
 
@@ -48,7 +48,7 @@ Use canonical gRPC errors and the gateway's default HTTP mapping. Malformed publ
 - An existing account with the correct password receives one new device session and one token pair. The stable subject does not change. An unverified account can log in and call Identity verification methods, but protected Workspace access still fails its verified-email gate.
 - An unknown account, a retired account, and a wrong password produce the same public error. Identity performs a password-hash workload for an unknown account so the response does not reveal account existence through a practical timing difference.
 - Login checks request shape and shared rate limits before password hashing. Limits apply to a source address and an email identifier even when no account exists. Only configured edge proxies can supply the source address. If limit state is unavailable, Identity returns `Unavailable` and does not bypass the limit. Exact thresholds remain open before implementation.
-- A lost successful login response can create an extra session if the client logs in again. Identity stores only refresh-token hashes, so it cannot replay the first token pair. The retry contract needs a scoped decision under ADR-0011 before this spec is approved.
+- A lost successful login response can create an extra session if the client logs in again. Identity stores only refresh-token hashes, so it cannot replay the first token pair under ADR-0033.
 
 ### Token and session lifetime
 
@@ -85,7 +85,7 @@ Use canonical gRPC errors and the gateway's default HTTP mapping. Malformed publ
 
 ## Commands
 
-Run commands from the repository root. These are future implementation checks; this draft does not claim that Identity code or contracts exist.
+Run commands from the repository root during implementation. Approval does not mean that Identity code or contracts exist.
 
 | Purpose | Command |
 | --- | --- |
@@ -101,7 +101,7 @@ Run commands from the repository root. These are future implementation checks; t
 
 Unit tests cover password normalization, public error classification, token claims, and the exact ten-minute, 30-day, and 90-day boundaries. PostgreSQL integration tests cover atomic login, token rotation, concurrent refresh, replay revocation, both logout scopes, account retirement, and session expiry. Use a controlled clock rather than sleeps for expiry tests.
 
-Transport tests cover malformed input, duplicate security headers, generic login errors, absent or invalid access and refresh tokens, rate limits, deadlines, cancellation, and safe error bodies. Capture logs and traces to prove that no reusable secret appears. Token tests cover the wrong algorithm, issuer, audience, type, key ID, signature, subject, session ID, and expiry.
+Transport tests cover malformed input, rejected `Idempotency-Key` headers, duplicate security headers, generic login errors, absent or invalid access and refresh tokens, rate limits, deadlines, cancellation, and safe error bodies. Capture logs and traces to prove that no reusable secret appears. Token tests cover the wrong algorithm, issuer, audience, type, key ID, signature, subject, session ID, and expiry.
 
 Cross-service tests prove that Workspace rejects an unverified account, a revoked device, an all-session logout, and an expired session. They also prove that Identity unavailability denies new protected requests. Test signing-key overlap and retirement after the final accepted token expires. These tests address ID-T01, ID-T02, and ID-T09 through ID-T19 in the [threat model](../security/identity-threat-model.md). Key handling also addresses ID-T22.
 
@@ -131,6 +131,7 @@ Each row describes an observable result required before implementation can claim
 | Given | Then |
 | --- | --- |
 | An existing account sends its correct email and password. | Identity creates one session and returns the stable subject, current email state, two distinct tokens, and their expiry times. |
+| A client loses a committed password-login response and logs in again. | Identity creates a new session without replaying the first token pair; the first session can remain active. |
 | A signup or claim response is lost, but the user knows the current password. | Password login issues a new session for the same active subject without replaying a prior refresh token. |
 | An unknown or retired account, or a wrong password, is used for login. | The same safe `Unauthenticated` response appears without a session or token. |
 | A correct password belongs to an unverified account. | Login succeeds, Identity verification remains available, and Workspace denies access until the email is verified. |
@@ -147,6 +148,4 @@ Each row describes an observable result required before implementation can claim
 
 ## Open questions and approval
 
-ADR-0011 requires an `Idempotency-Key` for non-idempotent creates. ADR-0032 exempts signup and account claim, but not password login or refresh. Before approving this spec, record a scoped retry decision for both token-issuing methods without storing a replayable refresh token.
-
-Approve the signing algorithm, issuer and audience values, JWT clock tolerance, JWKS route and cache bounds, routine and emergency key procedures, internal service authentication, and numeric login limits before implementing those parts. The three lifetime values are confirmed user choices, and refresh replay follows ADR-0031. Browser token storage and cross-site request protections belong to the later web specification.
+The behavior and scope in this spec are approved. ADR-0033 records the retry exception for both token-issuing methods. The signing algorithm, issuer and audience values, JWT clock tolerance, JWKS route and cache bounds, routine and emergency key procedures, internal service authentication, and numeric login limits remain open before implementing those parts. Browser token storage and cross-site request protections belong to the later web specification.

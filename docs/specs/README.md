@@ -5,7 +5,7 @@ Each specification defines one capability before implementation. It records scop
 | Module | Specification | Depends on | Status |
 | --- | --- | --- | --- |
 | `identity-signup-and-email-verification` | [Identity signup and email verification](identity-signup-and-email-verification.md) | None | Approved |
-| `identity-password-login-and-sessions` | [Identity password login and sessions](identity-password-login-and-sessions.md) | `identity-signup-and-email-verification` | Draft |
+| `identity-password-login-and-sessions` | [Identity password login and sessions](identity-password-login-and-sessions.md) | `identity-signup-and-email-verification` | Approved |
 | `workspace-create-read` | [Workspace creation and reading](workspace-create-read.md) | None | Approved |
 
 Draft specifications require approval before planning. An approved specification permits planning. An implemented specification has evidence for every success criterion.

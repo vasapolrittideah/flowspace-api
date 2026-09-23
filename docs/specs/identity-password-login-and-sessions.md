@@ -16,7 +16,7 @@ The scope covers password login, token issuance, refresh, one-session logout, al
 
 The [specification index](README.md) defines shared project sources. [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) owns the token and revocation model. [ADR-0032](../adr/0032-identity-signup-recovers-with-login.md) requires password login to recover a lost signup or claim response. [ADR-0033](../adr/0033-identity-token-issuance-does-not-replay-responses.md) defines login and refresh retry behavior. The [signup and verification spec](identity-signup-and-email-verification.md) owns password hashing and email comparison. The [Identity threat model](../security/identity-threat-model.md) defines the abuse cases referenced below. Protobuf and generated REST follow [ADR-0005](../adr/0005-one-protobuf-contract-generates-rest.md), [ADR-0007](../adr/0007-version-apis-by-compatibility-boundary.md), and [ADR-0009](../adr/0009-canonical-grpc-errors-map-to-http.md).
 
-Password reset, provider login and linking, email changes, session listing, browser token storage, and MFA are outside this capability. Later login methods must use the session lifetime and revocation rules in this spec. Workspace still owns membership and role decisions.
+Password reset, provider login and linking, email changes, session listing, and MFA are outside this capability. Browser token storage and cross-site request protections belong to the later web specification. Later login methods must use the session lifetime and revocation rules in this spec. Workspace still owns membership and role decisions.
 
 ## Contract
 
@@ -116,7 +116,10 @@ Cross-service tests prove that Workspace rejects an unverified account, a revoke
 ### Ask first
 
 - Obtain approval before changing the 10-minute access lifetime, 30-day idle lifetime, 90-day absolute lifetime, or replay-revokes-session rule.
-- Resolve the open signing-key, internal caller-authentication, and rate-limit decisions before implementation depends on them.
+- Before implementing token issuance or verification, approve the signing algorithm, issuer and audience values, and JWT clock tolerance.
+- Before implementing key publication or rotation, approve the JWKS route, cache bounds, and routine and emergency key procedures.
+- Approve internal service authentication before implementing `CheckSession`.
+- Approve numeric login limits before implementing password login.
 
 ### Never
 
@@ -145,7 +148,3 @@ Each row describes an observable result required before implementation can claim
 | The email becomes verified after a token is issued. | The next live session check reports the verified state without requiring new tokens. |
 | Identity rotates its signing key while old access tokens remain valid. | Verifiers accept both valid key IDs until old tokens expire, then stop accepting the retired key. |
 | The capability is submitted for implementation review. | Contract, database, abuse, concurrency, key-rotation, and cross-service tests pass under repository quality checks. |
-
-## Open questions and approval
-
-The behavior and scope in this spec are approved. ADR-0033 records the retry exception for both token-issuing methods. The signing algorithm, issuer and audience values, JWT clock tolerance, JWKS route and cache bounds, routine and emergency key procedures, internal service authentication, and numeric login limits remain open before implementing those parts. Browser token storage and cross-site request protections belong to the later web specification.

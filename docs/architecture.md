@@ -146,6 +146,7 @@ Event, outbox, deduplication, schema, and backup retention must cover the suppor
 
 ## 5. Interfaces and security
 
+- The [Identity threat model](security/identity-threat-model.md) defines trust boundaries, abuse cases, required controls, and test evidence for authentication.
 - Protobuf service definitions are the source of truth for synchronous APIs.
 - Public methods expose generated REST/JSON routes; internal clients use typed gRPC calls.
 - Event contracts are versioned separately from RPC contracts.
@@ -224,7 +225,7 @@ Keep these here until accepted; then update the owning ADR.
 - Capacity: workload model and pass/fail thresholds.
 - Frontend: technology, browser-session handling, and token storage.
 - Product specifications: invitation lifecycle and assignment/notification triggers.
-- Readiness: threat model, pinned versions, and implementation time budget.
+- Readiness: close or accept the Identity threat model risks, pin versions, and set the implementation time budget.
 
 ## 10. Deferred
 

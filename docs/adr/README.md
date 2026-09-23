@@ -39,3 +39,4 @@ An accepted record is never edited or deleted. When a decision changes, add a ne
 | [0029](0029-the-observability-stack-is-self-hosted.md) | The observability stack is self-hosted | Accepted |
 | [0030](0030-telemetry-is-bounded-and-non-blocking.md) | Telemetry is bounded and non-blocking | Accepted |
 | [0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) | FlowSpace owns authentication and revocable sessions | Accepted |
+| [0032](0032-identity-signup-recovers-with-login.md) | Identity signup recovers with login | Proposed; scoped exception to [0011](0011-idempotency-keys-protect-non-idempotent-creates.md) |

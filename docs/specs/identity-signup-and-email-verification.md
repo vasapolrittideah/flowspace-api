@@ -94,7 +94,7 @@ Test the public generated REST and typed RPC surfaces with API clients. Cover ma
 
 ### Ask first
 
-- Approve the email comparison rule, password policy, signup retry behavior, duplicate-email response, delivery-failure response, and numeric abuse limits before this spec becomes Approved.
+- Approve the email comparison rule, password hash parameters, signup retry behavior, duplicate-email response, delivery-failure response, and numeric abuse limits before this spec becomes Approved.
 - Obtain approval before changing the token issuance outcome or adding an email-change flow.
 
 ### Never

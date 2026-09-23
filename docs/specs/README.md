@@ -39,4 +39,6 @@ Every specification inherits the sources below. A specification repeats a shared
 | Writing, Git, review, and verification | [Agent instructions](../../AGENTS.md) |
 | Quality, coverage, and security limits | [Constraints](../../CONSTRAINTS.md) |
 
+Identity specifications also inherit the [Identity threat model](../security/identity-threat-model.md). Each Identity success criterion and abuse test must reference the applicable threat IDs.
+
 Put a project-wide rule in its source document instead of copying it into each specification.

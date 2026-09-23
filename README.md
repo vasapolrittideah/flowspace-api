@@ -168,6 +168,7 @@ The documents below explain the accepted decisions, where code belongs, and whic
 | [Project structure](docs/project-structure.md) | Directory ownership, service layers, and dependency rules |
 | [Technology stack](docs/technology-stack.md) | Selected platforms, tools, and Go packages |
 | [Architecture decision records](docs/adr/README.md) | Accepted decisions, their rationale, and rejected alternatives |
+| [Identity threat model](docs/security/identity-threat-model.md) | Identity trust boundaries, abuse cases, controls, tests, and residual risks |
 | [Contributing](CONTRIBUTING.md) | Human workflow for specifications, plans, implementation, review, and launch checks |
 | [Agent instructions](AGENTS.md) | Agent rules for Git, writing, verification, and pull requests |
 | [Constraints](CONSTRAINTS.md) | Quality rules and their enforcement commands |

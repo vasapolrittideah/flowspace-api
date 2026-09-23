@@ -4,6 +4,7 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY gen ./gen
+COPY internal ./internal
 COPY services/workspace ./services/workspace
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/workspace-api ./services/workspace/cmd/api && \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/workspace-migrate ./services/workspace/cmd/migrate

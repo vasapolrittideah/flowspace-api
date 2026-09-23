@@ -38,3 +38,4 @@ An accepted record is never edited or deleted. When a decision changes, add a ne
 | [0028](0028-telemetry-is-vendor-neutral-and-correlated.md) | Telemetry is vendor-neutral and correlated | Accepted |
 | [0029](0029-the-observability-stack-is-self-hosted.md) | The observability stack is self-hosted | Accepted |
 | [0030](0030-telemetry-is-bounded-and-non-blocking.md) | Telemetry is bounded and non-blocking | Accepted |
+| [0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) | FlowSpace owns authentication and revocable sessions | Proposed |

@@ -48,7 +48,7 @@ If the email address already belongs to an account, `CreateAccount` returns `Alr
 - Identity accepts ASCII email addresses and rejects Unicode email addresses. It preserves the local part as entered and compares it case-sensitively. It compares the domain case-insensitively. Implementations must not invent provider-specific rules such as removing dots from an address.
 - Identity validates the email and password at the public boundary. It stores a salted, adaptive password hash and never stores or returns the password.
 - Identity accepts a password with at least 15 characters without requiring any character type. It also accepts a password with 8–14 characters if it contains at least one lowercase ASCII letter (`a`–`z`) and one ASCII digit (`0`–`9`). It accepts Unicode and counts Unicode code points when measuring length. It rejects passwords shorter than eight characters. These two length paths follow [GitHub's policy](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-strong-password). They depart from [NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html#passwordver): MFA is optional for the shorter path, and that path requires a character-type mix.
-- Identity applies Unicode NFC normalization before checking password length, checking a blocklist, or hashing. Its maximum allowed password length is at least 64 Unicode code points. It rejects commonly used or compromised passwords and hashes accepted passwords with Argon2id. The starting cost follows [OWASP's minimum](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html): 19 MiB of memory, two iterations, and one degree of parallelism. Real-user use requires a measured cost choice on the deployment host.
+- Identity applies Unicode NFC normalization before checking password length, checking a blocklist, or hashing. Its maximum allowed password length is at least 64 Unicode code points. It rejects commonly used or compromised passwords and hashes accepted passwords with Argon2id. The first release uses `m=19456` KiB (19 MiB), `t=2`, and `p=1`, which matches [OWASP's minimum](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html). The deployment-host benchmark validates this fixed choice before real users join; it does not select new parameters.
 - Successful signup creates one device session and returns its access and refresh tokens even though the email is not verified.
 - A duplicate signup never returns tokens for the existing account. A user who loses the signup response but knows the password recovers through password login when that capability exists. Until then, API clients use disposable addresses for this failure case.
 - `CreateAccount` does not accept `Idempotency-Key`. It cannot replay its original refresh token because Identity stores only a hash. [ADR-0032](../adr/0032-identity-signup-recovers-with-login.md) records this scoped exception to ADR-0011.
@@ -106,7 +106,7 @@ Test the public generated REST and typed RPC surfaces with API clients. Cover ma
 - Keep unverified accounts out of Workspace even when they hold valid tokens.
 - Hash passwords, protect verification codes with a keyed one-way verifier, enforce finite code lifetimes and attempt limits, and use a shared limit store when more than one replica serves requests.
 - Keep secrets and full email addresses out of application logs and traces.
-- Measure Argon2id cost on the deployment host before real users join.
+- Measure the approved Argon2id configuration on the deployment host before real users join.
 
 ### Ask first
 
@@ -142,4 +142,4 @@ Each row describes an observable result required before implementation can claim
 
 ## Open questions and approval
 
-The owner approved this spec, including the claim API and ADR-0032. No approval question remains for planning. Before real users join, measure Argon2id on the deployment host under expected login load. Start at the OWASP minimum, choose the strongest cost that keeps one hash under one second without exhausting CPU or memory, and record the chosen parameters and results. Approval permits planning; it does not mean that the capability is implemented or ready for real users.
+The owner approved this spec, including the claim API, ADR-0032, and the first-release Argon2id parameters. No approval question remains for planning. Before real users join, benchmark those parameters on the deployment host under expected login load and record the results. If one hash takes at least one second or the workload exhausts CPU or memory, do not admit real users until the configuration is reviewed and the benchmark passes. Approval permits planning; it does not mean that the capability is implemented or ready for real users.

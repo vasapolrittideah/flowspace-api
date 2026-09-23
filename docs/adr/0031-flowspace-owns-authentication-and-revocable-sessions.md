@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
@@ -57,6 +57,6 @@ Email verification and password reset use six-digit codes sent by email. An acco
 - Identity becomes a fourth FlowSpace service and a dependency for each protected request, even though services verify access-token signatures locally. An Identity or database outage denies new protected requests.
 - Protected services must replace Keycloak token validation with FlowSpace access-token verification and authenticated internal session checks. They must still authorize workspace access from Workspace-owned data.
 - Identity must protect and rotate private signing keys, publish matching public keys, and keep old public keys available while valid access tokens use them.
-- On acceptance, this record supersedes ADR-0019 and the Keycloak and three-service parts of ADR-0001. The architecture and technology stack must then reflect the new boundary.
+- This record supersedes ADR-0019 and the Keycloak and three-service parts of ADR-0001. The current Keycloak implementation remains until FlowSpace replaces it.
 - API contracts, a threat model, signing algorithm and key rotation rules, token lifetimes, refresh retry rules, six-digit code limits, provider failure cases, and tests must be specified before implementation.
 - The initial release uses Mailpit and disposable data. Real email delivery, MFA, independent backups, and tested restoration are required before serving real users.

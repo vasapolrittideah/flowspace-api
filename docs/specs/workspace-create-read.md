@@ -10,7 +10,7 @@ Build the first Workspace capability for signed-in users of FlowSpace. A user ca
 
 This spec assumes that workspace creation and reading do not exist yet. It defines required behavior and completion evidence. It does not report implementation progress or establish deployment readiness.
 
-Create and read belong to one capability because they share workspace data, ownership, and access rules. Keycloak integration provides authenticated identity. Work and Notifications are not dependencies of this capability.
+Create and read belong to one capability because they share workspace data, ownership, and access rules. The first implementation uses Keycloak for authenticated identity. Work and Notifications are not dependencies of this capability.
 
 ## Scope and decision sources
 
@@ -72,8 +72,8 @@ Apply these identity and access rules:
 
 - Make sure that token signature, issuer, audience, expiry, and subject are valid before admitting either operation.
 - Derive the acting subject from that token under [ADR-0013](../adr/0013-acting-identity-comes-from-the-token.md).
-- Keep authentication with Keycloak under [ADR-0019](../adr/0019-keycloak-owns-authentication-flows.md).
-- Allow any authenticated subject to create a workspace. Creation makes that subject the workspace owner.
+- The first implementation uses Keycloak under superseded [ADR-0019](../adr/0019-keycloak-owns-authentication-flows.md). Future authentication follows [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md).
+- The first implementation allows any authenticated subject to create a workspace. Under ADR-0031, Workspace must require a verified email when Identity replaces Keycloak. Creation makes that subject the workspace owner.
 - Allow one subject to own or join multiple workspaces, with a separate role in each.
 - Require a membership for the authenticated subject in the requested workspace before a read. Viewer, member, admin, and owner memberships all allow this read.
 - Do not use client-supplied subjects, workspace IDs, or role claims as proof of access.

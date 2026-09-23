@@ -2,7 +2,7 @@
 
 FlowSpace is a work-management platform for learning how to design distributed systems and recover from failures. This repository contains the Go backend, API contracts, and deployment configuration. The first milestone covers backend APIs and does not include a frontend.
 
-The planned architecture has three services that deploy independently: Workspace, Work, and Notifications. Each service owns its data. Keycloak handles authentication, and FlowSpace controls access to workspaces.
+The accepted architecture has four services that deploy independently: Identity, Workspace, Work, and Notifications. Each service owns its data. FlowSpace Identity will replace the current Keycloak integration. Workspace controls access to workspaces.
 
 ## Current status
 
@@ -11,7 +11,7 @@ The repository implements the first Workspace capability. The table lists the ex
 | Area | Current implementation | Remaining work |
 | --- | --- | --- |
 | Workspace | Create a workspace with an owner, read it as a member, and prevent duplicate creation on retries | Invitations, membership management, role changes, ownership transfer, and workspace archival |
-| Authentication | Token validation and a local Keycloak realm with password-based token requests | Google login, email verification and recovery integration, and durable identity storage |
+| Authentication | Token validation and a local Keycloak realm with password-based token requests | Replace Keycloak with FlowSpace Identity, then add email/password and provider login, verification, recovery, and revocable sessions |
 | Work | No service implementation | Projects, tasks, assignments, status changes, comments, and activity |
 | Notifications | No service implementation | Event delivery, local copies of workspace access rules, and the notification inbox |
 | Local runtime | k3d tasks, a Tilt configuration, PostgreSQL, and Keycloak | Repair the image build described below |

@@ -9,6 +9,7 @@
   { "name": "type:ci", "description": "Change CI workflows or automated checks", "color": "c2e0c6" },
   { "name": "type:style", "description": "Change formatting only", "color": "d4c5f9" },
   { "name": "type:chore", "description": "Maintain the project when no more specific type fits", "color": "ededed" },
+  { "name": "area:identity", "description": "Accounts, authentication, email verification, and sessions", "color": "1d76db" },
   { "name": "area:workspace", "description": "Workspaces, memberships, invitations, roles, and authorization", "color": "1d76db" },
   { "name": "area:work", "description": "Projects, tasks, assignments, status transitions, comments, activity history, and the event outbox", "color": "1d76db" },
   { "name": "area:notifications", "description": "In-app notification inbox, read state, and event deduplication", "color": "1d76db" },

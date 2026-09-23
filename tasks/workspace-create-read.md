@@ -48,9 +48,9 @@ Tasks 1 through 3 establish the shared contract and storage rules. Tasks 4 throu
 
 ### Phase 1: Contract and foundations
 
-- [#45: Define the public Workspace contract](https://github.com/vasapolrittideah/flowspace-api/issues/45)
-- [#46: Model Workspace rules and application boundaries](https://github.com/vasapolrittideah/flowspace-api/issues/46)
-- [#47: Add the Workspace schema and typed queries](https://github.com/vasapolrittideah/flowspace-api/issues/47)
+- Task 1: [#45 Define the public Workspace contract](https://github.com/vasapolrittideah/flowspace-api/issues/45)
+- Task 2: [#46 Model Workspace rules and application boundaries](https://github.com/vasapolrittideah/flowspace-api/issues/46)
+- Task 3: [#47 Add the Workspace schema and typed queries](https://github.com/vasapolrittideah/flowspace-api/issues/47)
 
 ### Checkpoint: Foundations
 
@@ -61,9 +61,9 @@ Tasks 1 through 3 establish the shared contract and storage rules. Tasks 4 throu
 
 ### Phase 2: Core application paths
 
-- [#48: Validate and coordinate workspace creation](https://github.com/vasapolrittideah/flowspace-api/issues/48)
-- [#49: Persist workspaces with durable retry protection](https://github.com/vasapolrittideah/flowspace-api/issues/49)
-- [#50: Read workspaces through membership data](https://github.com/vasapolrittideah/flowspace-api/issues/50)
+- Task 4: [#48 Validate and coordinate workspace creation](https://github.com/vasapolrittideah/flowspace-api/issues/48)
+- Task 5: [#49 Persist workspaces with durable retry protection](https://github.com/vasapolrittideah/flowspace-api/issues/49)
+- Task 6: [#50 Read workspaces through membership data](https://github.com/vasapolrittideah/flowspace-api/issues/50)
 
 ### Checkpoint: Core application paths
 
@@ -73,11 +73,11 @@ Tasks 1 through 3 establish the shared contract and storage rules. Tasks 4 throu
 
 ### Phase 3: Identity and public API
 
-- [#51: Verify Keycloak access tokens](https://github.com/vasapolrittideah/flowspace-api/issues/51)
-- [#52: Expose RPC behavior and canonical errors](https://github.com/vasapolrittideah/flowspace-api/issues/52)
-- [#53: Add REST limits, headers, request IDs, and trace context](https://github.com/vasapolrittideah/flowspace-api/issues/53)
-- [#54: Wire and run the Workspace API](https://github.com/vasapolrittideah/flowspace-api/issues/54)
-- [#55: Add the migration process and service image](https://github.com/vasapolrittideah/flowspace-api/issues/55)
+- Task 7: [#51 Verify Keycloak access tokens](https://github.com/vasapolrittideah/flowspace-api/issues/51)
+- Task 8: [#52 Expose RPC behavior and canonical errors](https://github.com/vasapolrittideah/flowspace-api/issues/52)
+- Task 9: [#53 Add REST limits, headers, request IDs, and trace context](https://github.com/vasapolrittideah/flowspace-api/issues/53)
+- Task 10: [#54 Wire and run the Workspace API](https://github.com/vasapolrittideah/flowspace-api/issues/54)
+- Task 11: [#55 Add the migration process and service image](https://github.com/vasapolrittideah/flowspace-api/issues/55)
 
 ### Checkpoint: Public flows
 
@@ -88,7 +88,7 @@ Tasks 1 through 3 establish the shared contract and storage rules. Tasks 4 throu
 
 ### Phase 4: Completion evidence
 
-- [#56: Run the complete module and repository checks](https://github.com/vasapolrittideah/flowspace-api/issues/56)
+- Task 12: [#56 Run the complete module and repository checks](https://github.com/vasapolrittideah/flowspace-api/issues/56)
 
 ### Checkpoint: Complete
 

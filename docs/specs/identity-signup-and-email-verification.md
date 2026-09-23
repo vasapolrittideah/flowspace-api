@@ -43,6 +43,7 @@ The duplicate-email response and the exact delivery-failure response are open qu
 - Identity assigns a stable subject that does not depend on the email address. It stores the account and an unverified email state in its own PostgreSQL database.
 - Identity enforces uniqueness using one documented email comparison rule. The exact normalization rule remains open; implementations must not invent provider-specific rules such as removing dots from an address.
 - Identity validates the email and password at the public boundary. It stores a salted, adaptive password hash and never stores or returns the password.
+- Identity accepts a password with at least 15 characters without requiring any character type. It also accepts a password with 8–14 characters if it contains at least one lowercase ASCII letter (`a`–`z`) and one ASCII digit (`0`–`9`). It accepts Unicode and counts Unicode code points when measuring length. It rejects passwords shorter than eight characters. These two length paths follow [GitHub's policy](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-strong-password). They depart from [NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html#passwordver): MFA is optional for the shorter path, and that path requires a character-type mix.
 - Successful signup creates one device session and returns its access and refresh tokens even though the email is not verified.
 - A signup retry after a lost response must not create a second account or session by accident. The retry contract remains open because the first response contains a refresh token that Identity stores only as a hash.
 
@@ -78,7 +79,7 @@ Run commands from the repository root. These are future implementation checks; t
 
 ## Testing strategy
 
-Use unit tests for email and code validation, account state transitions, and challenge expiry. Use PostgreSQL integration tests for unique account creation, one-time code use, concurrent verification, session creation, and durable retry behavior after the retry contract is settled.
+Use unit tests for email, password, and code validation, account state transitions, and challenge expiry. Cover both accepted password paths and their boundaries: seven characters fail, eight characters need a lowercase ASCII letter and an ASCII digit, and 15 characters need no character-type mix. Use PostgreSQL integration tests for unique account creation, one-time code use, concurrent verification, session creation, and durable retry behavior after the retry contract is settled.
 
 Test the public generated REST and typed RPC surfaces with API clients. Cover malformed input, unauthorized calls, duplicate signup, rate limits, code resend, stale codes, expired codes, concurrent guesses, and email-delivery failure. Prove that a newly issued token cannot use Workspace before verification and that the same live session passes the verified-email gate after verification. Use Mailpit for end-to-end learning-environment evidence without real users.
 
@@ -121,7 +122,7 @@ Each row describes an observable result. The open contract choices above must be
 ## Open questions and approval
 
 - What email syntax and comparison rule does FlowSpace accept, including Unicode addresses and case handling?
-- What password length and acceptance policy applies, and which adaptive hash parameters must pass before real-user use?
+- Which adaptive hash parameters must pass before real-user use?
 - How long does a verification code live, how many guesses are allowed, and what request limits and resend interval apply?
 - How do signup retries recover a lost response without storing or exposing a reusable plaintext refresh token? What does duplicate signup return?
 - What does signup return when email delivery fails after account creation, and how does the client recover?

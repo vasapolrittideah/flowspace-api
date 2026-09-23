@@ -42,8 +42,6 @@ flowchart TD
     Runtime --> Evidence[Final evidence]
 ```
 
-Tasks 1 through 3 establish the shared contract and storage rules. Tasks 4 through 6 complete the application paths. Tasks 7 through 11 expose and run them.
-
 ## Task list
 
 ### Phase 1: Contract and foundations

@@ -94,7 +94,6 @@ The abuse tests cover ID-T01, ID-T03, ID-T04, ID-T05, ID-T12, ID-T16, ID-T17, an
 ### Ask first
 
 - Obtain approval before changing the all-session revocation rule, code limits, eligible account types, or new-login requirement.
-- Approve numeric source-address limits and the handling of anonymous code-request retries before implementation.
 
 ### Never
 

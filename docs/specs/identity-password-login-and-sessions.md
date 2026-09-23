@@ -103,7 +103,9 @@ Unit tests cover password normalization, public error classification, token clai
 
 Transport tests cover malformed input, rejected `Idempotency-Key` headers, duplicate security headers, generic login errors, absent or invalid access and refresh tokens, rate limits, deadlines, cancellation, and safe error bodies. Capture logs and traces to prove that no reusable secret appears. Token tests cover the wrong algorithm, issuer, audience, type, key ID, signature, subject, session ID, and expiry.
 
-Cross-service tests prove that Workspace rejects an unverified account, a revoked device, an all-session logout, and an expired session. They also prove that Identity unavailability denies new protected requests. Test signing-key overlap and retirement after the final accepted token expires. These tests address ID-T01, ID-T02, and ID-T09 through ID-T19 in the [threat model](../security/identity-threat-model.md). Key handling also addresses ID-T22.
+Cross-service tests prove that Workspace rejects an unverified account, a revoked device, an all-session logout, and an expired session. They also prove that Identity unavailability denies new protected requests. Test signing-key overlap and retirement after the final accepted token expires.
+
+Enumeration and password-guessing tests cover ID-T01 and ID-T02. Token and signing-key tests cover ID-T09, ID-T10, and ID-T19. Refresh and concurrency tests cover ID-T11 and ID-T12. Logout and session-check tests cover ID-T13 and ID-T14. Input, load, and telemetry tests cover ID-T15, ID-T16, and ID-T17 in the [threat model](../security/identity-threat-model.md). The host-compromise exercise for ID-T22 remains a separate real-user gate.
 
 ## Boundaries
 
@@ -129,22 +131,22 @@ Cross-service tests prove that Workspace rejects an unverified account, a revoke
 
 ## Success criteria
 
-Each row describes an observable result required before implementation can claim completion.
+Each row describes an observable result required before implementation can claim completion. The last column links the result to the applicable threat IDs.
 
-| Given | Then |
-| --- | --- |
-| An existing account sends its correct email and password. | Identity creates one session and returns the stable subject, current email state, two distinct tokens, and their expiry times. |
-| A client loses a committed password-login response and logs in again. | Identity creates a new session without replaying the first token pair; the first session can remain active. |
-| A signup or claim response is lost, but the user knows the current password. | Password login issues a new session for the same active subject without replaying a prior refresh token. |
-| An unknown or retired account, or a wrong password, is used for login. | The same safe `Unauthenticated` response appears without a session or token. |
-| A correct password belongs to an unverified account. | Login succeeds, Identity verification remains available, and Workspace denies access until the email is verified. |
-| A valid current refresh token is used before either session limit. | Identity consumes it once and returns a new token pair for the same session with a later idle expiry and unchanged absolute expiry. |
-| A refresh token is used at the 30-day idle limit or the 90-day absolute limit. | Refresh fails without issuing tokens or extending the session. |
-| A known rotated refresh token is used again, including after a concurrent refresh. | Identity revokes that session; the current refresh token and later protected requests fail. Other device sessions remain active. |
-| A client loses a committed refresh response and sends the old token again. | Identity treats it as reuse; the client must log in to establish a new session. |
-| A user logs out the current device. | Revocation commits before success, and a later request from that session fails even with a locally valid access token. Other device sessions remain active. |
-| A user logs out every device. | All existing sessions stop passing live checks after the commit; a later password login can create a new session. |
-| A protected service cannot confirm session state with Identity. | It denies the new request and returns a temporary service failure without using a cached active result. |
-| The email becomes verified after a token is issued. | The next live session check reports the verified state without requiring new tokens. |
-| Identity rotates its signing key while old access tokens remain valid. | Verifiers accept both valid key IDs until old tokens expire, then stop accepting the retired key. |
-| The capability is submitted for implementation review. | Contract, database, abuse, concurrency, key-rotation, and cross-service tests pass under repository quality checks. |
+| Given | Then | Threat |
+| --- | --- | --- |
+| An existing account sends its correct email and password. | Identity creates one session and returns the stable subject, current email state, two distinct tokens, and their expiry times. | ID-T02, ID-T09, ID-T11 |
+| A client loses a committed password-login response and logs in again. | Identity creates a new session without replaying the first token pair; the first session can remain active. | ID-T11 |
+| A signup or claim response is lost, but the user knows the current password. | Password login issues a new session for the same active subject without replaying a prior refresh token. | ID-T11 |
+| An unknown or retired account, or a wrong password, is used for login. | The same safe `Unauthenticated` response appears without a session or token. | ID-T01, ID-T02 |
+| A correct password belongs to an unverified account. | Login succeeds, Identity verification remains available, and Workspace denies access until the email is verified. | ID-T14 |
+| A valid current refresh token is used before either session limit. | Identity consumes it once and returns a new token pair for the same session with a later idle expiry and unchanged absolute expiry. | ID-T11, ID-T12 |
+| A refresh token is used at the 30-day idle limit or the 90-day absolute limit. | Refresh fails without issuing tokens or extending the session. | ID-T11, ID-T19 |
+| A known rotated refresh token is used again, including after a concurrent refresh. | Identity revokes that session; the current refresh token and later protected requests fail. Other device sessions remain active. | ID-T11, ID-T12 |
+| A client loses a committed refresh response and sends the old token again. | Identity treats it as reuse; the client must log in to establish a new session. | ID-T11, ID-T12 |
+| A user logs out the current device. | Revocation commits before success, and a later request from that session fails even with a locally valid access token. Other device sessions remain active. | ID-T09, ID-T13 |
+| A user logs out every device. | All existing sessions stop passing live checks after the commit; a later password login can create a new session. | ID-T09, ID-T13 |
+| A protected service cannot confirm session state with Identity. | It denies the new request and returns a temporary service failure without using a cached active result. | ID-T14, ID-T16 |
+| The email becomes verified after a token is issued. | The next live session check reports the verified state without requiring new tokens. | ID-T14 |
+| Identity rotates its signing key while old access tokens remain valid. | Verifiers accept both valid key IDs until old tokens expire, then stop accepting the retired key. | ID-T10 |
+| The capability is submitted for implementation review. | Contract, database, abuse, concurrency, key-rotation, and cross-service tests pass under repository quality checks. | ID-T15, ID-T17, ID-T20 |

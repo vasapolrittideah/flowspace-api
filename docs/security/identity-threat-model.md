@@ -141,15 +141,9 @@ Before real users join, FlowSpace must complete these exercises:
 
 ## Open security decisions
 
-Feature specifications or later ADRs must resolve these items before implementation depends on them:
+The [signup spec](../specs/identity-signup-and-email-verification.md), [session spec](../specs/identity-password-login-and-sessions.md), [session security decision](../adr/0035-identity-uses-a-bounded-session-security-profile.md), and [email outbox decision](../adr/0036-identity-delivers-email-through-a-redpanda-outbox.md) resolve the first-release token, key, session-check, login-limit, code-delivery, and broker-failure choices. The following decisions still need their owning feature or a real-user readiness review before implementation depends on them:
 
-- Password hashing algorithm, parameters, maximum input size, and compromised-password source.
-- Access-token lifetime, refresh-session lifetime, idle policy, clock tolerance, and refresh retry behavior.
-- Signing algorithm, key storage, routine rotation, emergency rotation, and JWKS cache behavior.
-- Code lifetime, attempt limit, resend interval, issue limit, and protected storage method.
-- Rate-limit keys, thresholds, shared storage, trusted proxy rules, and safe client responses.
-- Password-reset session revocation and notification behavior.
-- Authentication method for internal session checks and JWKS retrieval policy.
+- Exact password input ceiling and compromised-password source beyond the minimum policy in the signup spec.
 - Provider scopes, redirect URIs, transaction storage, claim validation, verified-email evidence, and outage behavior.
 - Email normalization, email change, provider unlink, account deletion, and subject-retirement rules.
 - Browser token storage and cross-site request protections for the later web release.

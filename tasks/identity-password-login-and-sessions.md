@@ -6,9 +6,9 @@ Status: Draft.
 
 ## Overview
 
-Add password login, refresh, logout, public signing keys, and a live session check to FlowSpace Identity. Then replace Workspace's Keycloak token check with FlowSpace token verification and a live session check. This plan follows the [approved specification](../docs/specs/identity-password-login-and-sessions.md), [Identity threat model](../docs/security/identity-threat-model.md), and [ADR-0031](../docs/adr/0031-flowspace-owns-authentication-and-revocable-sessions.md). No capability map includes this module.
+Add password login, refresh, logout, public signing keys, and a live session check to FlowSpace Identity. Then replace Workspace's Keycloak token check with FlowSpace token verification and a live session check. This plan follows the [approved specification](../docs/specs/identity-password-login-and-sessions.md), [Identity threat model](../docs/security/identity-threat-model.md), [ADR-0031](../docs/adr/0031-flowspace-owns-authentication-and-revocable-sessions.md), and the accepted [session security profile](../docs/adr/0035-identity-uses-a-bounded-session-security-profile.md). No capability map includes this module.
 
-The [signup and email verification module](../docs/specs/identity-signup-and-email-verification.md) comes first. Its account, password hash, and first-session code form the input to this plan. At the first checkpoint, inspect that module's merged code and issues before assigning overlapping work. Keep one owner for the shared session schema and issuer.
+The [signup and email verification module](../docs/specs/identity-signup-and-email-verification.md) comes first. Its account, password hash, first-session code, and [Redpanda email outbox](../docs/adr/0036-identity-delivers-email-through-a-redpanda-outbox.md) form the input to this plan. Signup owns the initial session schema and token issuer; login extends them after signup merges. Inspect the merged signup code and issues before assigning overlapping work.
 
 ## Architecture decisions
 
@@ -25,10 +25,8 @@ The [signup and email verification module](../docs/specs/identity-signup-and-ema
 ```mermaid
 flowchart TD
     Signup[Signup account and first-session foundation] --> Contract[Extend Identity contract]
-    Decisions[Approve open security values] --> Contract
-    Decisions --> Keys[Public keys and rotation]
+    Signup --> Keys[Public keys and rotation]
     Signup --> Login[Password login]
-    Signup --> Keys
     Contract --> Login
     Login --> Refresh[Refresh and replay handling]
     Login --> Current[Current-session logout]
@@ -45,21 +43,20 @@ flowchart TD
 
 The issue-ready task details and acceptance criteria are in [.todo.md](.todo.md). After plan approval, create one GitHub Issue per task, add each issue to the repository project with `Todo` status, record its blockers, replace this index with issue links, and delete `.todo.md`.
 
-### Phase 1: Approved rules and contract
+### Phase 1: Contract
 
-- Task 1: Record the open security decisions.
-- Task 2: Extend the Identity contract for password sessions.
+- Task 1: Extend the Identity contract for password sessions.
 
-### Checkpoint: Rules and contract
+### Checkpoint: Contract
 
-- [ ] A human approves the signing, JWKS, internal service authentication, and numeric login-limit choices before code uses them.
-- [ ] The signup module's account and session model has one owner, and the contract passes Buf lint, generation, and compatibility checks.
+- [ ] The contract uses the accepted signing, JWKS, internal authentication, and login-limit choices in ADR-0035.
+- [ ] The signup module owns the initial account and session model, and the contract passes Buf lint, generation, and compatibility checks.
 
 ### Phase 2: Issue and renew sessions
 
-- Task 3: Sign in with a password through the public API.
-- Task 4: Publish and rotate public signing keys.
-- Task 5: Refresh a session with single-use tokens.
+- Task 2: Sign in with a password through the public API.
+- Task 3: Publish and rotate public signing keys.
+- Task 4: Refresh a session with single-use tokens.
 
 ### Checkpoint: Session issuance
 
@@ -69,9 +66,9 @@ The issue-ready task details and acceptance criteria are in [.todo.md](.todo.md)
 
 ### Phase 3: Revoke and check sessions
 
-- Task 6: Log out the current session.
-- Task 7: Log out every session for the account.
-- Task 8: Expose an authenticated internal session check.
+- Task 5: Log out the current session.
+- Task 6: Log out every session for the account.
+- Task 7: Expose an authenticated internal session check.
 
 ### Checkpoint: Revocation
 
@@ -81,8 +78,8 @@ The issue-ready task details and acceptance criteria are in [.todo.md](.todo.md)
 
 ### Phase 4: Protected service and evidence
 
-- Task 9: Replace Workspace's Keycloak check with FlowSpace session admission.
-- Task 10: Prove the public and cross-service failure paths.
+- Task 8: Replace Workspace's Keycloak check with FlowSpace session admission.
+- Task 9: Prove the public and cross-service failure paths.
 
 ### Checkpoint: Complete
 
@@ -100,12 +97,9 @@ The issue-ready task details and acceptance criteria are in [.todo.md](.todo.md)
 | A new key replaces an old key too early. | Valid access tokens fail before expiry. | Publish the new key before use and retain the old public key through the full accepted token lifetime and cache margin. |
 | Limits differ across replicas or reveal account state. | An attacker can guess passwords or find accounts. | Use approved shared limit state and compare public errors and practical response timing for known and unknown accounts. |
 
-## Open decisions before implementation
+## Approved decisions for the first experiment
 
-- Approve the signing algorithm, issuer, audience, JWT clock tolerance, and private-key storage.
-- Approve the JWKS route, cache bounds, and routine and emergency key procedures.
-- Approve authentication for internal `CheckSession` callers and the JWKS retrieval policy.
-- Approve numeric login limits, trusted edge proxies, and shared limit storage.
-- Resolve any shared session ownership overlap with the signup module before creating issues.
+- [ADR-0035](../docs/adr/0035-identity-uses-a-bounded-session-security-profile.md) fixes signing, key storage and rotation, JWKS, internal caller authentication, login limits, proxy trust, and ownership of the shared session model.
+- [ADR-0036](../docs/adr/0036-identity-delivers-email-through-a-redpanda-outbox.md) fixes the signup prerequisite: Identity sends email through a PostgreSQL outbox, Redpanda, and its own SMTP consumer.
 
 The single-host key-theft exercise and independent backup decision remain real-user gates in the [threat model](../docs/security/identity-threat-model.md). This plan does not claim real-user readiness.

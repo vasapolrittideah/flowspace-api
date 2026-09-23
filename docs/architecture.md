@@ -2,7 +2,7 @@
 
 Status: accepted direction with implementation proposals still open.
 
-Updated: 2026-09-10.
+Updated: 2026-09-23.
 
 This document defines product rules, service boundaries, cross-service behavior, and learning evidence. Accepted rationale lives in the [ADR index](adr/README.md); replaceable tools live in the [technology stack](technology-stack.md).
 
@@ -12,7 +12,7 @@ Build a work-management platform to learn production-grade distributed-system de
 
 - Initial product: workspaces, memberships, projects, tasks, comments, and in-app notifications.
 - First milestone: backend only, exercised through API clients and automated smoke tests.
-- Architecture: three independently deployable Go services in one repository and one root Go module.
+- Architecture: four independently deployable Go services in one repository and one root Go module.
 - Infrastructure: local Kubernetes on Mac; staging and production-named environments share one Ubuntu host.
 - Host budget: user-reported 32 GB RAM and 500 GB SSD. The GPU is outside the initial scope.
 - Cost: hosted development services must remain within a zero-spend limit.
@@ -48,28 +48,30 @@ Only owners may grant or modify administrator access.
 
 ### Identity
 
-- Keycloak owns authentication; FlowSpace owns workspace authorization.
-- Initial login methods are local email/password and Google.
+- FlowSpace Identity owns authentication; Workspace owns workspace authorization.
+- Initial login methods are email/password, Google, and GitHub. Users link a provider only after signing in.
+- Email verification and password reset use six-digit codes. An identity needs a verified email before it can use Workspace.
+- Identity issues signed access tokens and rotating refresh tokens. Protected services verify access tokens and check live session state with Identity on every request.
 - Mailpit captures verification and password-reset email in learning environments.
-- Branded authentication pages remain Keycloak-hosted themes.
+- API clients come first. Browser authentication and token storage remain open for the later web release.
 
 ## 3. Service boundaries
 
 | Component | Owns | Depends on |
 | --- | --- | --- |
 | Identity | Credentials, login, tokens, account identity | No FlowSpace service |
-| Workspace | Workspaces, memberships, invitations, roles, authorization events | Identity tokens |
-| Work | Projects, tasks, assignments, comments, activity, outbox, authorization projection | Identity tokens and Workspace events |
-| Notifications | Inbox, read state, deduplication, authorization projection | Identity tokens, Workspace events, and Work events |
+| Workspace | Workspaces, memberships, invitations, roles, authorization events | Identity access tokens and session checks |
+| Work | Projects, tasks, assignments, comments, activity, outbox, authorization projection | Identity access tokens, session checks, and Workspace events |
+| Notifications | Inbox, read state, deduplication, authorization projection | Identity access tokens, session checks, Workspace events, and Work events |
 
-Build order: Identity integration → Workspace → Work → Notifications.
+Build Identity in place of Keycloak before completing Workspace, then build Work and Notifications.
 
 Projects, tasks, assignments, and comments stay in Work so related rules share local transactions. Notifications is separate because notification failure must not undo a task write.
 
 ```mermaid
 flowchart TD
     Client[Browser or API client] --> Edge[Public edge and ingress]
-    Edge --> Identity[Keycloak]
+    Edge --> Identity[FlowSpace Identity]
     Edge --> Workspace[Workspace]
     Edge --> Work[Work]
     Edge --> Notifications[Notifications]
@@ -78,6 +80,10 @@ flowchart TD
     Work --> WorkDB[(Work PostgreSQL + outbox)]
     Notifications --> NotificationsDB[(Notifications PostgreSQL)]
     Identity --> IdentityDB[(Identity PostgreSQL)]
+
+    Workspace -->|Session check| Identity
+    Work -->|Session check| Identity
+    Notifications -->|Session check| Identity
 
     Workspace -->|Authorization events| Events[Redpanda]
     Events -->|Local authorization projection| Work
@@ -144,7 +150,9 @@ Event, outbox, deduplication, schema, and backup retention must cover the suppor
 - Public methods expose generated REST/JSON routes; internal clients use typed gRPC calls.
 - Event contracts are versioned separately from RPC contracts.
 - Generated adapters contain no business rules.
-- Services validate token signature, issuer, audience, and expiry.
+- Identity signs access tokens with a private key and publishes public verification keys. Only Identity holds private signing keys.
+- Protected services validate the access-token signature, type, issuer, audience, and expiry. They then check live session state with Identity and deny the request if Identity cannot confirm it.
+- Identity stores only refresh-token hashes, rotates refresh tokens on use, and revokes sessions for logout from one or all devices.
 - Client-supplied tenant IDs, object IDs, and role claims are never authorization evidence.
 - Databases and broker clients use per-service credentials and broker ACLs.
 - Kubernetes uses namespace RBAC, default-deny network policies, non-root containers, input limits, and ingress TLS.
@@ -179,16 +187,17 @@ Event, outbox, deduplication, schema, and backup retention must cover the suppor
 
 Before real teams:
 
-- add encrypted backup storage independent of the server;
-- back up every service database, broker state, Schema Registry, identity data, configuration, and secret-controller keys;
-- align event retention, offsets, deduplication history, and restored database state; and
-- prove restoration and application invariants from the independent destination.
+- Use real email delivery and add MFA for account protection.
+- Add encrypted backup storage independent of the server.
+- Back up every service database, broker state, Schema Registry, identity data, configuration, and secret-controller keys.
+- Align event retention, offsets, deduplication history, and restored database state.
+- Prove restoration and application invariants from the independent destination.
 
 ## 8. Learning evidence
 
 | Increment | Working capability | Required evidence |
 | --- | --- | --- |
-| 1. Identity and Workspace | Login, recovery, workspaces, invitations, roles | Wrong-tenant and revoked-member access is rejected |
+| 1. Identity and Workspace | Login, recovery, workspaces, invitations, roles | Wrong-tenant, unverified-email, logged-out-session, and revoked-member access is rejected |
 | 2. Work | Projects, tasks, assignment, status changes, comments | Invalid relationships fail; concurrent updates conflict |
 | 3. Notifications | Assignment produces an inbox item | Crash and replay tests preserve eventual, duplicate-free delivery |
 | 4. Operations | Staging, dashboards, promotion, backup | Diagnose failure and restore verified state |
@@ -221,9 +230,9 @@ Keep these here until accepted; then update the owning ADR.
 
 Not in the initial scope:
 
-- private projects, nested teams, multiple assignees, and configurable workflows;
-- real email delivery, LinkedIn login, and enterprise SSO;
-- service mesh, custom API gateway, shared application cache, Elasticsearch, event sourcing, generic saga infrastructure, and custom Kubernetes operators;
-- a service per entity or separate Go modules;
-- multi-host availability and distributed storage; and
+- Private projects, nested teams, multiple assignees, and configurable workflows.
+- Real email delivery, MFA, LinkedIn login, and enterprise SSO.
+- Service mesh, custom API gateway, shared application cache, Elasticsearch, event sourcing, generic saga infrastructure, and custom Kubernetes operators.
+- A service per entity or separate Go modules.
+- Multi-host availability and distributed storage.
 - AI features, which must later use authorized APIs rather than direct database access.

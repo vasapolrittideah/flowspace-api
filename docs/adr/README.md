@@ -8,7 +8,7 @@ An accepted record is never edited or deleted. When a decision changes, add a ne
 
 | # | Decision | Status |
 | --- | --- | --- |
-| [0001](0001-one-bounded-context-per-service.md) | One bounded context per independently deployable service | Accepted |
+| [0001](0001-one-bounded-context-per-service.md) | One bounded context per independently deployable service | Accepted; service count and Keycloak boundary superseded by [0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) |
 | [0002](0002-one-repository-and-one-go-module.md) | One repository and one root Go module | Accepted |
 | [0003](0003-hexagonal-layers-inside-each-service.md) | Hexagonal layers inside each service | Accepted |
 | [0004](0004-share-only-technical-packages-across-services.md) | Only technical packages are shared across services | Accepted |
@@ -26,7 +26,7 @@ An accepted record is never edited or deleted. When a decision changes, add a ne
 | [0016](0016-cross-service-side-effects-use-domain-events.md) | Cross-service side effects use domain events | Accepted |
 | [0017](0017-outbox-and-idempotent-consumers-deliver-events.md) | An outbox and idempotent consumers deliver events | Accepted |
 | [0018](0018-task-mutations-reject-stale-versions.md) | Task mutations reject stale versions | Accepted |
-| [0019](0019-keycloak-owns-authentication-flows.md) | Keycloak owns authentication flows | Accepted |
+| [0019](0019-keycloak-owns-authentication-flows.md) | Keycloak owns authentication flows | Superseded by [0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) |
 | [0020](0020-services-authorize-from-bounded-local-projections.md) | Services authorize from bounded local projections | Accepted |
 | [0021](0021-run-kubernetes-locally-and-on-the-self-hosted-server.md) | Kubernetes runs locally and on the self-hosted server | Accepted |
 | [0022](0022-single-host-storage-holds-disposable-data.md) | Single-host storage holds disposable learning data | Accepted |
@@ -38,3 +38,4 @@ An accepted record is never edited or deleted. When a decision changes, add a ne
 | [0028](0028-telemetry-is-vendor-neutral-and-correlated.md) | Telemetry is vendor-neutral and correlated | Accepted |
 | [0029](0029-the-observability-stack-is-self-hosted.md) | The observability stack is self-hosted | Accepted |
 | [0030](0030-telemetry-is-bounded-and-non-blocking.md) | Telemetry is bounded and non-blocking | Accepted |
+| [0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) | FlowSpace owns authentication and revocable sessions | Accepted |

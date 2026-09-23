@@ -12,8 +12,7 @@ These tables are the source of truth for replaceable implementation tools and Go
 | Query generation | sqlc | Generate typed Go methods from handwritten SQL. | [ADR-0014](adr/0014-relational-data-uses-explicit-sql.md) |
 | Event broker | Redpanda | Durable asynchronous events and consumer offsets. | [ADR-0016](adr/0016-cross-service-side-effects-use-domain-events.md), [ADR-0017](adr/0017-outbox-and-idempotent-consumers-deliver-events.md) |
 | Event schemas | Protobuf + Redpanda Schema Registry | Version and register event payloads separately from RPC contracts. | [ADR-0006](adr/0006-version-events-separately-from-rpc.md), [ADR-0016](adr/0016-cross-service-side-effects-use-domain-events.md) |
-| Identity provider | Keycloak | OIDC identity, authentication, recovery, and federation flows. | [ADR-0019](adr/0019-keycloak-owns-authentication-flows.md) |
-| Test email | Mailpit | Capture learning-environment verification and recovery email. | [ADR-0019](adr/0019-keycloak-owns-authentication-flows.md) |
+| Test email | Mailpit | Capture learning-environment verification and recovery email. | [ADR-0031](adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) |
 | Server Kubernetes | K3s | Kubernetes distribution on Ubuntu. | [ADR-0021](adr/0021-run-kubernetes-locally-and-on-the-self-hosted-server.md) |
 | Local Kubernetes | k3d | Kubernetes cluster inside local Docker Desktop. | [ADR-0021](adr/0021-run-kubernetes-locally-and-on-the-self-hosted-server.md) |
 | Local container runtime | Docker Desktop | Run the local k3d cluster on Mac. | [ADR-0021](adr/0021-run-kubernetes-locally-and-on-the-self-hosted-server.md) |

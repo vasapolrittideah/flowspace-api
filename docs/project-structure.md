@@ -2,14 +2,14 @@
 
 Status: accepted direction with implementation details still open.
 
-Updated: 2026-09-12.
+Updated: 2026-09-23.
 
 This document defines where backend code belongs and which dependency directions are allowed. It applies the service boundaries from the [architecture](architecture.md), the repository layout from [ADR-0002](adr/0002-one-repository-and-one-go-module.md), and the tools in the [technology stack](technology-stack.md).
 
 ## 1. Principles
 
 - Keep all application services in one repository and one root Go module.
-- Organize service code around the Workspace, Work, and Notifications ownership boundaries.
+- Organize service code around the Identity, Workspace, Work, and Notifications ownership boundaries.
 - Keep business rules independent of transports, databases, brokers, identity providers, and deployment tooling.
 - Keep each service's schema, queries, migrations, generated query code, and container build with that service.
 - Put only cross-process interfaces in `contracts/`; keep service implementation types private.
@@ -43,6 +43,7 @@ This document defines where backend code belongs and which dependency directions
 ├── internal/
 ├── scripts/
 ├── services/
+│   ├── identity/
 │   ├── workspace/
 │   ├── work/
 │   └── notifications/
@@ -102,7 +103,7 @@ services/<service>/
 │   │   │   └── http/
 │   │   └── out/
 │   │       ├── event/
-│   │       ├── keycloak/
+│   │       ├── identity/
 │   │       └── postgres/
 │   │           └── sqlc/
 │   ├── app/

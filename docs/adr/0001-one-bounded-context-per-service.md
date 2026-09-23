@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted, except the service count and Keycloak boundary superseded by [ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md)
 
 ## Date
 

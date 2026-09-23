@@ -28,6 +28,19 @@ func TestMigrateRequiresDatabaseURL(t *testing.T) {
 	}
 }
 
+func TestMigrateUsesConfiguredDatabaseURL(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "local")
+	t.Setenv("DATABASE_URL", "%")
+
+	err := migrate()
+	if err == nil {
+		t.Fatal("migrate() accepted an invalid database URL")
+	}
+	if !strings.Contains(err.Error(), "migrate workspace database") {
+		t.Fatalf("migrate() error = %v, want migration error", err)
+	}
+}
+
 func TestRunHonorsCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()

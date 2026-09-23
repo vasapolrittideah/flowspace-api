@@ -2,7 +2,7 @@
 
 Module id: `identity-password-login-and-sessions`
 
-Planning baseline: Treat this module as unimplemented. The approved specification defines behavior, not completed code. Tasks remain proposed until a human reviews this plan.
+Status: Draft.
 
 ## Overview
 

@@ -1,6 +1,6 @@
 # Specifications
 
-Each specification defines one capability before implementation. It records scope, observable behavior, feature-specific testing, success criteria, and open questions.
+Each specification defines one capability before implementation. It records scope, observable behavior, feature-specific testing, and success criteria. An optional final section records open decisions or checks before real-user use.
 
 | Module | Specification | Depends on | Status |
 | --- | --- | --- | --- |
@@ -11,7 +11,7 @@ Draft specifications require approval before planning. An approved specification
 
 ## Specification format
 
-All capability specifications use these sections in this order. Use subsections under `Required behavior` for topics that are specific to one capability.
+All capability specifications use the core sections through `Success criteria` in this order. Add a final section for open decisions or real-user readiness when needed. Use subsections under `Required behavior` for topics that are specific to one capability.
 
 | Section | Content |
 | --- | --- |
@@ -23,7 +23,8 @@ All capability specifications use these sections in this order. Use subsections 
 | `Testing strategy` | Feature-specific evidence and its owning test boundaries |
 | `Boundaries` | Capability-specific actions to always do, ask about, or never do |
 | `Success criteria` | Observable Given and Then outcomes required for completion |
-| `Open questions and approval` | Unresolved decisions and the approval required for the next phase |
+| `Open questions and approval` (optional) | Unresolved decisions and the approval required for the next phase |
+| `Before real users join` (optional) | Checks that must pass before real-user use |
 
 Technology stack and code style come from shared project sources. Put implementation locations in the plan. Add a new top-level section here before using it in a specification.
 

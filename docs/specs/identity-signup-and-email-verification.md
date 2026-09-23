@@ -140,6 +140,6 @@ Each row describes an observable result required before implementation can claim
 | A request exceeds a signup or code limit. | Identity rejects the request without issuing another code or verifying the account. |
 | The capability is submitted for implementation review. | Contract, integration, abuse, and workspace-gate tests pass under repository quality checks. |
 
-## Open questions and approval
+## Before real users join
 
-The owner approved this spec, including the claim API, ADR-0032, and the first-release Argon2id parameters. No approval question remains for planning. Before real users join, benchmark those parameters on the deployment host under expected login load and record the results. If one hash takes at least one second or the workload exhausts CPU or memory, do not admit real users until the configuration is reviewed and the benchmark passes. Approval permits planning; it does not mean that the capability is implemented or ready for real users.
+Benchmark the approved Argon2id parameters on the deployment host under expected login load and record the results. If one hash takes at least one second or the workload exhausts CPU or memory, do not admit real users until the configuration is reviewed and the benchmark passes.

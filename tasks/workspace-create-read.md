@@ -4,6 +4,8 @@ Module id: `workspace-create-read`
 
 Planning baseline: Treat this module as unimplemented. Existing capability files do not count as completion evidence. Every task starts unchecked.
 
+Completion record: [PR #79](https://github.com/vasapolrittideah/flowspace-api/pull/79) recorded final verification for the Keycloak-based module. [ADR-0031](../docs/adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) later changed the identity direction. Replacing Keycloak is a separate change.
+
 ## Overview
 
 Build `CreateWorkspace` and `GetWorkspace` for authenticated users. Creation stores one owner and supports safe retries for 24 hours. Reading requires Workspace-owned membership data.
@@ -52,10 +54,10 @@ flowchart TD
 
 ### Checkpoint: Foundations
 
-- [ ] Buf accepts the contract and its generated output.
-- [ ] Domain tests pass without infrastructure.
-- [ ] sqlc generates code from the migration and queries.
-- [ ] A human approves the contract, transaction model, and task order.
+- [x] Buf accepts the contract and its generated output.
+- [x] Domain tests pass without infrastructure.
+- [x] sqlc generates code from the migration and queries.
+- [x] A human approves the contract, transaction model, and task order.
 
 ### Phase 2: Core application paths
 
@@ -65,9 +67,9 @@ flowchart TD
 
 ### Checkpoint: Core application paths
 
-- [ ] Unit tests pass for creation, retries, validation, and reads.
-- [ ] PostgreSQL tests pass for atomic writes, concurrency, expiry, rollback, and role-based reads.
-- [ ] A human reviews the database invariants and safe retry behavior.
+- [x] Unit tests pass for creation, retries, validation, and reads.
+- [x] PostgreSQL tests pass for atomic writes, concurrency, expiry, rollback, and role-based reads.
+- [x] A human reviews the database invariants and safe retry behavior.
 
 ### Phase 3: Identity and public API
 
@@ -79,10 +81,10 @@ flowchart TD
 
 ### Checkpoint: Public flows
 
-- [ ] REST and RPC creation return the same resource and status behavior.
-- [ ] REST and RPC reads enforce the same membership rules.
-- [ ] Invalid input stops before application effects occur.
-- [ ] Deadlines, cancellation, request IDs, logs, and trace context cross the public boundary.
+- [x] REST and RPC creation return the same resource and status behavior.
+- [x] REST and RPC reads enforce the same membership rules.
+- [x] Invalid input stops before application effects occur.
+- [x] Deadlines, cancellation, request IDs, logs, and trace context cross the public boundary.
 
 ### Phase 4: Completion evidence
 
@@ -90,10 +92,10 @@ flowchart TD
 
 ### Checkpoint: Complete
 
-- [ ] Every success criterion in the approved specification has recorded evidence.
-- [ ] Generated files match their source contracts and queries.
-- [ ] The full review diff contains no unrelated changes or secrets.
-- [ ] The module is ready for maintainer review.
+- [x] Every success criterion in the approved specification has recorded evidence.
+- [x] Generated files match their source contracts and queries.
+- [x] The full review diff contains no unrelated changes or secrets.
+- [x] The module is ready for maintainer review.
 
 ## Risks and controls
 

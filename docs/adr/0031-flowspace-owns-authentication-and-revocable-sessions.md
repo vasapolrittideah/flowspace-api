@@ -24,7 +24,7 @@ Identity issues opaque bearer session tokens with cryptographically secure rando
 
 Identity revokes a selected session or all sessions in its database before reporting logout success. Validation calls that start after that commit reject revoked sessions. Calls already in progress may finish.
 
-An account with an unverified email address can complete verification and request a new code but cannot use Workspace. Identity accepts a provider's verified email only after validating the provider response. A signed-in user must explicitly link a Google or GitHub account; matching email addresses never link accounts automatically.
+Email verification and password reset use six-digit codes sent by email. An account with an unverified email address can complete verification and request a new code but cannot use Workspace. Identity accepts a provider's verified email only after validating the provider response. A signed-in user must explicitly link a Google or GitHub account; matching email addresses never link accounts automatically.
 
 ## Alternatives Considered
 

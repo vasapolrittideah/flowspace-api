@@ -17,7 +17,8 @@ import (
 )
 
 type config struct {
-	Environment string `env:"ENVIRONMENT,required,notEmpty"`
+	Environment string              `env:"ENVIRONMENT,required,notEmpty"`
+	DatabaseURL sharedconfig.Secret `env:"DATABASE_URL,required,notEmpty"`
 }
 
 func main() {
@@ -25,18 +26,19 @@ func main() {
 }
 
 func migrate() error {
-	if _, err := sharedconfig.Load[config](); err != nil {
+	configuration, err := sharedconfig.Load[config]()
+	if err != nil {
 		return err
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	return run(ctx)
+	return run(ctx, string(configuration.DatabaseURL))
 }
 
-func run(ctx context.Context) error {
-	database, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
+func run(ctx context.Context, databaseURL string) error {
+	database, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		return fmt.Errorf("configure database: %w", err)
 	}

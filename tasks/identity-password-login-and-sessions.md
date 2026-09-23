@@ -2,7 +2,7 @@
 
 Module id: `identity-password-login-and-sessions`
 
-Status: Draft.
+Status: Approved.
 
 ## Overview
 
@@ -41,11 +41,11 @@ flowchart TD
 
 ## Task list
 
-The issue-ready task details and acceptance criteria are in [.todo.md](.todo.md). After plan approval, create one GitHub Issue per task, add each issue to the repository project with `Todo` status, record its blockers, replace this index with issue links, and delete `.todo.md`.
+Each task has an issue in the [flowspace-api Project](https://github.com/users/vasapolrittideah/projects/4) with `Todo` status. The issues hold acceptance criteria, verification steps, and blockers.
 
 ### Phase 1: Contract
 
-- Task 1: Extend the Identity contract for password sessions.
+- [Task 1: Extend the Identity contract for password sessions](https://github.com/vasapolrittideah/flowspace-api/issues/90).
 
 ### Checkpoint: Contract
 
@@ -54,9 +54,9 @@ The issue-ready task details and acceptance criteria are in [.todo.md](.todo.md)
 
 ### Phase 2: Issue and renew sessions
 
-- Task 2: Sign in with a password through the public API.
-- Task 3: Publish and rotate public signing keys.
-- Task 4: Refresh a session with single-use tokens.
+- [Task 2: Sign in with a password through the public API](https://github.com/vasapolrittideah/flowspace-api/issues/91).
+- [Task 3: Publish and rotate public signing keys](https://github.com/vasapolrittideah/flowspace-api/issues/92).
+- [Task 4: Refresh a session with single-use tokens](https://github.com/vasapolrittideah/flowspace-api/issues/93).
 
 ### Checkpoint: Session issuance
 
@@ -66,9 +66,9 @@ The issue-ready task details and acceptance criteria are in [.todo.md](.todo.md)
 
 ### Phase 3: Revoke and check sessions
 
-- Task 5: Log out the current session.
-- Task 6: Log out every session for the account.
-- Task 7: Expose an authenticated internal session check.
+- [Task 5: Log out the current session](https://github.com/vasapolrittideah/flowspace-api/issues/94).
+- [Task 6: Log out every session for an account](https://github.com/vasapolrittideah/flowspace-api/issues/95).
+- [Task 7: Expose an authenticated internal session check](https://github.com/vasapolrittideah/flowspace-api/issues/96).
 
 ### Checkpoint: Revocation
 
@@ -78,8 +78,8 @@ The issue-ready task details and acceptance criteria are in [.todo.md](.todo.md)
 
 ### Phase 4: Protected service and evidence
 
-- Task 8: Replace Workspace's Keycloak check with FlowSpace session admission.
-- Task 9: Prove the public and cross-service failure paths.
+- [Task 8: Admit Workspace requests through FlowSpace sessions](https://github.com/vasapolrittideah/flowspace-api/issues/97).
+- [Task 9: Prove public and cross-service failure paths](https://github.com/vasapolrittideah/flowspace-api/issues/98).
 
 ### Checkpoint: Complete
 

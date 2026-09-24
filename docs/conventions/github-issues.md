@@ -41,17 +41,17 @@ Estimated scope: <expected size>.
 
 ## Rules
 
+- Follow the workflow and authority in the [agent instructions](../../AGENTS.md) when creating Issues.
 - Follow this convention when drafting an Issue in `tasks/.todo.md` or creating or updating an Issue.
 - Use one Issue for each task. Use the body fields in the template order, with the same spelling and capitalization.
 - State the task outcome in the Issue title. Keep the title and body consistent with the approved specification, module plan, and task scope.
+- Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.
+- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.
 - Use as many acceptance criteria items as the task needs.
 - Keep inspection of a command's output in the same Verification item when they form one check. Put separate manual checks in separate items.
 - Write `Dependencies: None.` when no Issue blocks the task. Otherwise, write one `Blocked by` sentence with the blocking Issue numbers. Separate three or more numbers with commas and put `and` before the last number. Add a prerequisite without an Issue number as a separate sentence. Do not use semicolons or repeat `Blocked by` in the same sentence.
-- For generated output, list only its folder. Do not list generated file names.
 - Use the exact dependency forms shown in Examples.
-- Follow the workflow and authority in the [agent instructions](../../AGENTS.md) when creating Issues.
-- Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.
-- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.
+- For generated output, list only its folder. Do not list generated file names.
 
 ## Examples
 

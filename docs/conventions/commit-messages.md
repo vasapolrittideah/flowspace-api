@@ -30,22 +30,22 @@ Follow this convention when writing a checkpoint commit or preparing a suggested
 ### Message format
 
 - Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the subject, body, and footers in the order shown in the template.
-- Omit the scope, body, and `Refs` footer when they do not apply.
-- Write a short, specific subject. Do not use vague text such as `update`, `misc`, or `fix things`.
 - If a contract change breaks callers, put `!` before the colon and explain the incompatibility and required caller changes in the body.
+- Write a short, specific subject. Do not use vague text such as `update`, `misc`, or `fix things`.
 - If the reason or trade-off is unclear, explain it in the body. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.
 - If a commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers.
+- Omit the scope, body, and `Refs` footer when they do not apply.
+- For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
 - Limit prose lines in the body to 72 characters.
 - Preserve paragraphs and lists.
 - Do not split URLs, code, or trailers.
-- For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
 
 ### AI co-authorship
 
 - Include one co-author trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
+- Preserve existing attribution when you amend or squash commits.
 - Use `Co-authored-by: Codex <noreply@openai.com>` for Codex. Use each other agent's identity for its trailer.
 - Put trailers after a blank line at the end of the message.
-- Preserve existing attribution when you amend or squash commits.
 
 ### Types
 

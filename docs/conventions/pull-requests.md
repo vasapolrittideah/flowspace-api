@@ -18,7 +18,7 @@ This convention defines how to write and review a pull request (PR) and its sugg
 ### Suggested squash commit
 
 - Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
-- Use the reviewed PR title as the subject. Follow the [commit message](commit-messages.md), [formatting](commit-messages.md#formatting), and [AI co-authorship](commit-messages.md#ai-co-authorship) rules.
+- Use the reviewed PR title as the subject. Follow the [commit message rules](commit-messages.md#rules), including formatting and AI co-authorship.
 - If a body is needed, explain important effects and compatibility or migration information. Do not copy detailed verification from the PR.
 - Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
 
@@ -28,7 +28,7 @@ Use the [PR template](../../.github/pull_request_template.md) as the source for 
 
 | Part | How to write it |
 | --- | --- |
-| Title | Use only the [commit subject format](commit-messages.md#subject), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes). Do not include a body or footer in the title. Describe the result, not the branch or changed files. |
+| Title | Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes). Do not include a body or footer in the title. Describe the result, not the branch or changed files. |
 | Change | State the problem and what happens after the change. |
 | Reason | State why the change is needed. Add `Closes #<issue-number>` for each Issue that the PR completes. GitHub closes those Issues after the PR merges into `main`. |
 | Risks or limitations | Name material compatibility effects, remaining limits, or follow-up work. Omit this section when none apply. |

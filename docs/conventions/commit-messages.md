@@ -16,11 +16,27 @@ Refs: #<issue-number>
 Co-authored-by: Codex <noreply@openai.com>
 ```
 
-### Subject
+| Part | How to write it |
+| --- | --- |
+| Subject | Use `<type>: <description>` or `<type>(<scope>): <description>` on the first line. Write a short, specific description. Do not use vague text such as `update`, `misc`, or `fix things`. If a contract change breaks callers, put `!` before the colon and explain the incompatibility and required caller changes in the body. |
+| Body | If the reason or trade-off is unclear, explain it. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files. |
+| `Refs` footer | If a commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers. This links the commit to the Issue without closing it. |
 
-The subject is the first line. Use `<type>: <description>` or `<type>(<scope>): <description>`. Write a short, specific description. Do not use vague text such as `update`, `misc`, or `fix things`.
+## Rules
 
-If a contract change breaks callers, put `!` before the colon. Explain the incompatibility and required caller changes in the body.
+Format the message as follows:
+
+- Limit prose lines in the body to 72 characters.
+- Preserve paragraphs and lists.
+- Do not split URLs, code, or trailers.
+- For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
+
+Record AI co-authorship as follows:
+
+- Include one co-author trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
+- Use `Co-authored-by: Codex <noreply@openai.com>` for Codex. Use each other agent's identity for its trailer.
+- Put trailers after a blank line at the end of the message.
+- Preserve existing attribution when you amend or squash commits.
 
 ### Types
 
@@ -72,28 +88,6 @@ If generated code or OpenAPI output follows a source definition, use the type an
 9. If no single area fits, omit the scope.
 
 Reuse an existing scope when it fits. If a PR needs a new scope, define the scope in that PR. Do not combine scope names.
-
-### Body
-
-If the reason or trade-off is unclear, explain it in the body. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.
-
-### Formatting
-
-- Limit prose lines in the body to 72 characters.
-- Preserve paragraphs and lists.
-- Do not split URLs, code, or trailers.
-- For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
-
-### Footer
-
-If a commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers. This links the commit to the Issue without closing it.
-
-### AI co-authorship
-
-- Include one co-author trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
-- Use `Co-authored-by: Codex <noreply@openai.com>` for Codex. Use each other agent's identity for its trailer.
-- Put trailers after a blank line at the end of the message.
-- Preserve existing attribution when you amend or squash commits.
 
 ## Examples
 

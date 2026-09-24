@@ -27,9 +27,9 @@ Co-authored-by: Codex <noreply@openai.com>
 
 Follow this convention when writing a checkpoint commit or preparing a suggested squash commit.
 
-Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the subject, body, and footers in the order shown in the template. Omit the scope, body, and `Refs` footer when they do not apply.
+### Message format
 
-Format the message as follows:
+Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the subject, body, and footers in the order shown in the template. Omit the scope, body, and `Refs` footer when they do not apply.
 
 - Write a short, specific subject. Do not use vague text such as `update`, `misc`, or `fix things`.
 - If a contract change breaks callers, put `!` before the colon and explain the incompatibility and required caller changes in the body.
@@ -40,7 +40,7 @@ Format the message as follows:
 - Do not split URLs, code, or trailers.
 - For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
 
-Record AI co-authorship as follows:
+### AI co-authorship
 
 - Include one co-author trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
 - Use `Co-authored-by: Codex <noreply@openai.com>` for Codex. Use each other agent's identity for its trailer.

@@ -33,7 +33,7 @@ The [PR template](../../.github/pull_request_template.md) contains `Change`, `Re
 - If a command fails, fix the failure or mark the PR as needing attention. Report warnings and unresolved failures even when a command exits successfully.
 - Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link relevant output when a result needs more context.
 
-Before review:
+### Before review
 
 - Inspect the staged diff before each commit and the complete PR diff before maintainer review. Exclude unrelated changes, secrets, local environment files, and unwanted build output.
 - Run the relevant tests, lint commands, builds, and contract commands. Do not weaken commands or hide failures.
@@ -42,7 +42,7 @@ Before review:
 - For a contract or generator change, make sure that regeneration and compatibility succeed and that source files and generated output agree.
 - For a documentation-only change, make sure that facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
 
-Suggested squash commit:
+### Suggested squash commit
 
 - Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
 - Use the reviewed PR title as the subject. Follow the [commit message rules](commit-messages.md#rules), including formatting and AI co-authorship.

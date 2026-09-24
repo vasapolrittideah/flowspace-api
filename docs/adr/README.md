@@ -42,3 +42,4 @@ An accepted record is never edited or deleted. When a decision changes, add a ne
 | [0032](0032-identity-signup-recovers-with-login.md) | Identity signup recovers with login | Accepted; scoped exception to [0011](0011-idempotency-keys-protect-non-idempotent-creates.md) |
 | [0033](0033-identity-token-issuance-does-not-replay-responses.md) | Identity token issuance does not replay responses | Accepted; scoped exception to [0011](0011-idempotency-keys-protect-non-idempotent-creates.md) |
 | [0034](0034-provider-login-uses-a-one-time-handoff.md) | Provider login uses a one-time handoff | Accepted; scoped exceptions to [0005](0005-one-protobuf-contract-generates-rest.md) and [0011](0011-idempotency-keys-protect-non-idempotent-creates.md) |
+| [0035](0035-identity-signup-security-and-mail-delivery.md) | Identity signup security and mail delivery | Accepted |

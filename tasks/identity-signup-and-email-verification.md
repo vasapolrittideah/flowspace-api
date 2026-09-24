@@ -61,7 +61,7 @@ flowchart TD
 
 ### Checkpoint: Foundations
 
-- [ ] A human approves the security choices and the outbox treatment of code material.
+- [x] A human approves the security choices and the outbox treatment of code material.
 - [ ] Buf accepts the public contract and generated output, and sqlc generates from the Identity schema.
 - [ ] Domain tests cover the approved email, password, and code boundaries without infrastructure.
 

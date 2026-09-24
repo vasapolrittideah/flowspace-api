@@ -1,10 +1,12 @@
+<!-- Use a paragraph for one connected point and bullets for multiple independent points in Change, Reason, and Risks or limitations. -->
+
 ## Change
 
-<!-- Use bullets to state the problem and what happens after the change. -->
+<!-- State the problem and what happens after the change. -->
 
 ## Reason
 
-<!-- Use bullets to explain why this change is needed. Include relevant issue or decision links. -->
+<!-- Explain why this change is needed. Include relevant issue or decision links. -->
 
 ## Verification
 
@@ -15,4 +17,4 @@
 
 ## Risks or limitations
 
-<!-- Use bullets for material compatibility effects, remaining limitations, or follow-up work. Omit this section when none apply. -->
+<!-- Include material compatibility effects, remaining limitations, or follow-up work. Omit this section when none apply. -->

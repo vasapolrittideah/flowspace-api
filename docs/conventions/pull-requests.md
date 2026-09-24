@@ -4,7 +4,7 @@ This convention defines how to write and review a pull request (PR) and its sugg
 
 ## Template
 
-Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, and `Verification`. Omit `Risks or limitations` when none apply. Use bullets in `Change`, `Reason`, and `Risks or limitations`. Keep each paragraph and list item on one physical line. Keep the title, description, and [labels](github-labels.md) consistent with the final work.
+Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, and `Verification`. Omit `Risks or limitations` when none apply. Follow the [Markdown rules](markdown.md#markdown) in the prose sections. Use a paragraph for one connected point and bullets for multiple independent points. Keep each paragraph and list item on one physical line. Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 
 | Part | How to write it |
 | --- | --- |

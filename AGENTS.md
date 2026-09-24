@@ -48,14 +48,7 @@ A worktree is a separate checkout of the repository. If tasks run at the same ti
 
 ## Branch names
 
-Use `<type>/<short-description>` for a branch name. Select a [commit type](docs/conventions/commit-messages.md#types). Write the description in lowercase and separate its words with hyphens. Do not add an agent or author prefix.
-
-```text
-feat/workspace-invitations
-fix/duplicate-notifications
-docs/git-workflow
-ci/pr-title-validation
-```
+- Follow the [branch name conventions](docs/conventions/branches.md) when creating a branch.
 
 ## Commit messages
 

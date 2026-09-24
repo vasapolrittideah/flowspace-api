@@ -6,7 +6,7 @@ This convention defines the title and body of a GitHub Issue for one task.
 
 An Issue has a title and the body fields shown below.
 
-```text
+```markdown
 Module: `<module-id>`
 
 Description: <task outcome and scope>

@@ -6,7 +6,7 @@ This convention defines the format for one module's capability specification.
 
 A specification has the following fields and sections:
 
-```text
+```markdown
 # Spec: <capability name>
 
 Module id: `<module-id>`

@@ -6,7 +6,7 @@ This convention defines the format for a module plan based on an approved specif
 
 A plan has the following fields and sections:
 
-```text
+```markdown
 # Implementation plan: <capability name>
 
 Module id: `<module-id>`

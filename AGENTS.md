@@ -31,7 +31,7 @@ The working tree contains local repository files and changes. A branch holds cha
 5. Make small changes and test each change.
 6. Create checkpoint commits for the tested changes.
 7. Keep unrelated refactoring and formatting separate from behavior changes.
-8. Complete the [verification requirements](#verification).
+8. Complete the [verification requirements](docs/conventions/pull-requests.md#verification).
 9. Open a PR to `main`.
 10. Address review comments and rerun the affected commands.
 11. After the maintainer merges the PR, remove the branch if it contains no work to preserve.
@@ -179,56 +179,7 @@ Put trailers after a blank line at the end of the message. Preserve existing att
 
 ## Pull requests
 
-- Use the [PR template](.github/pull_request_template.md). Complete Change, Reason, and Verification.
-- For each issue that the pull request completes, add `Closes #<issue-number>` to the Reason section. GitHub closes the issue after the pull request merges into the default branch.
-- Keep each paragraph and list item in a PR description on one physical line.
-- If there are no risks or limitations, omit that section.
-
-### PR titles
-
-Use only the [commit subject format](#commit-messages), with the same [types](#types) and [scopes](#scopes). Do not include a body or footer in the title. Put details in the PR description.
-
-Write the PR title to describe the result, not the branch or changed files:
-
-```text
-Branch: fix/duplicate-notifications
-Title:  fix(notifications): prevent duplicate delivery when an event is retried
-```
-
-### Verification
-
-Before review, complete these actions:
-
-- Inspect the staged diff before each commit. Inspect the complete PR diff before maintainer review.
-- Exclude unrelated changes, secrets, local environment files, and unwanted build output.
-- Run the relevant tests, lint commands, builds, and contract commands.
-- For a behavior fix, add a focused regression test.
-- For a contract or generator change, make sure that regeneration and compatibility succeed. For these changes, make sure that source files and generated output are consistent.
-- For a documentation-only change, make sure that facts, examples, links, and formatting are correct. For documentation-only changes, application tests are unnecessary unless executable behavior changes.
-- Do not weaken commands, hide failures, or discard work from another task.
-
-Write the PR Verification table with these rules:
-
-- For each check, use the matching `task ...` command from `Taskfile.yaml` first. If no matching task exists, use another command.
-- Record each required command and its exact result in the PR Verification table, including commands outside Task. Omit checks that do not apply to the change.
-- For a required check that did not run, use `Not run.` and record the reason. Do not report a check that did not run as passing.
-- If a command fails, fix the failure or mark the PR as needing attention.
-- Use a short check name in `Check` and the exact command in `Command`.
-- Start `Result` with `Passed.`, `Failed.`, or `Not run.`. Report warnings and unresolved failures even when a command exits successfully.
-- Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link to relevant output when a result needs more context.
-
-### Suggested squash commit
-
-- Before maintainer review, provide the exact suggested squash message in the chat.
-- Update the message if the PR changes.
-- Do not include the message in the PR description.
-- Use the reviewed PR title as the subject.
-- Follow the [message rules](#commit-messages), [formatting rules](#formatting), and [AI attribution rules](#ai-co-authorship).
-- If a body is needed, explain the important effects and compatibility or migration information.
-- Do not copy detailed verification from the PR into the body.
-- Use the GitHub Pull request title and description squash default.
-
-The maintainer can shorten the copied description but must keep required context and trailers.
+- Follow the [pull request conventions](docs/conventions/pull-requests.md) when preparing a PR and its suggested squash message.
 
 ## English prose
 

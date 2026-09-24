@@ -12,12 +12,3 @@ This convention defines branch names for one reviewable change outside `main`. F
 | --- | --- |
 | Type | Select a [commit type](commit-messages.md#types). |
 | Short description | Use lowercase words separated by hyphens. Do not add an agent or author prefix. |
-
-## Examples
-
-```text
-feat/workspace-invitations
-fix/duplicate-notifications
-docs/git-workflow
-ci/pr-title-validation
-```

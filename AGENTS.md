@@ -6,7 +6,7 @@ Follow these repository instructions for every task. Before making changes, read
 
 A pull request (PR) proposes changes for review. A squash merge combines all commits in a PR into one commit.
 
-- Prepare and test changes through PRs.
+- Prepare and test changes on a branch, then submit them for review through a PR.
 - Do not push directly to `main`, merge a PR, or enable auto-merge.
 - The maintainer reviews and squash merges each PR.
 
@@ -16,13 +16,13 @@ The working tree contains local repository files and changes. A branch holds cha
 
 1. Inspect the working tree and read the relevant project documents.
 2. Preserve work that is outside the task.
-3. Create a short-lived branch from the current `main`.
+3. For new work, create a short-lived branch from the current `main`. When updating a PR, continue on its branch.
 4. Keep `main` ready for deployment.
 5. Make small changes and test each change.
 6. Create checkpoint commits for the tested changes.
 7. Keep unrelated refactoring and formatting separate from behavior changes.
-8. Complete the [verification requirements](docs/conventions/pull-requests.md#verification).
-9. Open a PR to `main`.
+8. Run the applicable checks and record their exact results in the [PR Verification table](docs/conventions/pull-requests.md#verification).
+9. Push the branch. Open a PR to `main` for new work, or update the existing PR.
 10. Address review comments and rerun the affected commands.
 11. After the maintainer merges the PR, remove the branch if it contains no work to preserve.
 

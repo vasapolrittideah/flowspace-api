@@ -41,4 +41,4 @@ For more blockers, continue the comma-separated list and put `and` before the la
 
 ## Final check
 
-Before creating the Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan. After creating it, apply the [Issue labels](../../AGENTS.md#issue-and-pull-request-labels), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.
+Before creating the Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan. After creating it, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.

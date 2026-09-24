@@ -11,7 +11,7 @@ Use the [PR template](../../.github/pull_request_template.md). Complete `Change`
 - `Verification` records the commands and results as described [below](#verification).
 - `Risks or limitations` names material compatibility effects, remaining limits, or follow-up work. Omit this section when none apply.
 
-Keep each paragraph and list item on one physical line. Keep the title, description, and [labels](../../AGENTS.md#issue-and-pull-request-labels) consistent with the final work.
+Keep each paragraph and list item on one physical line. Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 
 ## Title
 

@@ -172,10 +172,7 @@ Put trailers after a blank line at the end of the message. Preserve existing att
 
 ## Issue and pull request labels
 
-- Apply exactly one matching `type:*` label to each issue and pull request.
-- Apply one or more relevant `area:*` labels. An issue or pull request can have multiple `area:*` labels.
-- Apply `breaking` and `migration` when relevant.
-- Use labels from [`.github/labels.json`](.github/labels.json). Keep each title, description, and set of labels consistent with the final work.
+- Follow the [GitHub label conventions](docs/conventions/github-labels.md) for Issues and pull requests.
 
 ## Pull requests
 

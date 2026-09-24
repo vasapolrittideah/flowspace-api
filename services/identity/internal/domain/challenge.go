@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
-	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -19,12 +18,10 @@ const (
 	PurposeClaimAccount CodePurpose = "claim-account"
 )
 
-var ErrInvalidChallenge = errors.New("invalid challenge")
-
 func newCode(reader io.Reader) (string, error) {
 	n, err := rand.Int(reader, big.NewInt(1_000_000))
 	if err != nil {
-		return "", errors.New("code generation unavailable")
+		return "", ErrCodeGenerationUnavailable
 	}
 	return fmt.Sprintf("%06d", n.Int64()), nil
 }

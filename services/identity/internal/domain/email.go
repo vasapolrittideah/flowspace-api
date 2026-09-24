@@ -1,12 +1,9 @@
 package domain
 
 import (
-	"errors"
 	"net/mail"
 	"strings"
 )
-
-var ErrInvalidEmail = errors.New("invalid email address")
 
 func NormalizeEmail(address string) (string, error) {
 	for i := range len(address) {

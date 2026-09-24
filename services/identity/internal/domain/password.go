@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -13,13 +12,9 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-var (
-	ErrInvalidPassword          = errors.New("invalid password")
-	ErrPasswordCheckUnavailable = errors.New("password check unavailable")
-	commonPasswordsV1           = map[string]struct{}{
-		"password123": {}, "qwerty123": {}, "flowspace123": {},
-	}
-)
+var commonPasswordsV1 = map[string]struct{}{
+	"password123": {}, "qwerty123": {}, "flowspace123": {},
+}
 
 func HashPassword(ctx context.Context, password string, compromised func(context.Context, string) (bool, error)) (string, error) {
 	password, err := validatePassword(password)
@@ -41,7 +36,7 @@ func HashPassword(ctx context.Context, password string, compromised func(context
 	}
 	salt := make([]byte, 16)
 	if _, err := rand.Read(salt); err != nil {
-		return "", errors.New("password hashing unavailable")
+		return "", ErrPasswordHashingUnavailable
 	}
 	hash := argon2.IDKey([]byte(password), salt, 2, 19456, 1, 32)
 	return fmt.Sprintf("$argon2id$v=%d$m=19456,t=2,p=1$%s$%s", argon2.Version,

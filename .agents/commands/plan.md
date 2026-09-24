@@ -4,6 +4,8 @@ description: Break work into small verifiable tasks and track each task in GitHu
 
 Invoke the agent-skills:planning-and-task-breakdown skill.
 
+Before planning, read the [module plan conventions](../../docs/conventions/module-plans.md) and the [GitHub Issue conventions](../../docs/conventions/github-issues.md). Use their templates and file paths instead of the generic skill defaults.
+
 Read the capability spec at `docs/specs/<module-id>.md`. If a capability map includes the module, read `docs/specs/maps/<map-id>.md` too. Read the codebase sections that the capability affects. Plan one module at a time. Plan modules in the build order from the capability map.
 
 Use GitHub Issues as the task list. Use GitHub Projects to show task status.

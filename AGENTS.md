@@ -42,7 +42,7 @@ A worktree is a separate checkout of the repository. If tasks run at the same ti
 
 ## Conventions
 
-Read the matching convention before writing or updating an artifact.
+Read the matching convention before writing or updating an artifact. If a skill gives a different template or file path, use the project convention.
 
 | Work | Convention |
 | --- | --- |

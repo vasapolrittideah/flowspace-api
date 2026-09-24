@@ -1,6 +1,10 @@
 # Module specification conventions
 
+## File location
+
 Save each module specification as `docs/specs/<module-id>.md` and add it to the [specification index](../specs/README.md). Define one capability per specification before implementation.
+
+## Header
 
 Start the specification with its name, module ID, and current status:
 
@@ -12,9 +16,11 @@ Module id: `<module-id>`
 Status: Draft.
 ```
 
+## Status
+
 Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
 
-## Specification format
+## Sections
 
 All capability specifications use the core sections through `Success criteria` in this order. Add a final section for open decisions or real-user readiness when needed. Use subsections under `Required behavior` for topics that are specific to one capability.
 
@@ -30,6 +36,8 @@ All capability specifications use the core sections through `Success criteria` i
 | `Success criteria` | Observable Given and Then outcomes required for completion |
 | `Open questions and approval` (optional) | Unresolved decisions and the approval required for the next phase |
 | `Before real users join` (optional) | Checks that must pass before real-user use |
+
+## Writing rules
 
 Put implementation locations in the plan. Add a new top-level section to this convention before using it in a specification.
 

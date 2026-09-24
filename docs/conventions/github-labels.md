@@ -10,21 +10,10 @@ Follow these rules when you create or update an Issue or PR. Review the labels a
 
 ## Rules
 
-### Type labels
-
-Apply exactly one `type:*` label that matches the work.
-
-### Area labels
-
-Apply one or more relevant `area:*` labels. Use multiple area labels when the work affects multiple areas.
-
-### Breaking and migration labels
-
-Apply `breaking` and `migration` when they match the work.
-
-### Consistency
-
-Keep the title, description, and labels consistent with the final work.
+- Apply exactly one `type:*` label that matches the work.
+- Apply one or more relevant `area:*` labels. Use multiple area labels when the work affects multiple areas.
+- Apply `breaking` and `migration` when they match the work.
+- Keep the title, description, and labels consistent with the final work.
 
 ## Examples
 

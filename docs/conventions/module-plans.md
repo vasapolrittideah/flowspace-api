@@ -1,10 +1,10 @@
 # Module plan conventions
 
-A module plan breaks an approved specification into implementation tasks. It records dependencies, checkpoints, risks, and task links. Follow this convention after a specification is approved. Update the plan while creating GitHub Issues and after final verification.
+This convention defines the format for a module plan based on an approved specification. Follow it when writing or updating `tasks/<module-id>.md`.
 
 ## Template
 
-Save one plan as `tasks/<module-id>.md`. Use the same module ID as its specification in `docs/specs/`. Use these sections in order:
+Save one plan as `tasks/<module-id>.md`. Use the same module ID as its specification in `docs/specs/`. Update the plan while creating GitHub Issues and after final verification. Use these sections in order:
 
 ```text
 # Implementation plan: <capability name>

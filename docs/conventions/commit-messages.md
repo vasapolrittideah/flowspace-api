@@ -1,10 +1,10 @@
 # Commit message conventions
 
-Checkpoint and squash commits use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). A message has a subject and can include a body and footer. Follow this convention when creating a checkpoint commit or preparing a suggested squash commit.
+This convention defines the format for checkpoint and squash commit messages. Follow it when writing a checkpoint commit or preparing a suggested squash commit.
 
 ## Template
 
-Use this order. Omit the scope, body, and `Refs` footer when they do not apply. Include the co-author trailer for each contributing agent.
+Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). A message has a subject and can include a body and footer. Use this order. Omit the scope, body, and `Refs` footer when they do not apply. Include the co-author trailer for each contributing agent.
 
 ```text
 <type>(<scope>): <description>

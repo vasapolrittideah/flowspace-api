@@ -1,6 +1,12 @@
 # GitHub Issue conventions
 
-A GitHub Issue tracks one task from an approved module plan. The [agent instructions](../../AGENTS.md) define the workflow and authority for creating Issues. Follow this convention when writing a task draft in `tasks/.todo.md` or creating or updating an Issue. Before creating the Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan. After creating it, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.
+This convention defines the title and body of a GitHub Issue for one task. Follow it when drafting an Issue in `tasks/.todo.md` or creating or updating an Issue.
+
+## Rules
+
+- Follow the workflow and authority in the [agent instructions](../../AGENTS.md) when creating Issues.
+- Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.
+- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.
 
 ## Template
 

@@ -1,10 +1,10 @@
 # Module specification conventions
 
-A module specification defines one capability before implementation. It records the scope, behavior, testing, and outcomes required for completion. Follow this convention when writing or updating `docs/specs/<module-id>.md`. Add each specification to the [specification index](../specs/README.md).
+This convention defines the format for one module's capability specification. Follow it when writing or updating `docs/specs/<module-id>.md`.
 
 ## Template
 
-Use the sections through `Success criteria` in this order. Add either optional final section when the capability needs it. Add a new top-level section to this convention before using it in a specification.
+Use the sections through `Success criteria` in this order. Add either optional final section when the capability needs it. Add a new top-level section to this convention before using it in a specification. Add each specification to the [specification index](../specs/README.md).
 
 ```text
 # Spec: <capability name>

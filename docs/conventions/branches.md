@@ -1,6 +1,6 @@
 # Branch name conventions
 
-A branch name identifies one reviewable change outside `main`. Follow this convention when you create a short-lived branch for a pull request.
+This convention defines branch names for one reviewable change outside `main`. Follow it when creating a short-lived branch for a pull request.
 
 ## Template
 

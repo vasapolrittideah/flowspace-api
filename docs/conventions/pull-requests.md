@@ -1,8 +1,10 @@
 # Pull request conventions
 
-A pull request (PR) proposes one reviewable change. The [agent instructions](../../AGENTS.md) define who can open and merge it. Follow this convention when writing or updating a PR title and description, checking the PR before review, or suggesting a squash commit.
+This convention defines how to write and review a pull request (PR) and its suggested squash commit. Follow it when creating or updating a PR or preparing its squash message.
 
 ## Rules
+
+- Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
 
 ### Before review
 

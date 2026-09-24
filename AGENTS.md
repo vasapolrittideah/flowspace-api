@@ -1,16 +1,6 @@
 # Repository instructions
 
-Use these rules before each task:
-
-- Before writing code, read [`CONSTRAINTS.md`](CONSTRAINTS.md). Do not weaken these constraints to make a change pass.
-
-For product, architecture, or implementation work, also read:
-
-- [`docs/architecture.md`](docs/architecture.md) for current scope and system behavior.
-- [`docs/adr/README.md`](docs/adr/README.md) and relevant architecture decision records (ADRs) for accepted decisions.
-- [`docs/technology-stack.md`](docs/technology-stack.md) for selected implementation tools.
-
-Treat open proposals in the architecture document as undecided. Do not use a proposal as an implementation decision without explicit approval.
+Follow these repository instructions for every task. Before making changes, read [`CONSTRAINTS.md`](CONSTRAINTS.md) and the matching convention in the table below. Do not weaken the constraints to make a change pass. For product, architecture, or implementation work, also read [`docs/architecture.md`](docs/architecture.md), relevant [architecture decision records (ADRs)](docs/adr/README.md), and [`docs/technology-stack.md`](docs/technology-stack.md). Treat open architecture proposals as undecided until explicitly approved.
 
 ## Delivery authority
 

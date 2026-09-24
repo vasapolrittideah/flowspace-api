@@ -41,7 +41,7 @@ flowchart TD
 
 ## Task list
 
-Each task has an issue in the [flowspace-api Project](https://github.com/users/vasapolrittideah/projects/4) with `Todo` status. The issues hold acceptance criteria, verification steps, and blockers.
+Each task has an issue in the [flowspace-api Project](https://github.com/users/vasapolrittideah/projects/4).
 
 ### Phase 1: Contract
 

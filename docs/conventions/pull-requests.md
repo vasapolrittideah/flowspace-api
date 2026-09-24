@@ -6,7 +6,7 @@ This convention defines how to write and review a pull request (PR) and its sugg
 
 The [PR template](../../.github/pull_request_template.md) contains `Change`, `Reason`, `Risks or limitations`, and `Verification` sections.
 
-| Part | How to write it |
+| Part | Content and format |
 | --- | --- |
 | Title | A [commit subject](commit-messages.md#template) that describes the result. |
 | Change | State the problem and what happens after the change. |

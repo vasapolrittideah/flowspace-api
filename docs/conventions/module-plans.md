@@ -34,7 +34,7 @@ Status: Draft.
 <table of material risks, impacts, and controls>
 ```
 
-| Part | How to write it |
+| Part | Content and format |
 | --- | --- |
 | Header | The capability name and module ID from the approved specification. The status is `Draft`, `Approved`, or `Complete`. |
 | Overview | State the capability, link the approved specification, and name the GitHub Project that tracks tasks. |

@@ -8,7 +8,7 @@ This convention defines branch names for one reviewable change outside `main`.
 <type>/<short-description>
 ```
 
-| Part | How to write it |
+| Part | Content and format |
 | --- | --- |
 | Type | Select a [commit type](commit-messages.md#types). |
 | Short description | Lowercase words separated by hyphens. |

@@ -28,7 +28,7 @@ Files likely touched:
 Estimated scope: <expected size>.
 ```
 
-| Field | How to write it |
+| Field | Content and format |
 | --- | --- |
 | Title | The task outcome. |
 | Module | Use the module ID from the approved specification. |

@@ -54,7 +54,7 @@ Status: Draft.
 <readiness checks, if any>
 ```
 
-| Part | How to write it |
+| Part | Content and format |
 | --- | --- |
 | Header | The capability name in the title and the module ID from the file name. The status is `Draft`, `Approved`, or `Implemented`. |
 | Objective | State the capability, its users, its purpose, and the intended result. |

@@ -16,7 +16,7 @@ Refs: #<issue-number>
 Co-authored-by: Codex <noreply@openai.com>
 ```
 
-| Part | How to write it |
+| Part | Content and format |
 | --- | --- |
 | Subject | A type, optional scope, and short description on the first line. The `!` marker denotes a breaking contract change. |
 | Body | The reason or trade-off when it is not clear from the subject. For a breaking contract change, the incompatibility and required caller changes. |

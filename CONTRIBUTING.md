@@ -19,8 +19,6 @@ Use the repository commands to move work from a request to a reviewed pull reque
 | `/ship` | Review findings are resolved. | Returns a go or no-go decision with blockers, risks, and a rollback plan for maintainer review. |
 | `/constraints [check\|guard\|ratchet]` | You need to set or inspect the quality rules. | With no argument, sets up the rules. `check` runs them. `guard` finds weaker rules. `ratchet` updates measured limits. |
 
-If `tasks/` contains only one plan, you can omit `<module-id>` from `/build`.
-
 ## Pull request handoff
 
 Keep one reviewable change on each branch and pull request. Run the required checks from `Taskfile.yaml`, inspect the complete diff, and record the exact results in the pull request template. The maintainer reviews and squash merges the pull request.
@@ -33,7 +31,7 @@ Some agents do not register repository commands as slash commands. Tell the agen
 | --- | --- | --- |
 | `/spec` | `@.agents/commands/spec.md` | `<request>` |
 | `/plan` | `@.agents/commands/plan.md` | `<module-id>` |
-| `/build` | `@.agents/commands/build.md` | `[<module-id>] [auto\|all]` |
+| `/build` | `@.agents/commands/build.md` | `<module-id> [auto\|all]` |
 | `/test` | `@.agents/commands/test.md` | `<request>` |
 | `/review` | `@.agents/commands/review.md` | None |
 | `/ship` | `@.agents/commands/ship.md` | None |

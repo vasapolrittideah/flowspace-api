@@ -17,7 +17,6 @@ The [PR template](../../.github/pull_request_template.md) contains `Change`, `Re
 ## Rules
 
 - Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
-- Follow this convention when creating or updating a PR or preparing its squash message.
 - Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 - Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
 - Add `Closes #<issue-number>` to `Reason` for each Issue that the PR completes. GitHub closes those Issues after the PR merges into `main`.

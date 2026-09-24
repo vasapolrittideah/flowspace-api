@@ -15,5 +15,4 @@ This convention defines branch names for one reviewable change outside `main`.
 
 ## Rules
 
-- Follow this convention when creating a short-lived branch for a pull request.
 - Do not add an agent or author prefix.

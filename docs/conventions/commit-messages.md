@@ -25,8 +25,6 @@ Co-authored-by: Codex <noreply@openai.com>
 
 ## Rules
 
-Follow this convention when writing a checkpoint commit or preparing a suggested squash commit.
-
 ### Message format
 
 - Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the subject, body, and footers in the order shown in the template.

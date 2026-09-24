@@ -42,7 +42,6 @@ Estimated scope: <expected size>.
 ## Rules
 
 - Follow the workflow and authority in the [agent instructions](../../AGENTS.md) when creating Issues.
-- Follow this convention when drafting an Issue in `tasks/.todo.md` or creating or updating an Issue.
 - Use one Issue for each task. Use the body fields in the template order, with the same spelling and capitalization.
 - State the task outcome in the Issue title. Keep the title and body consistent with the approved specification, module plan, and task scope.
 - Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.

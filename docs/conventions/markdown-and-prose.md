@@ -4,8 +4,6 @@ This convention defines Markdown and English prose rules for repository artifact
 
 ## Rules
 
-- Follow this convention when writing or updating Markdown or English prose.
-
 ### Markdown
 
 - Use bullets for multiple rules, checks, choices, or facts that readers can follow independently. Give each bullet one main point. Keep its conditions, explanations, and exceptions in the same bullet, even when it takes multiple sentences.

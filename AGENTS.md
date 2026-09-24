@@ -36,11 +36,11 @@ Read the matching convention before writing or updating an artifact. If a skill 
 
 | Work | Convention |
 | --- | --- |
-| Markdown, English prose, code comments, and agent replies | [Markdown and English prose](docs/conventions/markdown-and-prose.md) |
-| Branch names | [Branches](docs/conventions/branches.md) |
-| Checkpoint and squash commit messages | [Commit messages](docs/conventions/commit-messages.md) |
-| Module specifications | [Module specs](docs/conventions/module-specs.md) |
-| Module plans and task tracking | [Module plans](docs/conventions/module-plans.md) |
-| GitHub Issue bodies and task drafts in `tasks/.todo.md` | [GitHub Issues](docs/conventions/github-issues.md) |
-| Issue and pull request labels | [GitHub labels](docs/conventions/github-labels.md) |
-| Pull requests and suggested squash messages | [Pull requests](docs/conventions/pull-requests.md) |
+| Writing or updating Markdown, English prose, code comments, or agent replies | [Markdown and English prose](docs/conventions/markdown-and-prose.md) |
+| Creating a short-lived branch for a pull request | [Branches](docs/conventions/branches.md) |
+| Writing checkpoint commit messages or preparing suggested squash messages | [Commit messages](docs/conventions/commit-messages.md) |
+| Writing or updating module specifications in `docs/specs/<module-id>.md` | [Module specs](docs/conventions/module-specs.md) |
+| Writing or updating module plans in `tasks/<module-id>.md` and tracking tasks | [Module plans](docs/conventions/module-plans.md) |
+| Drafting Issues in `tasks/.todo.md` or creating or updating GitHub Issues | [GitHub Issues](docs/conventions/github-issues.md) |
+| Applying labels when creating or updating Issues or pull requests | [GitHub labels](docs/conventions/github-labels.md) |
+| Creating or updating pull requests or preparing suggested squash messages | [Pull requests](docs/conventions/pull-requests.md) |

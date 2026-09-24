@@ -29,8 +29,8 @@ Follow this convention when writing a checkpoint commit or preparing a suggested
 
 ### Message format
 
-Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the subject, body, and footers in the order shown in the template. Omit the scope, body, and `Refs` footer when they do not apply.
-
+- Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the subject, body, and footers in the order shown in the template.
+- Omit the scope, body, and `Refs` footer when they do not apply.
 - Write a short, specific subject. Do not use vague text such as `update`, `misc`, or `fix things`.
 - If a contract change breaks callers, put `!` before the colon and explain the incompatibility and required caller changes in the body.
 - If the reason or trade-off is unclear, explain it in the body. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.

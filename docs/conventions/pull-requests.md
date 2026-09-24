@@ -33,7 +33,7 @@ The [PR template](../../.github/pull_request_template.md) contains `Change`, `Re
 - If a command fails, fix the failure or mark the PR as needing attention. Report warnings and unresolved failures even when a command exits successfully.
 - Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link relevant output when a result needs more context.
 
-### Before review
+### Before requesting review
 
 - Inspect the staged diff before each commit and the complete PR diff before maintainer review. Exclude unrelated changes, secrets, local environment files, and unwanted build output.
 - Run the relevant tests, lint commands, builds, and contract commands. Do not weaken commands or hide failures.

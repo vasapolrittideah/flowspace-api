@@ -4,6 +4,8 @@ description: Break work into small verifiable tasks and track each task in GitHu
 
 Invoke the agent-skills:planning-and-task-breakdown skill.
 
+Before planning, read the [module plan conventions](../../docs/conventions/module-plans.md) and the [GitHub Issue conventions](../../docs/conventions/github-issues.md). Use their templates and file paths instead of the generic skill defaults.
+
 Read the capability spec at `docs/specs/<module-id>.md`. If a capability map includes the module, read `docs/specs/maps/<map-id>.md` too. Read the codebase sections that the capability affects. Plan one module at a time. Plan modules in the build order from the capability map.
 
 Use GitHub Issues as the task list. Use GitHub Projects to show task status.
@@ -11,9 +13,9 @@ Use GitHub Issues as the task list. Use GitHub Projects to show task status.
 1. Enter plan mode. Read files, but do not change implementation code.
 2. Identify the dependency graph between components.
 3. Slice work vertically. Each task must deliver one complete path.
-4. Write each task in `tasks/.todo.md` using the GitHub Issue description conventions in `AGENTS.md`.
+4. Write each task in `tasks/.todo.md` using the [GitHub Issue conventions](../../docs/conventions/github-issues.md).
 5. Add checkpoints between phases in the plan document.
-6. Save the plan as `tasks/<module-id>.md`.
+6. Save the plan as `tasks/<module-id>.md` using the [module plan conventions](../../docs/conventions/module-plans.md).
 7. Present the plan and `tasks/.todo.md` for human review.
 8. After approval, inspect open issues and projects to avoid duplicate tasks.
 9. Run `gh auth status`. If authentication fails, stop and ask the maintainer to run `gh auth login -h github.com -p https -w`.

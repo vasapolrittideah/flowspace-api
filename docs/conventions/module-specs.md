@@ -1,12 +1,16 @@
 # Module specification conventions
 
-## File location
+## Overview
 
-Save each module specification as `docs/specs/<module-id>.md` and add it to the [specification index](../specs/README.md). Define one capability per specification before implementation.
+A module specification defines one capability before implementation. It records the scope, behavior, testing, and outcomes required for completion.
 
-## Header
+## When to Follow
 
-Start the specification with its name, module ID, and current status:
+Follow this convention when writing or updating `docs/specs/<module-id>.md`. Add each specification to the [specification index](../specs/README.md).
+
+## Template
+
+Use the sections through `Success criteria` in this order. Add either optional final section when the capability needs it. Add a new top-level section to this convention before using it in a specification.
 
 ```text
 # Spec: <capability name>
@@ -14,31 +18,92 @@ Start the specification with its name, module ID, and current status:
 Module id: `<module-id>`
 
 Status: Draft.
+
+## Objective
+
+<capability, users, purpose, and success intent>
+
+## Scope and decision sources
+
+<included and excluded work, dependencies, and decisions>
+
+## Contract
+
+<interfaces, inputs, outputs, data, and errors>
+
+## Required behavior
+
+<rules, invariants, security, consistency, and operations>
+
+## Commands
+
+<build, test, lint, and generation commands>
+
+## Testing strategy
+
+<feature-specific evidence and test ownership>
+
+## Boundaries
+
+<actions to always do, ask about, or never do>
+
+## Success criteria
+
+<observable Given and Then outcomes>
+
+## Open questions and approval
+
+<unresolved decisions and required approval, if any>
+
+## Before real users join
+
+<readiness checks, if any>
 ```
 
-## Status
+### Header
 
-Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
+Use the capability name in the title and the module ID from the file name. Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
 
-## Sections
+### Objective
 
-All capability specifications use the core sections through `Success criteria` in this order. Add a final section for open decisions or real-user readiness when needed. Use subsections under `Required behavior` for topics that are specific to one capability.
+State the capability, its users, its purpose, and the intended result.
 
-| Section | Content |
-| --- | --- |
-| `Objective` | Capability, users, purpose, and success intent |
-| `Scope and decision sources` | Included and excluded work, module dependencies, and relevant decisions |
-| `Contract` | Consumer-visible interfaces, inputs, outputs, data, and errors |
-| `Required behavior` | Business rules, invariants, security, consistency, and operational behavior |
-| `Commands` | Commands that build, test, lint, or generate artifacts for this capability |
-| `Testing strategy` | Feature-specific evidence and its owning test boundaries |
-| `Boundaries` | Capability-specific actions to always do, ask about, or never do |
-| `Success criteria` | Observable Given and Then outcomes required for completion |
-| `Open questions and approval` (optional) | Unresolved decisions and the approval required for the next phase |
-| `Before real users join` (optional) | Checks that must pass before real-user use |
+### Scope and decision sources
 
-## Writing rules
+Name included and excluded work, module dependencies, and relevant accepted decisions. Put implementation locations in the plan. Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents.
 
-Put implementation locations in the plan. Add a new top-level section to this convention before using it in a specification.
+### Contract
 
-Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents instead of copying them into each specification. In Identity specifications, reference the applicable [threat IDs](../security/identity-threat-model.md) in each success criterion and abuse test.
+Define consumer-visible interfaces, inputs, outputs, data, and errors.
+
+### Required behavior
+
+Define business rules, invariants, security, consistency, and operational behavior. Use subsections for topics specific to the capability.
+
+### Commands
+
+List commands that build, test, lint, or generate artifacts for the capability.
+
+### Testing strategy
+
+Name feature-specific evidence and the test boundary that owns it. In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each abuse test.
+
+### Boundaries
+
+Name capability-specific actions to always do, ask about, or never do.
+
+### Success criteria
+
+Write observable Given and Then outcomes required for completion. In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each success criterion.
+
+### Open questions and approval
+
+Include this section only when a decision remains open or approval is needed for the next phase.
+
+### Before real users join
+
+Include this section only when checks must pass before real-user use.
+
+## Examples
+
+The [Identity signup specification](../specs/identity-signup-and-email-verification.md) and [Workspace creation specification](../specs/workspace-create-read.md) show this format.

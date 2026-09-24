@@ -2,29 +2,9 @@
 
 This convention defines how to write and review a pull request (PR) and its suggested squash commit. Follow it when creating or updating a PR or preparing its squash message.
 
-## Rules
-
-- Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
-
-### Before review
-
-- Inspect the staged diff before each commit and the complete PR diff before maintainer review. Exclude unrelated changes, secrets, local environment files, and unwanted build output.
-- Run the relevant tests, lint commands, builds, and contract commands. Do not weaken commands or hide failures.
-- Preserve work from other tasks.
-- For a behavior fix, add a focused regression test.
-- For a contract or generator change, make sure that regeneration and compatibility succeed and that source files and generated output agree.
-- For a documentation-only change, make sure that facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
-
-### Suggested squash commit
-
-- Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
-- Use the reviewed PR title as the subject. Follow the [commit message rules](commit-messages.md#rules), including formatting and AI co-authorship.
-- If a body is needed, explain important effects and compatibility or migration information. Do not copy detailed verification from the PR.
-- Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
-
 ## Template
 
-Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, and `Verification`. Omit `Risks or limitations` when none apply. Keep each paragraph and list item on one physical line. Keep the title, description, and [labels](github-labels.md) consistent with the final work.
+Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, and `Verification`. Omit `Risks or limitations` when none apply. Use bullets in `Change`, `Reason`, and `Risks or limitations`. Keep each paragraph and list item on one physical line. Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 
 | Part | How to write it |
 | --- | --- |
@@ -41,6 +21,26 @@ Use the [PR template](../../.github/pull_request_template.md) as the source for 
 - If a required check did not run, write `Not run.` and give the reason. Do not report it as passing.
 - If a command fails, fix the failure or mark the PR as needing attention. Report warnings and unresolved failures even when a command exits successfully.
 - Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link relevant output when a result needs more context.
+
+### Rules
+
+- Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
+
+Before review:
+
+- Inspect the staged diff before each commit and the complete PR diff before maintainer review. Exclude unrelated changes, secrets, local environment files, and unwanted build output.
+- Run the relevant tests, lint commands, builds, and contract commands. Do not weaken commands or hide failures.
+- Preserve work from other tasks.
+- For a behavior fix, add a focused regression test.
+- For a contract or generator change, make sure that regeneration and compatibility succeed and that source files and generated output agree.
+- For a documentation-only change, make sure that facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
+
+Suggested squash commit:
+
+- Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
+- Use the reviewed PR title as the subject. Follow the [commit message rules](commit-messages.md#rules), including formatting and AI co-authorship.
+- If a body is needed, explain important effects and compatibility or migration information. Do not copy detailed verification from the PR.
+- Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
 
 ## Examples
 

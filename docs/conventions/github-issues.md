@@ -2,12 +2,6 @@
 
 This convention defines the title and body of a GitHub Issue for one task. Follow it when drafting an Issue in `tasks/.todo.md` or creating or updating an Issue.
 
-## Rules
-
-- Follow the workflow and authority in the [agent instructions](../../AGENTS.md) when creating Issues.
-- Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.
-- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.
-
 ## Template
 
 Use one Issue for each task. Use the body fields below in this order, with the same spelling and capitalization.
@@ -45,6 +39,12 @@ Estimated scope: <expected size>.
 | Dependencies | Write `None.` when no Issue blocks the task. Otherwise, write one `Blocked by` sentence with the blocking Issue numbers. Separate three or more numbers with commas and put `and` before the last number. Add a prerequisite without an Issue number as a separate sentence. Do not use semicolons or repeat `Blocked by` in the same sentence. |
 | Files likely touched | List source, test, contract, and configuration files that the task is likely to create or change. For generated output, list only its folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). Do not list generated file names. |
 | Estimated scope | State the expected size of the task based on the work described above. |
+
+### Rules
+
+- Follow the workflow and authority in the [agent instructions](../../AGENTS.md) when creating Issues.
+- Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.
+- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.
 
 ## Examples
 

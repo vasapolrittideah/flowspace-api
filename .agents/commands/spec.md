@@ -4,7 +4,7 @@ description: Start spec-driven development — write a structured specification 
 
 Invoke the agent-skills:spec-driven-development skill.
 
-Before asking questions or writing a specification, read the [module specification conventions](../../docs/conventions/module-specs.md) and the [specification index](../../docs/specs/README.md). Follow the repository format and shared project sources instead of the generic skill format.
+Before asking questions or writing a specification, read the [module specification conventions](../../docs/conventions/module-specs.md) and the [specification index](../../docs/specs/README.md). Follow the repository format instead of the generic skill format.
 
 Begin by understanding what the user wants to build. Ask clarifying questions about:
 1. The objective and target users

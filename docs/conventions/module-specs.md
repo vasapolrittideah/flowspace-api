@@ -31,6 +31,6 @@ All capability specifications use the core sections through `Success criteria` i
 | `Open questions and approval` (optional) | Unresolved decisions and the approval required for the next phase |
 | `Before real users join` (optional) | Checks that must pass before real-user use |
 
-Use the [shared project sources](../specs/README.md#shared-project-sources) for technology stack and code style. Put implementation locations in the plan. Add a new top-level section to this convention before using it in a specification.
+Put implementation locations in the plan. Add a new top-level section to this convention before using it in a specification.
 
-Repeat a shared rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents instead of copying them into each specification. In Identity specifications, reference the applicable [threat IDs](../security/identity-threat-model.md) in each success criterion and abuse test.
+Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents instead of copying them into each specification. In Identity specifications, reference the applicable [threat IDs](../security/identity-threat-model.md) in each success criterion and abuse test.

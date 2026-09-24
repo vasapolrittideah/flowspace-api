@@ -16,7 +16,7 @@ Create and read belong to one capability because they share workspace data, owne
 
 The scope covers `CreateWorkspace` and `GetWorkspace`, owner membership at creation, token admission, durable retry protection, and service-owned persistence.
 
-The [specification index](README.md) defines the shared project sources for this spec. The feature details below form the approved contract. Open proposals in the [architecture](../architecture.md) remain undecided.
+The feature details below form the approved contract. Open proposals in the [architecture](../architecture.md) remain undecided.
 
 This capability excludes workspace listing, updates, archival, invitations, membership management, role changes, and ownership transfer. It also excludes frontend work, new login flows, and Work or Notifications features.
 

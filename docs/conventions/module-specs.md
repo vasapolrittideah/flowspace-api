@@ -2,7 +2,17 @@
 
 Save each module specification as `docs/specs/<module-id>.md` and add it to the [specification index](../specs/README.md). Define one capability per specification before implementation.
 
-Draft specifications require approval before planning. An approved specification permits planning. An implemented specification has evidence for every success criterion.
+Start the specification with its name, module ID, and current status:
+
+```text
+# Spec: <capability name>
+
+Module id: `<module-id>`
+
+Status: Draft.
+```
+
+Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
 
 ## Specification format
 

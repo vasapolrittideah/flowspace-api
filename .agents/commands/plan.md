@@ -11,7 +11,7 @@ Use GitHub Issues as the task list. Use GitHub Projects to show task status.
 1. Enter plan mode. Read files, but do not change implementation code.
 2. Identify the dependency graph between components.
 3. Slice work vertically. Each task must deliver one complete path.
-4. Write acceptance criteria and verification steps for each task in `tasks/.todo.md`.
+4. Write each task in `tasks/.todo.md` using the GitHub Issue description conventions in `AGENTS.md`.
 5. Add checkpoints between phases in the plan document.
 6. Save the plan as `tasks/<module-id>.md`.
 7. Present the plan and `tasks/.todo.md` for human review.
@@ -23,7 +23,7 @@ Use GitHub Issues as the task list. Use GitHub Projects to show task status.
 13. Add each issue to the GitHub Project with the `Todo` status.
 14. Record each dependency as `Blocked by #<issue-number>` in the dependent issue.
 15. Replace the plan Task List with an ordered index of issue links without duplicate checklists.
-16. Make sure that every task exists in the project. Delete `tasks/.todo.md` after this succeeds.
+16. Make sure that `gh project item-list` shows every new issue with `Todo` status. Delete `tasks/.todo.md` after this succeeds; an issue-side Project link alone is not enough.
 
 If `tasks/.todo.md` exists for the same module, update it in place. If it belongs to another module, stop and ask before changing it. If another incomplete plan or issue set exists for the same module, stop and ask before changing it.
 

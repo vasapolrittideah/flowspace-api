@@ -40,30 +40,16 @@ Keep each branch and PR limited to one reviewable change. Split unrelated change
 
 A worktree is a separate checkout of the repository. If tasks run at the same time, use separate worktrees.
 
-## Writing
+## Conventions
 
-- Follow the [Markdown and English prose conventions](docs/conventions/markdown.md) for documentation, commit messages, PRs, code comments, and agent replies.
+Read the matching convention before writing or updating an artifact.
 
-## Branch names
-
-- Follow the [branch name conventions](docs/conventions/branches.md) when creating a branch.
-
-## Commit messages
-
-- Follow the [commit message conventions](docs/conventions/commit-messages.md) for checkpoint and squash commits.
-
-## Planning and task tracking
-
-- Follow the [module plan conventions](docs/conventions/module-plans.md) for plans and task tracking.
-
-### GitHub Issue descriptions
-
-- Follow the [GitHub Issue conventions](docs/conventions/github-issues.md) when writing Issue bodies or task drafts in `tasks/.todo.md`.
-
-## Issue and pull request labels
-
-- Follow the [GitHub label conventions](docs/conventions/github-labels.md) for Issues and pull requests.
-
-## Pull requests
-
-- Follow the [pull request conventions](docs/conventions/pull-requests.md) when preparing a PR and its suggested squash message.
+| Work | Convention |
+| --- | --- |
+| Markdown, English prose, code comments, and agent replies | [Markdown and English prose](docs/conventions/markdown.md) |
+| Branch names | [Branches](docs/conventions/branches.md) |
+| Checkpoint and squash commit messages | [Commit messages](docs/conventions/commit-messages.md) |
+| Module plans and task tracking | [Module plans](docs/conventions/module-plans.md) |
+| GitHub Issue bodies and task drafts in `tasks/.todo.md` | [GitHub Issues](docs/conventions/github-issues.md) |
+| Issue and pull request labels | [GitHub labels](docs/conventions/github-labels.md) |
+| Pull requests and suggested squash messages | [Pull requests](docs/conventions/pull-requests.md) |

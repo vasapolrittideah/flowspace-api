@@ -50,6 +50,7 @@ This document defines where backend code belongs and which dependency directions
 ├── tests/
 │   ├── load/
 │   └── smoke/
+│       └── bruno/
 ├── buf.gen.yaml
 ├── buf.yaml
 ├── go.mod
@@ -72,6 +73,7 @@ Tool configuration stays where the owning tool expects it. Optional output such 
 | `gen/go/` | Go code generated from shared contracts. |
 | `internal/` | Technical packages with multiple concrete service consumers; never shared domain models or repositories. |
 | `tests/smoke/` | Critical behavior checks against deployed service boundaries. |
+| `tests/smoke/bruno/` | Bruno collections for exploring public APIs and running smoke checks against deployed services. |
 | `tests/load/` | Controlled cross-service load experiments with explicit thresholds. |
 | `deploy/base/` | Shared Kubernetes application resources. |
 | `deploy/overlays/` | Local, staging, and production-specific Kustomize changes. |

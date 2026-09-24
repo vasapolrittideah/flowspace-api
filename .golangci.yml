@@ -95,6 +95,8 @@ linters:
           allow:
             - $gostd
             - github.com/vasapolrittideah/flowspace-api
+            - golang.org/x/crypto/argon2
+            - golang.org/x/text/unicode/norm
         workspace-service:
           list-mode: lax
           files:

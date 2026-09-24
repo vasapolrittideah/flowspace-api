@@ -63,7 +63,7 @@ flowchart TD
 
 - [x] A human approves the security choices and the outbox treatment of code material.
 - [ ] Buf accepts the public contract and generated output, and sqlc generates from the Identity schema.
-- [ ] Domain tests cover the approved email, password, and code boundaries without infrastructure.
+- [x] Domain tests cover the approved email, password, and code boundaries without infrastructure.
 
 ### Phase 2: Durable signup and asynchronous email
 

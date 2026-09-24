@@ -1,6 +1,6 @@
 # Commit message conventions
 
-## Subject
+## Message parts
 
 A commit message has a subject and can include a body and footer:
 
@@ -9,6 +9,8 @@ A commit message has a subject and can include a body and footer:
 | `Subject` | First line of the message |
 | `Body` (optional) | Explanation of the change |
 | `Footer` (optional) | Metadata, such as co-author trailers |
+
+## Subject
 
 Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) for checkpoint and squash commits. Use this subject format:
 

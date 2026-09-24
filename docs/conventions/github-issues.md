@@ -31,6 +31,6 @@ Dependencies: Blocked by #45, #46, and #47.
 
 For more blockers, continue the comma-separated list and put `and` before the last number. Write `Blocked by` once. Do not separate blockers with semicolons or repeat `Blocked by` in the same sentence.
 
-## Final check
+## Before and after creation
 
 Before creating the Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan. After creating it, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies.

@@ -15,7 +15,7 @@ Keep each paragraph and list item on one physical line. Keep the title, descript
 
 ## Title
 
-Use only the [commit subject format](../../AGENTS.md#commit-messages), with the same [types](../../AGENTS.md#types) and [scopes](../../AGENTS.md#scopes). Do not include a body or footer in the title. Put details in the description.
+Use only the [commit subject format](commit-messages.md#subject), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes). Do not include a body or footer in the title. Put details in the description.
 
 Describe the result, not the branch or changed files:
 
@@ -51,7 +51,7 @@ Write one row per required check in the PR Verification table:
 Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes. Do not put it in the PR description.
 
 - Use the reviewed PR title as the subject.
-- Follow the [commit message](../../AGENTS.md#commit-messages), [formatting](../../AGENTS.md#formatting), and [AI co-authorship](../../AGENTS.md#ai-co-authorship) rules.
+- Follow the [commit message](commit-messages.md), [formatting](commit-messages.md#formatting), and [AI co-authorship](commit-messages.md#ai-co-authorship) rules.
 - If a body is needed, explain important effects and compatibility or migration information. Do not copy detailed verification from the PR.
 - Use the GitHub Pull request title and description squash default.
 

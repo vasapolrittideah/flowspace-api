@@ -45,7 +45,7 @@ Each task has an issue in the [flowspace-api Project](https://github.com/users/v
 
 ### Phase 1: Contract
 
-- [Task 1: Extend the Identity contract for password sessions](https://github.com/vasapolrittideah/flowspace-api/issues/90).
+- Task 1: [#90 Extend the Identity contract for password sessions](https://github.com/vasapolrittideah/flowspace-api/issues/90)
 
 ### Checkpoint: Contract
 
@@ -54,9 +54,9 @@ Each task has an issue in the [flowspace-api Project](https://github.com/users/v
 
 ### Phase 2: Issue and renew sessions
 
-- [Task 2: Sign in with a password through the public API](https://github.com/vasapolrittideah/flowspace-api/issues/91).
-- [Task 3: Publish and rotate public signing keys](https://github.com/vasapolrittideah/flowspace-api/issues/92).
-- [Task 4: Refresh a session with single-use tokens](https://github.com/vasapolrittideah/flowspace-api/issues/93).
+- Task 2: [#91 Sign in with a password through the public API](https://github.com/vasapolrittideah/flowspace-api/issues/91)
+- Task 3: [#92 Publish and rotate public signing keys](https://github.com/vasapolrittideah/flowspace-api/issues/92)
+- Task 4: [#93 Refresh a session with single-use tokens](https://github.com/vasapolrittideah/flowspace-api/issues/93)
 
 ### Checkpoint: Session issuance
 
@@ -66,9 +66,9 @@ Each task has an issue in the [flowspace-api Project](https://github.com/users/v
 
 ### Phase 3: Revoke and check sessions
 
-- [Task 5: Log out the current session](https://github.com/vasapolrittideah/flowspace-api/issues/94).
-- [Task 6: Log out every session for an account](https://github.com/vasapolrittideah/flowspace-api/issues/95).
-- [Task 7: Expose an authenticated internal session check](https://github.com/vasapolrittideah/flowspace-api/issues/96).
+- Task 5: [#94 Log out the current session](https://github.com/vasapolrittideah/flowspace-api/issues/94)
+- Task 6: [#95 Log out every session for an account](https://github.com/vasapolrittideah/flowspace-api/issues/95)
+- Task 7: [#96 Expose an authenticated internal session check](https://github.com/vasapolrittideah/flowspace-api/issues/96)
 
 ### Checkpoint: Revocation
 
@@ -78,8 +78,8 @@ Each task has an issue in the [flowspace-api Project](https://github.com/users/v
 
 ### Phase 4: Protected service and evidence
 
-- [Task 8: Admit Workspace requests through FlowSpace sessions](https://github.com/vasapolrittideah/flowspace-api/issues/97).
-- [Task 9: Prove public and cross-service failure paths](https://github.com/vasapolrittideah/flowspace-api/issues/98).
+- Task 8: [#97 Admit Workspace requests through FlowSpace sessions](https://github.com/vasapolrittideah/flowspace-api/issues/97)
+- Task 9: [#98 Prove public and cross-service failure paths](https://github.com/vasapolrittideah/flowspace-api/issues/98)
 
 ### Checkpoint: Complete
 

@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package flowspace.identity.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1;identityv1";
+
+service IdentityService {
+  // Creates an unverified account and returns its first device session.
+  // Rejects the Idempotency-Key HTTP header.
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {
+    option (google.api.http) = {
+      post: "/v1/accounts"
+      body: "*"
+    };
+  }
+
+  // Requests a new email code for the authenticated subject.
+  // Requires one Authorization bearer header.
+  rpc RequestEmailVerificationCode(RequestEmailVerificationCodeRequest) returns (RequestEmailVerificationCodeResponse) {
+    option (google.api.http) = {
+      post: "/v1/email-verification-codes"
+      body: "*"
+    };
+  }
+
+  // Verifies the authenticated subject's current email address.
+  // Requires one Authorization bearer header.
+  rpc VerifyEmail(VerifyEmailRequest) returns (VerifyEmailResponse) {
+    option (google.api.http) = {
+      post: "/v1/email-verifications"
+      body: "*"
+    };
+  }
+
+  // Requests a claim code without disclosing account eligibility.
+  rpc RequestUnverifiedAccountClaimCode(RequestUnverifiedAccountClaimCodeRequest) returns (RequestUnverifiedAccountClaimCodeResponse) {
+    option (google.api.http) = {
+      post: "/v1/unverified-account-claim-codes"
+      body: "*"
+    };
+  }
+
+  // Replaces an unverified account after email ownership is proved.
+  // Rejects the Idempotency-Key HTTP header.
+  rpc ClaimUnverifiedAccount(ClaimUnverifiedAccountRequest) returns (ClaimUnverifiedAccountResponse) {
+    option (google.api.http) = {
+      post: "/v1/unverified-account-claims"
+      body: "*"
+    };
+  }
+}
+
+message CreateAccountRequest {
+  string email = 1 [(google.api.field_behavior) = REQUIRED];
+  string password = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CreateAccountResponse {
+  string subject = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional bool email_verified = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string access_token = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string refresh_token = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp access_token_expires_at = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message RequestEmailVerificationCodeRequest {}
+
+message RequestEmailVerificationCodeResponse {
+  bool accepted = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message VerifyEmailRequest {
+  string code = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message VerifyEmailResponse {
+  bool email_verified = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message RequestUnverifiedAccountClaimCodeRequest {
+  string email = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RequestUnverifiedAccountClaimCodeResponse {
+  bool accepted = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ClaimUnverifiedAccountRequest {
+  string email = 1 [(google.api.field_behavior) = REQUIRED];
+  string code = 2 [(google.api.field_behavior) = REQUIRED];
+  string new_password = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ClaimUnverifiedAccountResponse {
+  string subject = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool email_verified = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string access_token = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string refresh_token = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp access_token_expires_at = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

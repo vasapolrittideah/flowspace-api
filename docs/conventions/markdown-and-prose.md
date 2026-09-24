@@ -1,8 +1,10 @@
 # Markdown and English prose conventions
 
-This convention defines Markdown and English prose rules for repository artifacts. Follow it when writing or updating Markdown or English prose.
+This convention defines Markdown and English prose rules for repository artifacts.
 
 ## Rules
+
+- Follow this convention when writing or updating Markdown or English prose.
 
 ### Markdown
 

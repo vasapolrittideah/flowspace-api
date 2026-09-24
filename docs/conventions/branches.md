@@ -1,6 +1,6 @@
 # Branch name conventions
 
-This convention defines branch names for one reviewable change outside `main`. Follow it when creating a short-lived branch for a pull request.
+This convention defines branch names for one reviewable change outside `main`.
 
 ## Template
 
@@ -11,4 +11,9 @@ This convention defines branch names for one reviewable change outside `main`. F
 | Part | How to write it |
 | --- | --- |
 | Type | Select a [commit type](commit-messages.md#types). |
-| Short description | Use lowercase words separated by hyphens. Do not add an agent or author prefix. |
+| Short description | Lowercase words separated by hyphens. |
+
+## Rules
+
+- Follow this convention when creating a short-lived branch for a pull request.
+- Do not add an agent or author prefix.

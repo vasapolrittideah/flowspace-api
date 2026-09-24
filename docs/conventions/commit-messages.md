@@ -1,10 +1,10 @@
 # Commit message conventions
 
-This convention defines the format for checkpoint and squash commit messages. Follow it when writing a checkpoint commit or preparing a suggested squash commit.
+This convention defines the format for checkpoint and squash commit messages.
 
 ## Template
 
-Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). A message has a subject and can include a body and footer. Use this order. Omit the scope, body, and `Refs` footer when they do not apply. Include the co-author trailer for each contributing agent.
+A message has a subject, an optional body, and optional footers. The scope and `Refs` footer are optional.
 
 ```text
 <type>(<scope>): <description>
@@ -18,14 +18,23 @@ Co-authored-by: Codex <noreply@openai.com>
 
 | Part | How to write it |
 | --- | --- |
-| Subject | Use `<type>: <description>` or `<type>(<scope>): <description>` on the first line. Write a short, specific description. Do not use vague text such as `update`, `misc`, or `fix things`. If a contract change breaks callers, put `!` before the colon and explain the incompatibility and required caller changes in the body. |
-| Body | If the reason or trade-off is unclear, explain it. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files. |
-| `Refs` footer | If a commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers. This links the commit to the Issue without closing it. |
+| Subject | A type, optional scope, and short description on the first line. The `!` marker denotes a breaking contract change. |
+| Body | The reason or trade-off when it is not clear from the subject. For a breaking contract change, the incompatibility and required caller changes. |
+| `Refs` footer | The related Issue number. This footer links the commit to the Issue without closing it. |
+| Co-author trailer | The identity of each contributing agent. |
 
 ## Rules
 
+Follow this convention when writing a checkpoint commit or preparing a suggested squash commit.
+
+Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the subject, body, and footers in the order shown in the template. Omit the scope, body, and `Refs` footer when they do not apply.
+
 Format the message as follows:
 
+- Write a short, specific subject. Do not use vague text such as `update`, `misc`, or `fix things`.
+- If a contract change breaks callers, put `!` before the colon and explain the incompatibility and required caller changes in the body.
+- If the reason or trade-off is unclear, explain it in the body. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.
+- If a commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers.
 - Limit prose lines in the body to 72 characters.
 - Preserve paragraphs and lists.
 - Do not split URLs, code, or trailers.

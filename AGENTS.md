@@ -46,7 +46,7 @@ Read the matching convention before writing or updating an artifact. If a skill 
 
 | Work | Convention |
 | --- | --- |
-| Markdown, English prose, code comments, and agent replies | [Markdown and English prose](docs/conventions/markdown.md) |
+| Markdown, English prose, code comments, and agent replies | [Markdown and English prose](docs/conventions/markdown-and-prose.md) |
 | Branch names | [Branches](docs/conventions/branches.md) |
 | Checkpoint and squash commit messages | [Commit messages](docs/conventions/commit-messages.md) |
 | Module specifications | [Module specs](docs/conventions/module-specs.md) |

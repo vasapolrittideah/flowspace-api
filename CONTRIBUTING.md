@@ -19,10 +19,6 @@ Use the repository commands to move work from a request to a reviewed pull reque
 | `/ship` | Review findings are resolved. | Returns a go or no-go decision with blockers, risks, and a rollback plan for maintainer review. |
 | `/constraints [check\|guard\|ratchet]` | You need to set or inspect the quality rules. | With no argument, sets up the rules. `check` runs them. `guard` finds weaker rules. `ratchet` updates measured limits. |
 
-## Pull request handoff
-
-Keep one reviewable change on each branch and pull request. Run the required checks from `Taskfile.yaml`, inspect the complete diff, and record the exact results in the pull request template. The maintainer reviews and squash merges the pull request.
-
 ## Agents without command support
 
 Some agents do not register repository commands as slash commands. Tell the agent to read the matching command file and give it the arguments from the command table. Write the rest of the prompt for your task.

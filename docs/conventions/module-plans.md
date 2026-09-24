@@ -14,11 +14,13 @@ Status: Draft.
 
 Use `Draft` before approval, `Approved` after approval, and `Complete` after final verification. Use these sections in order, as shown in the [Identity plan](../../tasks/identity-signup-and-email-verification.md) and [Workspace plan](../../tasks/workspace-create-read.md):
 
-- `Overview` states the capability, links the approved specification, and names the GitHub Project that tracks tasks.
-- `Architecture decisions` records the decisions that set task boundaries. Treat open proposals as undecided.
-- `Dependency graph` shows the order between major pieces of work in a Mermaid diagram.
-- `Task list` groups numbered tasks into phases. After each phase, add a checkpoint with outcomes that can be checked.
-- `Risks and controls` names each material risk, its impact, and its control in a table.
+| Section | Content |
+| --- | --- |
+| `Overview` | Capability, link to the approved specification, and GitHub Project that tracks tasks |
+| `Architecture decisions` | Decisions that set task boundaries. Treat open proposals as undecided. |
+| `Dependency graph` | Order between major pieces of work in a Mermaid diagram |
+| `Task list` | Numbered tasks grouped into phases, with a checkpoint of outcomes that can be checked after each phase |
+| `Risks and controls` | Each material risk, its impact, and its control in a table |
 
 Use `tasks/.todo.md` only while preparing GitHub Issues. Write each task draft with the [Issue fields](github-issues.md#body-fields). After the Issues are in the GitHub Project with `Todo` status, replace the plan's task drafts with an ordered index of Issue links. Do not keep a duplicate task checklist in the plan. Delete `tasks/.todo.md` after every task appears in the Project.
 

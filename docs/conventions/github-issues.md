@@ -8,23 +8,15 @@ Use one Issue for each task in an approved module plan. Put the task title in th
 
 Use these labels in this order, with the same spelling and capitalization:
 
-```text
-Module:
-Description:
-Acceptance criteria:
-Verification:
-Dependencies:
-Files likely touched:
-Estimated scope:
-```
-
-- `Module:` contains the module ID from the approved specification.
-- `Description:` states the outcome and scope of this task in one paragraph.
-- `Acceptance criteria:` contains one `- [ ]` item for each outcome that can be checked on its own. Use as many items as the task needs.
-- `Verification:` contains one `- [ ]` item per command. Name the behavior that each command checks. Keep inspection of a command's output in the same item when they form one check. Put separate manual checks in separate items.
-- `Dependencies:` names blocking Issue numbers in one sentence. Write `None.` when no Issue blocks the task. Add a prerequisite without an Issue number as a separate sentence.
-- `Files likely touched:` lists the source, test, contract, and configuration files that the task is likely to create or change. For generated output, list only the folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). Do not list generated file names.
-- `Estimated scope:` states the expected size of the task based on the work described above.
+| Field | Content |
+| --- | --- |
+| `Module:` | Module ID from the approved specification |
+| `Description:` | Task outcome and scope in one paragraph |
+| `Acceptance criteria:` | One `- [ ]` item for each outcome that can be checked on its own. Use as many items as the task needs. |
+| `Verification:` | One `- [ ]` item per command. Name the behavior that each command checks. Keep inspection of its output in the same item when they form one check. Put separate manual checks in separate items. |
+| `Dependencies:` | Blocking Issue numbers in one sentence. Write `None.` when no Issue blocks the task. Add a prerequisite without an Issue number as a separate sentence. |
+| `Files likely touched:` | Source, test, contract, and configuration files likely to change. For generated output, list only its folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). Do not list generated file names. |
+| `Estimated scope:` | Expected size of the task based on the work described above |
 
 ## Dependencies format
 

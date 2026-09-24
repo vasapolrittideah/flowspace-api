@@ -6,10 +6,12 @@ The [agent instructions](../../AGENTS.md) define who can open and merge pull req
 
 Use the [PR template](../../.github/pull_request_template.md). Complete `Change`, `Reason`, and `Verification`.
 
-- `Change` states the problem and what happens after the change.
-- `Reason` states why the change is needed. Add `Closes #<issue-number>` for each Issue that the PR completes. GitHub closes those Issues after the PR merges into `main`.
-- `Verification` records the commands and results as described [below](#verification).
-- `Risks or limitations` names material compatibility effects, remaining limits, or follow-up work. Omit this section when none apply.
+| Section | Content |
+| --- | --- |
+| `Change` | Problem and what happens after the change |
+| `Reason` | Why the change is needed. Add `Closes #<issue-number>` for each Issue that the PR completes. GitHub closes those Issues after the PR merges into `main`. |
+| `Verification` | Commands and results as described [below](#verification) |
+| `Risks or limitations` (optional) | Material compatibility effects, remaining limits, or follow-up work. Omit this section when none apply. |
 
 Keep each paragraph and list item on one physical line. Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 

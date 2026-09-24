@@ -1,12 +1,6 @@
 # Module plan conventions
 
-## Overview
-
-A module plan breaks an approved specification into implementation tasks. It records dependencies, checkpoints, risks, and task links.
-
-## When to Follow
-
-Follow this convention after a specification is approved. Update the plan while creating GitHub Issues and after final verification.
+A module plan breaks an approved specification into implementation tasks. It records dependencies, checkpoints, risks, and task links. Follow this convention after a specification is approved. Update the plan while creating GitHub Issues and after final verification.
 
 ## Template
 

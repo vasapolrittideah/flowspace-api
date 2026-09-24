@@ -1,12 +1,6 @@
 # GitHub label conventions
 
-## Overview
-
-Labels identify the type and area of an Issue or pull request (PR). Use only labels from [`.github/labels.json`](../../.github/labels.json).
-
-## When to Follow
-
-Follow these rules when you create or update an Issue or PR. Review the labels again when the title, description, or scope changes.
+Labels identify the type and area of an Issue or pull request (PR). Use only labels from [`.github/labels.json`](../../.github/labels.json). Follow these rules when you create or update an Issue or PR. Review the labels again when the title, description, or scope changes.
 
 ## Rules
 

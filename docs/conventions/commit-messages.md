@@ -1,12 +1,6 @@
 # Commit message conventions
 
-## Overview
-
-Checkpoint and squash commits use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). A message has a subject and can include a body and footer.
-
-## When to Follow
-
-Follow this convention when creating a checkpoint commit or preparing a suggested squash commit.
+Checkpoint and squash commits use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). A message has a subject and can include a body and footer. Follow this convention when creating a checkpoint commit or preparing a suggested squash commit.
 
 ## Template
 

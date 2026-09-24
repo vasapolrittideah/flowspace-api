@@ -1,12 +1,6 @@
 # Markdown and English prose conventions
 
-## Overview
-
-These rules keep Markdown and English prose consistent across repository artifacts.
-
-## When to Follow
-
-Follow the Markdown rules when you write or update a Markdown file. Follow the English prose rules whenever you write English. This includes Markdown, commit messages, PR titles and descriptions, code comments, and agent replies.
+These rules keep Markdown and English prose consistent across repository artifacts. Follow the Markdown rules when you write or update a Markdown file. Follow the English prose rules whenever you write English. This includes Markdown, commit messages, PR titles and descriptions, code comments, and agent replies.
 
 ## Rules
 

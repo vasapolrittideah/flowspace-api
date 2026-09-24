@@ -168,12 +168,7 @@ Put trailers after a blank line at the end of the message. Preserve existing att
 
 ### GitHub Issue descriptions
 
-- Use `Module:`, `Description:`, `Acceptance criteria:`, `Verification:`, `Dependencies:`, `Files likely touched:`, and `Estimated scope:` in that order. Put the task title in the GitHub Issue title.
-- Give each acceptance checkbox an outcome that can be checked on its own. Use as many checkboxes as the task needs; do not split a task only to meet a checkbox count.
-- Give each verification command its own checkbox. Name the behavior that the command checks. Keep inspection of a command's output in the same checkbox when they form one check. Put separate manual checks in separate checkboxes.
-- Write `Dependencies: None.` when there is no blocking issue. Otherwise write `Dependencies: Blocked by #45.`, `Dependencies: Blocked by #45 and #46.`, or `Dependencies: Blocked by #45, #46, and #47.` for one, two, or more blockers. Add any prerequisite without an issue number as a separate sentence.
-- Under `Files likely touched:`, list the source, test, contract, and configuration files that the task is likely to create or change. For generated output, list only its folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). Do not list generated file names.
-- Keep the issue description, acceptance criteria, verification, dependencies, and file list consistent with the approved specification, plan, and task scope.
+- Follow the [GitHub Issue conventions](docs/conventions.md#github-issues) when writing Issue bodies or task drafts in `tasks/.todo.md`.
 
 ## Issue and pull request labels
 

@@ -43,7 +43,7 @@ Status: Draft.
 | Task list | Group numbered tasks into phases. Add a checkpoint with checkable outcomes after each phase. Track tasks in GitHub Issues and their status in the repository GitHub Project. Keep an ordered index of Issue links and completed checkpoints as the completion record. Do not keep a duplicate task checklist. |
 | Risks and controls | Name each material risk, its impact, and its control in a table. |
 
-Use `tasks/.todo.md` only while preparing Issues. Write each draft with the [Issue fields](github-issues.md#body-fields). After every Issue appears in the Project with `Todo` status, replace the drafts with an ordered index of Issue links and delete `tasks/.todo.md`.
+Use `tasks/.todo.md` only while preparing Issues. Write each draft with the [Issue template](github-issues.md#template). After every Issue appears in the Project with `Todo` status, replace the drafts with an ordered index of Issue links and delete `tasks/.todo.md`.
 
 ## Examples
 

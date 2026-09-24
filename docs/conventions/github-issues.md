@@ -14,8 +14,6 @@ Use one Issue for each task. Use the body fields below in this order, with the s
 
 State the task outcome in the Issue title. Keep the title and body consistent with the approved specification, module plan, and task scope.
 
-### Body fields
-
 ```text
 Module: `<module-id>`
 

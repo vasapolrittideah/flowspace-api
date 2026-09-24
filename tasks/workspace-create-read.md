@@ -2,7 +2,7 @@
 
 Module id: `workspace-create-read`
 
-Planning baseline: Treat this module as unimplemented. Existing capability files do not count as completion evidence. Every task starts unchecked.
+Status: Complete.
 
 Completion record: [PR #79](https://github.com/vasapolrittideah/flowspace-api/pull/79) recorded final verification for the Keycloak-based module. [ADR-0031](../docs/adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) later changed the identity direction. Replacing Keycloak is a separate change.
 

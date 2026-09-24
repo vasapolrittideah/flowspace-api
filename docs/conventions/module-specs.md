@@ -70,13 +70,12 @@ Status: Draft.
 
 ## Rules
 
-- Follow this convention when writing or updating `docs/specs/<module-id>.md`.
+- Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
+- In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each abuse test and success criterion.
+- Put implementation locations in the plan. Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents.
 - Save one specification as `docs/specs/<module-id>.md`. Use the sections through `Success criteria` in the template order.
 - Add either optional final section only when the capability needs it. Add a new top-level section to this convention before using it in a specification. Add each specification to the [specification index](../specs/README.md).
-- Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
-- Put implementation locations in the plan. Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents.
 - Use subsections under `Required behavior` for topics specific to the capability.
-- In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each abuse test and success criterion.
 
 ## Examples
 

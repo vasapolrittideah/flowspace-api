@@ -1,6 +1,6 @@
 # Module specification conventions
 
-Save each module specification as `docs/specs/<module-id>.md` and add it to the [specification index](../specs/README.md). Each specification defines one capability before implementation. It records scope, observable behavior, feature-specific testing, and success criteria. An optional final section records open decisions or checks before real-user use.
+Save each module specification as `docs/specs/<module-id>.md` and add it to the [specification index](../specs/README.md). Define one capability per specification before implementation.
 
 Draft specifications require approval before planning. An approved specification permits planning. An implemented specification has evidence for every success criterion.
 
@@ -21,21 +21,6 @@ All capability specifications use the core sections through `Success criteria` i
 | `Open questions and approval` (optional) | Unresolved decisions and the approval required for the next phase |
 | `Before real users join` (optional) | Checks that must pass before real-user use |
 
-Technology stack and code style come from shared project sources. Put implementation locations in the plan. Add a new top-level section to this convention before using it in a specification.
+Use the [shared project sources](../specs/README.md#shared-project-sources) for technology stack and code style. Put implementation locations in the plan. Add a new top-level section to this convention before using it in a specification.
 
-## Shared project sources
-
-Every specification inherits the sources below. A specification repeats a shared rule only when that rule changes observable behavior or completion evidence.
-
-| Subject | Source |
-| --- | --- |
-| Product scope and system behavior | [Architecture](../architecture.md) |
-| Accepted architecture decisions | [Architecture decision records](../adr/README.md) |
-| Tools and versions | [Technology stack](../technology-stack.md) |
-| Source and test locations | [Project structure](../project-structure.md) |
-| Writing, Git, review, and verification | [Agent instructions](../../AGENTS.md) |
-| Quality, coverage, and security limits | [Constraints](../../CONSTRAINTS.md) |
-
-Identity specifications also inherit the [Identity threat model](../security/identity-threat-model.md). Each Identity success criterion and abuse test must reference the applicable threat IDs.
-
-Put a project-wide rule in its source document instead of copying it into each specification.
+Repeat a shared rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents instead of copying them into each specification. In Identity specifications, reference the applicable [threat IDs](../security/identity-threat-model.md) in each success criterion and abuse test.

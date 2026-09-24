@@ -168,7 +168,7 @@ Put trailers after a blank line at the end of the message. Preserve existing att
 
 ### GitHub Issue descriptions
 
-- Follow the [GitHub Issue conventions](docs/conventions.md#github-issues) when writing Issue bodies or task drafts in `tasks/.todo.md`.
+- Follow the [GitHub Issue conventions](docs/conventions/github-issues.md) when writing Issue bodies or task drafts in `tasks/.todo.md`.
 
 ## Issue and pull request labels
 

@@ -23,47 +23,15 @@ graph LR
     G["/constraints [mode]"] -. use as needed .-> H[Any workflow stage]
 ```
 
-### 1. Define a capability with `/spec`
-
-Use `/spec <request>` for a new product capability. The command uses the `spec-driven-development` skill to clarify the request, define the scope, and write acceptance criteria. It creates `docs/specs/<module-id>.md` and updates `docs/specs/README.md`. A request with several capabilities can also create `docs/specs/maps/<map-id>.md`.
-
-Review and approve the specification before you run `/plan`. The command does not change implementation code.
-
-### 2. Plan the module with `/plan`
-
-Use `/plan <module-id>` after the specification is approved. The command uses the `planning-and-task-breakdown` skill to divide the module into small, ordered tasks. It creates `tasks/<module-id>.md` and uses `tasks/.todo.md` as temporary input for GitHub Issue creation.
-
-After approval, the command creates the GitHub Issues, adds them to the repository project, and records their dependencies. It then replaces the task list in the plan with issue links and deletes `tasks/.todo.md`.
-
-### 3. Implement issues with `/build`
-
-Use `/build <module-id>` to implement the next ready issue. If `tasks/` contains one plan, you can omit `<module-id>`. Add `auto` or `all` only after the full plan is approved. Without either mode, run `/build` again after the maintainer merges the previous issue. The command uses the `incremental-implementation` and `test-driven-development` skills. It uses the `debugging-and-error-recovery` skill if a step fails.
-
-Each issue produces a failing test, the minimum implementation, verification results, and one tested commit. The command changes the source and test files named by the issue. It does not create a fixed set of files. The pull request closes completed issues after the maintainer merges it.
-
-### 4. Make a focused change with `/test`
-
-Use `/test <request>` for a focused feature or bug fix that does not need a specification and module plan. The command uses the `test-driven-development` skill. It writes a failing test first, adds the minimum implementation, and runs regression tests.
-
-The command changes the relevant source and test files. It does not create a fixed planning file.
-
-### 5. Review the change with `/review`
-
-Use `/review` after implementation. The command uses the `code-review-and-quality` skill for a five-axis review. It also uses the `security-and-hardening` and `performance-optimization` skills for those parts of the review.
-
-The command returns findings with file and line references. It does not create a repository file. Resolve all Critical and Important findings, then run the affected checks again.
-
-### 6. Make the launch decision with `/ship`
-
-Use `/ship` after the review findings are resolved. The command uses the `shipping-and-launch` skill. It runs the `code-reviewer`, `security-auditor`, and `test-engineer` personas unless the change meets every skip condition. A skipped fan-out must touch at most two files, change fewer than 50 lines, and avoid auth, payments, data access, configuration, and environment files.
-
-The command returns a go or no-go decision, blockers, known risks, and a rollback plan. It does not create a repository file. A GO decision prepares the change for maintainer review. It does not merge the pull request.
-
-### 7. Manage the quality bar with `/constraints`
-
-Use `/constraints` without an argument to set up the repository quality rules. The command uses the `constraint-driven-development` skill. It creates or updates `CONSTRAINTS.md` and can add the scripts or tool configuration that enforce the selected rules.
-
-Use `/constraints check` to run the current rules. Use `/constraints guard` to find changes that weaken the rules. These two modes report results without changing the quality bar. Use `/constraints ratchet` to record current measured values as new minimum limits in `CONSTRAINTS.md`.
+| Step | Command | When to use it | What it does |
+| --- | --- | --- | --- |
+| 1 | `/spec <request>` | Define a new product capability before implementation. Review and approve the specification before running `/plan`. | Uses `spec-driven-development` to clarify the request, scope, and acceptance criteria. Creates `docs/specs/<module-id>.md` and updates `docs/specs/README.md`. A request with several capabilities can also create `docs/specs/maps/<map-id>.md`. Does not change implementation code. |
+| 2 | `/plan <module-id>` | Run after the specification is approved. Approve the plan before the command creates GitHub Issues. | Uses `planning-and-task-breakdown` to divide the module into small, ordered tasks. Creates `tasks/<module-id>.md` and uses `tasks/.todo.md` as temporary input. After approval, creates the GitHub Issues, adds them to the repository project, records dependencies, replaces the plan's task list with issue links, and deletes `tasks/.todo.md`. |
+| 3 | `/build <module-id> [auto\|all]` | Implement the next ready issue. Omit `<module-id>` if `tasks/` contains one plan. Use `auto` or `all` only after the full plan is approved. Otherwise, run `/build` again after the maintainer merges the previous issue. | Uses `incremental-implementation` and `test-driven-development`, plus `debugging-and-error-recovery` if a step fails. For each issue, produces a failing test, the minimum implementation, verification results, and one tested commit. Changes the source and test files named by the issue, with no fixed file set. The pull request closes completed issues after the maintainer merges it. |
+| 4 | `/test <request>` | Make a focused feature or bug fix that does not need a specification and module plan. | Uses `test-driven-development` to write a failing test, add the minimum implementation, and run regression tests. Changes the relevant source and test files without creating a fixed planning file. |
+| 5 | `/review` | Run after implementation. Resolve all Critical and Important findings, then rerun the affected checks. | Uses `code-review-and-quality` for a five-axis review, plus `security-and-hardening` and `performance-optimization` for those parts. Returns findings with file and line references. Does not create a repository file. |
+| 6 | `/ship` | Run after review findings are resolved. | Uses `shipping-and-launch`. Runs the `code-reviewer`, `security-auditor`, and `test-engineer` personas unless the change meets every skip condition. The skip conditions are at most two files, fewer than 50 changed lines, and no auth, payments, data access, configuration, or environment files. Returns a go or no-go decision, blockers, known risks, and a rollback plan. Does not create a repository file. A GO decision prepares the change for maintainer review. It does not merge the pull request. |
+| 7 | `/constraints [check\|guard\|ratchet]` | Run without an argument to set up quality rules. Use `check` to run the current rules, `guard` to find weaker rules, or `ratchet` to record measured values as new minimum limits. | Uses `constraint-driven-development`. Creates or updates `CONSTRAINTS.md` and can add enforcement scripts or tool configuration. `check` and `guard` report results without changing the quality bar. `ratchet` updates the limits in `CONSTRAINTS.md`. |
 
 ## Pull request handoff
 

@@ -49,6 +49,7 @@ Read the matching convention before writing or updating an artifact.
 | Markdown, English prose, code comments, and agent replies | [Markdown and English prose](docs/conventions/markdown.md) |
 | Branch names | [Branches](docs/conventions/branches.md) |
 | Checkpoint and squash commit messages | [Commit messages](docs/conventions/commit-messages.md) |
+| Module specifications | [Module specs](docs/conventions/module-specs.md) |
 | Module plans and task tracking | [Module plans](docs/conventions/module-plans.md) |
 | GitHub Issue bodies and task drafts in `tasks/.todo.md` | [GitHub Issues](docs/conventions/github-issues.md) |
 | Issue and pull request labels | [GitHub labels](docs/conventions/github-labels.md) |

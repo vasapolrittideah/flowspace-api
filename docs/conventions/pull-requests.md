@@ -1,17 +1,28 @@
 # Pull request conventions
 
-This convention defines how to write and review a pull request (PR) and its suggested squash commit. Follow it when creating or updating a PR or preparing its squash message.
+This convention defines how to write and review a pull request (PR) and its suggested squash commit.
 
 ## Template
 
-Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, and `Verification`. Omit `Risks or limitations` when none apply. Follow the [Markdown rules](markdown-and-prose.md#markdown) in the prose sections. Use a paragraph for one connected point and bullets for multiple independent points. Keep each paragraph and list item on one physical line. Keep the title, description, and [labels](github-labels.md) consistent with the final work.
+The [PR template](../../.github/pull_request_template.md) contains `Change`, `Reason`, `Risks or limitations`, and `Verification` sections.
 
-| Part | How to write it |
+| Part | Content and format |
 | --- | --- |
-| Title | Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes). Do not include a body or footer in the title. Describe the result, not the branch or changed files. |
+| Title | A [commit subject](commit-messages.md#template) that describes the result. |
 | Change | State the problem and what happens after the change. |
-| Reason | State why the change is needed. Add `Closes #<issue-number>` for each Issue that the PR completes. GitHub closes those Issues after the PR merges into `main`. |
-| Risks or limitations | Name material compatibility effects, remaining limits, or follow-up work. Omit this section when none apply. |
+| Reason | Why the change is needed and any completed Issue numbers. |
+| Risks or limitations | Material compatibility effects, remaining limits, or follow-up work. |
+| Verification | Each required check, its exact command, and its result. |
+
+## Rules
+
+- Follow this convention when creating or updating a PR or preparing its squash message.
+- Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
+- Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, and `Verification`. Omit `Risks or limitations` when none apply.
+- Follow the [Markdown rules](markdown-and-prose.md#markdown) in the prose sections. Use a paragraph for one connected point and bullets for multiple independent points. Keep each paragraph and list item on one physical line.
+- Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
+- Add `Closes #<issue-number>` to `Reason` for each Issue that the PR completes. GitHub closes those Issues after the PR merges into `main`.
+- Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 
 ### Verification
 
@@ -21,10 +32,6 @@ Use the [PR template](../../.github/pull_request_template.md) as the source for 
 - If a required check did not run, write `Not run.` and give the reason. Do not report it as passing.
 - If a command fails, fix the failure or mark the PR as needing attention. Report warnings and unresolved failures even when a command exits successfully.
 - Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link relevant output when a result needs more context.
-
-## Rules
-
-- Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
 
 Before review:
 

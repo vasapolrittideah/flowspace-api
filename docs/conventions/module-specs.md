@@ -1,12 +1,12 @@
 # Module specification conventions
 
-This convention defines the format for one module's capability specification. Follow it when writing or updating `docs/specs/<module-id>.md`.
+This convention defines the format for one module's capability specification.
 
 ## Template
 
-Use the sections through `Success criteria` in this order. Add either optional final section when the capability needs it. Add a new top-level section to this convention before using it in a specification. Add each specification to the [specification index](../specs/README.md).
+A specification has the following fields and sections:
 
-```text
+```markdown
 # Spec: <capability name>
 
 Module id: `<module-id>`
@@ -54,19 +54,29 @@ Status: Draft.
 <readiness checks, if any>
 ```
 
-| Part | How to write it |
+| Part | Content and format |
 | --- | --- |
-| Header | Use the capability name in the title and the module ID from the file name. Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning. |
+| Header | The capability name in the title and the module ID from the file name. The status is `Draft`, `Approved`, or `Implemented`. |
 | Objective | State the capability, its users, its purpose, and the intended result. |
-| Scope and decision sources | Name included and excluded work, module dependencies, and relevant accepted decisions. Put implementation locations in the plan. Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents. |
+| Scope and decision sources | Included and excluded work, module dependencies, and relevant accepted decisions. |
 | Contract | Define consumer-visible interfaces, inputs, outputs, data, and errors. |
-| Required behavior | Define business rules, invariants, security, consistency, and operational behavior. Use subsections for topics specific to the capability. |
+| Required behavior | Business rules, invariants, security, consistency, and operational behavior. |
 | Commands | List commands that build, test, lint, or generate artifacts for the capability. |
-| Testing strategy | Name feature-specific evidence and the test boundary that owns it. In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each abuse test. |
+| Testing strategy | Feature-specific evidence and the test boundary that owns it. |
 | Boundaries | Name capability-specific actions to always do, ask about, or never do. |
-| Success criteria | Write observable Given and Then outcomes required for completion. In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each success criterion. |
-| Open questions and approval | Include this section only when a decision remains open or approval is needed for the next phase. |
-| Before real users join | Include this section only when checks must pass before real-user use. |
+| Success criteria | Observable Given and Then outcomes required for completion. |
+| Open questions and approval | Unresolved decisions and required approval, when applicable. |
+| Before real users join | Readiness checks, when applicable. |
+
+## Rules
+
+- Follow this convention when writing or updating `docs/specs/<module-id>.md`.
+- Save one specification as `docs/specs/<module-id>.md`. Use the sections through `Success criteria` in the template order.
+- Add either optional final section only when the capability needs it. Add a new top-level section to this convention before using it in a specification. Add each specification to the [specification index](../specs/README.md).
+- Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
+- Put implementation locations in the plan. Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents.
+- Use subsections under `Required behavior` for topics specific to the capability.
+- In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each abuse test and success criterion.
 
 ## Examples
 

@@ -10,11 +10,9 @@ Follow this convention when writing a task draft in `tasks/.todo.md` or creating
 
 ## Template
 
-Use one Issue for each task. Put the task title in the Issue title. Use the body fields below in this order, with the same spelling and capitalization.
+Use one Issue for each task. Use the body fields below in this order, with the same spelling and capitalization.
 
-### Title
-
-State the task outcome. Keep the title and body consistent with the approved specification, module plan, and task scope.
+State the task outcome in the Issue title. Keep the title and body consistent with the approved specification, module plan, and task scope.
 
 ### Body fields
 
@@ -40,33 +38,15 @@ Files likely touched:
 Estimated scope: <expected size>.
 ```
 
-#### Module
-
-Use the module ID from the approved specification.
-
-#### Description
-
-State the task outcome and scope in one paragraph.
-
-#### Acceptance criteria
-
-Give each independently checkable outcome one `- [ ]` item. Use as many items as the task needs.
-
-#### Verification
-
-Give each command one `- [ ]` item and name the behavior it checks. Keep inspection of a command's output in the same item when they form one check. Put separate manual checks in separate items.
-
-#### Dependencies
-
-Write `None.` when no Issue blocks the task. Otherwise, write one `Blocked by` sentence with the blocking Issue numbers. For two blockers, use `Blocked by #45 and #46.` For three or more, separate numbers with commas and put `and` before the last number. Add a prerequisite without an Issue number as a separate sentence. Do not use semicolons or repeat `Blocked by` in the same sentence.
-
-#### Files likely touched
-
-List source, test, contract, and configuration files that the task is likely to create or change. For generated output, list only its folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). Do not list generated file names.
-
-#### Estimated scope
-
-State the expected size of the task based on the work described above.
+| Field | How to write it |
+| --- | --- |
+| Module | Use the module ID from the approved specification. |
+| Description | State the task outcome and scope in one paragraph. |
+| Acceptance criteria | Give each independently checkable outcome one `- [ ]` item. Use as many items as the task needs. |
+| Verification | Give each command one `- [ ]` item and name the behavior it checks. Keep inspection of a command's output in the same item when they form one check. Put separate manual checks in separate items. |
+| Dependencies | Write `None.` when no Issue blocks the task. Otherwise, write one `Blocked by` sentence with the blocking Issue numbers. Separate three or more numbers with commas and put `and` before the last number. Add a prerequisite without an Issue number as a separate sentence. Do not use semicolons or repeat `Blocked by` in the same sentence. |
+| Files likely touched | List source, test, contract, and configuration files that the task is likely to create or change. For generated output, list only its folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). Do not list generated file names. |
+| Estimated scope | State the expected size of the task based on the work described above. |
 
 ## Examples
 

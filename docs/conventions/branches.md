@@ -14,13 +14,10 @@ Follow this convention when you create a short-lived branch for a pull request.
 <type>/<short-description>
 ```
 
-### Type
-
-Select a [commit type](commit-messages.md#types).
-
-### Short description
-
-Use lowercase words separated by hyphens. Do not add an agent or author prefix.
+| Part | How to write it |
+| --- | --- |
+| Type | Select a [commit type](commit-messages.md#types). |
+| Short description | Use lowercase words separated by hyphens. Do not add an agent or author prefix. |
 
 ## Examples
 

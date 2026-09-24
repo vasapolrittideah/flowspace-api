@@ -23,7 +23,7 @@ import (
 	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
 )
 
-func TestIdentityStorage(t *testing.T) {
+func TestIdentityRepository(t *testing.T) {
 	ctx := context.Background()
 	container, err := postgrescontainer.Run(ctx, "postgres:18-alpine",
 		postgrescontainer.WithDatabase("identity"),

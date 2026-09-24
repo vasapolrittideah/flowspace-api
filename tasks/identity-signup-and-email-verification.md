@@ -2,13 +2,13 @@
 
 Module id: `identity-signup-and-email-verification`
 
-Status: Draft.
+Status: Approved.
 
 ## Overview
 
 Build account signup, email verification, and recovery of an unverified address through an account claim. The [approved specification](../docs/specs/identity-signup-and-email-verification.md) defines this flow. Signup returns one session and token pair after a database commit. The account, first challenge, and email outbox record commit together. An Identity worker sends the email after an outbox relay publishes a delivery request through Redpanda. Broker or Mailpit failure delays delivery without changing a committed signup result.
 
-The first clients use disposable data. Password login, refresh, logout, provider login, password reset, and real email delivery belong to other capabilities. Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) after review.
+The first clients use disposable data. Password login, refresh, logout, provider login, password reset, and real email delivery belong to other capabilities. Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4).
 
 ## Architecture decisions
 
@@ -54,10 +54,10 @@ flowchart TD
 
 ### Phase 1: Decisions and foundations
 
-- [ ] Task 1: Approve the remaining signup security choices
-- [ ] Task 2: Define the public Identity contract
-- [ ] Task 3: Implement email, password, and code rules
-- [ ] Task 4: Add Identity schema and typed queries
+- Task 1: [#100 Approve the remaining signup security choices](https://github.com/vasapolrittideah/flowspace-api/issues/100)
+- Task 2: [#101 Define the public Identity contract](https://github.com/vasapolrittideah/flowspace-api/issues/101)
+- Task 3: [#102 Implement email, password, and code rules](https://github.com/vasapolrittideah/flowspace-api/issues/102)
+- Task 4: [#103 Add Identity schema and typed queries](https://github.com/vasapolrittideah/flowspace-api/issues/103)
 
 ### Checkpoint: Foundations
 
@@ -67,11 +67,11 @@ flowchart TD
 
 ### Phase 2: Durable signup and asynchronous email
 
-- [ ] Task 5: Enforce shared signup and code limits
-- [ ] Task 6: Issue the first device session and tokens
-- [ ] Task 7: Commit signup and its first delivery request
-- [ ] Task 8: Publish Identity outbox requests to Redpanda
-- [ ] Task 9: Deliver current codes through Mailpit
+- Task 5: [#104 Enforce shared signup and code limits](https://github.com/vasapolrittideah/flowspace-api/issues/104)
+- Task 6: [#105 Issue the first device session and tokens](https://github.com/vasapolrittideah/flowspace-api/issues/105)
+- Task 7: [#106 Commit signup and its first delivery request](https://github.com/vasapolrittideah/flowspace-api/issues/106)
+- Task 8: [#107 Publish Identity outbox requests to Redpanda](https://github.com/vasapolrittideah/flowspace-api/issues/107)
+- Task 9: [#108 Deliver current codes through Mailpit](https://github.com/vasapolrittideah/flowspace-api/issues/108)
 
 ### Checkpoint: Signup and delivery
 
@@ -81,10 +81,10 @@ flowchart TD
 
 ### Phase 3: Verification and account claim
 
-- [ ] Task 10: Request another verification code
-- [ ] Task 11: Verify the authenticated email address
-- [ ] Task 12: Request an unverified-account claim code
-- [ ] Task 13: Claim an unverified account
+- Task 10: [#109 Request another verification code](https://github.com/vasapolrittideah/flowspace-api/issues/109)
+- Task 11: [#110 Verify the authenticated email address](https://github.com/vasapolrittideah/flowspace-api/issues/110)
+- Task 12: [#111 Request an unverified-account claim code](https://github.com/vasapolrittideah/flowspace-api/issues/111)
+- Task 13: [#112 Claim an unverified account](https://github.com/vasapolrittideah/flowspace-api/issues/112)
 
 ### Checkpoint: Account state
 
@@ -94,11 +94,11 @@ flowchart TD
 
 ### Phase 4: Runtime and completion evidence
 
-- [ ] Task 14: Start the Identity API and workers
-- [ ] Task 15: Deploy Identity in the local cluster
-- [ ] Task 16: Run Redpanda and Mailpit in the local cluster
-- [ ] Task 17: Deny Workspace access until email verification
-- [ ] Task 18: Prove the complete public and failure paths
+- Task 14: [#113 Start the Identity API and workers](https://github.com/vasapolrittideah/flowspace-api/issues/113)
+- Task 15: [#114 Deploy Identity in the local cluster](https://github.com/vasapolrittideah/flowspace-api/issues/114)
+- Task 16: [#115 Run Redpanda and Mailpit in the local cluster](https://github.com/vasapolrittideah/flowspace-api/issues/115)
+- Task 17: [#116 Deny Workspace access until email verification](https://github.com/vasapolrittideah/flowspace-api/issues/116)
+- Task 18: [#117 Prove the complete public and failure paths](https://github.com/vasapolrittideah/flowspace-api/issues/117)
 
 ### Checkpoint: Complete
 

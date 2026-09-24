@@ -79,7 +79,10 @@ If the reason or trade-off is unclear, explain it in the body. Include only info
 
 ### Formatting
 
-Limit prose lines in the body to 72 characters. Preserve paragraphs and lists. Do not split URLs, code, or trailers. For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
+- Limit prose lines in the body to 72 characters.
+- Preserve paragraphs and lists.
+- Do not split URLs, code, or trailers.
+- For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
 
 ### Footer
 
@@ -87,7 +90,10 @@ If a commit belongs to an Issue, add `Refs: #<issue-number>` before co-author tr
 
 ### AI co-authorship
 
-Each AI-assisted checkpoint and squash commit must include one trailer for each contributing agent. Use `Co-authored-by: Codex <noreply@openai.com>` for Codex. Put trailers after a blank line at the end of the message. Preserve existing attribution when you amend or squash commits. Use the identity of each agent.
+- Include one co-author trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
+- Use `Co-authored-by: Codex <noreply@openai.com>` for Codex. Use each other agent's identity for its trailer.
+- Put trailers after a blank line at the end of the message.
+- Preserve existing attribution when you amend or squash commits.
 
 ## Examples
 

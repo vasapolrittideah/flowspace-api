@@ -6,15 +6,19 @@ A pull request (PR) proposes one reviewable change. The [agent instructions](../
 
 ### Before review
 
-Inspect the staged diff before each commit and the complete PR diff before maintainer review. Exclude unrelated changes, secrets, local environment files, and unwanted build output. Run the relevant tests, lint commands, builds, and contract commands. Do not weaken commands, hide failures, or discard work from another task.
-
-For a behavior fix, add a focused regression test. For a contract or generator change, make sure that regeneration and compatibility succeed and that source files and generated output agree. For a documentation-only change, make sure that facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
+- Inspect the staged diff before each commit and the complete PR diff before maintainer review. Exclude unrelated changes, secrets, local environment files, and unwanted build output.
+- Run the relevant tests, lint commands, builds, and contract commands. Do not weaken commands or hide failures.
+- Preserve work from other tasks.
+- For a behavior fix, add a focused regression test.
+- For a contract or generator change, make sure that regeneration and compatibility succeed and that source files and generated output agree.
+- For a documentation-only change, make sure that facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
 
 ### Suggested squash commit
 
-Before maintainer review, provide the exact suggested squash message in the chat. Update the message if the PR changes. Do not put it in the PR description. Use the reviewed PR title as the subject and follow the [commit message](commit-messages.md), [formatting](commit-messages.md#formatting), and [AI co-authorship](commit-messages.md#ai-co-authorship) rules.
-
-If a body is needed, explain important effects and compatibility or migration information. Do not copy detailed verification from the PR. Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
+- Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
+- Use the reviewed PR title as the subject. Follow the [commit message](commit-messages.md), [formatting](commit-messages.md#formatting), and [AI co-authorship](commit-messages.md#ai-co-authorship) rules.
+- If a body is needed, explain important effects and compatibility or migration information. Do not copy detailed verification from the PR.
+- Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
 
 ## Template
 
@@ -29,9 +33,12 @@ Use the [PR template](../../.github/pull_request_template.md) as the source for 
 
 ### Verification
 
-Write one row per required check in the PR Verification table. Use the matching `task ...` command from `Taskfile.yaml` first. If no matching task exists, use another command. Record each required command and its exact result, including commands outside Task. Omit checks that do not apply.
-
-Use a short check name in `Check` and the exact command in `Command`. Start `Result` with `Passed.`, `Failed.`, or `Not run.`. If a required check did not run, write `Not run.` and give the reason. Do not report it as passing. If a command fails, fix the failure or mark the PR as needing attention. Report warnings and unresolved failures even when a command exits successfully. Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link relevant output when a result needs more context.
+- Write one row per required check in the PR Verification table. Omit checks that do not apply.
+- Use the matching `task ...` command from `Taskfile.yaml` first. If no matching task exists, use another command. Record each required command and its exact result, including commands outside Task.
+- Use a short check name in `Check` and the exact command in `Command`. Start `Result` with `Passed.`, `Failed.`, or `Not run.`.
+- If a required check did not run, write `Not run.` and give the reason. Do not report it as passing.
+- If a command fails, fix the failure or mark the PR as needing attention. Report warnings and unresolved failures even when a command exits successfully.
+- Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link relevant output when a result needs more context.
 
 ## Examples
 

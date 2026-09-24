@@ -13,7 +13,7 @@ Use GitHub Issues as the task list. Use GitHub Projects to show task status.
 3. Slice work vertically. Each task must deliver one complete path.
 4. Write each task in `tasks/.todo.md` using the [GitHub Issue conventions](../../docs/conventions/github-issues.md).
 5. Add checkpoints between phases in the plan document.
-6. Save the plan as `tasks/<module-id>.md`.
+6. Save the plan as `tasks/<module-id>.md` using the [module plan conventions](../../docs/conventions/module-plans.md).
 7. Present the plan and `tasks/.todo.md` for human review.
 8. After approval, inspect open issues and projects to avoid duplicate tasks.
 9. Run `gh auth status`. If authentication fails, stop and ask the maintainer to run `gh auth login -h github.com -p https -w`.

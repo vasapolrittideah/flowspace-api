@@ -56,10 +56,7 @@ A worktree is a separate checkout of the repository. If tasks run at the same ti
 
 ## Planning and task tracking
 
-- Save each module plan as `tasks/<module-id>.md`.
-- Use `tasks/.todo.md` only as the temporary source for GitHub Issue creation.
-- Track tasks in GitHub Issues and task status in the repository GitHub Project.
-- Delete `tasks/.todo.md` after every task exists in the GitHub Project.
+- Follow the [module plan conventions](docs/conventions/module-plans.md) for plans and task tracking.
 
 ### GitHub Issue descriptions
 

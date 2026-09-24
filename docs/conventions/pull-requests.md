@@ -22,7 +22,7 @@ Use the [PR template](../../.github/pull_request_template.md) as the source for 
 - If a command fails, fix the failure or mark the PR as needing attention. Report warnings and unresolved failures even when a command exits successfully.
 - Add a short explanation only when it helps review, such as coverage values or a failure cause. Do not paste routine logs or describe resolved attempts. Link relevant output when a result needs more context.
 
-### Rules
+## Rules
 
 - Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
 

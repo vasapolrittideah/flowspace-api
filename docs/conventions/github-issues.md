@@ -40,7 +40,7 @@ Estimated scope: <expected size>.
 | Files likely touched | List source, test, contract, and configuration files that the task is likely to create or change. For generated output, list only its folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). Do not list generated file names. |
 | Estimated scope | State the expected size of the task based on the work described above. |
 
-### Rules
+## Rules
 
 - Follow the workflow and authority in the [agent instructions](../../AGENTS.md) when creating Issues.
 - Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.

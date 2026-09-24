@@ -22,7 +22,7 @@ Co-authored-by: Codex <noreply@openai.com>
 | Body | If the reason or trade-off is unclear, explain it. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files. |
 | `Refs` footer | If a commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers. This links the commit to the Issue without closing it. |
 
-### Rules
+## Rules
 
 Format the message as follows:
 
@@ -38,7 +38,7 @@ Record AI co-authorship as follows:
 - Put trailers after a blank line at the end of the message.
 - Preserve existing attribution when you amend or squash commits.
 
-#### Types
+### Types
 
 | Type | Purpose |
 | --- | --- |
@@ -55,7 +55,7 @@ Record AI co-authorship as follows:
 
 A new file alone does not make the change a `feat`.
 
-#### Scopes
+### Scopes
 
 A scope names the repository area that a change affects. Use one lowercase scope when it makes the affected area clear:
 

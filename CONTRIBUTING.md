@@ -4,9 +4,9 @@ Use the repository commands to move work from a request to a reviewed pull reque
 
 ## Command workflow
 
-For a new capability, follow `/spec <request>` → `/plan <module-id>` → `/build <module-id>` → `/review` → `/ship`.
-
-For a focused feature or bug fix that needs no module plan, follow `/test <request>` → `/review` → `/ship`. Use `/constraints` when you need to set or inspect the quality rules.
+- For a new capability, follow `/spec <request>` → `/plan <module-id>` → `/build <module-id>` → `/review` → `/ship`.
+- For a focused feature or bug fix without a module plan, follow `/test <request>` → `/review` → `/ship`.
+- At any stage, use `/constraints` to set or inspect the quality rules.
 
 | Command | Use it when | Result |
 | --- | --- | --- |

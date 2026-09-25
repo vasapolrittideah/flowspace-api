@@ -7,31 +7,33 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 type sessionRepositoryStub struct {
 	hash   []byte
-	record SessionRecord
+	record outbound.SessionRecord
 }
 
-func (s *sessionRepositoryStub) Create(_ context.Context, _ string, hash []byte) (SessionRecord, error) {
+func (s *sessionRepositoryStub) Create(_ context.Context, _ string, hash []byte) (outbound.SessionRecord, error) {
 	s.hash = append([]byte(nil), hash...)
 	return s.record, nil
 }
 
 type tokenSignerStub struct {
-	claims AccessTokenClaims
+	claims outbound.AccessTokenClaims
 	err    error
 }
 
-func (s *tokenSignerStub) Sign(claims AccessTokenClaims) (string, error) {
+func (s *tokenSignerStub) Sign(claims outbound.AccessTokenClaims) (string, error) {
 	s.claims = claims
 	return "signed-access-token", s.err
 }
 
 func TestSessionServiceIssue(t *testing.T) {
 	created := time.Date(2026, 9, 25, 12, 0, 0, 0, time.UTC)
-	repository := &sessionRepositoryStub{record: SessionRecord{
+	repository := &sessionRepositoryStub{record: outbound.SessionRecord{
 		ID: "session-id", CreatedAt: created,
 		IdleExpiresAt:     created.Add(30 * 24 * time.Hour),
 		AbsoluteExpiresAt: created.Add(90 * 24 * time.Hour),
@@ -59,7 +61,7 @@ func TestSessionServiceIssue(t *testing.T) {
 
 func TestSessionServiceCapsAccessAtAbsoluteExpiry(t *testing.T) {
 	created := time.Now().UTC()
-	repository := &sessionRepositoryStub{record: SessionRecord{ID: "session-id", CreatedAt: created, IdleExpiresAt: created.Add(time.Minute), AbsoluteExpiresAt: created.Add(time.Minute)}}
+	repository := &sessionRepositoryStub{record: outbound.SessionRecord{ID: "session-id", CreatedAt: created, IdleExpiresAt: created.Add(time.Minute), AbsoluteExpiresAt: created.Add(time.Minute)}}
 	signer := &tokenSignerStub{}
 	issued, err := NewSessionService(repository, signer).Issue(context.Background(), "subject-1")
 	if err != nil || !issued.AccessTokenExpiresAt.Equal(repository.record.AbsoluteExpiresAt.Truncate(time.Second)) {
@@ -69,7 +71,7 @@ func TestSessionServiceCapsAccessAtAbsoluteExpiry(t *testing.T) {
 
 func TestSessionServiceDoesNotReturnSecretsOnSigningError(t *testing.T) {
 	created := time.Now().UTC()
-	repository := &sessionRepositoryStub{record: SessionRecord{ID: "session-id", CreatedAt: created, IdleExpiresAt: created.Add(30 * 24 * time.Hour), AbsoluteExpiresAt: created.Add(90 * 24 * time.Hour)}}
+	repository := &sessionRepositoryStub{record: outbound.SessionRecord{ID: "session-id", CreatedAt: created, IdleExpiresAt: created.Add(30 * 24 * time.Hour), AbsoluteExpiresAt: created.Add(90 * 24 * time.Hour)}}
 	signer := &tokenSignerStub{err: errors.New("signing failed")}
 	issued, err := NewSessionService(repository, signer).Issue(context.Background(), "subject-1")
 	if err == nil || issued.RefreshToken != "" || issued.AccessToken != "" {

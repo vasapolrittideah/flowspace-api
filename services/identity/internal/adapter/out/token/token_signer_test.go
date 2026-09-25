@@ -10,7 +10,7 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 
-	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 func TestTokenSignerProducesEdDSAAccessJWT(t *testing.T) {
@@ -23,7 +23,7 @@ func TestTokenSignerProducesEdDSAAccessJWT(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Date(2026, 9, 25, 12, 0, 0, 0, time.UTC)
-	access, err := signer.Sign(app.AccessTokenClaims{
+	access, err := signer.Sign(outbound.AccessTokenClaims{
 		Subject: "subject-1", SessionID: "session-1", ID: "jti-1", IssuedAt: now, ExpiresAt: now.Add(10 * time.Minute),
 	})
 	if err != nil {

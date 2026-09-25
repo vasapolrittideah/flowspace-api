@@ -7,32 +7,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"time"
+
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 var ErrSessionIssue = errors.New("session issuance failed")
-
-type SessionRecord struct {
-	ID                string
-	CreatedAt         time.Time
-	IdleExpiresAt     time.Time
-	AbsoluteExpiresAt time.Time
-}
-
-type SessionRepository interface {
-	Create(ctx context.Context, subject string, hash []byte) (SessionRecord, error)
-}
-
-type AccessTokenClaims struct {
-	Subject   string
-	SessionID string
-	ID        string
-	IssuedAt  time.Time
-	ExpiresAt time.Time
-}
-
-type TokenSigner interface {
-	Sign(claims AccessTokenClaims) (string, error)
-}
 
 type SessionTokens struct {
 	AccessToken           string
@@ -43,11 +22,11 @@ type SessionTokens struct {
 }
 
 type SessionService struct {
-	repository SessionRepository
-	signer     TokenSigner
+	repository outbound.SessionRepository
+	signer     outbound.TokenSigner
 }
 
-func NewSessionService(repository SessionRepository, signer TokenSigner) *SessionService {
+func NewSessionService(repository outbound.SessionRepository, signer outbound.TokenSigner) *SessionService {
 	return &SessionService{repository: repository, signer: signer}
 }
 
@@ -74,7 +53,7 @@ func (s *SessionService) Issue(ctx context.Context, subject string) (SessionToke
 		expires = session.AbsoluteExpiresAt
 	}
 	expires = expires.Truncate(time.Second)
-	access, err := s.signer.Sign(AccessTokenClaims{
+	access, err := s.signer.Sign(outbound.AccessTokenClaims{
 		Subject: subject, SessionID: session.ID, ID: base64.RawURLEncoding.EncodeToString(jti),
 		IssuedAt: session.CreatedAt, ExpiresAt: expires,
 	})

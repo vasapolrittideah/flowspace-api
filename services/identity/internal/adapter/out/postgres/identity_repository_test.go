@@ -23,11 +23,12 @@ import (
 	identitypostgres "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
 	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 type failingTokenSigner struct{}
 
-func (failingTokenSigner) Sign(app.AccessTokenClaims) (string, error) {
+func (failingTokenSigner) Sign(outbound.AccessTokenClaims) (string, error) {
 	return "", errors.New("signing failed")
 }
 

@@ -7,7 +7,7 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 
-	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 type Signer struct {
@@ -30,7 +30,7 @@ func NewSigner(key ed25519.PrivateKey, keyID, issuer, audience string) (*Signer,
 	return &Signer{signer: signer, issuer: issuer, audience: audience}, nil
 }
 
-func (s *Signer) Sign(claims app.AccessTokenClaims) (string, error) {
+func (s *Signer) Sign(claims outbound.AccessTokenClaims) (string, error) {
 	if claims.Subject == "" || claims.SessionID == "" || claims.ID == "" || !claims.ExpiresAt.After(claims.IssuedAt) {
 		return "", errors.New("invalid access token claims")
 	}

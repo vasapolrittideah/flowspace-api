@@ -52,7 +52,7 @@ jobs:
         run: |
           profile="$(mktemp)"
           trap 'rm -f "$profile"' EXIT
-          go test ./... -coverprofile="$profile"
+          go test -tags=integration -coverpkg=./... ./... -coverprofile="$profile"
           node scripts/constraint-check.mjs coverage --base "$CONSTRAINT_BASE" --profile "$profile" --changed-min 80 --total-min 25
       - id: dependencies
         name: Scan reachable dependencies

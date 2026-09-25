@@ -1,6 +1,14 @@
 version: "2"
 sql:
   - engine: postgresql
+    schema: services/identity/db/migrations
+    queries: services/identity/db/queries
+    gen:
+      go:
+        package: sqlc
+        out: services/identity/internal/adapter/out/postgres/sqlc
+        sql_package: pgx/v5
+  - engine: postgresql
     schema: services/workspace/db/migrations
     queries: services/workspace/db/queries
     gen:

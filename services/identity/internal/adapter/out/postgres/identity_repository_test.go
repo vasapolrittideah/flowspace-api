@@ -5,11 +5,14 @@ package postgres_test
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"database/sql"
 	"errors"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -20,9 +23,13 @@ import (
 	postgrescontainer "github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/db/migrations"
+	deliverycrypto "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	identitypostgres "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
 	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
+	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
@@ -30,6 +37,12 @@ type failingTokenSigner struct{}
 
 func (failingTokenSigner) Sign(outbound.AccessTokenClaims) (string, error) {
 	return "", errors.New("signing failed")
+}
+
+type failingDeliveryProtector struct{}
+
+func (failingDeliveryProtector) Protect(_, _, _, _, _ string) (outbound.DeliveryMaterial, error) {
+	return outbound.DeliveryMaterial{}, errors.New("encryption failed")
 }
 
 func TestIdentityRepository(t *testing.T) {
@@ -350,6 +363,123 @@ func TestIdentityRepository(t *testing.T) {
 		}
 		if changed, err := queries.RevokeAccountSessions(ctx, "challenge-subject"); err != nil || changed != 1 {
 			t.Fatalf("revoked %d sessions, %v", changed, err)
+		}
+	})
+
+	t.Run("signup commits account session code and outbox without broker", func(t *testing.T) {
+		_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		signer, err := token.NewSigner(privateKey, "signup-test", "urn:flowspace:identity:local", "flowspace-api")
+		if err != nil {
+			t.Fatal(err)
+		}
+		protector, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{3}, 32), 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		verifierKey := bytes.Repeat([]byte{4}, 32)
+		service := app.NewSignupService(identitypostgres.NewAccountRepository(pool), signer, protector,
+			func(context.Context, string) error { return nil },
+			func(context.Context, string) (bool, error) { return false, nil }, verifierKey)
+		request := inbound.CreateAccountInput{Email: "Signup@EXAMPLE.COM", Password: "correct horse battery staple", Source: "192.0.2.1"}
+		result, err := service.CreateAccount(ctx, request)
+		if err != nil || result.Subject == "" || result.AccessToken == "" || result.RefreshToken == "" {
+			t.Fatalf("signup result = %+v, error = %v", result, err)
+		}
+		var challengeID pgtype.UUID
+		var verifier, nonce, ciphertext, refreshHash []byte
+		var keyVersion int32
+		var expires time.Time
+		var verified sql.NullTime
+		err = pool.QueryRow(ctx, `SELECT challenge.id, challenge.code_verifier, challenge.expires_at, delivery.key_version, delivery.nonce, delivery.ciphertext, session.refresh_token_hash, account.email_verified_at
+			FROM identity_accounts account
+			JOIN identity_sessions session ON session.account_subject = account.subject
+			JOIN identity_challenges challenge ON challenge.account_subject = account.subject
+			JOIN identity_challenge_deliveries delivery ON delivery.challenge_id = challenge.id
+			JOIN identity_outbox_events event ON event.challenge_id = challenge.id
+			WHERE account.subject = $1 AND account.email_local = 'Signup' AND account.email_domain = 'example.com'
+			AND challenge.purpose = 'verify-email' AND event.published_at IS NULL`, result.Subject).Scan(
+			&challengeID, &verifier, &expires, &keyVersion, &nonce, &ciphertext, &refreshHash, &verified)
+		if err != nil || verified.Valid || len(verifier) != 32 || len(refreshHash) != 32 {
+			t.Fatalf("committed signup records: verified = %v, error = %v", verified, err)
+		}
+		if bytes.Equal(refreshHash, []byte(result.RefreshToken)) {
+			t.Fatal("refresh token stored in plaintext")
+		}
+		email, code, err := protector.Open(uuid.UUID(challengeID.Bytes).String(), "verify-email", result.Subject,
+			outbound.DeliveryMaterial{KeyVersion: keyVersion, Nonce: nonce, Ciphertext: ciphertext})
+		var expected [32]byte
+		copy(expected[:], verifier)
+		if err != nil || email != "Signup@example.com" || !domain.VerifyChallenge(verifierKey, result.Subject, email, domain.PurposeVerifyEmail, code, expected, expires, time.Now()) {
+			t.Fatalf("stored challenge cannot deliver current code: %v", err)
+		}
+		if retry, err := service.CreateAccount(ctx, request); !errors.Is(err, outbound.ErrAccountExists) || retry.AccessToken != "" || retry.RefreshToken != "" {
+			t.Fatalf("lost-response retry = %+v, %v", retry, err)
+		}
+		start := make(chan struct{})
+		results := make(chan error, 2)
+		for range 2 {
+			go func() {
+				<-start
+				_, err := service.CreateAccount(ctx, inbound.CreateAccountInput{
+					Email: "concurrent-signup@example.com", Password: "correct horse battery staple", Source: "192.0.2.3",
+				})
+				results <- err
+			}()
+		}
+		close(start)
+		wins, duplicates := 0, 0
+		for range 2 {
+			switch err := <-results; {
+			case err == nil:
+				wins++
+			case errors.Is(err, outbound.ErrAccountExists):
+				duplicates++
+			default:
+				t.Fatalf("concurrent signup error: %v", err)
+			}
+		}
+		if wins != 1 || duplicates != 1 {
+			t.Fatalf("concurrent signup wins = %d, duplicates = %d", wins, duplicates)
+		}
+		lateFailure := app.NewSignupService(identitypostgres.NewAccountRepository(pool), signer, failingDeliveryProtector{},
+			func(context.Context, string) error { return nil },
+			func(context.Context, string) (bool, error) { return false, nil }, verifierKey)
+		failed, err := lateFailure.CreateAccount(ctx, inbound.CreateAccountInput{
+			Email: "late-failure@example.com", Password: "correct horse battery staple", Source: "192.0.2.4",
+		})
+		if err == nil || failed.AccessToken != "" || failed.RefreshToken != "" {
+			t.Fatalf("late failure returned tokens: %+v, %v", failed, err)
+		}
+		var accounts, challenges int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_accounts WHERE email_local = 'late-failure'`).Scan(&accounts); err != nil {
+			t.Fatal(err)
+		}
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_challenges WHERE email_local = 'late-failure'`).Scan(&challenges); err != nil {
+			t.Fatal(err)
+		}
+		if accounts != 0 || challenges != 0 {
+			t.Fatalf("late failure committed %d accounts and %d challenges", accounts, challenges)
+		}
+	})
+
+	t.Run("signing failure rolls back every signup record", func(t *testing.T) {
+		protector, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{3}, 32), 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		service := app.NewSignupService(identitypostgres.NewAccountRepository(pool), failingTokenSigner{}, protector,
+			func(context.Context, string) error { return nil },
+			func(context.Context, string) (bool, error) { return false, nil }, bytes.Repeat([]byte{4}, 32))
+		result, err := service.CreateAccount(ctx, inbound.CreateAccountInput{Email: "failure@example.com", Password: "correct horse battery staple", Source: "192.0.2.2"})
+		if err == nil || result.AccessToken != "" || result.RefreshToken != "" {
+			t.Fatalf("failed signup = %+v, %v", result, err)
+		}
+		var count int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_accounts WHERE email_local = 'failure'`).Scan(&count); err != nil || count != 0 {
+			t.Fatalf("rolled back accounts = %d, %v", count, err)
 		}
 	})
 }

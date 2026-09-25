@@ -36,7 +36,7 @@ WHERE subject = sqlc.arg(subject)
 INSERT INTO identity_sessions (account_subject, refresh_token_hash, idle_expires_at, absolute_expires_at)
 VALUES (sqlc.arg(account_subject), sqlc.arg(refresh_token_hash),
     statement_timestamp() + INTERVAL '30 days', statement_timestamp() + INTERVAL '90 days')
-RETURNING id, idle_expires_at, absolute_expires_at;
+RETURNING id, created_at, idle_expires_at, absolute_expires_at;
 
 -- name: RevokeAccountSessions :execrows
 UPDATE identity_sessions

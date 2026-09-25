@@ -12,7 +12,7 @@ type OutboxEvent struct {
 }
 
 type OutboxRepository interface {
-	Claim(context.Context, string) (OutboxEvent, bool, error)
-	MarkPublished(context.Context, string, string) error
-	Release(context.Context, string, string, time.Time) error
+	Claim(ctx context.Context, owner string) (OutboxEvent, bool, error)
+	MarkPublished(ctx context.Context, eventID, owner string) error
+	Release(ctx context.Context, eventID, owner string, nextAttempt time.Time) error
 }

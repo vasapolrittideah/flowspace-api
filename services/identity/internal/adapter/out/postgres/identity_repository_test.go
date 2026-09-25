@@ -430,6 +430,21 @@ func TestIdentityRepository(t *testing.T) {
 		if err := outbox.MarkPublished(ctx, retriedRequest.ID, "relay-2"); err != nil {
 			t.Fatal(err)
 		}
+		if _, ok, err := outbox.Claim(ctx, "relay-3"); err != nil || ok {
+			t.Fatalf("published event was claimable: %v, %v", ok, err)
+		}
+		if err := outbox.MarkPublished(ctx, retriedRequest.ID, "relay-2"); !errors.Is(err, identitypostgres.ErrOutboxClaimLost) {
+			t.Fatalf("stale publication mark = %v", err)
+		}
+		if err := outbox.Release(ctx, retriedRequest.ID, "relay-2", time.Now()); !errors.Is(err, identitypostgres.ErrOutboxClaimLost) {
+			t.Fatalf("stale claim release = %v", err)
+		}
+		if err := outbox.MarkPublished(ctx, "invalid-id", "relay-2"); err == nil {
+			t.Fatal("invalid event ID was marked published")
+		}
+		if err := outbox.Release(ctx, "invalid-id", "relay-2", time.Now()); err == nil {
+			t.Fatal("invalid event ID was released")
+		}
 		if retry, err := service.CreateAccount(ctx, request); !errors.Is(err, outbound.ErrAccountExists) || retry.AccessToken != "" || retry.RefreshToken != "" {
 			t.Fatalf("lost-response retry = %+v, %v", retry, err)
 		}

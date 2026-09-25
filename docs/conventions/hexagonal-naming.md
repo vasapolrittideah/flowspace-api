@@ -7,17 +7,19 @@ This convention names handwritten Go components inside each service. The [projec
 ### Do
 
 - Name inbound adapters `<Capability>Handler`. Handlers translate input and output at a transport boundary.
-- Name application logic in `app/` `<Capability>Service`. Use the same suffix for an inbound port that exposes those operations.
+- Name application orchestration in `app/` `<Capability>Service`. Use the same suffix for an inbound port that exposes those operations.
 - Name database adapters and their outbound ports `<Capability>Repository` when application code needs a database boundary.
-- Name other outbound adapters for what they do.
-- Match a handwritten file name to its main component.
-- Keep generated Protobuf names and generated database code as produced by their tools. Apply this convention to new code and code changed for another task.
+- Name other outbound adapters and ports for the capability they provide.
+- Name handwritten Go files in snake_case after their main component.
+- Keep generated Protobuf names and generated database code as produced by their tools.
+- Apply this convention to new code and code changed for another task.
 
 ### Don't
 
 - Do not use `Store` or `Storage` for a database component. Use `Repository` only for database access.
-- Do not use `UseCase` or `Usecase` for a concrete application service or a new inbound port. Domain types can keep rules that belong to their own invariants.
-- Do not put application rules in handlers or add a port for a capability that application code does not need.
+- Do not use `UseCase` or `Usecase` for a concrete application service or a new inbound port.
+- Do not put application rules in handlers.
+- Do not add a port for a capability that application code does not need.
 - Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 
 ## Examples

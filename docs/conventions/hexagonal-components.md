@@ -1,6 +1,6 @@
-# Hexagonal naming conventions
+# Hexagonal component conventions
 
-This convention names handwritten Go components inside each service. The [project structure](../project-structure.md) defines their locations and dependency direction.
+This convention defines names and responsibilities for handwritten Go components inside each service. The [project structure](../project-structure.md) defines their locations and dependency direction.
 
 ## Rules
 

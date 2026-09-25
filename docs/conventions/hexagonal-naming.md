@@ -16,6 +16,7 @@ This convention names handwritten Go components inside each service. The [projec
 
 ### Don't
 
+- Do not use `Controller` for an inbound adapter.
 - Do not use `Store` or `Storage` for a database component. Use `Repository` only for database access.
 - Do not use `UseCase` or `Usecase` for a concrete application service or a new inbound port.
 - Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 var (
@@ -12,13 +14,9 @@ var (
 	ErrRateLimited      = errors.New("rate limit exceeded")
 )
 
-type LimitRepository interface {
-	Record(ctx context.Context, scope, key, action string, maximum, dailyMaximum int, window, interval time.Duration) (bool, error)
-}
+type LimitService struct{ repository outbound.LimitRepository }
 
-type LimitService struct{ repository LimitRepository }
-
-func NewLimitService(repository LimitRepository) *LimitService {
+func NewLimitService(repository outbound.LimitRepository) *LimitService {
 	return &LimitService{repository: repository}
 }
 

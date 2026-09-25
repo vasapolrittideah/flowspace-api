@@ -64,6 +64,22 @@ func (t *signupTransaction) CreateOutboxEvent(_ context.Context, _ string) error
 	return nil
 }
 
+func (*signupTransaction) GetCurrentVerificationChallenge(context.Context, string) (output.ChallengeState, bool, error) {
+	return output.ChallengeState{}, false, errors.New("unexpected challenge lookup")
+}
+
+func (*signupTransaction) IncrementChallengeWrongGuess(context.Context, string) error {
+	return errors.New("unexpected wrong guess")
+}
+
+func (*signupTransaction) ConsumeChallenge(context.Context, string) (bool, error) {
+	return false, errors.New("unexpected challenge consumption")
+}
+
+func (*signupTransaction) MarkEmailVerified(context.Context, string) (bool, error) {
+	return false, errors.New("unexpected email verification")
+}
+
 type signupSigner struct{}
 
 func (signupSigner) Sign(output.AccessTokenClaims) (string, error) { return "access", nil }

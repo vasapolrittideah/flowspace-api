@@ -30,7 +30,7 @@ Use package `flowspace.identity.v1` and the `IdentityService` contract. Public R
 | `LogoutAllSessions` | `POST /v1/account-session-logouts` | Bearer access token, no body fields | Confirmation that every session for the subject was revoked |
 | `CheckSession` | Internal RPC only | Validated `subject` and `session_id` from a protected service | Active session and current `email_verified` state |
 
-Password login and refresh do not require an access token and reject the `Idempotency-Key` header under ADR-0033. Refresh tokens appear only in the `RefreshSession` request body and token-issuance responses. Logout methods require exactly one `Authorization: Bearer <access_token>` header. The authenticated token supplies the subject and current session ID; clients cannot choose a target subject or session. `CheckSession` requires an authenticated service caller. The concrete service-authentication method remains open before implementation.
+Password login and refresh do not require an access token and reject the `Idempotency-Key` header under ADR-0033. Refresh tokens appear only in the `RefreshSession` request body and token-issuance responses. Logout methods require exactly one `Authorization: Bearer <access_token>` header. The authenticated token supplies the subject and current session ID; clients cannot choose a target subject or session. `CheckSession` requires an authenticated service caller. [ADR-0036](../adr/0036-authenticate-internal-session-checks-with-mutual-tls.md) proposes mutual TLS; the method remains open until that record is accepted.
 
 Each successful token-issuance response contains `access_token`, `refresh_token`, `access_token_expires_at`, `refresh_token_expires_at`, and `session_expires_at`. Password login also returns `subject` and `email_verified`. Refresh does not return an email address or workspace role. Tokens are secrets and responses must prevent storage by shared HTTP caches.
 
@@ -120,7 +120,7 @@ Enumeration and password-guessing tests cover ID-T01 and ID-T02. Token and signi
 - Obtain approval before changing the 10-minute access lifetime, 30-day idle lifetime, 90-day absolute lifetime, or replay-revokes-session rule.
 - Before implementing token issuance or verification, approve the signing algorithm, issuer and audience values, and JWT clock tolerance.
 - Before implementing key publication or rotation, approve the JWKS route, cache bounds, and routine and emergency key procedures.
-- Approve internal service authentication before implementing `CheckSession`.
+- Approve the method in ADR-0036 before implementing `CheckSession`.
 - Approve numeric login limits before implementing password login.
 
 ### Never

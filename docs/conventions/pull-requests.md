@@ -21,8 +21,7 @@ The [PR template](../../.github/pull_request_template.md) contains `Change`, `Re
 - Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
 - End `Reason` with one `Closes #<issue-number>.` line per completed Issue. Leave one blank line before the first `Closes` line and no blank lines between `Closes` lines. GitHub closes those Issues after the PR merges into `main`.
 - Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, and `Verification`. Omit `Risks or limitations` when none apply.
-- Follow the [Markdown rules](markdown-and-prose.md#markdown) in the prose sections. Use a paragraph for one connected point and bullets for multiple independent points. Keep each paragraph and list item on one physical line.
-- Before each update to a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review the full section after editing. If the update adds a separate point, split the text into paragraphs or bullets.
+- Before creating or updating a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review every prose section against those rules before submitting the description.
 
 ### Before requesting review
 

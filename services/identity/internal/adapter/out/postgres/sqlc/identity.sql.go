@@ -153,7 +153,7 @@ const createSession = `-- name: CreateSession :one
 INSERT INTO identity_sessions (account_subject, refresh_token_hash, idle_expires_at, absolute_expires_at)
 VALUES ($1, $2,
     statement_timestamp() + INTERVAL '30 days', statement_timestamp() + INTERVAL '90 days')
-RETURNING id, idle_expires_at, absolute_expires_at
+RETURNING id, created_at, idle_expires_at, absolute_expires_at
 `
 
 type CreateSessionParams struct {
@@ -163,6 +163,7 @@ type CreateSessionParams struct {
 
 type CreateSessionRow struct {
 	ID                pgtype.UUID
+	CreatedAt         pgtype.Timestamptz
 	IdleExpiresAt     pgtype.Timestamptz
 	AbsoluteExpiresAt pgtype.Timestamptz
 }
@@ -170,7 +171,12 @@ type CreateSessionRow struct {
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CreateSessionRow, error) {
 	row := q.db.QueryRow(ctx, createSession, arg.AccountSubject, arg.RefreshTokenHash)
 	var i CreateSessionRow
-	err := row.Scan(&i.ID, &i.IdleExpiresAt, &i.AbsoluteExpiresAt)
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.IdleExpiresAt,
+		&i.AbsoluteExpiresAt,
+	)
 	return i, err
 }
 

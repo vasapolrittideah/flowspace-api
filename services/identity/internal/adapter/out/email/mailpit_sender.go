@@ -33,23 +33,9 @@ func NewMailpitSender(address, from string) (*MailpitSender, error) {
 }
 
 func (s *MailpitSender) Send(ctx context.Context, recipient, code, purpose string) error {
-	address, err := domain.NormalizeEmail(recipient)
-	if err != nil || len(code) != 6 {
-		return ErrMailDelivery
-	}
-	for i := range len(code) {
-		if code[i] < '0' || code[i] > '9' {
-			return ErrMailDelivery
-		}
-	}
-	var subject string
-	switch purpose {
-	case string(domain.PurposeVerifyEmail):
-		subject = "FlowSpace email verification code"
-	case string(domain.PurposeClaimAccount):
-		subject = "FlowSpace account claim code"
-	default:
-		return ErrMailDelivery
+	address, subject, err := validateMessage(recipient, code, purpose)
+	if err != nil {
+		return err
 	}
 	conn, err := (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "tcp", s.address)
 	if err != nil {
@@ -88,4 +74,24 @@ func (s *MailpitSender) Send(ctx context.Context, recipient, code, purpose strin
 	}
 	_ = client.Quit()
 	return nil
+}
+
+func validateMessage(recipient, code, purpose string) (string, string, error) {
+	address, err := domain.NormalizeEmail(recipient)
+	if err != nil || len(code) != 6 {
+		return "", "", ErrMailDelivery
+	}
+	for i := range len(code) {
+		if code[i] < '0' || code[i] > '9' {
+			return "", "", ErrMailDelivery
+		}
+	}
+	switch purpose {
+	case string(domain.PurposeVerifyEmail):
+		return address, "FlowSpace email verification code", nil
+	case string(domain.PurposeClaimAccount):
+		return address, "FlowSpace account claim code", nil
+	default:
+		return "", "", ErrMailDelivery
+	}
 }

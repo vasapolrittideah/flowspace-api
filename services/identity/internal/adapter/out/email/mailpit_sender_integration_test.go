@@ -62,6 +62,24 @@ func TestMailpitSender(t *testing.T) {
 	if err != nil || response.StatusCode != http.StatusOK || !strings.Contains(string(raw), "Recipient@example.com") || !strings.Contains(string(raw), "123456") {
 		t.Fatalf("Mailpit did not capture the expected message: status %d, error %v", response.StatusCode, err)
 	}
+	deadlineCtx, deadlineCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer deadlineCancel()
+	if err := sender.Send(deadlineCtx, "Recipient@example.com", "654321", "claim-account"); err != nil {
+		t.Fatalf("claim email send failed: %v", err)
+	}
+	request, err = http.NewRequestWithContext(ctx, http.MethodGet, "http://"+httpAddress+"/api/v1/message/latest/raw", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claimResponse, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claimRaw, readErr := io.ReadAll(claimResponse.Body)
+	_ = claimResponse.Body.Close()
+	if readErr != nil || claimResponse.StatusCode != http.StatusOK || !strings.Contains(string(claimRaw), "FlowSpace account claim code") || !strings.Contains(string(claimRaw), "654321") {
+		t.Fatalf("Mailpit did not capture the claim message: status %d, error %v", claimResponse.StatusCode, readErr)
+	}
 	deadSender, err := identityemail.NewMailpitSender("127.0.0.1:1", "no-reply@flowspace.local")
 	if err != nil {
 		t.Fatal(err)

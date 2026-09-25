@@ -565,6 +565,12 @@ func TestDeliveryRepository(t *testing.T) {
 	}
 	challengeID := uuid.UUID(challenge.ID.Bytes).String()
 	repository := identitypostgres.NewDeliveryRepository(pool)
+	if err := repository.WithCurrentDelivery(ctx, "bad-id", "verify-email", nil); err == nil {
+		t.Fatal("invalid delivery challenge ID accepted")
+	}
+	if err := repository.WithCurrentDelivery(ctx, uuid.NewString(), "verify-email", nil); err != nil {
+		t.Fatalf("missing delivery challenge = %v", err)
+	}
 	mailFailure := errors.New("mail server unavailable")
 	sends := 0
 	send := func(_ context.Context, delivery outbound.CurrentDelivery) error {
@@ -650,10 +656,15 @@ func TestDeliveryRepository(t *testing.T) {
 	if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET issued_at = statement_timestamp() - INTERVAL '11 minutes', expires_at = statement_timestamp() - INTERVAL '1 minute' WHERE id = $1`, expired); err != nil {
 		t.Fatal(err)
 	}
+	blocked := seed("too-many-guesses")
+	if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET wrong_guesses = 5 WHERE id = $1`, blocked); err != nil {
+		t.Fatal(err)
+	}
 	if err := repository.PurgeTerminal(ctx); err != nil {
 		t.Fatal(err)
 	}
 	countMaterial(expired, 0)
+	countMaterial(blocked, 0)
 	countMaterial(wrongPurpose, 1)
 	locked := seed("locked")
 	entered := make(chan struct{})

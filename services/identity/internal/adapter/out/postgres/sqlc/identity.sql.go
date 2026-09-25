@@ -513,6 +513,9 @@ WITH terminal AS (
     WHERE challenge.expires_at <= statement_timestamp()
        OR challenge.replaced_at IS NOT NULL
        OR challenge.consumed_at IS NOT NULL
+       OR challenge.wrong_guesses >= 5
+       OR challenge.email_local <> account.email_local
+       OR challenge.email_domain <> account.email_domain
        OR account.retired_at IS NOT NULL
        OR account.email_verified_at IS NOT NULL
     FOR UPDATE OF account, challenge, delivery SKIP LOCKED

@@ -46,9 +46,7 @@ func (r *DeliveryRepository) WithCurrentDelivery(ctx context.Context, challengeI
 	if challenge.Purpose != purpose {
 		return tx.Commit(ctx)
 	}
-	if account.RetiredAt.Valid || account.EmailVerifiedAt.Valid || challenge.ReplacedAt.Valid ||
-		challenge.ConsumedAt.Valid || challenge.WrongGuesses >= 5 || challenge.Expired ||
-		challenge.EmailLocal != account.EmailLocal || challenge.EmailDomain != account.EmailDomain {
+	if !isCurrentDelivery(account, challenge) {
 		if _, err := queries.DeleteChallengeDelivery(ctx, id); err != nil {
 			return err
 		}
@@ -75,6 +73,12 @@ func (r *DeliveryRepository) WithCurrentDelivery(ctx context.Context, challengeI
 		return ErrDeliveryMaterialGone
 	}
 	return tx.Commit(ctx)
+}
+
+func isCurrentDelivery(account sqlc.GetDeliveryAccountForUpdateRow, challenge sqlc.GetDeliveryChallengeForUpdateRow) bool {
+	return !account.RetiredAt.Valid && !account.EmailVerifiedAt.Valid && !challenge.ReplacedAt.Valid &&
+		!challenge.ConsumedAt.Valid && challenge.WrongGuesses < 5 && !challenge.Expired &&
+		challenge.EmailLocal == account.EmailLocal && challenge.EmailDomain == account.EmailDomain
 }
 
 func (r *DeliveryRepository) PurgeTerminal(ctx context.Context) error {

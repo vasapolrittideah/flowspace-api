@@ -8,6 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
@@ -26,9 +29,10 @@ type EmailWorker struct {
 	repository outbound.DeliveryRepository
 	opener     outbound.DeliveryOpener
 	sender     outbound.EmailSender
+	logger     *zap.Logger
 }
 
-func NewEmailWorker(broker, topic, group string, repository outbound.DeliveryRepository, opener outbound.DeliveryOpener, sender outbound.EmailSender) (*EmailWorker, error) {
+func NewEmailWorker(broker, topic, group string, repository outbound.DeliveryRepository, opener outbound.DeliveryOpener, sender outbound.EmailSender, logger *zap.Logger) (*EmailWorker, error) {
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(broker), kgo.ConsumeTopics(topic), kgo.ConsumerGroup(group),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()), kgo.DisableAutoCommit(), kgo.BlockRebalanceOnPoll(),
@@ -36,7 +40,7 @@ func NewEmailWorker(broker, topic, group string, repository outbound.DeliveryRep
 	if err != nil {
 		return nil, err
 	}
-	return &EmailWorker{client: client, repository: repository, opener: opener, sender: sender}, nil
+	return &EmailWorker{client: client, repository: repository, opener: opener, sender: sender, logger: logger}, nil
 }
 
 func (w *EmailWorker) Close() { w.client.Close() }
@@ -58,19 +62,19 @@ func (w *EmailWorker) HandleRecord(ctx context.Context, record *kgo.Record) erro
 	if err := proto.Unmarshal(payload, &request); err != nil {
 		return ErrInvalidDeliveryEvent
 	}
-	if _, err := uuid.Parse(request.EventId); err != nil {
+	if _, err := uuid.Parse(request.GetEventId()); err != nil {
 		return ErrInvalidDeliveryEvent
 	}
-	if _, err := uuid.Parse(request.ChallengeId); err != nil || string(record.Key) != request.EventId ||
-		(request.Purpose != string(domain.PurposeVerifyEmail) && request.Purpose != string(domain.PurposeClaimAccount)) {
+	if _, err := uuid.Parse(request.GetChallengeId()); err != nil || string(record.Key) != request.GetEventId() ||
+		(request.GetPurpose() != string(domain.PurposeVerifyEmail) && request.GetPurpose() != string(domain.PurposeClaimAccount)) {
 		return ErrInvalidDeliveryEvent
 	}
-	if err := w.repository.WithCurrentDelivery(ctx, request.ChallengeId, request.Purpose, func(ctx context.Context, current outbound.CurrentDelivery) error {
-		address, code, err := w.opener.Open(request.ChallengeId, request.Purpose, current.Subject, current.Material)
+	if err := w.repository.WithCurrentDelivery(ctx, request.GetChallengeId(), request.GetPurpose(), func(ctx context.Context, current outbound.CurrentDelivery) error {
+		address, code, err := w.opener.Open(request.GetChallengeId(), request.GetPurpose(), current.Subject, current.Material)
 		if err != nil || address != current.Email {
 			return ErrEmailDelivery
 		}
-		if err := w.sender.Send(ctx, address, code, request.Purpose); err != nil {
+		if err := w.sender.Send(ctx, address, code, request.GetPurpose()); err != nil {
 			return ErrEmailDelivery
 		}
 		return nil
@@ -93,12 +97,19 @@ func (w *EmailWorker) RunOnce(ctx context.Context) (bool, error) {
 	if len(records) == 0 {
 		return false, nil
 	}
+	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, "identity.email_delivery")
+	defer span.End()
 	if err := w.HandleRecord(ctx, records[0]); err != nil {
+		span.SetStatus(codes.Error, "delivery failed")
+		w.logger.Warn("email_delivery_failed")
 		return true, err
 	}
 	if err := w.client.CommitRecords(ctx, records[0]); err != nil {
+		span.SetStatus(codes.Error, "broker commit failed")
+		w.logger.Warn("email_delivery_commit_failed")
 		return true, ErrDeliveryBroker
 	}
+	w.logger.Info("email_delivery_processed")
 	return true, nil
 }
 

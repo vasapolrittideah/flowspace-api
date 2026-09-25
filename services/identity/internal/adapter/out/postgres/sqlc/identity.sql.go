@@ -255,6 +255,25 @@ func (q *Queries) GetActiveAccountForUpdate(ctx context.Context, subject string)
 	return i, err
 }
 
+const getChallengeDelivery = `-- name: GetChallengeDelivery :one
+SELECT key_version, nonce, ciphertext
+FROM identity_challenge_deliveries
+WHERE challenge_id = $1
+`
+
+type GetChallengeDeliveryRow struct {
+	KeyVersion int32
+	Nonce      []byte
+	Ciphertext []byte
+}
+
+func (q *Queries) GetChallengeDelivery(ctx context.Context, challengeID pgtype.UUID) (GetChallengeDeliveryRow, error) {
+	row := q.db.QueryRow(ctx, getChallengeDelivery, challengeID)
+	var i GetChallengeDeliveryRow
+	err := row.Scan(&i.KeyVersion, &i.Nonce, &i.Ciphertext)
+	return i, err
+}
+
 const getCurrentChallengeForUpdate = `-- name: GetCurrentChallengeForUpdate :one
 SELECT id, account_subject, purpose, email_local, email_domain, code_verifier,
     wrong_guesses, expires_at
@@ -294,6 +313,68 @@ func (q *Queries) GetCurrentChallengeForUpdate(ctx context.Context, arg GetCurre
 		&i.CodeVerifier,
 		&i.WrongGuesses,
 		&i.ExpiresAt,
+	)
+	return i, err
+}
+
+const getDeliveryAccountForUpdate = `-- name: GetDeliveryAccountForUpdate :one
+SELECT account.subject, account.email_local, account.email_domain, account.email_verified_at, account.retired_at
+FROM identity_accounts AS account
+JOIN identity_challenges AS challenge ON challenge.account_subject = account.subject
+WHERE challenge.id = $1
+FOR UPDATE OF account
+`
+
+type GetDeliveryAccountForUpdateRow struct {
+	Subject         string
+	EmailLocal      string
+	EmailDomain     string
+	EmailVerifiedAt pgtype.Timestamptz
+	RetiredAt       pgtype.Timestamptz
+}
+
+func (q *Queries) GetDeliveryAccountForUpdate(ctx context.Context, challengeID pgtype.UUID) (GetDeliveryAccountForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getDeliveryAccountForUpdate, challengeID)
+	var i GetDeliveryAccountForUpdateRow
+	err := row.Scan(
+		&i.Subject,
+		&i.EmailLocal,
+		&i.EmailDomain,
+		&i.EmailVerifiedAt,
+		&i.RetiredAt,
+	)
+	return i, err
+}
+
+const getDeliveryChallengeForUpdate = `-- name: GetDeliveryChallengeForUpdate :one
+SELECT purpose, email_local, email_domain, replaced_at, consumed_at, wrong_guesses,
+    expires_at <= statement_timestamp() AS expired
+FROM identity_challenges
+WHERE id = $1
+FOR UPDATE
+`
+
+type GetDeliveryChallengeForUpdateRow struct {
+	Purpose      string
+	EmailLocal   string
+	EmailDomain  string
+	ReplacedAt   pgtype.Timestamptz
+	ConsumedAt   pgtype.Timestamptz
+	WrongGuesses int16
+	Expired      bool
+}
+
+func (q *Queries) GetDeliveryChallengeForUpdate(ctx context.Context, challengeID pgtype.UUID) (GetDeliveryChallengeForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getDeliveryChallengeForUpdate, challengeID)
+	var i GetDeliveryChallengeForUpdateRow
+	err := row.Scan(
+		&i.Purpose,
+		&i.EmailLocal,
+		&i.EmailDomain,
+		&i.ReplacedAt,
+		&i.ConsumedAt,
+		&i.WrongGuesses,
+		&i.Expired,
 	)
 	return i, err
 }
@@ -417,6 +498,32 @@ type MarkOutboxPublishedParams struct {
 
 func (q *Queries) MarkOutboxPublished(ctx context.Context, arg MarkOutboxPublishedParams) (int64, error) {
 	result, err := q.db.Exec(ctx, markOutboxPublished, arg.ID, arg.ClaimOwner)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const purgeTerminalDeliveries = `-- name: PurgeTerminalDeliveries :execrows
+WITH terminal AS (
+    SELECT delivery.challenge_id
+    FROM identity_challenge_deliveries AS delivery
+    JOIN identity_challenges AS challenge ON challenge.id = delivery.challenge_id
+    JOIN identity_accounts AS account ON account.subject = challenge.account_subject
+    WHERE challenge.expires_at <= statement_timestamp()
+       OR challenge.replaced_at IS NOT NULL
+       OR challenge.consumed_at IS NOT NULL
+       OR account.retired_at IS NOT NULL
+       OR account.email_verified_at IS NOT NULL
+    FOR UPDATE OF account, challenge, delivery SKIP LOCKED
+)
+DELETE FROM identity_challenge_deliveries AS delivery
+USING terminal
+WHERE delivery.challenge_id = terminal.challenge_id
+`
+
+func (q *Queries) PurgeTerminalDeliveries(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, purgeTerminalDeliveries)
 	if err != nil {
 		return 0, err
 	}

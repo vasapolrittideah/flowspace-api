@@ -8,7 +8,7 @@ This convention names handwritten Go components inside each service. The [projec
 
 - Name inbound adapters `<Capability>Handler`.
 - Name components in `app/` `<Capability>Service`. Use the same suffix for their inbound ports.
-- Name database adapters and their outbound ports `<Capability>Repository`. Use `Repository` only for database access.
+- Name database adapters and their outbound ports `<Capability>Repository`. Reserve this pattern for database access.
 - Name other outbound adapters and ports for the capability they provide.
 - Name handwritten Go files in snake_case after their main component.
 - Keep generated Protobuf names and generated database code as produced by their tools.
@@ -16,9 +16,9 @@ This convention names handwritten Go components inside each service. The [projec
 
 ### Don't
 
-- Do not use `Controller` for an inbound adapter.
-- Do not use `Store` or `Storage` for a database component.
-- Do not use `UseCase` or `Usecase` for a concrete application service or a new inbound port.
+- Do not name an inbound adapter `<Capability>Controller`.
+- Do not name a database component `<Capability>Store` or `<Capability>Storage`.
+- Do not name a concrete application service or new inbound port `<Capability>UseCase` or `<Capability>Usecase`.
 - Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 
 ## Examples

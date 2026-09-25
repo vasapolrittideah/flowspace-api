@@ -11,6 +11,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const canIssueCode = `-- name: CanIssueCode :one
+SELECT count(*) < 5
+   AND COALESCE(max(issued_at) <= statement_timestamp() - INTERVAL '60 seconds', true) AS allowed
+FROM identity_challenges
+WHERE account_subject = $1
+  AND issued_at > statement_timestamp() - INTERVAL '1 hour'
+`
+
+func (q *Queries) CanIssueCode(ctx context.Context, accountSubject string) (pgtype.Bool, error) {
+	row := q.db.QueryRow(ctx, canIssueCode, accountSubject)
+	var allowed pgtype.Bool
+	err := row.Scan(&allowed)
+	return allowed, err
+}
+
 const claimOutboxEvent = `-- name: ClaimOutboxEvent :one
 WITH next_event AS (
     SELECT id
@@ -225,6 +240,37 @@ func (q *Queries) GetActiveAccountByEmailForUpdate(ctx context.Context, arg GetA
 		&i.EmailDomain,
 		&i.EmailVerifiedAt,
 	)
+	return i, err
+}
+
+const getActiveAccountForSessionForUpdate = `-- name: GetActiveAccountForSessionForUpdate :one
+SELECT account.email_local, account.email_domain, account.email_verified_at
+FROM identity_accounts AS account
+JOIN identity_sessions AS session ON session.account_subject = account.subject
+WHERE account.subject = $1
+  AND session.id = $2
+  AND account.retired_at IS NULL
+  AND session.revoked_at IS NULL
+  AND session.idle_expires_at > statement_timestamp()
+  AND session.absolute_expires_at > statement_timestamp()
+FOR UPDATE OF account, session
+`
+
+type GetActiveAccountForSessionForUpdateParams struct {
+	Subject   string
+	SessionID pgtype.UUID
+}
+
+type GetActiveAccountForSessionForUpdateRow struct {
+	EmailLocal      string
+	EmailDomain     string
+	EmailVerifiedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetActiveAccountForSessionForUpdate(ctx context.Context, arg GetActiveAccountForSessionForUpdateParams) (GetActiveAccountForSessionForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getActiveAccountForSessionForUpdate, arg.Subject, arg.SessionID)
+	var i GetActiveAccountForSessionForUpdateRow
+	err := row.Scan(&i.EmailLocal, &i.EmailDomain, &i.EmailVerifiedAt)
 	return i, err
 }
 

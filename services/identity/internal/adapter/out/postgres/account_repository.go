@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -58,6 +59,38 @@ func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, 
 
 func (t *accountTransaction) Create(ctx context.Context, subject string, hash []byte) (outbound.SessionRecord, error) {
 	return t.session.Create(ctx, subject, hash)
+}
+
+func (t *accountTransaction) GetActiveAccountForSession(ctx context.Context, subject, sessionID string) (outbound.AccountState, error) {
+	id, err := parseUUID(sessionID)
+	if err != nil {
+		return outbound.AccountState{}, outbound.ErrUnauthenticated
+	}
+	account, err := t.queries.GetActiveAccountForSessionForUpdate(ctx, sqlc.GetActiveAccountForSessionForUpdateParams{
+		Subject: subject, SessionID: id,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.AccountState{}, outbound.ErrUnauthenticated
+	}
+	if err != nil {
+		return outbound.AccountState{}, err
+	}
+	return outbound.AccountState{Email: account.EmailLocal + "@" + account.EmailDomain, EmailVerified: account.EmailVerifiedAt.Valid}, nil
+}
+
+func (t *accountTransaction) CanIssueCode(ctx context.Context, subject string) (bool, error) {
+	allowed, err := t.queries.CanIssueCode(ctx, subject)
+	if err != nil {
+		return false, err
+	}
+	return allowed.Valid && allowed.Bool, nil
+}
+
+func (t *accountTransaction) ReplaceVerificationChallenge(ctx context.Context, subject string) error {
+	_, err := t.queries.ReplaceCurrentChallenge(ctx, sqlc.ReplaceCurrentChallengeParams{
+		AccountSubject: subject, Purpose: "verify-email",
+	})
+	return err
 }
 
 func (t *accountTransaction) CreateChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error) {

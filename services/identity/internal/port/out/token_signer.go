@@ -13,3 +13,12 @@ type AccessTokenClaims struct {
 type TokenSigner interface {
 	Sign(claims AccessTokenClaims) (string, error)
 }
+
+type AccessTokenIdentity struct {
+	Subject   string
+	SessionID string
+}
+
+type AccessTokenVerifier interface {
+	Verify(raw string) (AccessTokenIdentity, error)
+}

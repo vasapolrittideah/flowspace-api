@@ -42,7 +42,7 @@ func (s *fakeSignupService) CreateAccount(_ context.Context, input inbound.Creat
 
 func TestSignupHandler(t *testing.T) {
 	service := &fakeSignupService{}
-	handler := identityhttp.NewSignupHandler(service, nil)
+	handler := identityhttp.NewIdentityHandler(service, nil, nil, nil)
 	ctx := peer.NewContext(context.Background(), &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.1"), Port: 1234}})
 	request := &identityv1.CreateAccountRequest{Email: "User@example.com", Password: "correct horse battery staple"}
 	response, err := handler.CreateAccount(ctx, request)
@@ -62,7 +62,7 @@ func TestSignupHandler(t *testing.T) {
 
 func TestSignupHandlerRejectsInvalidRequestsAndMapsFailures(t *testing.T) {
 	service := &fakeSignupService{}
-	handler := identityhttp.NewSignupHandler(service, nil)
+	handler := identityhttp.NewIdentityHandler(service, nil, nil, nil)
 	request := &identityv1.CreateAccountRequest{Email: "User@example.com", Password: "correct horse battery staple"}
 	peerContext := peer.NewContext(context.Background(), &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.1"), Port: 1234}})
 	withPeer := func() context.Context { return peerContext }
@@ -107,7 +107,7 @@ func TestSignupHandlerRejectsInvalidRequestsAndMapsFailures(t *testing.T) {
 
 func TestSignupRequestHandlerRejectsIdempotencyKey(t *testing.T) {
 	called := false
-	handler := identityhttp.NewSignupRequestHandler(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), nil)
+	handler := identityhttp.NewIdentityRequestHandler(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }), nil)
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/accounts", nil)
 	request.Header["Idempotency-Key"] = []string{""}
 	response := httptest.NewRecorder()
@@ -119,7 +119,7 @@ func TestSignupRequestHandlerRejectsIdempotencyKey(t *testing.T) {
 
 func TestSignupRequestHandlerValidatesSource(t *testing.T) {
 	called := false
-	handler := identityhttp.NewSignupRequestHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	handler := identityhttp.NewIdentityRequestHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusAccepted)
 	}), nil)
@@ -141,10 +141,10 @@ func TestSignupRequestHandlerValidatesSource(t *testing.T) {
 func TestGeneratedSignupRESTRoute(t *testing.T) {
 	service := &fakeSignupService{}
 	mux := runtime.NewServeMux()
-	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux, identityhttp.NewSignupHandler(service, nil)); err != nil {
+	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux, identityhttp.NewIdentityHandler(service, nil, nil, nil)); err != nil {
 		t.Fatal(err)
 	}
-	handler := identityhttp.NewSignupRequestHandler(mux, nil)
+	handler := identityhttp.NewIdentityRequestHandler(mux, nil)
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/accounts",
 		strings.NewReader(`{"email":"User@example.com","password":"correct horse battery staple"}`))
 	request.Header.Set("Content-Type", "application/json")

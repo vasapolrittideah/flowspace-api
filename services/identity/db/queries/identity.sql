@@ -17,6 +17,18 @@ WHERE subject = sqlc.arg(subject)
   AND retired_at IS NULL
 FOR UPDATE;
 
+-- name: GetActiveAccountForSessionForUpdate :one
+SELECT account.email_local, account.email_domain, account.email_verified_at
+FROM identity_accounts AS account
+JOIN identity_sessions AS session ON session.account_subject = account.subject
+WHERE account.subject = sqlc.arg(subject)
+  AND session.id = sqlc.arg(session_id)
+  AND account.retired_at IS NULL
+  AND session.revoked_at IS NULL
+  AND session.idle_expires_at > statement_timestamp()
+  AND session.absolute_expires_at > statement_timestamp()
+FOR UPDATE OF account, session;
+
 -- name: GetActiveAccountByEmailForUpdate :one
 SELECT subject, email_local, email_domain, email_verified_at
 FROM identity_accounts
@@ -51,6 +63,13 @@ WHERE account_subject = sqlc.arg(account_subject)
   AND purpose = sqlc.arg(purpose)
   AND replaced_at IS NULL
   AND consumed_at IS NULL;
+
+-- name: CanIssueCode :one
+SELECT count(*) < 5
+   AND COALESCE(max(issued_at) <= statement_timestamp() - INTERVAL '60 seconds', true) AS allowed
+FROM identity_challenges
+WHERE account_subject = sqlc.arg(account_subject)
+  AND issued_at > statement_timestamp() - INTERVAL '1 hour';
 
 -- name: RevokeAccountChallenges :execrows
 UPDATE identity_challenges

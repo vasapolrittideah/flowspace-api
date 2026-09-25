@@ -26,6 +26,18 @@ func (r *signupRepository) WithinTransaction(_ context.Context, fn func(output.A
 
 type signupTransaction struct{ steps []string }
 
+func (t *signupTransaction) GetActiveAccountForSession(context.Context, string, string) (output.AccountState, error) {
+	return output.AccountState{}, errors.New("unexpected account lookup")
+}
+
+func (t *signupTransaction) CanIssueCode(context.Context, string) (bool, error) {
+	return false, errors.New("unexpected code limit check")
+}
+
+func (t *signupTransaction) ReplaceVerificationChallenge(context.Context, string) error {
+	return errors.New("unexpected challenge replacement")
+}
+
 func (t *signupTransaction) CreateAccount(_ context.Context, _, _, _ string) error {
 	t.steps = append(t.steps, "account")
 	return nil

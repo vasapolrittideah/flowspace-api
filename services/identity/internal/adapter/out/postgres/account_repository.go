@@ -76,7 +76,7 @@ func (t *accountTransaction) CreateChallenge(ctx context.Context, subject, email
 }
 
 func (t *accountTransaction) StoreDelivery(ctx context.Context, challengeID string, material outbound.DeliveryMaterial) error {
-	id, err := parseChallengeID(challengeID)
+	id, err := parseUUID(challengeID)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (t *accountTransaction) StoreDelivery(ctx context.Context, challengeID stri
 }
 
 func (t *accountTransaction) CreateOutboxEvent(ctx context.Context, challengeID string) error {
-	id, err := parseChallengeID(challengeID)
+	id, err := parseUUID(challengeID)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (t *accountTransaction) CreateOutboxEvent(ctx context.Context, challengeID 
 	return err
 }
 
-func parseChallengeID(value string) (pgtype.UUID, error) {
+func parseUUID(value string) (pgtype.UUID, error) {
 	id, err := uuid.Parse(value)
 	if err != nil {
 		return pgtype.UUID{}, err

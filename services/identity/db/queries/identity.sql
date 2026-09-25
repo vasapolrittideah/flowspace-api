@@ -125,9 +125,10 @@ WITH next_event AS (
 UPDATE identity_outbox_events AS event
 SET claim_owner = sqlc.arg(claim_owner),
     claimed_until = statement_timestamp() + INTERVAL '30 seconds'
-FROM next_event
+FROM next_event, identity_challenges AS challenge
 WHERE event.id = next_event.id
-RETURNING event.id, event.challenge_id;
+  AND challenge.id = event.challenge_id
+RETURNING event.id, event.challenge_id, challenge.purpose;
 
 -- name: MarkOutboxPublished :execrows
 UPDATE identity_outbox_events

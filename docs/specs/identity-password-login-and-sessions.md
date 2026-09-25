@@ -47,7 +47,9 @@ Use canonical gRPC errors and the gateway's default HTTP mapping. Malformed publ
 - Identity compares email addresses using the rules in the signup spec. It applies the same Unicode NFC normalization to the supplied password before checking its stored Argon2id hash.
 - An existing account with the correct password receives one new device session and one token pair. The stable subject does not change. An unverified account can log in and call Identity verification methods, but protected Workspace access still fails its verified-email gate.
 - An unknown account, a retired account, and a wrong password produce the same public error. Identity performs a password-hash workload for an unknown account so the response does not reveal account existence through a practical timing difference.
-- Login checks request shape and shared rate limits before password hashing. Limits apply to a source address and an email identifier even when no account exists. Only configured edge proxies can supply the source address. If limit state is unavailable, Identity returns `Unavailable` and does not bypass the limit. Exact thresholds remain open before implementation.
+- After checking request shape, Identity allows 60 password-login attempts per trusted source address in a rolling hour. It also allows 10 attempts per normalized email identifier in a rolling 15 minutes. Both limits use shared state and apply to active, retired, and unknown accounts. Only configured edge proxies can supply the source address.
+- Every admitted attempt counts against both limits, including a successful login. Success does not reset either counter. If either limit is full, Identity returns `ResourceExhausted` before hashing and does not count the rejected request. Each counted attempt leaves its window individually, so a denied request cannot extend the wait. If limit state is unavailable, Identity returns `Unavailable` and does not bypass either limit.
+- Identity bounds concurrent password-hash work so a burst of allowed requests cannot exhaust its CPU or memory budget.
 - A lost successful login response can create an extra session if the client logs in again. Identity stores only refresh-token hashes, so it cannot replay the first token pair under ADR-0033.
 
 ### Token and session lifetime
@@ -101,7 +103,7 @@ Run commands from the repository root during implementation. Approval does not m
 
 Unit tests cover password normalization, public error classification, token claims, and the exact ten-minute, 30-day, and 90-day boundaries. PostgreSQL integration tests cover atomic login, token rotation, concurrent refresh, replay revocation, both logout scopes, account retirement, and session expiry. Use a controlled clock rather than sleeps for expiry tests.
 
-Transport tests cover malformed input, rejected `Idempotency-Key` headers, duplicate security headers, generic login errors, absent or invalid access and refresh tokens, rate limits, deadlines, cancellation, and safe error bodies. Capture logs and traces to prove that no reusable secret appears. Token tests cover the wrong algorithm, issuer, audience, type, key ID, signature, subject, session ID, and expiry.
+Transport tests cover malformed input, rejected `Idempotency-Key` headers, duplicate security headers, generic login errors, absent or invalid access and refresh tokens, both rolling login limits, deadlines, cancellation, and safe error bodies. Limit tests cover the 60th and 61st source attempts, the 10th and 11th email attempts, successful and unknown-account attempts, and rejected requests that do not extend either window. Load tests prove that simultaneous password hashes stay within the process budget. Capture logs and traces to prove that no reusable secret appears. Token tests cover the wrong algorithm, issuer, audience, type, key ID, signature, subject, session ID, and expiry.
 
 Cross-service tests prove that Workspace rejects an unverified account, a revoked device, an all-session logout, and an expired session. They also prove that Identity unavailability denies new protected requests. Test signing-key overlap and retirement after the final accepted token expires.
 
@@ -121,7 +123,7 @@ Enumeration and password-guessing tests cover ID-T01 and ID-T02. Token and signi
 - Obtain approval before changing the 10-minute access lifetime, 30-day idle lifetime, 90-day absolute lifetime, or replay-revokes-session rule.
 - Before implementing token issuance or verification, approve the signing algorithm, issuer and audience values, and JWT clock tolerance.
 - Before implementing key publication or rotation, approve the JWKS route, cache bounds, and routine and emergency key procedures.
-- Approve numeric login limits before implementing password login.
+- Obtain approval before changing the 60-attempt source limit, the 10-attempt email limit, or either rolling window.
 
 ### Never
 
@@ -139,6 +141,7 @@ Each row describes an observable result required before implementation can claim
 | A client loses a committed password-login response and logs in again. | Identity creates a new session without replaying the first token pair; the first session can remain active. | ID-T11 |
 | A signup or claim response is lost, but the user knows the current password. | Password login issues a new session for the same active subject without replaying a prior refresh token. | ID-T11 |
 | An unknown or retired account, or a wrong password, is used for login. | The same safe `Unauthenticated` response appears without a session or token. | ID-T01, ID-T02 |
+| A source sends a 61st login attempt within an hour, or an email identifier receives an 11th attempt within 15 minutes. | Identity returns `ResourceExhausted` before hashing. The denied request extends neither window, and login becomes available as counted attempts age out. | ID-T01, ID-T02, ID-T16 |
 | A correct password belongs to an unverified account. | Login succeeds, Identity verification remains available, and Workspace denies access until the email is verified. | ID-T14 |
 | A valid current refresh token is used before either session limit. | Identity consumes it once and returns a new token pair for the same session with a later idle expiry and unchanged absolute expiry. | ID-T11, ID-T12 |
 | A refresh token is used at the 30-day idle limit or the 90-day absolute limit. | Refresh fails without issuing tokens or extending the session. | ID-T11, ID-T19 |

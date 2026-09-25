@@ -415,6 +415,36 @@ func TestIdentityRepository(t *testing.T) {
 		if err != nil || email != "Signup@example.com" || !domain.VerifyChallenge(verifierKey, result.Subject, email, domain.PurposeVerifyEmail, code, expected, expires, time.Now()) {
 			t.Fatalf("stored challenge cannot deliver current code: %v", err)
 		}
+		outbox := identitypostgres.NewOutboxRepository(pool)
+		deliveryRequest, ok, err := outbox.Claim(ctx, "relay-1")
+		if err != nil || !ok || deliveryRequest.ChallengeID != uuid.UUID(challengeID.Bytes).String() || deliveryRequest.Purpose != "verify-email" {
+			t.Fatalf("claimed delivery request = %+v, %v", deliveryRequest, err)
+		}
+		if err := outbox.Release(ctx, deliveryRequest.ID, "relay-1", time.Now().Add(-time.Second)); err != nil {
+			t.Fatal(err)
+		}
+		retriedRequest, ok, err := outbox.Claim(ctx, "relay-2")
+		if err != nil || !ok || retriedRequest != deliveryRequest {
+			t.Fatalf("retried delivery request = %+v, %v", retriedRequest, err)
+		}
+		if err := outbox.MarkPublished(ctx, retriedRequest.ID, "relay-2"); err != nil {
+			t.Fatal(err)
+		}
+		if _, ok, err := outbox.Claim(ctx, "relay-3"); err != nil || ok {
+			t.Fatalf("published event was claimable: %v, %v", ok, err)
+		}
+		if err := outbox.MarkPublished(ctx, retriedRequest.ID, "relay-2"); !errors.Is(err, identitypostgres.ErrOutboxClaimLost) {
+			t.Fatalf("stale publication mark = %v", err)
+		}
+		if err := outbox.Release(ctx, retriedRequest.ID, "relay-2", time.Now()); !errors.Is(err, identitypostgres.ErrOutboxClaimLost) {
+			t.Fatalf("stale claim release = %v", err)
+		}
+		if err := outbox.MarkPublished(ctx, "invalid-id", "relay-2"); err == nil {
+			t.Fatal("invalid event ID was marked published")
+		}
+		if err := outbox.Release(ctx, "invalid-id", "relay-2", time.Now()); err == nil {
+			t.Fatal("invalid event ID was released")
+		}
 		if retry, err := service.CreateAccount(ctx, request); !errors.Is(err, outbound.ErrAccountExists) || retry.AccessToken != "" || retry.RefreshToken != "" {
 			t.Fatalf("lost-response retry = %+v, %v", retry, err)
 		}

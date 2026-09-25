@@ -25,20 +25,22 @@ WITH next_event AS (
 UPDATE identity_outbox_events AS event
 SET claim_owner = $1,
     claimed_until = statement_timestamp() + INTERVAL '30 seconds'
-FROM next_event
+FROM next_event, identity_challenges AS challenge
 WHERE event.id = next_event.id
-RETURNING event.id, event.challenge_id
+  AND challenge.id = event.challenge_id
+RETURNING event.id, event.challenge_id, challenge.purpose
 `
 
 type ClaimOutboxEventRow struct {
 	ID          pgtype.UUID
 	ChallengeID pgtype.UUID
+	Purpose     string
 }
 
 func (q *Queries) ClaimOutboxEvent(ctx context.Context, claimOwner pgtype.Text) (ClaimOutboxEventRow, error) {
 	row := q.db.QueryRow(ctx, claimOutboxEvent, claimOwner)
 	var i ClaimOutboxEventRow
-	err := row.Scan(&i.ID, &i.ChallengeID)
+	err := row.Scan(&i.ID, &i.ChallengeID, &i.Purpose)
 	return i, err
 }
 

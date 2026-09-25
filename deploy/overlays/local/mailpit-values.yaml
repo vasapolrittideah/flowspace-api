@@ -1,0 +1,9 @@
+service:
+  http:
+    port: 8025
+  smtp:
+    port: 1025
+ingress:
+  enabled: false
+persistence:
+  enabled: false

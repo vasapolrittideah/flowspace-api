@@ -56,10 +56,17 @@ func TestLoadAPIAndWorkerConfig(t *testing.T) {
 	t.Setenv("DELIVERY_GROUP", "identity-worker")
 	t.Setenv("MAIL_ADDR", "localhost:1025")
 	t.Setenv("MAIL_FROM", "codes@example.com")
+	t.Setenv("BROKER_USERNAME", "identity-worker")
+	t.Setenv("BROKER_PASSWORD", "local-secret")
 	worker, err := LoadWorkerConfig()
-	if err != nil || worker.BrokerAddress != "localhost:9092" || worker.HealthAddress != ":8081" {
+	if err != nil || worker.BrokerAddress != "localhost:9092" || worker.HealthAddress != ":8081" || worker.BrokerUsername != "identity-worker" {
 		t.Fatalf("worker config = %+v, %v", worker, err)
 	}
+	t.Setenv("BROKER_PASSWORD", "")
+	if _, err := LoadWorkerConfig(); err == nil || strings.Contains(err.Error(), "local-secret") {
+		t.Fatalf("accepted missing broker password or leaked its value: %v", err)
+	}
+	t.Setenv("BROKER_PASSWORD", "local-secret")
 	t.Setenv("BROKER_ADDR", "")
 	if _, err := LoadWorkerConfig(); err == nil {
 		t.Fatal("accepted missing broker address")

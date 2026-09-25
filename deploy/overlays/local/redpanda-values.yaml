@@ -1,0 +1,34 @@
+console:
+  enabled: false
+external:
+  enabled: false
+tls:
+  enabled: false
+auth:
+  sasl:
+    enabled: true
+    secretRef: redpanda-superusers
+    users: []
+    bootstrapUser:
+      name: local-admin
+      mechanism: SCRAM-SHA-256
+      secretKeyRef:
+        name: redpanda-bootstrap-user
+        key: password
+listeners:
+  kafka:
+    port: 9092
+  http:
+    enabled: false
+config:
+  cluster:
+    auto_create_topics_enabled: false
+    default_topic_replications: 1
+    group_topic_partitions: 1
+statefulset:
+  replicas: 1
+storage:
+  persistentVolume:
+    size: 5Gi
+tuning:
+  tune_aio_events: false

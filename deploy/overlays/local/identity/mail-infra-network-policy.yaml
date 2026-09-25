@@ -1,0 +1,52 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redpanda
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: redpanda
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redpanda
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redpanda-configuration
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: identity-worker
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: identity-broker-bootstrap
+      ports:
+        - protocol: TCP
+          port: 9092
+        - protocol: TCP
+          port: 8081
+        - protocol: TCP
+          port: 9644
+        - protocol: TCP
+          port: 33145
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mailpit
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: mailpit
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: identity-worker
+      ports:
+        - protocol: TCP
+          port: 1025

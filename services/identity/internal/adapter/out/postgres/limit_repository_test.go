@@ -60,8 +60,8 @@ func TestSharedLimits(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(secondPool.Close)
-	first := app.NewLimits(postgres.NewLimitRepository(firstPool))
-	second := app.NewLimits(postgres.NewLimitRepository(secondPool))
+	first := app.NewLimitService(postgres.NewLimitRepository(firstPool))
+	second := app.NewLimitService(postgres.NewLimitRepository(secondPool))
 
 	t.Run("signup retries share a rolling source window", func(t *testing.T) {
 		var group sync.WaitGroup
@@ -196,6 +196,6 @@ func TestSharedLimits(t *testing.T) {
 
 	firstPool.Close()
 	if err := first.Signup(ctx, "192.0.2.4"); err == nil {
-		t.Fatal("unavailable limit store allowed signup")
+		t.Fatal("unavailable limit repository allowed signup")
 	}
 }

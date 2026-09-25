@@ -48,6 +48,21 @@ const (
 	// IdentityServiceClaimUnverifiedAccountProcedure is the fully-qualified name of the
 	// IdentityService's ClaimUnverifiedAccount RPC.
 	IdentityServiceClaimUnverifiedAccountProcedure = "/flowspace.identity.v1.IdentityService/ClaimUnverifiedAccount"
+	// IdentityServiceCreatePasswordSessionProcedure is the fully-qualified name of the
+	// IdentityService's CreatePasswordSession RPC.
+	IdentityServiceCreatePasswordSessionProcedure = "/flowspace.identity.v1.IdentityService/CreatePasswordSession"
+	// IdentityServiceRefreshSessionProcedure is the fully-qualified name of the IdentityService's
+	// RefreshSession RPC.
+	IdentityServiceRefreshSessionProcedure = "/flowspace.identity.v1.IdentityService/RefreshSession"
+	// IdentityServiceLogoutCurrentSessionProcedure is the fully-qualified name of the IdentityService's
+	// LogoutCurrentSession RPC.
+	IdentityServiceLogoutCurrentSessionProcedure = "/flowspace.identity.v1.IdentityService/LogoutCurrentSession"
+	// IdentityServiceLogoutAllSessionsProcedure is the fully-qualified name of the IdentityService's
+	// LogoutAllSessions RPC.
+	IdentityServiceLogoutAllSessionsProcedure = "/flowspace.identity.v1.IdentityService/LogoutAllSessions"
+	// IdentityServiceCheckSessionProcedure is the fully-qualified name of the IdentityService's
+	// CheckSession RPC.
+	IdentityServiceCheckSessionProcedure = "/flowspace.identity.v1.IdentityService/CheckSession"
 )
 
 // IdentityServiceClient is a client for the flowspace.identity.v1.IdentityService service.
@@ -66,6 +81,22 @@ type IdentityServiceClient interface {
 	// Replaces an unverified account after email ownership is proved.
 	// Rejects the Idempotency-Key HTTP header.
 	ClaimUnverifiedAccount(context.Context, *connect.Request[v1.ClaimUnverifiedAccountRequest]) (*connect.Response[v1.ClaimUnverifiedAccountResponse], error)
+	// Creates a device session with an email address and password.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	CreatePasswordSession(context.Context, *connect.Request[v1.CreatePasswordSessionRequest]) (*connect.Response[v1.CreatePasswordSessionResponse], error)
+	// Rotates a refresh token for one device session.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	RefreshSession(context.Context, *connect.Request[v1.RefreshSessionRequest]) (*connect.Response[v1.RefreshSessionResponse], error)
+	// Revokes the session in one validated access token.
+	// Requires exactly one Authorization bearer header.
+	LogoutCurrentSession(context.Context, *connect.Request[v1.LogoutCurrentSessionRequest]) (*connect.Response[v1.LogoutCurrentSessionResponse], error)
+	// Revokes all sessions for the subject in one validated access token.
+	// Requires exactly one Authorization bearer header.
+	LogoutAllSessions(context.Context, *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error)
+	// Returns the current email state for an active session; inactive sessions
+	// return Unauthenticated.
+	// Requires an authenticated service caller and has no public HTTP route.
+	CheckSession(context.Context, *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error)
 }
 
 // NewIdentityServiceClient constructs a client for the flowspace.identity.v1.IdentityService
@@ -109,6 +140,36 @@ func NewIdentityServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(identityServiceMethods.ByName("ClaimUnverifiedAccount")),
 			connect.WithClientOptions(opts...),
 		),
+		createPasswordSession: connect.NewClient[v1.CreatePasswordSessionRequest, v1.CreatePasswordSessionResponse](
+			httpClient,
+			baseURL+IdentityServiceCreatePasswordSessionProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("CreatePasswordSession")),
+			connect.WithClientOptions(opts...),
+		),
+		refreshSession: connect.NewClient[v1.RefreshSessionRequest, v1.RefreshSessionResponse](
+			httpClient,
+			baseURL+IdentityServiceRefreshSessionProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("RefreshSession")),
+			connect.WithClientOptions(opts...),
+		),
+		logoutCurrentSession: connect.NewClient[v1.LogoutCurrentSessionRequest, v1.LogoutCurrentSessionResponse](
+			httpClient,
+			baseURL+IdentityServiceLogoutCurrentSessionProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("LogoutCurrentSession")),
+			connect.WithClientOptions(opts...),
+		),
+		logoutAllSessions: connect.NewClient[v1.LogoutAllSessionsRequest, v1.LogoutAllSessionsResponse](
+			httpClient,
+			baseURL+IdentityServiceLogoutAllSessionsProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("LogoutAllSessions")),
+			connect.WithClientOptions(opts...),
+		),
+		checkSession: connect.NewClient[v1.CheckSessionRequest, v1.CheckSessionResponse](
+			httpClient,
+			baseURL+IdentityServiceCheckSessionProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("CheckSession")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -119,6 +180,11 @@ type identityServiceClient struct {
 	verifyEmail                       *connect.Client[v1.VerifyEmailRequest, v1.VerifyEmailResponse]
 	requestUnverifiedAccountClaimCode *connect.Client[v1.RequestUnverifiedAccountClaimCodeRequest, v1.RequestUnverifiedAccountClaimCodeResponse]
 	claimUnverifiedAccount            *connect.Client[v1.ClaimUnverifiedAccountRequest, v1.ClaimUnverifiedAccountResponse]
+	createPasswordSession             *connect.Client[v1.CreatePasswordSessionRequest, v1.CreatePasswordSessionResponse]
+	refreshSession                    *connect.Client[v1.RefreshSessionRequest, v1.RefreshSessionResponse]
+	logoutCurrentSession              *connect.Client[v1.LogoutCurrentSessionRequest, v1.LogoutCurrentSessionResponse]
+	logoutAllSessions                 *connect.Client[v1.LogoutAllSessionsRequest, v1.LogoutAllSessionsResponse]
+	checkSession                      *connect.Client[v1.CheckSessionRequest, v1.CheckSessionResponse]
 }
 
 // CreateAccount calls flowspace.identity.v1.IdentityService.CreateAccount.
@@ -148,6 +214,31 @@ func (c *identityServiceClient) ClaimUnverifiedAccount(ctx context.Context, req 
 	return c.claimUnverifiedAccount.CallUnary(ctx, req)
 }
 
+// CreatePasswordSession calls flowspace.identity.v1.IdentityService.CreatePasswordSession.
+func (c *identityServiceClient) CreatePasswordSession(ctx context.Context, req *connect.Request[v1.CreatePasswordSessionRequest]) (*connect.Response[v1.CreatePasswordSessionResponse], error) {
+	return c.createPasswordSession.CallUnary(ctx, req)
+}
+
+// RefreshSession calls flowspace.identity.v1.IdentityService.RefreshSession.
+func (c *identityServiceClient) RefreshSession(ctx context.Context, req *connect.Request[v1.RefreshSessionRequest]) (*connect.Response[v1.RefreshSessionResponse], error) {
+	return c.refreshSession.CallUnary(ctx, req)
+}
+
+// LogoutCurrentSession calls flowspace.identity.v1.IdentityService.LogoutCurrentSession.
+func (c *identityServiceClient) LogoutCurrentSession(ctx context.Context, req *connect.Request[v1.LogoutCurrentSessionRequest]) (*connect.Response[v1.LogoutCurrentSessionResponse], error) {
+	return c.logoutCurrentSession.CallUnary(ctx, req)
+}
+
+// LogoutAllSessions calls flowspace.identity.v1.IdentityService.LogoutAllSessions.
+func (c *identityServiceClient) LogoutAllSessions(ctx context.Context, req *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error) {
+	return c.logoutAllSessions.CallUnary(ctx, req)
+}
+
+// CheckSession calls flowspace.identity.v1.IdentityService.CheckSession.
+func (c *identityServiceClient) CheckSession(ctx context.Context, req *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error) {
+	return c.checkSession.CallUnary(ctx, req)
+}
+
 // IdentityServiceHandler is an implementation of the flowspace.identity.v1.IdentityService service.
 type IdentityServiceHandler interface {
 	// Creates an unverified account and returns its first device session.
@@ -164,6 +255,22 @@ type IdentityServiceHandler interface {
 	// Replaces an unverified account after email ownership is proved.
 	// Rejects the Idempotency-Key HTTP header.
 	ClaimUnverifiedAccount(context.Context, *connect.Request[v1.ClaimUnverifiedAccountRequest]) (*connect.Response[v1.ClaimUnverifiedAccountResponse], error)
+	// Creates a device session with an email address and password.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	CreatePasswordSession(context.Context, *connect.Request[v1.CreatePasswordSessionRequest]) (*connect.Response[v1.CreatePasswordSessionResponse], error)
+	// Rotates a refresh token for one device session.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	RefreshSession(context.Context, *connect.Request[v1.RefreshSessionRequest]) (*connect.Response[v1.RefreshSessionResponse], error)
+	// Revokes the session in one validated access token.
+	// Requires exactly one Authorization bearer header.
+	LogoutCurrentSession(context.Context, *connect.Request[v1.LogoutCurrentSessionRequest]) (*connect.Response[v1.LogoutCurrentSessionResponse], error)
+	// Revokes all sessions for the subject in one validated access token.
+	// Requires exactly one Authorization bearer header.
+	LogoutAllSessions(context.Context, *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error)
+	// Returns the current email state for an active session; inactive sessions
+	// return Unauthenticated.
+	// Requires an authenticated service caller and has no public HTTP route.
+	CheckSession(context.Context, *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error)
 }
 
 // NewIdentityServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -203,6 +310,36 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 		connect.WithSchema(identityServiceMethods.ByName("ClaimUnverifiedAccount")),
 		connect.WithHandlerOptions(opts...),
 	)
+	identityServiceCreatePasswordSessionHandler := connect.NewUnaryHandler(
+		IdentityServiceCreatePasswordSessionProcedure,
+		svc.CreatePasswordSession,
+		connect.WithSchema(identityServiceMethods.ByName("CreatePasswordSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceRefreshSessionHandler := connect.NewUnaryHandler(
+		IdentityServiceRefreshSessionProcedure,
+		svc.RefreshSession,
+		connect.WithSchema(identityServiceMethods.ByName("RefreshSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceLogoutCurrentSessionHandler := connect.NewUnaryHandler(
+		IdentityServiceLogoutCurrentSessionProcedure,
+		svc.LogoutCurrentSession,
+		connect.WithSchema(identityServiceMethods.ByName("LogoutCurrentSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceLogoutAllSessionsHandler := connect.NewUnaryHandler(
+		IdentityServiceLogoutAllSessionsProcedure,
+		svc.LogoutAllSessions,
+		connect.WithSchema(identityServiceMethods.ByName("LogoutAllSessions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceCheckSessionHandler := connect.NewUnaryHandler(
+		IdentityServiceCheckSessionProcedure,
+		svc.CheckSession,
+		connect.WithSchema(identityServiceMethods.ByName("CheckSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flowspace.identity.v1.IdentityService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case IdentityServiceCreateAccountProcedure:
@@ -215,6 +352,16 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 			identityServiceRequestUnverifiedAccountClaimCodeHandler.ServeHTTP(w, r)
 		case IdentityServiceClaimUnverifiedAccountProcedure:
 			identityServiceClaimUnverifiedAccountHandler.ServeHTTP(w, r)
+		case IdentityServiceCreatePasswordSessionProcedure:
+			identityServiceCreatePasswordSessionHandler.ServeHTTP(w, r)
+		case IdentityServiceRefreshSessionProcedure:
+			identityServiceRefreshSessionHandler.ServeHTTP(w, r)
+		case IdentityServiceLogoutCurrentSessionProcedure:
+			identityServiceLogoutCurrentSessionHandler.ServeHTTP(w, r)
+		case IdentityServiceLogoutAllSessionsProcedure:
+			identityServiceLogoutAllSessionsHandler.ServeHTTP(w, r)
+		case IdentityServiceCheckSessionProcedure:
+			identityServiceCheckSessionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -242,4 +389,24 @@ func (UnimplementedIdentityServiceHandler) RequestUnverifiedAccountClaimCode(con
 
 func (UnimplementedIdentityServiceHandler) ClaimUnverifiedAccount(context.Context, *connect.Request[v1.ClaimUnverifiedAccountRequest]) (*connect.Response[v1.ClaimUnverifiedAccountResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.ClaimUnverifiedAccount is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) CreatePasswordSession(context.Context, *connect.Request[v1.CreatePasswordSessionRequest]) (*connect.Response[v1.CreatePasswordSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.CreatePasswordSession is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) RefreshSession(context.Context, *connect.Request[v1.RefreshSessionRequest]) (*connect.Response[v1.RefreshSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.RefreshSession is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) LogoutCurrentSession(context.Context, *connect.Request[v1.LogoutCurrentSessionRequest]) (*connect.Response[v1.LogoutCurrentSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.LogoutCurrentSession is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) LogoutAllSessions(context.Context, *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.LogoutAllSessions is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) CheckSession(context.Context, *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.CheckSession is not implemented"))
 }

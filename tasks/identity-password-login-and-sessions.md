@@ -56,7 +56,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Checkpoint: Contract
 
 - [x] The numeric limits are approved in the specification before login code depends on them.
-- [ ] Buf accepts the public routes and the internal RPC, with no REST route for `CheckSession`.
+- [x] Buf accepts the public routes and the internal RPC, with no REST route for `CheckSession`.
 
 ### Phase 2: Live session checks
 

@@ -35,6 +35,10 @@ func (r *AccountRepository) WithinClaimCodeTransaction(ctx context.Context, fn f
 	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 
+func (r *AccountRepository) WithinAccountClaimTransaction(ctx context.Context, fn func(outbound.AccountClaimTransaction) error) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
 func (r *AccountRepository) withinTransaction(ctx context.Context, fn func(*accountTransaction) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -56,6 +60,7 @@ var (
 	_ outbound.AccountTransaction      = (*accountTransaction)(nil)
 	_ outbound.VerificationTransaction = (*accountTransaction)(nil)
 	_ outbound.ClaimCodeTransaction    = (*accountTransaction)(nil)
+	_ outbound.AccountClaimTransaction = (*accountTransaction)(nil)
 )
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {
@@ -177,24 +182,7 @@ func (t *accountTransaction) CreateOutboxEvent(ctx context.Context, challengeID 
 }
 
 func (t *accountTransaction) GetCurrentVerificationChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
-	challenge, err := t.queries.GetCurrentChallengeForUpdate(ctx, sqlc.GetCurrentChallengeForUpdateParams{
-		AccountSubject: subject, Purpose: "verify-email",
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return outbound.ChallengeState{}, false, nil
-	}
-	if err != nil {
-		return outbound.ChallengeState{}, false, err
-	}
-	var verifier [32]byte
-	if len(challenge.CodeVerifier) != len(verifier) {
-		return outbound.ChallengeState{}, false, errors.New("invalid challenge verifier")
-	}
-	copy(verifier[:], challenge.CodeVerifier)
-	return outbound.ChallengeState{
-		ID: uuid.UUID(challenge.ID.Bytes).String(), Email: challenge.EmailLocal + "@" + challenge.EmailDomain,
-		Verifier: verifier, WrongGuesses: challenge.WrongGuesses, ExpiresAt: challenge.ExpiresAt.Time,
-	}, true, nil
+	return t.getCurrentChallenge(ctx, subject, "verify-email")
 }
 
 func (t *accountTransaction) IncrementChallengeWrongGuess(ctx context.Context, challengeID string) error {

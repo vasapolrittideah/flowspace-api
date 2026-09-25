@@ -37,6 +37,13 @@ WHERE email_local = sqlc.arg(email_local)
   AND retired_at IS NULL
 FOR UPDATE;
 
+-- name: GetActiveAccountByEmail :one
+SELECT subject, email_verified_at
+FROM identity_accounts
+WHERE email_local = sqlc.arg(email_local)
+  AND email_domain = sqlc.arg(email_domain)
+  AND retired_at IS NULL;
+
 -- name: MarkEmailVerified :execrows
 UPDATE identity_accounts
 SET email_verified_at = statement_timestamp()
@@ -124,6 +131,12 @@ VALUES (sqlc.arg(challenge_id), sqlc.arg(key_version), sqlc.arg(nonce), sqlc.arg
 -- name: DeleteChallengeDelivery :execrows
 DELETE FROM identity_challenge_deliveries
 WHERE challenge_id = sqlc.arg(challenge_id);
+
+-- name: DeleteAccountChallengeDeliveries :execrows
+DELETE FROM identity_challenge_deliveries AS delivery
+USING identity_challenges AS challenge
+WHERE delivery.challenge_id = challenge.id
+  AND challenge.account_subject = sqlc.arg(account_subject);
 
 -- name: GetDeliveryAccountForUpdate :one
 SELECT account.subject, account.email_local, account.email_domain, account.email_verified_at, account.retired_at

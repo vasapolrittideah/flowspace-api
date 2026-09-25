@@ -779,7 +779,7 @@ func TestIdentityRepository(t *testing.T) {
 		}
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
 		service := app.NewClaimCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest, key)
-		handler := identityhttp.NewIdentityHandler(nil, nil, service, nil, nil)
+		handler := identityhttp.NewIdentityHandler(nil, nil, service, nil, nil, nil)
 		request := func(email string) error {
 			t.Helper()
 			ctx := peer.NewContext(ctx, &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.111"), Port: 1234}})
@@ -969,6 +969,10 @@ func TestIdentityRepository(t *testing.T) {
 		if slowest-fastest > 60*time.Millisecond {
 			t.Fatalf("public response medians differ by %s: %v", slowest-fastest, durations)
 		}
+	})
+
+	t.Run("account claims replace one unverified identity", func(t *testing.T) {
+		testAccountClaimRepository(t, pool)
 	})
 }
 

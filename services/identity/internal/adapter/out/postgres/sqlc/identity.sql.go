@@ -197,6 +197,21 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (C
 	return i, err
 }
 
+const deleteAccountChallengeDeliveries = `-- name: DeleteAccountChallengeDeliveries :execrows
+DELETE FROM identity_challenge_deliveries AS delivery
+USING identity_challenges AS challenge
+WHERE delivery.challenge_id = challenge.id
+  AND challenge.account_subject = $1
+`
+
+func (q *Queries) DeleteAccountChallengeDeliveries(ctx context.Context, accountSubject string) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteAccountChallengeDeliveries, accountSubject)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteChallengeDelivery = `-- name: DeleteChallengeDelivery :execrows
 DELETE FROM identity_challenge_deliveries
 WHERE challenge_id = $1
@@ -208,6 +223,31 @@ func (q *Queries) DeleteChallengeDelivery(ctx context.Context, challengeID pgtyp
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const getActiveAccountByEmail = `-- name: GetActiveAccountByEmail :one
+SELECT subject, email_verified_at
+FROM identity_accounts
+WHERE email_local = $1
+  AND email_domain = $2
+  AND retired_at IS NULL
+`
+
+type GetActiveAccountByEmailParams struct {
+	EmailLocal  string
+	EmailDomain string
+}
+
+type GetActiveAccountByEmailRow struct {
+	Subject         string
+	EmailVerifiedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetActiveAccountByEmail(ctx context.Context, arg GetActiveAccountByEmailParams) (GetActiveAccountByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getActiveAccountByEmail, arg.EmailLocal, arg.EmailDomain)
+	var i GetActiveAccountByEmailRow
+	err := row.Scan(&i.Subject, &i.EmailVerifiedAt)
+	return i, err
 }
 
 const getActiveAccountByEmailForUpdate = `-- name: GetActiveAccountByEmailForUpdate :one

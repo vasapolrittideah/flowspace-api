@@ -39,7 +39,7 @@ func claimCodeContext() context.Context {
 
 func TestClaimCodeHandlerIsPublicAndMapsFailures(t *testing.T) {
 	service := &fakeClaimCodeService{}
-	handler := identityhttp.NewIdentityHandler(&fakeSignupService{}, nil, service, nil, nil)
+	handler := identityhttp.NewIdentityHandler(&fakeSignupService{}, nil, service, nil, nil, nil)
 	request := &identityv1.RequestUnverifiedAccountClaimCodeRequest{Email: "User@example.com"}
 	response, err := handler.RequestUnverifiedAccountClaimCode(claimCodeContext(), request)
 	if err != nil || !response.GetAccepted() || service.calls != 1 || service.input != (inbound.RequestClaimCodeInput{
@@ -67,7 +67,7 @@ func TestClaimCodeHandlerIsPublicAndMapsFailures(t *testing.T) {
 	if _, err := handler.RequestUnverifiedAccountClaimCode(context.Background(), request); status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("missing source = %v", err)
 	}
-	withoutService := identityhttp.NewIdentityHandler(&fakeSignupService{}, nil, nil, nil, nil)
+	withoutService := identityhttp.NewIdentityHandler(&fakeSignupService{}, nil, nil, nil, nil, nil)
 	if _, err := withoutService.RequestUnverifiedAccountClaimCode(claimCodeContext(), request); status.Code(err) != codes.Unavailable {
 		t.Fatalf("missing service = %v", err)
 	}
@@ -77,7 +77,7 @@ func TestGeneratedClaimCodeRESTRoute(t *testing.T) {
 	service := &fakeClaimCodeService{}
 	mux := runtime.NewServeMux()
 	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux,
-		identityhttp.NewIdentityHandler(&fakeSignupService{}, nil, service, nil, nil)); err != nil {
+		identityhttp.NewIdentityHandler(&fakeSignupService{}, nil, service, nil, nil, nil)); err != nil {
 		t.Fatal(err)
 	}
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/unverified-account-claim-codes", strings.NewReader(`{"email":"User@example.com"}`))

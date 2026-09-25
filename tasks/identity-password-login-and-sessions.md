@@ -11,7 +11,7 @@ Add password login, refresh, logout, signing-key overlap, and live session check
 ## Architecture decisions
 
 - Reuse Identity's existing Ed25519 signer, session issuance, account lookup, trusted source-address handling, PostgreSQL limit store, and JWKS route. [ADR-0035](../docs/adr/0035-identity-signup-security-and-mail-delivery.md) fixes token validation, the JWKS cache bound, and key rotation; these choices do not need another approval.
-- The approved specification allows 60 password-login attempts per trusted source address in a rolling hour and 10 per normalized email identifier in a rolling 15 minutes. Both limits count unknown accounts and successful logins. Identity rejects a full limit before hashing and fails closed when the shared limit store is unavailable.
+- The approved specification allows 60 password-login attempts per trusted source address in a rolling hour. It also allows 10 attempts per normalized email identifier in a rolling 15 minutes. Both limits count unknown accounts and successful logins. Identity rejects a full limit before hashing and fails closed when the shared limit store is unavailable.
 - Keep the five session RPCs in `flowspace.identity.v1`. Only the four client operations get REST routes. `CheckSession` has no public REST route, and the public gRPC listener rejects a direct call.
 - Read current account and session state in Identity for every `CheckSession`. The caller first validates the access token locally and passes its subject and session ID. Identity returns the current email-verification state, never a Workspace role.
 - Serve `CheckSession` on a separate TLS 1.3 gRPC listener. Authenticate callers with the CA, URI subject alternative name, and public-key fingerprint allowlist in [ADR-0036](../docs/adr/0036-authenticate-internal-session-checks-with-mutual-tls.md). Keep health and JWKS on their existing listener.
@@ -50,7 +50,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Phase 1: Decisions and contract
 
-- Task 1: [#155 Set numeric password-login limits](https://github.com/vasapolrittideah/flowspace-api/issues/155) (approved in [PR #167](https://github.com/vasapolrittideah/flowspace-api/pull/167); implementation remains open)
+- Task 1: [#155 Set numeric password-login limits](https://github.com/vasapolrittideah/flowspace-api/issues/155). [PR #167](https://github.com/vasapolrittideah/flowspace-api/pull/167) recorded the approved numbers. Issue #155 remains open until #161 and #162 finish.
 - Task 2: [#156 Define public session and internal CheckSession contracts](https://github.com/vasapolrittideah/flowspace-api/issues/156)
 
 ### Checkpoint: Contract

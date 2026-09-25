@@ -49,7 +49,9 @@ Status: Draft.
 - Use `Draft` before plan approval, `Approved` after approval, and `Complete` after final verification. When the module is complete, record the PR with the final verification.
 - Save one plan as `tasks/<module-id>.md`. Use the same module ID as its specification in `docs/specs/` and the section order shown in the template.
 - Add a checkpoint with checkable outcomes after each phase. Track tasks in GitHub Issues and their status in the repository GitHub Project. Keep an ordered index of Issue links and completed checkpoints as the completion record. Do not keep a duplicate task checklist.
-- Use `tasks/.todo.md` only while preparing Issues. Write each draft with the [Issue template](github-issues.md#template). After every Issue appears in the Project with `Todo` status, replace the drafts with an ordered index of Issue links and delete `tasks/.todo.md`.
+- Use `tasks/.todo.md` only while preparing Issues. Write each draft with the [Issue template](github-issues.md#template).
+- When creating Issues from the drafts, create or reuse one repository milestone named for the approved plan's capability. Put `tasks/<module-id>.md` in its description. Set a due date only if the plan has one. Assign the milestone to every Issue, but not to linked PRs.
+- After every Issue appears in the Project with `Todo` status and in the milestone, replace the drafts with an ordered index of Issue links and delete `tasks/.todo.md`.
 - Update the plan while creating GitHub Issues and after final verification.
 
 ## Examples

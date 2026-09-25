@@ -5,6 +5,8 @@ resources:
   - ../../../base/identity
   - postgres.yaml
   - network-policy.yaml
+  - broker-bootstrap.yaml
+  - mail-infra-network-policy.yaml
 configMapGenerator:
   - name: identity-config
     literals:
@@ -19,10 +21,11 @@ configMapGenerator:
       - CODE_VERIFIER_KEY_FILE=/keys/code/key
       - DELIVERY_KEY_FILE=/keys/delivery/key
       - BROKER_ADDR=redpanda:9092
+      - BROKER_USERNAME=identity-worker
       - SCHEMA_REGISTRY_URL=http://redpanda:8081
       - DELIVERY_TOPIC=identity.email-delivery.v1
       - DELIVERY_GROUP=identity-mail-worker
-      - MAIL_ADDR=mailpit:1025
+      - MAIL_ADDR=mailpit-smtp:1025
       - MAIL_FROM=no-reply@flowspace.local
 generatorOptions:
   disableNameSuffixHash: true

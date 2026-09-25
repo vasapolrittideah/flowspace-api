@@ -45,6 +45,12 @@ import (
 
 type crashAfterSendRepository struct{ outbound.DeliveryRepository }
 
+type switchingSender struct{ target outbound.EmailSender }
+
+func (s *switchingSender) Send(ctx context.Context, email, code, purpose string) error {
+	return s.target.Send(ctx, email, code, purpose)
+}
+
 func (r crashAfterSendRepository) WithCurrentDelivery(ctx context.Context, challengeID, purpose string, send func(context.Context, outbound.CurrentDelivery) error) error {
 	return r.DeliveryRepository.WithCurrentDelivery(ctx, challengeID, purpose, func(ctx context.Context, delivery outbound.CurrentDelivery) error {
 		if err := send(ctx, delivery); err != nil {
@@ -236,12 +242,13 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 	if err := publisher.Publish(ctx, outage); err != nil {
 		t.Fatal(err)
 	}
-	down := newWorker(repository, deadSender)
+	mailSender := &switchingSender{target: deadSender}
+	down := newWorker(repository, mailSender)
 	if worked, err := down.RunOnce(ctx); !worked || !errors.Is(err, identityevent.ErrEmailDelivery) || materialCount(outageID) != 1 || mailbox().Total != 0 {
 		t.Fatalf("mail outage: worked=%v error=%v", worked, err)
 	}
-	down.Close()
-	recovered := newWorker(repository, sender)
+	mailSender.target = sender
+	recovered := down
 	if worked, err := recovered.RunOnce(ctx); !worked || err != nil || materialCount(outageID) != 0 || mailbox().Total != 1 {
 		t.Fatalf("mail recovery: worked=%v error=%v", worked, err)
 	}

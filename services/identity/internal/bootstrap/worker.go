@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 
@@ -51,12 +52,19 @@ func NewWorker(ctx context.Context, config WorkerConfig, logger *zap.Logger) (*W
 		pool.Close()
 		return nil, errors.New("identity database unavailable")
 	}
-	producer, err := kgo.NewClient(kgo.SeedBrokers(config.BrokerAddress))
+	brokerOptions := []kgo.Opt{kgo.SeedBrokers(config.BrokerAddress)}
+	registryOptions := []sr.ClientOpt{sr.URLs(config.SchemaRegistryURL)}
+	if config.BrokerUsername != "" {
+		auth := scram.Auth{User: config.BrokerUsername, Pass: string(config.BrokerPassword)}
+		brokerOptions = append(brokerOptions, kgo.SASL(auth.AsSha256Mechanism()))
+		registryOptions = append(registryOptions, sr.BasicAuth(config.BrokerUsername, string(config.BrokerPassword)))
+	}
+	producer, err := kgo.NewClient(brokerOptions...)
 	if err != nil {
 		pool.Close()
 		return nil, errors.New("invalid broker configuration")
 	}
-	registry, err := sr.NewClient(sr.URLs(config.SchemaRegistryURL))
+	registry, err := sr.NewClient(registryOptions...)
 	if err != nil {
 		producer.Close()
 		pool.Close()
@@ -69,7 +77,7 @@ func NewWorker(ctx context.Context, config WorkerConfig, logger *zap.Logger) (*W
 		return nil, errors.New("schema registry unavailable")
 	}
 	consumer, err := inboundevent.NewEmailWorker(config.BrokerAddress, config.DeliveryTopic, config.DeliveryGroup,
-		postgres.NewDeliveryRepository(pool), opener, sender, logger)
+		postgres.NewDeliveryRepository(pool), opener, sender, logger, brokerOptions[1:]...)
 	if err != nil {
 		producer.Close()
 		pool.Close()

@@ -34,11 +34,11 @@ type EmailWorker struct {
 	logger     *zap.Logger
 }
 
-func NewEmailWorker(broker, topic, group string, repository outbound.DeliveryRepository, opener outbound.DeliveryOpener, sender outbound.EmailSender, logger *zap.Logger) (*EmailWorker, error) {
-	client, err := kgo.NewClient(
+func NewEmailWorker(broker, topic, group string, repository outbound.DeliveryRepository, opener outbound.DeliveryOpener, sender outbound.EmailSender, logger *zap.Logger, options ...kgo.Opt) (*EmailWorker, error) {
+	client, err := kgo.NewClient(append([]kgo.Opt{
 		kgo.SeedBrokers(broker), kgo.ConsumeTopics(topic), kgo.ConsumerGroup(group),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()), kgo.DisableAutoCommit(), kgo.BlockRebalanceOnPoll(),
-	)
+	}, options...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +109,9 @@ func (w *EmailWorker) RunOnce(ctx context.Context) (bool, error) {
 	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, "identity.email_delivery")
 	defer span.End()
 	if err := w.HandleRecord(ctx, records[0]); err != nil {
+		w.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+			records[0].Topic: {records[0].Partition: {Epoch: records[0].LeaderEpoch, Offset: records[0].Offset}},
+		})
 		span.SetStatus(codes.Error, "delivery failed")
 		w.logger.Warn("email_delivery_failed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
 		return true, err

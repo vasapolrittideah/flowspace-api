@@ -23,6 +23,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -124,7 +125,9 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 		t.Fatal("API accepted invalid listen address")
 	}
 
-	broker, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v25.2.4")
+	broker, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v25.2.4",
+		redpanda.WithEnableSASL(), redpanda.WithNewServiceAccount("identity-worker", "test"),
+		redpanda.WithSuperusers("identity-worker"), redpanda.WithEnableSchemaRegistryHTTPBasicAuth())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +140,7 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client, err := kgo.NewClient(kgo.SeedBrokers(seed))
+	client, err := kgo.NewClient(kgo.SeedBrokers(seed), kgo.SASL(scram.Auth{User: "identity-worker", Pass: "test"}.AsSha256Mechanism()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +151,8 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	}
 	workerConfig := WorkerConfig{
 		DatabaseURL: sharedconfig.Secret(dsn), DeliveryKeyFile: deliveryFile,
-		BrokerAddress: seed, SchemaRegistryURL: registryURL, DeliveryTopic: topic, DeliveryGroup: "runtime-test",
+		BrokerAddress: seed, BrokerUsername: "identity-worker", BrokerPassword: "test",
+		SchemaRegistryURL: registryURL, DeliveryTopic: topic, DeliveryGroup: "runtime-test",
 		MailAddress: "127.0.0.1:1", MailFrom: "codes@example.com", HealthAddress: "127.0.0.1:0",
 	}
 	badRegistry := workerConfig

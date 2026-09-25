@@ -18,7 +18,7 @@ test('local passwords and Identity keys are created safely and excluded from Git
     writeFileSync(join(root, 'Taskfile.yaml'), readFileSync(join(repository, 'Taskfile.yaml')));
     mkdirSync(join(root, 'scripts'));
     writeFileSync(join(root, 'scripts', 'setup-secrets.mjs'), readFileSync(join(repository, 'scripts', 'setup-secrets.mjs')));
-    const passwords = ['keycloak-admin-password', 'workspace-database-password', 'identity-database-password'];
+    const passwords = ['keycloak-admin-password', 'workspace-database-password', 'identity-database-password', 'redpanda-bootstrap-password', 'identity-broker-password'];
     const keyNames = ['identity-code-verifier-key', 'identity-delivery-key'];
     let previous;
     let previousKeys;
@@ -67,6 +67,8 @@ test('local passwords and Identity keys are created safely and excluded from Git
     delete environment.IDENTITY_SIGNING_KEY_FILE;
     delete environment.IDENTITY_CODE_VERIFIER_KEY_FILE;
     delete environment.IDENTITY_DELIVERY_KEY_FILE;
+    delete environment.REDPANDA_BOOTSTRAP_PASSWORD_FILE;
+    delete environment.IDENTITY_BROKER_PASSWORD_FILE;
     const defaults = spawnSync('tilt', ['alpha', 'tiltfile-result', '--file', join(root, 'Tiltfile')], {
       cwd: root, env: environment, encoding: 'utf8',
     });

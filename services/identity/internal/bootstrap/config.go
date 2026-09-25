@@ -32,6 +32,8 @@ type WorkerConfig struct {
 	DatabaseURL       sharedconfig.Secret `env:"DATABASE_URL,required,notEmpty"`
 	DeliveryKeyFile   string              `env:"DELIVERY_KEY_FILE,required,notEmpty"`
 	BrokerAddress     string              `env:"BROKER_ADDR,required,notEmpty"`
+	BrokerUsername    string              `env:"BROKER_USERNAME"`
+	BrokerPassword    sharedconfig.Secret `env:"BROKER_PASSWORD"`
 	SchemaRegistryURL string              `env:"SCHEMA_REGISTRY_URL,required,notEmpty"`
 	DeliveryTopic     string              `env:"DELIVERY_TOPIC,required,notEmpty"`
 	DeliveryGroup     string              `env:"DELIVERY_GROUP,required,notEmpty"`
@@ -57,6 +59,10 @@ func LoadWorkerConfig() (WorkerConfig, error) {
 	config, err := sharedconfig.Load[WorkerConfig]()
 	if err != nil {
 		return WorkerConfig{}, errors.New("invalid worker environment configuration")
+	}
+	if (config.BrokerUsername == "") != (config.BrokerPassword == "") ||
+		(config.Environment == "local" && config.BrokerUsername == "") {
+		return WorkerConfig{}, errors.New("invalid broker credentials")
 	}
 	return config, nil
 }

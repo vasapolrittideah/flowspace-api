@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: identity-broker-bootstrap
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: identity-broker-bootstrap
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      containers:
+        - name: rpk
+          image: docker.redpanda.com/redpandadata/redpanda:v26.2.3
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              admin() {
+                rpk "$@" -X brokers=redpanda:9092 -X admin.hosts=redpanda:9644 -X user=local-admin -X "pass=$ADMIN_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256
+              }
+              if admin security user list --format json | grep -q '"identity-worker"'; then
+                admin security user update identity-worker --new-password "$IDENTITY_PASSWORD" --mechanism SCRAM-SHA-256
+              else
+                admin security user create identity-worker --password "$IDENTITY_PASSWORD" --mechanism SCRAM-SHA-256
+              fi
+              admin topic create identity.email-delivery.v1 --if-not-exists --partitions 1 --replicas 1 --topic-config retention.ms=604800000
+              admin topic alter-config identity.email-delivery.v1 --set retention.ms=604800000 --no-confirm
+              admin security acl create --allow-principal User:identity-worker --operation read,write,describe --topic identity.email-delivery.v1
+              admin security acl create --allow-principal User:identity-worker --operation read,describe --group identity-mail-worker
+              admin security acl create --allow-principal User:identity-worker --operation idempotent-write --cluster
+          env:
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redpanda-bootstrap-user
+                  key: password
+            - name: IDENTITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: identity-broker
+                  key: BROKER_PASSWORD
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true

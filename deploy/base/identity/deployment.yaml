@@ -113,6 +113,8 @@ spec:
                 name: identity-config
             - secretRef:
                 name: identity-database
+            - secretRef:
+                name: identity-broker
           ports:
             - name: health
               containerPort: 8081

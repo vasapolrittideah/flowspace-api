@@ -29,6 +29,7 @@ type IdentityHandler struct {
 	signup       inbound.SignupService
 	verification inbound.VerificationCodeService
 	claimCodes   inbound.ClaimCodeService
+	claims       inbound.AccountClaimService
 	verifier     outbound.AccessTokenVerifier
 	trusted      []netip.Prefix
 }
@@ -36,9 +37,10 @@ type IdentityHandler struct {
 var _ identityv1.IdentityServiceServer = (*IdentityHandler)(nil)
 
 func NewIdentityHandler(signup inbound.SignupService, verification inbound.VerificationCodeService, claimCodes inbound.ClaimCodeService,
+	claims inbound.AccountClaimService,
 	verifier outbound.AccessTokenVerifier, trusted []netip.Prefix,
 ) *IdentityHandler {
-	return &IdentityHandler{signup: signup, verification: verification, claimCodes: claimCodes, verifier: verifier, trusted: trusted}
+	return &IdentityHandler{signup: signup, verification: verification, claimCodes: claimCodes, claims: claims, verifier: verifier, trusted: trusted}
 }
 
 func (h *IdentityHandler) CreateAccount(ctx context.Context, request *identityv1.CreateAccountRequest) (*identityv1.CreateAccountResponse, error) {
@@ -139,6 +141,34 @@ func (h *IdentityHandler) RequestUnverifiedAccountClaimCode(ctx context.Context,
 	return &identityv1.RequestUnverifiedAccountClaimCodeResponse{Accepted: true}, nil
 }
 
+func (h *IdentityHandler) ClaimUnverifiedAccount(ctx context.Context, request *identityv1.ClaimUnverifiedAccountRequest) (*identityv1.ClaimUnverifiedAccountResponse, error) {
+	if len(metadata.ValueFromIncomingContext(ctx, "idempotency-key")) != 0 {
+		return nil, invalidSignupArgument("idempotency_key", "is not supported")
+	}
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	source, err := h.sourceAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if h.claims == nil {
+		return nil, status.Error(codes.Unavailable, "account claim unavailable")
+	}
+	result, err := h.claims.ClaimUnverifiedAccount(ctx, inbound.ClaimAccountInput{
+		Email: request.GetEmail(), Code: request.GetCode(), NewPassword: request.GetNewPassword(), Source: source,
+	})
+	if err != nil {
+		return nil, accountClaimRPCError(err)
+	}
+	return &identityv1.ClaimUnverifiedAccountResponse{
+		Subject: result.Subject, EmailVerified: true, AccessToken: result.AccessToken,
+		RefreshToken: result.RefreshToken, AccessTokenExpiresAt: timestamppb.New(result.AccessTokenExpiresAt),
+	}, nil
+}
+
 func (h *IdentityHandler) authenticate(ctx context.Context) (outbound.AccessTokenIdentity, error) {
 	authorization := metadata.ValueFromIncomingContext(ctx, "authorization")
 	if len(authorization) != 1 {
@@ -219,6 +249,23 @@ func claimCodeRPCError(err error) error {
 	}
 }
 
+func accountClaimRPCError(err error) error {
+	switch {
+	case errors.Is(err, domain.ErrInvalidEmail):
+		return invalidSignupArgument("email", "is invalid")
+	case errors.Is(err, domain.ErrInvalidPassword):
+		return invalidSignupArgument("new_password", "does not meet the policy")
+	case errors.Is(err, app.ErrInvalidClaimCode):
+		return status.Error(codes.InvalidArgument, "invalid claim code")
+	case errors.Is(err, app.ErrRateLimited):
+		return status.Error(codes.ResourceExhausted, "claim limit exceeded")
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return status.FromContextError(err).Err()
+	default:
+		return status.Error(codes.Unavailable, "account claim unavailable")
+	}
+}
+
 func signupRPCError(err error) error {
 	switch {
 	case errors.Is(err, outbound.ErrAccountExists):
@@ -258,7 +305,8 @@ func NewIdentityRequestHandler(next http.Handler, trusted []netip.Prefix) *Ident
 
 func (h *IdentityRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
-	if _, present := r.Header[http.CanonicalHeaderKey("Idempotency-Key")]; present && r.URL.Path == "/v1/accounts" {
+	if _, present := r.Header[http.CanonicalHeaderKey("Idempotency-Key")]; present &&
+		(r.URL.Path == "/v1/accounts" || r.URL.Path == "/v1/unverified-account-claims") {
 		http.Error(w, "idempotency-key is not supported", http.StatusBadRequest)
 		return
 	}

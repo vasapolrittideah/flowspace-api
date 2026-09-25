@@ -88,9 +88,9 @@ flowchart TD
 
 ### Checkpoint: Account state
 
-- [ ] One current code succeeds once, with the approved expiry and guess limits, even under concurrent requests.
-- [ ] Claim and verification races produce one valid account state; a successful claim retires the old subject and sessions.
-- [ ] Missing and ineligible claim-code requests return the same accepted response without an email.
+- [x] One current code succeeds once, with the approved expiry and guess limits, even under concurrent requests.
+- [x] Claim and verification races produce one valid account state; a successful claim retires the old subject and sessions.
+- [x] Missing and ineligible claim-code requests return the same accepted response without an email.
 
 ### Phase 4: Runtime and completion evidence
 

@@ -10,6 +10,8 @@ import (
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -97,19 +99,31 @@ func (w *EmailWorker) RunOnce(ctx context.Context) (bool, error) {
 	if len(records) == 0 {
 		return false, nil
 	}
+	carrier := propagation.MapCarrier{}
+	for _, header := range records[0].Headers {
+		if header.Key == "traceparent" || header.Key == "tracestate" {
+			carrier.Set(header.Key, string(header.Value))
+		}
+	}
+	ctx = (propagation.TraceContext{}).Extract(ctx, carrier)
 	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, "identity.email_delivery")
 	defer span.End()
 	if err := w.HandleRecord(ctx, records[0]); err != nil {
 		span.SetStatus(codes.Error, "delivery failed")
-		w.logger.Warn("email_delivery_failed")
+		w.logger.Warn("email_delivery_failed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
 		return true, err
 	}
 	if err := w.client.CommitRecords(ctx, records[0]); err != nil {
 		span.SetStatus(codes.Error, "broker commit failed")
-		w.logger.Warn("email_delivery_commit_failed")
+		w.logger.Warn("email_delivery_commit_failed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
 		return true, ErrDeliveryBroker
 	}
-	w.logger.Info("email_delivery_processed")
+	if !records[0].Timestamp.IsZero() {
+		w.logger.Info("email_delivery_processed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()),
+			zap.Float64("record_age_seconds", max(0, time.Since(records[0].Timestamp).Seconds())))
+	} else {
+		w.logger.Info("email_delivery_processed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
+	}
 	return true, nil
 }
 

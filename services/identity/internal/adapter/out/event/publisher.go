@@ -5,6 +5,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/vasapolrittideah/flowspace-api/contracts/events"
@@ -39,7 +40,11 @@ func (p *Publisher) Publish(ctx context.Context, request outbound.OutboxEvent) e
 	if err != nil {
 		return err
 	}
-	return p.client.ProduceSync(ctx, &kgo.Record{
-		Topic: p.topic, Key: []byte(request.ID), Value: append(header, payload...),
-	}).FirstErr()
+	carrier := propagation.MapCarrier{}
+	(propagation.TraceContext{}).Inject(ctx, carrier)
+	record := &kgo.Record{Topic: p.topic, Key: []byte(request.ID), Value: append(header, payload...)}
+	for name, value := range carrier {
+		record.Headers = append(record.Headers, kgo.RecordHeader{Key: name, Value: []byte(value)})
+	}
+	return p.client.ProduceSync(ctx, record).FirstErr()
 }

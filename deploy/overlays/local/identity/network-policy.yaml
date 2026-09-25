@@ -1,0 +1,61 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: identity-api
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: identity-api
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: identity-worker
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: identity-worker
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: identity-migrate
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: identity-migrate
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: identity-postgres
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: identity-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: identity-api
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: identity-worker
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: identity-migrate
+      ports:
+        - protocol: TCP
+          port: 5432

@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: identity-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: identity-api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: identity-api
+          image: flowspace/identity-api
+          envFrom:
+            - configMapRef:
+                name: identity-config
+            - secretRef:
+                name: identity-database
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: health
+              containerPort: 8081
+          startupProbe:
+            httpGet:
+              path: /livez
+              port: health
+            failureThreshold: 90
+            periodSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: health
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: signing-key
+              mountPath: /keys/signing
+              readOnly: true
+            - name: code-key
+              mountPath: /keys/code
+              readOnly: true
+            - name: delivery-key
+              mountPath: /keys/delivery
+              readOnly: true
+      volumes:
+        - name: signing-key
+          secret:
+            secretName: identity-signing-key
+        - name: code-key
+          secret:
+            secretName: identity-code-key
+        - name: delivery-key
+          secret:
+            secretName: identity-delivery-key
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-worker
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: identity-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: identity-worker
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: identity-worker
+          image: flowspace/identity-api
+          command:
+            - /identity-worker
+          envFrom:
+            - configMapRef:
+                name: identity-config
+            - secretRef:
+                name: identity-database
+          ports:
+            - name: health
+              containerPort: 8081
+          startupProbe:
+            httpGet:
+              path: /livez
+              port: health
+            failureThreshold: 90
+            periodSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: health
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: delivery-key
+              mountPath: /keys/delivery
+              readOnly: true
+      volumes:
+        - name: delivery-key
+          secret:
+            secretName: identity-delivery-key

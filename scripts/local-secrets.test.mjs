@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createPrivateKey } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const repository = fileURLToPath(new URL('../', import.meta.url));
 
-test('local passwords are created safely and excluded from Git and Docker', () => {
+test('local passwords and Identity keys are created safely and excluded from Git and Docker', () => {
   const temporary = mkdtempSync(join(tmpdir(), 'flowspace-local-secrets-'));
   try {
     const root = join(temporary, 'repository');
@@ -17,8 +18,10 @@ test('local passwords are created safely and excluded from Git and Docker', () =
     writeFileSync(join(root, 'Taskfile.yaml'), readFileSync(join(repository, 'Taskfile.yaml')));
     mkdirSync(join(root, 'scripts'));
     writeFileSync(join(root, 'scripts', 'setup-secrets.mjs'), readFileSync(join(repository, 'scripts', 'setup-secrets.mjs')));
-    const passwords = ['keycloak-admin-password', 'workspace-database-password'];
+    const passwords = ['keycloak-admin-password', 'workspace-database-password', 'identity-database-password'];
+    const keyNames = ['identity-code-verifier-key', 'identity-delivery-key'];
     let previous;
+    let previousKeys;
     for (let run = 0; run < 2; run++) {
       const setup = spawnSync('task', ['secrets:setup'], { cwd: root, encoding: 'utf8' });
       assert.equal(setup.status, 0, setup.error?.message ?? setup.stderr);
@@ -35,15 +38,35 @@ test('local passwords are created safely and excluded from Git and Docker', () =
       });
       if (previous) assert.deepEqual(values, previous, 'Setup must preserve existing passwords');
       previous = values;
+      const keys = keyNames.map((name) => {
+        const path = join(root, '.secrets', name);
+        const value = readFileSync(path);
+        assert.equal(value.length, 32);
+        assert.equal(statSync(path).mode & 0o777, 0o600);
+        chmodSync(path, 0o644);
+        return value;
+      });
+      const signingPath = join(root, '.secrets', 'identity-signing-key.pem');
+      const signingKey = readFileSync(signingPath);
+      assert.equal(createPrivateKey(signingKey).asymmetricKeyType, 'ed25519');
+      assert.equal(statSync(signingPath).mode & 0o777, 0o600);
+      chmodSync(signingPath, 0o644);
+      keys.push(signingKey);
+      if (previousKeys) assert.deepEqual(keys, previousKeys, 'Setup must preserve existing keys');
+      previousKeys = keys;
       chmodSync(join(root, '.secrets'), 0o755);
     }
     const source = readFileSync(join(repository, 'Tiltfile'), 'utf8');
-    const helper = source.slice(source.indexOf('def read_password_file('), source.indexOf('\nkeycloak_password_file'));
+    const helper = source.slice(source.indexOf('def read_secret_path('), source.indexOf('\nkeycloak_password_file'));
     const calls = source.slice(source.indexOf('keycloak_password_file, _ ='), source.indexOf('\nk8s_yaml('));
     writeFileSync(join(root, 'Tiltfile'), `${helper}\n${calls}\n`);
     const environment = { ...process.env };
     delete environment.KEYCLOAK_ADMIN_PASSWORD_FILE;
     delete environment.WORKSPACE_DATABASE_PASSWORD_FILE;
+    delete environment.IDENTITY_DATABASE_PASSWORD_FILE;
+    delete environment.IDENTITY_SIGNING_KEY_FILE;
+    delete environment.IDENTITY_CODE_VERIFIER_KEY_FILE;
+    delete environment.IDENTITY_DELIVERY_KEY_FILE;
     const defaults = spawnSync('tilt', ['alpha', 'tiltfile-result', '--file', join(root, 'Tiltfile')], {
       cwd: root, env: environment, encoding: 'utf8',
     });

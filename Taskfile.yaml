@@ -167,7 +167,7 @@ tasks:
       - '"{{.BIN_DIR}}/gitleaks" detect --no-git --source . --redact --no-banner'
 
   secrets:setup:
-    desc: Create local password files without replacing existing values
+    desc: Create local password and Identity key files without replacing existing values
     cmds:
       - node scripts/setup-secrets.mjs
 

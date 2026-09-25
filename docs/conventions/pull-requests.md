@@ -10,7 +10,7 @@ The [PR template](../../.github/pull_request_template.md) contains `Change`, `Re
 | --- | --- |
 | Title | A [commit subject](commit-messages.md#template) that describes the result. |
 | Change | State the problem and what happens after the change. |
-| Reason | Why the change is needed and any completed Issue numbers. |
+| Reason | Why the change is needed and any related Issue numbers. |
 | Risks or limitations | Material compatibility effects, remaining limits, or follow-up work. |
 | Verification | Each required check, its exact command, and its result. |
 
@@ -19,7 +19,7 @@ The [PR template](../../.github/pull_request_template.md) contains `Change`, `Re
 - Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
 - Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 - Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
-- End `Reason` with one `Closes #<issue-number>.` line per completed Issue. Leave one blank line before the first `Closes` line and no blank lines between `Closes` lines. GitHub closes those Issues after the PR merges into `main`.
+- End `Reason` with one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when the Issue remains open, such as when a PR updates a spec before implementation. Leave one blank line before the first Issue reference and no blank lines between references. `Refs` does not close the Issue; `Closes` closes it after the PR merges into `main`.
 - Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, and `Verification`. Omit `Risks or limitations` when none apply.
 - Before creating or updating a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review every prose section against those rules before submitting the description.
 

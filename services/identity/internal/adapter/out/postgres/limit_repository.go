@@ -8,9 +8,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 type LimitRepository struct{ pool *pgxpool.Pool }
+
+var _ outbound.LimitRepository = (*LimitRepository)(nil)
 
 func NewLimitRepository(pool *pgxpool.Pool) *LimitRepository { return &LimitRepository{pool: pool} }
 

@@ -6,7 +6,7 @@ Status: Approved.
 
 ## Overview
 
-Add password login, refresh, logout, signing-key overlap, and live session checks to the existing Identity service. The [approved specification](../docs/specs/identity-password-login-and-sessions.md) defines the behavior. Signup and account claim already issue the first session and token pair; this plan extends that shared session lifecycle. The [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) will track the tasks after plan approval.
+Add password login, refresh, logout, signing-key overlap, and live session checks to the existing Identity service. The [approved specification](../docs/specs/identity-password-login-and-sessions.md) defines the behavior. Signup and account claim already issue the first session and token pair; this plan extends that shared session lifecycle. The [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) tracks the tasks.
 
 ## Architecture decisions
 
@@ -37,8 +37,8 @@ flowchart TD
     Refresh --> CurrentLogout
     CurrentLogout --> AllLogout[All-session logout]
     Login --> AllLogout
-    Keys --> Workspace
-    Keys[Signing-key overlap] --> Evidence[Final session evidence]
+    Keys[Signing-key overlap] --> Workspace
+    Keys --> Evidence[Final session evidence]
     Workspace --> Evidence
     Refresh --> Evidence
     AllLogout --> Evidence

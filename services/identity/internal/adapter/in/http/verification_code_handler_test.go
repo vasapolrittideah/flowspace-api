@@ -58,7 +58,7 @@ func verificationContext() context.Context {
 
 func TestRequestVerificationCodeHandler(t *testing.T) {
 	service := &fakeVerificationService{}
-	handler := identityhttp.NewIdentityHandler(&fakeSignupService{}, service, fakeAccessVerifier{}, nil)
+	handler := identityhttp.NewIdentityHandler(&fakeSignupService{}, service, nil, fakeAccessVerifier{}, nil)
 	response, err := handler.RequestEmailVerificationCode(verificationContext(), &identityv1.RequestEmailVerificationCodeRequest{})
 	if err != nil || !response.GetAccepted() || service.calls != 1 || service.input != (inbound.RequestEmailVerificationCodeInput{
 		Subject: "token-subject", SessionID: "token-session", Source: "192.0.2.1",
@@ -105,7 +105,7 @@ func TestGeneratedVerificationCodeRESTRoute(t *testing.T) {
 	service := &fakeVerificationService{}
 	mux := runtime.NewServeMux()
 	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux,
-		identityhttp.NewIdentityHandler(&fakeSignupService{}, service, fakeAccessVerifier{}, nil)); err != nil {
+		identityhttp.NewIdentityHandler(&fakeSignupService{}, service, nil, fakeAccessVerifier{}, nil)); err != nil {
 		t.Fatal(err)
 	}
 	handler := identityhttp.NewIdentityRequestHandler(mux, nil)
@@ -124,7 +124,7 @@ func TestGeneratedVerificationCodeRESTRoute(t *testing.T) {
 
 func TestVerifyEmailHandler(t *testing.T) {
 	service := &fakeVerificationService{}
-	handler := identityhttp.NewIdentityHandler(&fakeSignupService{}, service, fakeAccessVerifier{}, nil)
+	handler := identityhttp.NewIdentityHandler(&fakeSignupService{}, service, nil, fakeAccessVerifier{}, nil)
 	response, err := handler.VerifyEmail(verificationContext(), &identityv1.VerifyEmailRequest{Code: "012345"})
 	if err != nil || !response.GetEmailVerified() || service.verifyCalls != 1 || service.verifyInput != (inbound.VerifyEmailInput{
 		Subject: "token-subject", SessionID: "token-session", Source: "192.0.2.1", Code: "012345",
@@ -158,7 +158,7 @@ func TestVerifyEmailHandler(t *testing.T) {
 	if _, err := handler.VerifyEmail(withoutPeer, &identityv1.VerifyEmailRequest{Code: "012345"}); status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("missing source = %v", err)
 	}
-	withoutService := identityhttp.NewIdentityHandler(&fakeSignupService{}, nil, fakeAccessVerifier{}, nil)
+	withoutService := identityhttp.NewIdentityHandler(&fakeSignupService{}, nil, nil, fakeAccessVerifier{}, nil)
 	if _, err := withoutService.VerifyEmail(verificationContext(), &identityv1.VerifyEmailRequest{Code: "012345"}); status.Code(err) != codes.Unavailable {
 		t.Fatalf("missing service = %v", err)
 	}
@@ -168,7 +168,7 @@ func TestGeneratedVerifyEmailRESTRoute(t *testing.T) {
 	service := &fakeVerificationService{}
 	mux := runtime.NewServeMux()
 	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux,
-		identityhttp.NewIdentityHandler(&fakeSignupService{}, service, fakeAccessVerifier{}, nil)); err != nil {
+		identityhttp.NewIdentityHandler(&fakeSignupService{}, service, nil, fakeAccessVerifier{}, nil)); err != nil {
 		t.Fatal(err)
 	}
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/email-verifications", strings.NewReader(`{"code":"012345"}`))

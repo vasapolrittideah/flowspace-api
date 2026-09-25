@@ -42,7 +42,7 @@ func (s *fakeSignupService) CreateAccount(_ context.Context, input inbound.Creat
 
 func TestSignupHandler(t *testing.T) {
 	service := &fakeSignupService{}
-	handler := identityhttp.NewIdentityHandler(service, nil, nil, nil)
+	handler := identityhttp.NewIdentityHandler(service, nil, nil, nil, nil)
 	ctx := peer.NewContext(context.Background(), &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.1"), Port: 1234}})
 	request := &identityv1.CreateAccountRequest{Email: "User@example.com", Password: "correct horse battery staple"}
 	response, err := handler.CreateAccount(ctx, request)
@@ -62,7 +62,7 @@ func TestSignupHandler(t *testing.T) {
 
 func TestSignupHandlerRejectsInvalidRequestsAndMapsFailures(t *testing.T) {
 	service := &fakeSignupService{}
-	handler := identityhttp.NewIdentityHandler(service, nil, nil, nil)
+	handler := identityhttp.NewIdentityHandler(service, nil, nil, nil, nil)
 	request := &identityv1.CreateAccountRequest{Email: "User@example.com", Password: "correct horse battery staple"}
 	peerContext := peer.NewContext(context.Background(), &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.1"), Port: 1234}})
 	withPeer := func() context.Context { return peerContext }
@@ -141,7 +141,7 @@ func TestSignupRequestHandlerValidatesSource(t *testing.T) {
 func TestGeneratedSignupRESTRoute(t *testing.T) {
 	service := &fakeSignupService{}
 	mux := runtime.NewServeMux()
-	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux, identityhttp.NewIdentityHandler(service, nil, nil, nil)); err != nil {
+	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux, identityhttp.NewIdentityHandler(service, nil, nil, nil, nil)); err != nil {
 		t.Fatal(err)
 	}
 	handler := identityhttp.NewIdentityRequestHandler(mux, nil)

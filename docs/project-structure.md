@@ -88,7 +88,7 @@ Root `internal/` is not a default home for helpers. Code with one service owner 
 
 Each service follows the hexagonal architecture established in [ADR-0003](adr/0003-hexagonal-layers-inside-each-service.md): business rules stay at the center and infrastructure stays at the edges.
 
-Use the [hexagonal component convention](conventions/hexagonal-components.md) when naming handwritten components and defining their responsibilities.
+Use the [hexagonal naming convention](conventions/hexagonal-naming.md) when naming handwritten components.
 
 ```text
 services/<service>/

@@ -2,7 +2,7 @@
 
 Module id: `identity-password-login-and-sessions`
 
-Status: Draft.
+Status: Approved.
 
 ## Overview
 
@@ -37,6 +37,7 @@ flowchart TD
     Refresh --> CurrentLogout
     CurrentLogout --> AllLogout[All-session logout]
     Login --> AllLogout
+    Keys --> Workspace
     Keys[Signing-key overlap] --> Evidence[Final session evidence]
     Workspace --> Evidence
     Refresh --> Evidence
@@ -45,12 +46,12 @@ flowchart TD
 
 ## Task list
 
-Draft Issue bodies and verification steps are in [`.todo.md`](.todo.md). Task references will become Issue links after approval and Project checks.
+Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [Identity password login and sessions milestone](https://github.com/vasapolrittideah/flowspace-api/milestone/2).
 
 ### Phase 1: Decisions and contract
 
-- Task 1: Set numeric password-login limits.
-- Task 2: Define public session and internal `CheckSession` contracts.
+- Task 1: [#155 Set numeric password-login limits](https://github.com/vasapolrittideah/flowspace-api/issues/155)
+- Task 2: [#156 Define public session and internal CheckSession contracts](https://github.com/vasapolrittideah/flowspace-api/issues/156)
 
 ### Checkpoint: Contract
 
@@ -59,9 +60,9 @@ Draft Issue bodies and verification steps are in [`.todo.md`](.todo.md). Task re
 
 ### Phase 2: Live session checks
 
-- Task 3: Return current Identity session state.
-- Task 4: Authenticate the private `CheckSession` RPC.
-- Task 5: Deploy the private Identity listener in the local cluster.
+- Task 3: [#157 Return current Identity session state](https://github.com/vasapolrittideah/flowspace-api/issues/157)
+- Task 4: [#158 Authenticate the private CheckSession RPC](https://github.com/vasapolrittideah/flowspace-api/issues/158)
+- Task 5: [#159 Deploy the private Identity listener in the local cluster](https://github.com/vasapolrittideah/flowspace-api/issues/159)
 
 ### Checkpoint: Session admission
 
@@ -71,9 +72,9 @@ Draft Issue bodies and verification steps are in [`.todo.md`](.todo.md). Task re
 
 ### Phase 3: Signing keys and password login
 
-- Task 6: Publish signing keys through routine rotation.
-- Task 7: Enforce shared password-login limits.
-- Task 8: Create password sessions with generic failures.
+- Task 6: [#160 Publish signing keys through routine rotation](https://github.com/vasapolrittideah/flowspace-api/issues/160)
+- Task 7: [#161 Enforce shared password-login limits](https://github.com/vasapolrittideah/flowspace-api/issues/161)
+- Task 8: [#162 Create password sessions with generic failures](https://github.com/vasapolrittideah/flowspace-api/issues/162)
 
 ### Checkpoint: Login
 
@@ -83,9 +84,9 @@ Draft Issue bodies and verification steps are in [`.todo.md`](.todo.md). Task re
 
 ### Phase 4: Refresh and logout
 
-- Task 9: Rotate refresh tokens and revoke on replay.
-- Task 10: Revoke the current session on logout.
-- Task 11: Revoke all sessions for a subject.
+- Task 9: [#163 Rotate refresh tokens and revoke on replay](https://github.com/vasapolrittideah/flowspace-api/issues/163)
+- Task 10: [#164 Revoke the current session on logout](https://github.com/vasapolrittideah/flowspace-api/issues/164)
+- Task 11: [#165 Revoke all sessions for a subject](https://github.com/vasapolrittideah/flowspace-api/issues/165)
 
 ### Checkpoint: Session lifecycle
 
@@ -95,7 +96,7 @@ Draft Issue bodies and verification steps are in [`.todo.md`](.todo.md). Task re
 
 ### Phase 5: Completion evidence
 
-- Task 12: Prove public, private, and failure paths.
+- Task 12: [#166 Prove public, private, and failure paths](https://github.com/vasapolrittideah/flowspace-api/issues/166)
 
 ### Checkpoint: Complete
 

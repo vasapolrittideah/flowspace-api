@@ -35,12 +35,27 @@ func (r *AccountRepository) WithinTransaction(ctx context.Context, fn func(outbo
 	return tx.Commit(ctx)
 }
 
+func (r *AccountRepository) WithinVerificationTransaction(ctx context.Context, fn func(outbound.VerificationTransaction) error) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if err := fn(&accountTransaction{queries: sqlc.New(tx), session: NewSessionRepository(tx)}); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 type accountTransaction struct {
 	queries *sqlc.Queries
 	session *SessionRepository
 }
 
-var _ outbound.AccountTransaction = (*accountTransaction)(nil)
+var (
+	_ outbound.AccountTransaction      = (*accountTransaction)(nil)
+	_ outbound.VerificationTransaction = (*accountTransaction)(nil)
+)
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {
 	local, domain, ok := strings.Cut(email, "@")
@@ -125,6 +140,53 @@ func (t *accountTransaction) CreateOutboxEvent(ctx context.Context, challengeID 
 	}
 	_, err = t.queries.CreateOutboxEvent(ctx, id)
 	return err
+}
+
+func (t *accountTransaction) GetCurrentVerificationChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
+	challenge, err := t.queries.GetCurrentChallengeForUpdate(ctx, sqlc.GetCurrentChallengeForUpdateParams{
+		AccountSubject: subject, Purpose: "verify-email",
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.ChallengeState{}, false, nil
+	}
+	if err != nil {
+		return outbound.ChallengeState{}, false, err
+	}
+	var verifier [32]byte
+	if len(challenge.CodeVerifier) != len(verifier) {
+		return outbound.ChallengeState{}, false, errors.New("invalid challenge verifier")
+	}
+	copy(verifier[:], challenge.CodeVerifier)
+	return outbound.ChallengeState{
+		ID: uuid.UUID(challenge.ID.Bytes).String(), Email: challenge.EmailLocal + "@" + challenge.EmailDomain,
+		Verifier: verifier, WrongGuesses: challenge.WrongGuesses, ExpiresAt: challenge.ExpiresAt.Time,
+	}, true, nil
+}
+
+func (t *accountTransaction) IncrementChallengeWrongGuess(ctx context.Context, challengeID string) error {
+	id, err := parseUUID(challengeID)
+	if err != nil {
+		return err
+	}
+	_, err = t.queries.IncrementChallengeWrongGuess(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	return err
+}
+
+func (t *accountTransaction) ConsumeChallenge(ctx context.Context, challengeID string) (bool, error) {
+	id, err := parseUUID(challengeID)
+	if err != nil {
+		return false, err
+	}
+	changed, err := t.queries.ConsumeCurrentChallenge(ctx, id)
+	return changed == 1, err
+}
+
+func (t *accountTransaction) MarkEmailVerified(ctx context.Context, subject string) (bool, error) {
+	changed, err := t.queries.MarkEmailVerified(ctx, subject)
+	return changed == 1, err
 }
 
 func parseUUID(value string) (pgtype.UUID, error) {

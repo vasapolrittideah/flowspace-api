@@ -71,17 +71,9 @@ func (h *IdentityHandler) RequestEmailVerificationCode(ctx context.Context, requ
 	if request == nil {
 		return nil, invalidSignupArgument("request", "is required")
 	}
-	authorization := metadata.ValueFromIncomingContext(ctx, "authorization")
-	if len(authorization) != 1 {
-		return nil, status.Error(codes.Unauthenticated, "authentication required")
-	}
-	parts := strings.Fields(authorization[0])
-	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || h.verifier == nil {
-		return nil, status.Error(codes.Unauthenticated, "authentication required")
-	}
-	identity, err := h.verifier.Verify(parts[1])
-	if err != nil || identity.Subject == "" || identity.SessionID == "" {
-		return nil, status.Error(codes.Unauthenticated, "authentication required")
+	identity, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
 	}
 	source, err := h.sourceAddress(ctx)
 	if err != nil {
@@ -98,6 +90,47 @@ func (h *IdentityHandler) RequestEmailVerificationCode(ctx context.Context, requ
 		return nil, verificationCodeRPCError(err)
 	}
 	return &identityv1.RequestEmailVerificationCodeResponse{Accepted: true}, nil
+}
+
+func (h *IdentityHandler) VerifyEmail(ctx context.Context, request *identityv1.VerifyEmailRequest) (*identityv1.VerifyEmailResponse, error) {
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	identity, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	source, err := h.sourceAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if h.verification == nil {
+		return nil, status.Error(codes.Unavailable, "email verification unavailable")
+	}
+	if err := h.verification.VerifyEmail(ctx, inbound.VerifyEmailInput{
+		Subject: identity.Subject, SessionID: identity.SessionID, Source: source, Code: request.GetCode(),
+	}); err != nil {
+		return nil, verifyEmailRPCError(err)
+	}
+	return &identityv1.VerifyEmailResponse{EmailVerified: true}, nil
+}
+
+func (h *IdentityHandler) authenticate(ctx context.Context) (outbound.AccessTokenIdentity, error) {
+	authorization := metadata.ValueFromIncomingContext(ctx, "authorization")
+	if len(authorization) != 1 {
+		return outbound.AccessTokenIdentity{}, status.Error(codes.Unauthenticated, "authentication required")
+	}
+	parts := strings.Fields(authorization[0])
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || h.verifier == nil {
+		return outbound.AccessTokenIdentity{}, status.Error(codes.Unauthenticated, "authentication required")
+	}
+	identity, err := h.verifier.Verify(parts[1])
+	if err != nil || identity.Subject == "" || identity.SessionID == "" {
+		return outbound.AccessTokenIdentity{}, status.Error(codes.Unauthenticated, "authentication required")
+	}
+	return identity, nil
 }
 
 func (h *IdentityHandler) sourceAddress(ctx context.Context) (string, error) {
@@ -133,6 +166,21 @@ func verificationCodeRPCError(err error) error {
 		return status.FromContextError(err).Err()
 	default:
 		return status.Error(codes.Unavailable, "verification code unavailable")
+	}
+}
+
+func verifyEmailRPCError(err error) error {
+	switch {
+	case errors.Is(err, outbound.ErrUnauthenticated):
+		return status.Error(codes.Unauthenticated, "authentication required")
+	case errors.Is(err, app.ErrInvalidVerificationCode):
+		return status.Error(codes.InvalidArgument, "invalid verification code")
+	case errors.Is(err, app.ErrRateLimited):
+		return status.Error(codes.ResourceExhausted, "verification code limit exceeded")
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return status.FromContextError(err).Err()
+	default:
+		return status.Error(codes.Unavailable, "email verification unavailable")
 	}
 }
 

@@ -76,8 +76,8 @@ flowchart TD
 ### Checkpoint: Signup and delivery
 
 - [x] A valid signup returns one unverified subject and one token pair after its database transaction commits.
-- [ ] Broker and Mailpit outages leave a retryable delivery request and do not turn a committed signup into a failed response.
-- [ ] Broker records, logs, and traces contain no email code, password, token, or full email address.
+- [x] Broker and Mailpit outages leave a retryable delivery request and do not turn a committed signup into a failed response.
+- [x] Broker records, logs, and traces contain no email code, password, token, or full email address.
 
 ### Phase 3: Verification and account claim
 

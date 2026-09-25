@@ -15,6 +15,6 @@ This convention defines Markdown and English prose rules for repository artifact
 
 - Apply these rules to Markdown, commit messages, PR titles and descriptions, and code comments.
 - Before writing English prose, read the [`simple-english` skill](../../.agents/skills/simple-english/SKILL.md) and the [`humanizer` skill](../../.agents/skills/humanizer/SKILL.md).
-- First, use Simple English to make the text easy to understand with common words and short sentences. Then, use Humanizer to make it read naturally while keeping the Simple English rules. Apply both skills without exception.
+- First, use Simple English to make the text easy to understand with common words and short sentences. Then, use Humanizer to make it read naturally while keeping the Simple English rules. Check the final text against Simple English again and fix any conflicts. Apply both skills without exception.
 - Preserve code, identifiers, and tool directives as the skills require.
 - For Go doc comments, keep the required symbol prefix and comment syntax.

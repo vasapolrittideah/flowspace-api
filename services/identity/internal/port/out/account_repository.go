@@ -24,6 +24,11 @@ type ChallengeState struct {
 	ExpiresAt    time.Time
 }
 
+type ClaimAccount struct {
+	Subject       string
+	EmailVerified bool
+}
+
 type DeliveryMaterial struct {
 	KeyVersion int32
 	Nonce      []byte
@@ -49,6 +54,15 @@ type VerificationTransaction interface {
 	MarkEmailVerified(ctx context.Context, subject string) (bool, error)
 }
 
+type ClaimCodeTransaction interface {
+	GetAccountForClaim(ctx context.Context, email string) (ClaimAccount, bool, error)
+	CanIssueCode(ctx context.Context, subject string) (bool, error)
+	ReplaceClaimChallenge(ctx context.Context, subject string) error
+	CreateClaimChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error)
+	StoreDelivery(ctx context.Context, challengeID string, material DeliveryMaterial) error
+	CreateOutboxEvent(ctx context.Context, challengeID string) error
+}
+
 type AccountRepository interface {
 	WithinTransaction(ctx context.Context, fn func(AccountTransaction) error) error
 }
@@ -56,4 +70,8 @@ type AccountRepository interface {
 type VerificationCodeRepository interface {
 	AccountRepository
 	WithinVerificationTransaction(ctx context.Context, fn func(VerificationTransaction) error) error
+}
+
+type ClaimCodeRepository interface {
+	WithinClaimCodeTransaction(ctx context.Context, fn func(ClaimCodeTransaction) error) error
 }

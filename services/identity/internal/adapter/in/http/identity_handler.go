@@ -28,16 +28,17 @@ type IdentityHandler struct {
 	identityv1.UnimplementedIdentityServiceServer
 	signup       inbound.SignupService
 	verification inbound.VerificationCodeService
+	claimCodes   inbound.ClaimCodeService
 	verifier     outbound.AccessTokenVerifier
 	trusted      []netip.Prefix
 }
 
 var _ identityv1.IdentityServiceServer = (*IdentityHandler)(nil)
 
-func NewIdentityHandler(signup inbound.SignupService, verification inbound.VerificationCodeService,
+func NewIdentityHandler(signup inbound.SignupService, verification inbound.VerificationCodeService, claimCodes inbound.ClaimCodeService,
 	verifier outbound.AccessTokenVerifier, trusted []netip.Prefix,
 ) *IdentityHandler {
-	return &IdentityHandler{signup: signup, verification: verification, verifier: verifier, trusted: trusted}
+	return &IdentityHandler{signup: signup, verification: verification, claimCodes: claimCodes, verifier: verifier, trusted: trusted}
 }
 
 func (h *IdentityHandler) CreateAccount(ctx context.Context, request *identityv1.CreateAccountRequest) (*identityv1.CreateAccountResponse, error) {
@@ -117,6 +118,27 @@ func (h *IdentityHandler) VerifyEmail(ctx context.Context, request *identityv1.V
 	return &identityv1.VerifyEmailResponse{EmailVerified: true}, nil
 }
 
+func (h *IdentityHandler) RequestUnverifiedAccountClaimCode(ctx context.Context, request *identityv1.RequestUnverifiedAccountClaimCodeRequest) (*identityv1.RequestUnverifiedAccountClaimCodeResponse, error) {
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	source, err := h.sourceAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if h.claimCodes == nil {
+		return nil, status.Error(codes.Unavailable, "claim code unavailable")
+	}
+	if err := h.claimCodes.RequestUnverifiedAccountClaimCode(ctx, inbound.RequestClaimCodeInput{
+		Email: request.GetEmail(), Source: source,
+	}); err != nil {
+		return nil, claimCodeRPCError(err)
+	}
+	return &identityv1.RequestUnverifiedAccountClaimCodeResponse{Accepted: true}, nil
+}
+
 func (h *IdentityHandler) authenticate(ctx context.Context) (outbound.AccessTokenIdentity, error) {
 	authorization := metadata.ValueFromIncomingContext(ctx, "authorization")
 	if len(authorization) != 1 {
@@ -181,6 +203,19 @@ func verifyEmailRPCError(err error) error {
 		return status.FromContextError(err).Err()
 	default:
 		return status.Error(codes.Unavailable, "email verification unavailable")
+	}
+}
+
+func claimCodeRPCError(err error) error {
+	switch {
+	case errors.Is(err, domain.ErrInvalidEmail):
+		return invalidSignupArgument("email", "is invalid")
+	case errors.Is(err, app.ErrRateLimited):
+		return status.Error(codes.ResourceExhausted, "claim code limit exceeded")
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return status.FromContextError(err).Err()
+	default:
+		return status.Error(codes.Unavailable, "claim code unavailable")
 	}
 }
 

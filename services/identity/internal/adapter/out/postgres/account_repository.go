@@ -24,18 +24,18 @@ func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
 }
 
 func (r *AccountRepository) WithinTransaction(ctx context.Context, fn func(outbound.AccountTransaction) error) error {
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	if err := fn(&accountTransaction{queries: sqlc.New(tx), session: NewSessionRepository(tx)}); err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 
 func (r *AccountRepository) WithinVerificationTransaction(ctx context.Context, fn func(outbound.VerificationTransaction) error) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (r *AccountRepository) WithinClaimCodeTransaction(ctx context.Context, fn func(outbound.ClaimCodeTransaction) error) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (r *AccountRepository) withinTransaction(ctx context.Context, fn func(*accountTransaction) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -55,6 +55,7 @@ type accountTransaction struct {
 var (
 	_ outbound.AccountTransaction      = (*accountTransaction)(nil)
 	_ outbound.VerificationTransaction = (*accountTransaction)(nil)
+	_ outbound.ClaimCodeTransaction    = (*accountTransaction)(nil)
 )
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {
@@ -101,20 +102,53 @@ func (t *accountTransaction) CanIssueCode(ctx context.Context, subject string) (
 	return allowed.Valid && allowed.Bool, nil
 }
 
+func (t *accountTransaction) GetAccountForClaim(ctx context.Context, email string) (outbound.ClaimAccount, bool, error) {
+	local, domain, ok := strings.Cut(email, "@")
+	if !ok {
+		return outbound.ClaimAccount{}, false, errors.New("invalid normalized email")
+	}
+	account, err := t.queries.GetActiveAccountByEmailForUpdate(ctx, sqlc.GetActiveAccountByEmailForUpdateParams{
+		EmailLocal: local, EmailDomain: domain,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.ClaimAccount{}, false, nil
+	}
+	if err != nil {
+		return outbound.ClaimAccount{}, false, err
+	}
+	return outbound.ClaimAccount{Subject: account.Subject, EmailVerified: account.EmailVerifiedAt.Valid}, true, nil
+}
+
 func (t *accountTransaction) ReplaceVerificationChallenge(ctx context.Context, subject string) error {
+	return t.replaceChallenge(ctx, subject, "verify-email")
+}
+
+func (t *accountTransaction) ReplaceClaimChallenge(ctx context.Context, subject string) error {
+	return t.replaceChallenge(ctx, subject, "claim-account")
+}
+
+func (t *accountTransaction) replaceChallenge(ctx context.Context, subject, purpose string) error {
 	_, err := t.queries.ReplaceCurrentChallenge(ctx, sqlc.ReplaceCurrentChallengeParams{
-		AccountSubject: subject, Purpose: "verify-email",
+		AccountSubject: subject, Purpose: purpose,
 	})
 	return err
 }
 
 func (t *accountTransaction) CreateChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error) {
+	return t.createChallenge(ctx, subject, email, "verify-email", verifier)
+}
+
+func (t *accountTransaction) CreateClaimChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error) {
+	return t.createChallenge(ctx, subject, email, "claim-account", verifier)
+}
+
+func (t *accountTransaction) createChallenge(ctx context.Context, subject, email, purpose string, verifier [32]byte) (string, error) {
 	local, domain, ok := strings.Cut(email, "@")
 	if !ok {
 		return "", errors.New("invalid normalized email")
 	}
 	challenge, err := t.queries.CreateChallenge(ctx, sqlc.CreateChallengeParams{
-		AccountSubject: subject, Purpose: "verify-email", EmailLocal: local,
+		AccountSubject: subject, Purpose: purpose, EmailLocal: local,
 		EmailDomain: domain, CodeVerifier: verifier[:],
 	})
 	if err != nil {

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package flowspace.identity.v1;
+
+option go_package = "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1;identityv1";
+
+message EmailDeliveryRequested {
+  string event_id = 1;
+  string challenge_id = 2;
+  string purpose = 3;
+}

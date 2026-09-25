@@ -290,6 +290,48 @@ func (q *Queries) GetCurrentChallengeForUpdate(ctx context.Context, arg GetCurre
 	return i, err
 }
 
+const getLimitUsage = `-- name: GetLimitUsage :one
+SELECT COALESCE(SUM(count) FILTER (WHERE window_start > $1::timestamptz), 0)::bigint AS hourly_count,
+       COALESCE(SUM(count) FILTER (WHERE window_start > $2::timestamptz), 0)::bigint AS daily_count,
+       (SELECT window_start FROM identity_limit_counters AS recent
+        WHERE recent.scope = $3
+          AND recent.counter_key = $4
+          AND recent.action = $5
+        ORDER BY window_start DESC LIMIT 1) AS latest_at
+FROM identity_limit_counters
+WHERE scope = $3
+  AND counter_key = $4
+  AND action = $5
+  AND window_start > $2::timestamptz
+`
+
+type GetLimitUsageParams struct {
+	HourCutoff pgtype.Timestamptz
+	DayCutoff  pgtype.Timestamptz
+	Scope      string
+	CounterKey string
+	Action     string
+}
+
+type GetLimitUsageRow struct {
+	HourlyCount int64
+	DailyCount  int64
+	LatestAt    pgtype.Timestamptz
+}
+
+func (q *Queries) GetLimitUsage(ctx context.Context, arg GetLimitUsageParams) (GetLimitUsageRow, error) {
+	row := q.db.QueryRow(ctx, getLimitUsage,
+		arg.HourCutoff,
+		arg.DayCutoff,
+		arg.Scope,
+		arg.CounterKey,
+		arg.Action,
+	)
+	var i GetLimitUsageRow
+	err := row.Scan(&i.HourlyCount, &i.DailyCount, &i.LatestAt)
+	return i, err
+}
+
 const incrementChallengeWrongGuess = `-- name: IncrementChallengeWrongGuess :one
 UPDATE identity_challenges
 SET wrong_guesses = wrong_guesses + 1

@@ -33,6 +33,8 @@ spec:
               containerPort: 8080
             - name: health
               containerPort: 8081
+            - name: session-grpc
+              containerPort: 8082
           startupProbe:
             httpGet:
               path: /livez
@@ -70,6 +72,9 @@ spec:
             - name: delivery-key
               mountPath: /keys/delivery
               readOnly: true
+            - name: session-tls
+              mountPath: /keys/session
+              readOnly: true
       volumes:
         - name: signing-key
           secret:
@@ -80,6 +85,10 @@ spec:
         - name: delivery-key
           secret:
             secretName: identity-delivery-key
+        - name: session-tls
+          secret:
+            secretName: identity-session-tls
+            defaultMode: 0440
 ---
 apiVersion: apps/v1
 kind: Deployment

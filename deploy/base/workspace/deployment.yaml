@@ -48,3 +48,12 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: session-tls
+              mountPath: /keys/session
+              readOnly: true
+      volumes:
+        - name: session-tls
+          secret:
+            secretName: workspace-session-tls
+            defaultMode: 0440

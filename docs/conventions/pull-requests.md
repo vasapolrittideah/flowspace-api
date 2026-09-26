@@ -21,7 +21,7 @@ The [PR template](../../.github/pull_request_template.md) contains `Change`, `Re
 - Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 - Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
 - End `Reason` with one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when the Issue remains open, such as when a PR updates a spec before implementation. Leave one blank line before the first Issue reference and no blank lines between references. `Refs` does not close the Issue; `Closes` closes it after the PR merges into `main`.
-- Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, `Verification`, and `Notes`. Omit `Risks or limitations` when none apply.
+- Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `Change`, `Reason`, `Verification`, `Risks or limitations`, and `Notes`. Write `n/a` in either of the last two sections when there is nothing to report.
 - Before creating or updating a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review every prose section after editing. Keep new text in an existing paragraph or bullet only when it develops the same point. Start a new paragraph for a separate explanation, or use separate bullets for independent points.
 
 ### Before requesting review
@@ -71,7 +71,6 @@ Use the Checks and Measurements tables in the PR template. Keep each command in 
 - Write useful facts about this PR that do not fit the other sections. Write paragraphs for connected points and bullets for independent points. A note does not need to start with a Check name.
 - State the cause of each unresolved failure and the reason for each check that did not run. Report warnings even when a command passes. Do not paste routine logs or describe resolved attempts. Link relevant output when it helps review.
 - For vulnerabilities in required modules that the code does not appear to call, use this wording: `Govulncheck reported <count> vulnerabilities in required modules that the code does not appear to call.`
-- Write `-` when there is nothing to add.
 
 ### Suggested squash commit
 

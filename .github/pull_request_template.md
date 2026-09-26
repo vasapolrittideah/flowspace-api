@@ -24,8 +24,12 @@
 
 ## Risks or limitations
 
-<!-- Include material compatibility effects, remaining limitations, or follow-up work. Omit this section when none apply. -->
+<!-- Include material compatibility effects, remaining limitations, or follow-up work when present. -->
+
+n/a
 
 ## Notes
 
-<!-- Include useful context about this PR that does not fit the sections above. Write `-` when there is nothing to add. -->
+<!-- Include useful context about this PR that does not fit the sections above when present. -->
+
+n/a

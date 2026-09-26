@@ -63,6 +63,52 @@ func TestAccessTokenVerifier(t *testing.T) {
 	}
 }
 
+func TestAccessTokenVerifierKeyOverlapAndRetirement(t *testing.T) {
+	oldPublic, oldPrivate, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newPublic, newPrivate, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claims := outbound.AccessTokenClaims{
+		Subject: "subject", SessionID: "session", ID: "token-id",
+		IssuedAt: time.Now().Add(-time.Minute), ExpiresAt: time.Now().Add(time.Minute),
+	}
+	for _, candidate := range []struct {
+		id  string
+		key ed25519.PrivateKey
+	}{
+		{"old", oldPrivate}, {"new", newPrivate},
+	} {
+		signer, err := NewSigner(candidate.key, candidate.id, "issuer", "audience")
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, err := signer.Sign(claims)
+		if err != nil {
+			t.Fatal(err)
+		}
+		verifier, err := NewVerifierKeys(map[string]ed25519.PublicKey{"old": oldPublic, "new": newPublic}, "issuer", "audience")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := verifier.Verify(raw); err != nil {
+			t.Fatalf("overlap rejected %s token: %v", candidate.id, err)
+		}
+		if candidate.id == "old" {
+			retired, err := NewVerifierKeys(map[string]ed25519.PublicKey{"new": newPublic}, "issuer", "audience")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := retired.Verify(raw); !errors.Is(err, outbound.ErrUnauthenticated) {
+				t.Fatalf("retired key error = %v", err)
+			}
+		}
+	}
+}
+
 func TestAccessTokenVerifierRejectsInvalidClaims(t *testing.T) {
 	public, private, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

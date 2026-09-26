@@ -201,6 +201,16 @@ tasks:
     cmds:
       - sh scripts/rotate-identity-session-tls-local.test.sh
 
+  identity:signing-key:retire:
+    desc: Remove the prior local signing public key after the overlap
+    cmds:
+      - sh scripts/retire-identity-signing-key-local.sh
+
+  identity:signing-key:test:
+    desc: Test the local signing key retirement guard
+    cmds:
+      - sh scripts/retire-identity-signing-key-local.test.sh
+
   secrets:local-test:
     desc: Test local secret paths and Git and Docker exclusions
     cmds:
@@ -225,5 +235,6 @@ tasks:
     cmds:
       - task: check:fast
       - task: identity:session-tls:test
+      - task: identity:signing-key:test
       - task: lint
       - sh scripts/check-numbered-constraints.sh

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net"
@@ -65,7 +66,11 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	if err != nil {
 		return nil, err
 	}
-	verifier, err := token.NewVerifier(ed25519.PublicKey(privateKey[ed25519.SeedSize:]), config.SigningKeyID, config.TokenIssuer, config.TokenAudience)
+	keys, jwks, err := buildSigningKeys(privateKey, config.SigningKeyID, config.ExtraSigningPublicKey)
+	if err != nil {
+		return nil, err
+	}
+	verifier, err := token.NewVerifierKeys(keys, config.TokenIssuer, config.TokenAudience)
 	if err != nil {
 		return nil, err
 	}
@@ -100,13 +105,6 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 		pool.Close()
 		return nil, err
 	}
-	jwks, err := json.Marshal(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{
-		Key: privateKey.Public(), KeyID: config.SigningKeyID, Algorithm: string(jose.EdDSA), Use: "sig",
-	}}})
-	if err != nil {
-		pool.Close()
-		return nil, errors.New("invalid public signing key")
-	}
 	internal := http.NewServeMux()
 	internal.HandleFunc("GET /livez", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	internal.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -129,6 +127,30 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 		public: newHTTPServer(config.HTTPAddress, public), internal: newHTTPServer(config.InternalHTTPAddress, internal),
 		session: session, sessionAddress: config.SessionGRPCAddress, pool: pool, logger: logger,
 	}, nil
+}
+
+func buildSigningKeys(privateKey ed25519.PrivateKey, activeID, additional string) (map[string]ed25519.PublicKey, []byte, error) {
+	if len(privateKey) != ed25519.PrivateKeySize || activeID == "" {
+		return nil, nil, errors.New("invalid public signing key")
+	}
+	public := ed25519.PublicKey(privateKey[ed25519.SeedSize:])
+	keys := map[string]ed25519.PublicKey{activeID: public}
+	list := []jose.JSONWebKey{{Key: public, KeyID: activeID, Algorithm: string(jose.EdDSA), Use: "sig"}}
+	if additional != "" {
+		keyID, encoded, found := strings.Cut(additional, ":")
+		decoded, err := base64.RawURLEncoding.DecodeString(encoded)
+		if !found || keyID == "" || keyID == activeID || err != nil || len(decoded) != ed25519.PublicKeySize {
+			return nil, nil, errors.New("invalid public signing key")
+		}
+		key := ed25519.PublicKey(decoded)
+		keys[keyID] = key
+		list = append(list, jose.JSONWebKey{Key: key, KeyID: keyID, Algorithm: string(jose.EdDSA), Use: "sig"})
+	}
+	jwks, err := json.Marshal(jose.JSONWebKeySet{Keys: list})
+	if err != nil {
+		return nil, nil, errors.New("invalid public signing key")
+	}
+	return keys, jwks, nil
 }
 
 func newIdentityRPCHandlers(ctx context.Context, config APIConfig, pool *pgxpool.Pool,

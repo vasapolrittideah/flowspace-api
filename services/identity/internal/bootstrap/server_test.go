@@ -2,17 +2,81 @@ package bootstrap
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/go-jose/go-jose/v4"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
 )
+
+func TestSigningKeyPublicationBeforeAndAfterSwitch(t *testing.T) {
+	oldPublic, oldPrivate, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newPublic, newPrivate, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, phase := range []struct {
+		name, activeID, additional string
+		active                     ed25519.PrivateKey
+		want                       map[string]ed25519.PublicKey
+	}{
+		{
+			"published", "old", "new:" + base64.RawURLEncoding.EncodeToString(newPublic), oldPrivate,
+			map[string]ed25519.PublicKey{"old": oldPublic, "new": newPublic},
+		},
+		{
+			"switched", "new", "old:" + base64.RawURLEncoding.EncodeToString(oldPublic), newPrivate,
+			map[string]ed25519.PublicKey{"old": oldPublic, "new": newPublic},
+		},
+		{"retired", "new", "", newPrivate, map[string]ed25519.PublicKey{"new": newPublic}},
+	} {
+		t.Run(phase.name, func(t *testing.T) {
+			keys, document, err := buildSigningKeys(phase.active, phase.activeID, phase.additional)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var jwks jose.JSONWebKeySet
+			if err := json.Unmarshal(document, &jwks); err != nil {
+				t.Fatal(err)
+			}
+			if len(keys) != len(phase.want) || len(jwks.Keys) != len(phase.want) {
+				t.Fatalf("published %d verifier keys and %d JWKS keys, want %d", len(keys), len(jwks.Keys), len(phase.want))
+			}
+			for _, key := range jwks.Keys {
+				want, ok := phase.want[key.KeyID]
+				published, valid := key.Key.(ed25519.PublicKey)
+				if !ok || !valid || string(keys[key.KeyID]) != string(want) || string(published) != string(want) {
+					t.Fatalf("wrong public key for %q", key.KeyID)
+				}
+			}
+		})
+	}
+}
+
+func TestSigningKeyPublicationRejectsInvalidAdditionalKey(t *testing.T) {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range []string{"current:AA", "current:" + base64.RawURLEncoding.EncodeToString(publicKey), "missing-colon"} {
+		if _, _, err := buildSigningKeys(privateKey, "current", value); err == nil {
+			t.Fatalf("accepted invalid additional key %q", value)
+		}
+	}
+}
 
 type stubIdentityHandler struct {
 	identityv1.UnimplementedIdentityServiceServer

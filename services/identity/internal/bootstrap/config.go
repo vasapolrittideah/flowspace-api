@@ -23,6 +23,7 @@ type APIConfig struct {
 	DatabaseURL            sharedconfig.Secret `env:"DATABASE_URL,required,notEmpty"`
 	SigningKeyFile         string              `env:"SIGNING_KEY_FILE,required,notEmpty"`
 	SigningKeyID           string              `env:"SIGNING_KEY_ID,required,notEmpty"`
+	ExtraSigningPublicKey  string              `env:"SIGNING_ADDITIONAL_PUBLIC_KEY"`
 	TokenIssuer            string              `env:"TOKEN_ISSUER,required,notEmpty"`
 	TokenAudience          string              `env:"TOKEN_AUDIENCE,required,notEmpty"`
 	CodeVerifierKeyFile    string              `env:"CODE_VERIFIER_KEY_FILE,required,notEmpty"`

@@ -1,26 +1,8 @@
-<!-- Use a paragraph for one connected point and bullets for multiple independent points in Change, Reason, Risks or limitations, and Notes. -->
+<!-- Use a paragraph for one connected point and bullets for multiple independent points in Summary, Risks or limitations, and Notes. -->
 
-## Change
+## Summary
 
-<!-- State the problem and what happens after the change. -->
-
-## Reason
-
-<!-- Explain why this change is needed. Include relevant issue or decision links. -->
-
-## Verification
-
-<!-- Follow https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/conventions/pull-requests.md#verification. -->
-
-### Checks
-
-| Check | Result | Command |
-| --- | --- | --- |
-
-### Measurements
-
-| Measurement | Requirement | Value | Status |
-| --- | --- | --- | --- |
+<!-- State the problem, what changes, and why. Include relevant issue or decision links. -->
 
 ## Risks or limitations
 

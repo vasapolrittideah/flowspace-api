@@ -21,7 +21,7 @@ The working tree contains local repository files and changes. A branch holds cha
 5. Make small changes and test each change.
 6. Create checkpoint commits for the tested changes.
 7. Keep unrelated refactoring and formatting separate from behavior changes.
-8. Run the applicable checks and record their exact results in the [PR Verification table](docs/conventions/pull-requests.md#verification).
+8. Run the applicable local checks and review the [CI results](.github/workflows/ci.yml) on the PR.
 9. Push the branch. Open a PR to `main` for new work, or update the existing PR.
 10. Address review comments and rerun the affected commands.
 11. After the maintainer merges the PR, remove the branch if it contains no work to preserve.

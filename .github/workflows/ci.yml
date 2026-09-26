@@ -21,6 +21,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - name: Check diff whitespace
+        run: git diff --check "$CONSTRAINT_BASE" HEAD
       - name: Test constraint checker
         run: node --test scripts/constraint-check.test.mjs
       - name: Test local session TLS rotation
@@ -91,6 +93,8 @@ jobs:
         with:
           version: v2.13.2
           args: ./...
+      - name: Check Go formatting
+        run: golangci-lint fmt --diff
 
   markdown-lint:
     name: Lint Markdown
@@ -102,3 +106,5 @@ jobs:
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
         with:
           globs: "**/*.md"
+      - name: Check local Markdown links
+        run: node scripts/check-local-links.mjs

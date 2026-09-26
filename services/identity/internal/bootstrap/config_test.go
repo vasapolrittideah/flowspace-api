@@ -28,6 +28,28 @@ func TestLoadAPIConfigRequiresKeysWithoutLeakingValues(t *testing.T) {
 	}
 }
 
+func TestLoadAPIConfigRequiresCompleteSessionListener(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "local")
+	t.Setenv("DATABASE_URL", "postgres://identity:secret@localhost/identity")
+	t.Setenv("SIGNING_KEY_FILE", "/keys/signing.pem")
+	t.Setenv("SIGNING_KEY_ID", "local-1")
+	t.Setenv("TOKEN_ISSUER", "urn:flowspace:identity:local")
+	t.Setenv("TOKEN_AUDIENCE", "flowspace-api")
+	t.Setenv("CODE_VERIFIER_KEY_FILE", "/keys/verifier")
+	t.Setenv("DELIVERY_KEY_FILE", "/keys/delivery")
+	t.Setenv("SESSION_GRPC_ADDR", ":8082")
+	if _, err := LoadAPIConfig(); err == nil || strings.Contains(err.Error(), "secret") {
+		t.Fatalf("accepted or disclosed incomplete session configuration: %v", err)
+	}
+	t.Setenv("SESSION_TLS_CERT_FILE", "/keys/session/server.pem")
+	t.Setenv("SESSION_TLS_KEY_FILE", "/keys/session/server-key.pem")
+	t.Setenv("SESSION_CLIENT_CA_FILE", "/keys/session/ca.pem")
+	t.Setenv("SESSION_CALLER_ALLOWLIST", "urn:flowspace:service:workspace=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	if _, err := LoadAPIConfig(); err != nil {
+		t.Fatalf("complete session configuration: %v", err)
+	}
+}
+
 func TestLoadAPIAndWorkerConfig(t *testing.T) {
 	t.Setenv("ENVIRONMENT", "local")
 	t.Setenv("DATABASE_URL", "postgres://identity:secret@localhost/identity")

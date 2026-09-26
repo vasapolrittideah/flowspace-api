@@ -58,4 +58,4 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ## Examples
 
-The [Identity plan](../../tasks/identity-signup-and-email-verification.md) and [Workspace plan](../../tasks/workspace-create-read.md) show this format.
+The [Identity plan](../../tasks/identity-signup-and-email-verification.md) and [Workspace plan](../../tasks/workspace-creation-and-reading.md) show this format.

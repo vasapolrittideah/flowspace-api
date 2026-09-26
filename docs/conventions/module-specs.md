@@ -79,4 +79,4 @@ Status: Draft.
 
 ## Examples
 
-The [Identity signup specification](../specs/identity-signup-and-email-verification.md) and [Workspace creation specification](../specs/workspace-create-read.md) show this format.
+The [Identity signup specification](../specs/identity-signup-and-email-verification.md) and [Workspace creation specification](../specs/workspace-creation-and-reading.md) show this format.

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -12,8 +13,10 @@ import (
 
 type SessionRepository struct{ queries *sqlc.Queries }
 
-func NewSessionRepository(tx pgx.Tx) *SessionRepository {
-	return &SessionRepository{queries: sqlc.New(tx)}
+var _ outbound.SessionCheckRepository = (*SessionRepository)(nil)
+
+func NewSessionRepository(db sqlc.DBTX) *SessionRepository {
+	return &SessionRepository{queries: sqlc.New(db)}
 }
 
 func (r *SessionRepository) Create(ctx context.Context, subject string, hash []byte) (outbound.SessionRecord, error) {
@@ -27,4 +30,16 @@ func (r *SessionRepository) Create(ctx context.Context, subject string, hash []b
 		ID: uuid.UUID(row.ID.Bytes).String(), CreatedAt: row.CreatedAt.Time,
 		IdleExpiresAt: row.IdleExpiresAt.Time, AbsoluteExpiresAt: row.AbsoluteExpiresAt.Time,
 	}, nil
+}
+
+func (r *SessionRepository) Check(ctx context.Context, subject, sessionID string) (bool, error) {
+	id, err := parseUUID(sessionID)
+	if err != nil {
+		return false, outbound.ErrUnauthenticated
+	}
+	verifiedAt, err := r.queries.GetActiveSessionState(ctx, sqlc.GetActiveSessionStateParams{Subject: subject, SessionID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, outbound.ErrUnauthenticated
+	}
+	return verifiedAt.Valid, err
 }

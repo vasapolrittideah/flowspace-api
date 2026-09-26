@@ -12,18 +12,23 @@ import (
 )
 
 type APIConfig struct {
-	Environment           string              `env:"ENVIRONMENT,required,notEmpty"`
-	HTTPAddress           string              `env:"HTTP_ADDR"                                envDefault:":8080"`
-	InternalHTTPAddress   string              `env:"INTERNAL_HTTP_ADDR"                       envDefault:":8081"`
-	DatabaseURL           sharedconfig.Secret `env:"DATABASE_URL,required,notEmpty"`
-	SigningKeyFile        string              `env:"SIGNING_KEY_FILE,required,notEmpty"`
-	SigningKeyID          string              `env:"SIGNING_KEY_ID,required,notEmpty"`
-	TokenIssuer           string              `env:"TOKEN_ISSUER,required,notEmpty"`
-	TokenAudience         string              `env:"TOKEN_AUDIENCE,required,notEmpty"`
-	CodeVerifierKeyFile   string              `env:"CODE_VERIFIER_KEY_FILE,required,notEmpty"`
-	DeliveryKeyFile       string              `env:"DELIVERY_KEY_FILE,required,notEmpty"`
-	TrustedProxyCIDRs     string              `env:"TRUSTED_PROXY_CIDRS"`
-	OutboxReadyMaxPending int                 `env:"OUTBOX_READY_MAX_PENDING"                 envDefault:"10000"`
+	Environment            string              `env:"ENVIRONMENT,required,notEmpty"`
+	HTTPAddress            string              `env:"HTTP_ADDR"                                envDefault:":8080"`
+	InternalHTTPAddress    string              `env:"INTERNAL_HTTP_ADDR"                       envDefault:":8081"`
+	SessionGRPCAddress     string              `env:"SESSION_GRPC_ADDR"`
+	SessionTLSCertFile     string              `env:"SESSION_TLS_CERT_FILE"`
+	SessionTLSKeyFile      string              `env:"SESSION_TLS_KEY_FILE"`
+	SessionClientCAFile    string              `env:"SESSION_CLIENT_CA_FILE"`
+	SessionCallerAllowlist string              `env:"SESSION_CALLER_ALLOWLIST"`
+	DatabaseURL            sharedconfig.Secret `env:"DATABASE_URL,required,notEmpty"`
+	SigningKeyFile         string              `env:"SIGNING_KEY_FILE,required,notEmpty"`
+	SigningKeyID           string              `env:"SIGNING_KEY_ID,required,notEmpty"`
+	TokenIssuer            string              `env:"TOKEN_ISSUER,required,notEmpty"`
+	TokenAudience          string              `env:"TOKEN_AUDIENCE,required,notEmpty"`
+	CodeVerifierKeyFile    string              `env:"CODE_VERIFIER_KEY_FILE,required,notEmpty"`
+	DeliveryKeyFile        string              `env:"DELIVERY_KEY_FILE,required,notEmpty"`
+	TrustedProxyCIDRs      string              `env:"TRUSTED_PROXY_CIDRS"`
+	OutboxReadyMaxPending  int                 `env:"OUTBOX_READY_MAX_PENDING"                 envDefault:"10000"`
 }
 
 type WorkerConfig struct {
@@ -49,10 +54,32 @@ func LoadAPIConfig() (APIConfig, error) {
 	if config.OutboxReadyMaxPending < 1 || config.HTTPAddress == config.InternalHTTPAddress {
 		return APIConfig{}, errors.New("invalid API configuration")
 	}
+	if _, err := sessionRPCEnabled(config); err != nil {
+		return APIConfig{}, err
+	}
 	if config.Environment == "local" && (config.TokenIssuer != "urn:flowspace:identity:local" || config.TokenAudience != "flowspace-api") {
 		return APIConfig{}, errors.New("invalid local token configuration")
 	}
 	return config, nil
+}
+
+func sessionRPCEnabled(config APIConfig) (bool, error) {
+	configured := 0
+	for _, value := range []string{
+		config.SessionGRPCAddress, config.SessionTLSCertFile, config.SessionTLSKeyFile,
+		config.SessionClientCAFile, config.SessionCallerAllowlist,
+	} {
+		if value != "" {
+			configured++
+		}
+	}
+	if configured == 0 {
+		return false, nil
+	}
+	if configured != 5 || config.SessionGRPCAddress == config.HTTPAddress || config.SessionGRPCAddress == config.InternalHTTPAddress {
+		return false, errors.New("invalid session listener configuration")
+	}
+	return true, nil
 }
 
 func LoadWorkerConfig() (WorkerConfig, error) {

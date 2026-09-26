@@ -36,10 +36,12 @@ import (
 const requestTimeout = 5 * time.Second
 
 type APIServer struct {
-	public   *http.Server
-	internal *http.Server
-	pool     *pgxpool.Pool
-	logger   *zap.Logger
+	public         *http.Server
+	internal       *http.Server
+	session        *grpc.Server
+	sessionAddress string
+	pool           *pgxpool.Pool
+	logger         *zap.Logger
 }
 
 func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*APIServer, error) {
@@ -93,7 +95,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 		app.NewAccountClaimService(accountRepo, signer, limits.WrongCode, limits.AccountWrongCode, checkPassword, verifierKey),
 		verifier, trusted,
 	)
-	public, err := newPublicHandler(ctx, handler, logger, trusted)
+	public, session, err := newIdentityRPCHandlers(ctx, config, pool, handler, logger, trusted)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -125,8 +127,24 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	})
 	return &APIServer{
 		public: newHTTPServer(config.HTTPAddress, public), internal: newHTTPServer(config.InternalHTTPAddress, internal),
-		pool: pool, logger: logger,
+		session: session, sessionAddress: config.SessionGRPCAddress, pool: pool, logger: logger,
 	}, nil
+}
+
+func newIdentityRPCHandlers(ctx context.Context, config APIConfig, pool *pgxpool.Pool,
+	handler identityv1.IdentityServiceServer, logger *zap.Logger, trusted []netip.Prefix,
+) (http.Handler, *grpc.Server, error) {
+	public, err := newPublicHandler(ctx, handler, logger, trusted)
+	if err != nil {
+		return nil, nil, err
+	}
+	sessionTLS, err := newSessionTLSConfig(config)
+	if err != nil || sessionTLS == nil {
+		return public, nil, err
+	}
+	session, err := newSessionGRPCServer(sessionTLS,
+		app.NewSessionCheckService(postgres.NewSessionRepository(pool)), otel.Meter("flowspace/identity/api"), logger)
+	return public, session, err
 }
 
 func loadTrustedProxies(value string) ([]netip.Prefix, error) {
@@ -163,27 +181,44 @@ func (s *APIServer) Run(ctx context.Context) error {
 		return err
 	}
 	defer func() { _ = internalListener.Close() }()
+	var sessionListener net.Listener
+	if s.session != nil {
+		sessionListener, err = (&net.ListenConfig{}).Listen(ctx, "tcp", s.sessionAddress)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = sessionListener.Close() }()
+	}
 	s.logger.Info("process_listening", zap.String("address", s.public.Addr))
-	results := make(chan error, 2)
+	serverCount := 2
+	results := make(chan error, 3)
 	go func() { results <- s.public.Serve(publicListener) }()
 	go func() { results <- s.internal.Serve(internalListener) }()
+	stopSession := func() {}
+	if sessionListener != nil {
+		serverCount++
+		go func() { results <- s.session.Serve(sessionListener) }()
+		stopSession = s.session.Stop
+	}
 	var result error
+	received := 0
 	select {
 	case result = <-results:
+		received = 1
 	case <-ctx.Done():
 	}
 	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), requestTimeout)
 	defer cancel()
 	_ = s.public.Shutdown(shutdownCtx)
 	_ = s.internal.Shutdown(shutdownCtx)
-	if result == nil {
-		result = <-results
+	stopSession()
+	if errors.Is(result, http.ErrServerClosed) || errors.Is(result, grpc.ErrServerStopped) {
+		result = nil
 	}
-	if err := <-results; err != nil && !errors.Is(err, http.ErrServerClosed) && result == nil {
-		result = err
-	}
-	if errors.Is(result, http.ErrServerClosed) {
-		return nil
+	for ; received < serverCount; received++ {
+		if err := <-results; err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, grpc.ErrServerStopped) && result == nil {
+			result = err
+		}
 	}
 	return result
 }

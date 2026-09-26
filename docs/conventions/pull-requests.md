@@ -63,7 +63,7 @@ Use the three parts in the PR template: Checks, Measurements, and Commands. Keep
 | Reachable vulnerabilities | C7 |
 
 - Copy each requirement and measured value into its own cell. Keep the coverage precision and covered-line count from the command output. Add a PR-specific row when a numeric result has an explicit requirement. Keep other observations in Checks Notes.
-- Set `Status` to exactly `Passed` when the value meets the requirement or `Failed` when it does not. Use `Not applicable` with `No added executable Go lines` as the value when changed-line coverage does not apply. Use `Not measured` with `-` as the value when a command did not produce a valid measurement.
+- Set `Status` to exactly `Passed` when the value meets the requirement or `Failed` when it does not. Use `Not applicable` when the measurement does not apply. Use `Not measured` when a command did not produce a valid measurement. Set `Value` to `-` when no value exists or `Status` is `Not applicable` or `Not measured`.
 
 #### Commands
 

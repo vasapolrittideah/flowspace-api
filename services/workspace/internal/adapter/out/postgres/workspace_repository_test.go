@@ -301,7 +301,8 @@ func TestWorkspaceRepository(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		locked, err := workspacesqlc.New(tx).TryCreateWorkspaceLock(ctx, createWorkspaceLockID("subject-connection-loss", "connection-loss-key"))
+		lockID := createWorkspaceLockID("subject-connection-loss", "connection-loss-key")
+		locked, err := workspacesqlc.New(tx).TryCreateWorkspaceLock(ctx, lockID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -310,6 +311,21 @@ func TestWorkspaceRepository(t *testing.T) {
 		}
 		if err := connection.Conn().Close(ctx); err != nil {
 			t.Fatal(err)
+		}
+
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			var released bool
+			if err := pool.QueryRow(ctx, `SELECT pg_try_advisory_xact_lock($1)`, lockID).Scan(&released); err != nil {
+				t.Fatal(err)
+			}
+			if released {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("advisory lock was not released after connection loss")
+			}
+			time.Sleep(10 * time.Millisecond)
 		}
 
 		created, err := createWorkspace(ctx, repository, "subject-connection-loss", "connection-loss-key", "Recovered")

@@ -4,7 +4,7 @@ description: Break work into small verifiable tasks and track each task in GitHu
 
 Invoke the agent-skills:planning-and-task-breakdown skill.
 
-Before planning, read the [module plan conventions](../../docs/conventions/module-plans.md) and the [GitHub Issue conventions](../../docs/conventions/github-issues.md). Use their templates and file paths instead of the generic skill defaults.
+Before planning, read the [module plan conventions](../../docs/conventions/module-plans.md), [GitHub Issue conventions](../../docs/conventions/github-issues.md), and [GitHub milestone conventions](../../docs/conventions/github-milestones.md). Use their templates and file paths instead of the generic skill defaults.
 
 Read the capability spec at `docs/specs/<module-id>.md`. If a capability map includes the module, read `docs/specs/maps/<map-id>.md` too. Read the codebase sections that the capability affects. Plan one module at a time. Plan modules in the build order from the capability map.
 
@@ -21,12 +21,12 @@ Use GitHub Issues as the task list. Use GitHub Projects to show task status.
 9. Run `gh auth status --active --hostname github.com` and `gh api user --jq .login`. If either reports a connection or DNS error, retry both outside the sandbox with the current credentials. If GitHub rejects the credentials after a successful connection, ask the maintainer to run `gh auth login -h github.com -p https -w` and stop.
 10. Make sure that the active token has the `project` scope. If it does not, ask the maintainer to run `gh auth refresh -h github.com -s project` and stop.
 11. Reuse the open GitHub Project for the repository. If none exists, create one with the repository name.
-12. Create or reuse one GitHub milestone named for the approved plan's capability. Put `tasks/<module-id>.md` in its description. Set a due date only if the approved plan has one.
-13. Create one GitHub Issue from each task in `tasks/.todo.md`. Put all task details in the issue body and use `--milestone "<capability name>"` to assign the milestone.
+12. Create or reuse the approved plan's GitHub milestone.
+13. Create one GitHub Issue from each task in `tasks/.todo.md` using the Issue and milestone conventions.
 14. Add each issue to the GitHub Project with the `Todo` status.
 15. Record each dependency as `Blocked by #<issue-number>` in the dependent issue.
 16. Replace the plan Task List with an ordered index of issue links without duplicate checklists.
-17. Make sure that `gh project item-list` shows every new issue with `Todo` status and `gh issue list --milestone "<capability name>" --state all --limit 1000` shows every new issue.
+17. Make sure that `gh project item-list` shows every new issue with `Todo` status and `gh issue list --milestone "<milestone title>" --state all --limit 1000` shows every Task Issue in the plan.
 18. Delete `tasks/.todo.md` after both checks succeed. An issue-side Project link alone is not enough.
 
 If `tasks/.todo.md` exists for the same module, update it in place. If it belongs to another module, stop and ask before changing it. If another incomplete plan or issue set exists for the same module, stop and ask before changing it.

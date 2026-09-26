@@ -10,10 +10,19 @@
 
 ## Verification
 
-<!-- Follow https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/conventions/pull-requests.md#verification. Add one row per required check. Start Result with Passed., Failed., or Not run. Add a short explanation only when it helps review. -->
+<!-- Follow https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/conventions/pull-requests.md#verification. -->
 
-| Check | Command | Result |
+### Checks
+
+| Check | Result | Notes |
 | --- | --- | --- |
+
+### Measurements
+
+| Measurement | Requirement | Value | Status |
+| --- | --- | --- | --- |
+
+### Commands
 
 ## Risks or limitations
 

@@ -52,6 +52,47 @@ service IdentityService {
       body: "*"
     };
   }
+
+  // Creates a device session with an email address and password.
+  // Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+  rpc CreatePasswordSession(CreatePasswordSessionRequest) returns (CreatePasswordSessionResponse) {
+    option (google.api.http) = {
+      post: "/v1/password-sessions"
+      body: "*"
+    };
+  }
+
+  // Rotates a refresh token for one device session.
+  // Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+  rpc RefreshSession(RefreshSessionRequest) returns (RefreshSessionResponse) {
+    option (google.api.http) = {
+      post: "/v1/session-refreshes"
+      body: "*"
+    };
+  }
+
+  // Revokes the session in one validated access token.
+  // Requires exactly one Authorization bearer header.
+  rpc LogoutCurrentSession(LogoutCurrentSessionRequest) returns (LogoutCurrentSessionResponse) {
+    option (google.api.http) = {
+      post: "/v1/session-logouts"
+      body: "*"
+    };
+  }
+
+  // Revokes all sessions for the subject in one validated access token.
+  // Requires exactly one Authorization bearer header.
+  rpc LogoutAllSessions(LogoutAllSessionsRequest) returns (LogoutAllSessionsResponse) {
+    option (google.api.http) = {
+      post: "/v1/account-session-logouts"
+      body: "*"
+    };
+  }
+
+  // Returns the current email state for an active session; inactive sessions
+  // return Unauthenticated.
+  // Requires an authenticated service caller and has no public HTTP route.
+  rpc CheckSession(CheckSessionRequest) returns (CheckSessionResponse);
 }
 
 message CreateAccountRequest {
@@ -101,4 +142,52 @@ message ClaimUnverifiedAccountResponse {
   string access_token = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   string refresh_token = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp access_token_expires_at = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message CreatePasswordSessionRequest {
+  string email = 1 [(google.api.field_behavior) = REQUIRED];
+  string password = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CreatePasswordSessionResponse {
+  string subject = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional bool email_verified = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string access_token = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string refresh_token = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp access_token_expires_at = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp refresh_token_expires_at = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp session_expires_at = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message RefreshSessionRequest {
+  string refresh_token = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RefreshSessionResponse {
+  string access_token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string refresh_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp access_token_expires_at = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp refresh_token_expires_at = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp session_expires_at = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message LogoutCurrentSessionRequest {}
+
+message LogoutCurrentSessionResponse {
+  bool revoked = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message LogoutAllSessionsRequest {}
+
+message LogoutAllSessionsResponse {
+  bool revoked = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message CheckSessionRequest {
+  string subject = 1 [(google.api.field_behavior) = REQUIRED];
+  string session_id = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CheckSessionResponse {
+  bool email_verified = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

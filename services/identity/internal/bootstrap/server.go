@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
@@ -192,7 +193,13 @@ func newPublicHandler(ctx context.Context, handler identityv1.IdentityServiceSer
 		info *grpc.UnaryServerInfo, next grpc.UnaryHandler,
 	) (any, error) {
 		started := time.Now()
-		response, err := next(ctx, request)
+		var response any
+		var err error
+		if info.FullMethod == identityv1.IdentityService_CheckSession_FullMethodName {
+			err = status.Error(codes.Unimplemented, "method unavailable")
+		} else {
+			response, err = next(ctx, request)
+		}
 		id := metadata.ValueFromIncomingContext(ctx, "x-request-id")
 		requestID := ""
 		if len(id) == 1 && validRequestID(id[0]) {

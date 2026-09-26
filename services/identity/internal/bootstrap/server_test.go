@@ -22,6 +22,10 @@ func (stubIdentityHandler) CreateAccount(context.Context, *identityv1.CreateAcco
 	return &identityv1.CreateAccountResponse{Subject: "subject-1"}, nil
 }
 
+func (stubIdentityHandler) CheckSession(context.Context, *identityv1.CheckSessionRequest) (*identityv1.CheckSessionResponse, error) {
+	return &identityv1.CheckSessionResponse{EmailVerified: true}, nil
+}
+
 func TestPublicHandlerOnlyServesApprovedRoutes(t *testing.T) {
 	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, zap.NewNop(), nil)
 	if err != nil {
@@ -68,6 +72,34 @@ func TestPublicHandlerServesTypedRPC(t *testing.T) {
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK || response.Result().Trailer.Get("Grpc-Status") != "0" {
 		t.Fatalf("typed RPC status = %d, trailer = %v", response.Code, response.Result().Trailer)
+	}
+}
+
+func TestPublicHandlerRejectsCheckSession(t *testing.T) {
+	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, zap.NewNop(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := proto.Marshal(&identityv1.CheckSessionRequest{Subject: "subject-1", SessionId: "session-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	const payloadLength = 22
+	if len(payload) != payloadLength {
+		t.Fatalf("unexpected test payload size: %d", len(payload))
+	}
+	frame := make([]byte, 5+len(payload))
+	binary.BigEndian.PutUint32(frame[1:5], payloadLength)
+	copy(frame[5:], payload)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost,
+		"/flowspace.identity.v1.IdentityService/CheckSession", strings.NewReader(string(frame)))
+	request.ProtoMajor = 2
+	request.Header.Set("Content-Type", "application/grpc")
+	request.Header.Set("TE", "trailers")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if got := response.Result().Trailer.Get("Grpc-Status"); got != "12" {
+		t.Fatalf("public CheckSession gRPC status = %q, want 12", got)
 	}
 }
 

@@ -24,6 +24,11 @@ const (
 	IdentityService_VerifyEmail_FullMethodName                       = "/flowspace.identity.v1.IdentityService/VerifyEmail"
 	IdentityService_RequestUnverifiedAccountClaimCode_FullMethodName = "/flowspace.identity.v1.IdentityService/RequestUnverifiedAccountClaimCode"
 	IdentityService_ClaimUnverifiedAccount_FullMethodName            = "/flowspace.identity.v1.IdentityService/ClaimUnverifiedAccount"
+	IdentityService_CreatePasswordSession_FullMethodName             = "/flowspace.identity.v1.IdentityService/CreatePasswordSession"
+	IdentityService_RefreshSession_FullMethodName                    = "/flowspace.identity.v1.IdentityService/RefreshSession"
+	IdentityService_LogoutCurrentSession_FullMethodName              = "/flowspace.identity.v1.IdentityService/LogoutCurrentSession"
+	IdentityService_LogoutAllSessions_FullMethodName                 = "/flowspace.identity.v1.IdentityService/LogoutAllSessions"
+	IdentityService_CheckSession_FullMethodName                      = "/flowspace.identity.v1.IdentityService/CheckSession"
 )
 
 // IdentityServiceClient is the client API for IdentityService service.
@@ -44,6 +49,22 @@ type IdentityServiceClient interface {
 	// Replaces an unverified account after email ownership is proved.
 	// Rejects the Idempotency-Key HTTP header.
 	ClaimUnverifiedAccount(ctx context.Context, in *ClaimUnverifiedAccountRequest, opts ...grpc.CallOption) (*ClaimUnverifiedAccountResponse, error)
+	// Creates a device session with an email address and password.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	CreatePasswordSession(ctx context.Context, in *CreatePasswordSessionRequest, opts ...grpc.CallOption) (*CreatePasswordSessionResponse, error)
+	// Rotates a refresh token for one device session.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	RefreshSession(ctx context.Context, in *RefreshSessionRequest, opts ...grpc.CallOption) (*RefreshSessionResponse, error)
+	// Revokes the session in one validated access token.
+	// Requires exactly one Authorization bearer header.
+	LogoutCurrentSession(ctx context.Context, in *LogoutCurrentSessionRequest, opts ...grpc.CallOption) (*LogoutCurrentSessionResponse, error)
+	// Revokes all sessions for the subject in one validated access token.
+	// Requires exactly one Authorization bearer header.
+	LogoutAllSessions(ctx context.Context, in *LogoutAllSessionsRequest, opts ...grpc.CallOption) (*LogoutAllSessionsResponse, error)
+	// Returns the current email state for an active session; inactive sessions
+	// return Unauthenticated.
+	// Requires an authenticated service caller and has no public HTTP route.
+	CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*CheckSessionResponse, error)
 }
 
 type identityServiceClient struct {
@@ -104,6 +125,56 @@ func (c *identityServiceClient) ClaimUnverifiedAccount(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *identityServiceClient) CreatePasswordSession(ctx context.Context, in *CreatePasswordSessionRequest, opts ...grpc.CallOption) (*CreatePasswordSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatePasswordSessionResponse)
+	err := c.cc.Invoke(ctx, IdentityService_CreatePasswordSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) RefreshSession(ctx context.Context, in *RefreshSessionRequest, opts ...grpc.CallOption) (*RefreshSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RefreshSessionResponse)
+	err := c.cc.Invoke(ctx, IdentityService_RefreshSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) LogoutCurrentSession(ctx context.Context, in *LogoutCurrentSessionRequest, opts ...grpc.CallOption) (*LogoutCurrentSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogoutCurrentSessionResponse)
+	err := c.cc.Invoke(ctx, IdentityService_LogoutCurrentSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) LogoutAllSessions(ctx context.Context, in *LogoutAllSessionsRequest, opts ...grpc.CallOption) (*LogoutAllSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogoutAllSessionsResponse)
+	err := c.cc.Invoke(ctx, IdentityService_LogoutAllSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*CheckSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckSessionResponse)
+	err := c.cc.Invoke(ctx, IdentityService_CheckSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IdentityServiceServer is the server API for IdentityService service.
 // All implementations must embed UnimplementedIdentityServiceServer
 // for forward compatibility.
@@ -122,6 +193,22 @@ type IdentityServiceServer interface {
 	// Replaces an unverified account after email ownership is proved.
 	// Rejects the Idempotency-Key HTTP header.
 	ClaimUnverifiedAccount(context.Context, *ClaimUnverifiedAccountRequest) (*ClaimUnverifiedAccountResponse, error)
+	// Creates a device session with an email address and password.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	CreatePasswordSession(context.Context, *CreatePasswordSessionRequest) (*CreatePasswordSessionResponse, error)
+	// Rotates a refresh token for one device session.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	RefreshSession(context.Context, *RefreshSessionRequest) (*RefreshSessionResponse, error)
+	// Revokes the session in one validated access token.
+	// Requires exactly one Authorization bearer header.
+	LogoutCurrentSession(context.Context, *LogoutCurrentSessionRequest) (*LogoutCurrentSessionResponse, error)
+	// Revokes all sessions for the subject in one validated access token.
+	// Requires exactly one Authorization bearer header.
+	LogoutAllSessions(context.Context, *LogoutAllSessionsRequest) (*LogoutAllSessionsResponse, error)
+	// Returns the current email state for an active session; inactive sessions
+	// return Unauthenticated.
+	// Requires an authenticated service caller and has no public HTTP route.
+	CheckSession(context.Context, *CheckSessionRequest) (*CheckSessionResponse, error)
 	mustEmbedUnimplementedIdentityServiceServer()
 }
 
@@ -146,6 +233,21 @@ func (UnimplementedIdentityServiceServer) RequestUnverifiedAccountClaimCode(cont
 }
 func (UnimplementedIdentityServiceServer) ClaimUnverifiedAccount(context.Context, *ClaimUnverifiedAccountRequest) (*ClaimUnverifiedAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ClaimUnverifiedAccount not implemented")
+}
+func (UnimplementedIdentityServiceServer) CreatePasswordSession(context.Context, *CreatePasswordSessionRequest) (*CreatePasswordSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePasswordSession not implemented")
+}
+func (UnimplementedIdentityServiceServer) RefreshSession(context.Context, *RefreshSessionRequest) (*RefreshSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshSession not implemented")
+}
+func (UnimplementedIdentityServiceServer) LogoutCurrentSession(context.Context, *LogoutCurrentSessionRequest) (*LogoutCurrentSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LogoutCurrentSession not implemented")
+}
+func (UnimplementedIdentityServiceServer) LogoutAllSessions(context.Context, *LogoutAllSessionsRequest) (*LogoutAllSessionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LogoutAllSessions not implemented")
+}
+func (UnimplementedIdentityServiceServer) CheckSession(context.Context, *CheckSessionRequest) (*CheckSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckSession not implemented")
 }
 func (UnimplementedIdentityServiceServer) mustEmbedUnimplementedIdentityServiceServer() {}
 func (UnimplementedIdentityServiceServer) testEmbeddedByValue()                         {}
@@ -258,6 +360,96 @@ func _IdentityService_ClaimUnverifiedAccount_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IdentityService_CreatePasswordSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePasswordSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).CreatePasswordSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_CreatePasswordSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).CreatePasswordSession(ctx, req.(*CreatePasswordSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_RefreshSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).RefreshSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_RefreshSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).RefreshSession(ctx, req.(*RefreshSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_LogoutCurrentSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutCurrentSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).LogoutCurrentSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_LogoutCurrentSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).LogoutCurrentSession(ctx, req.(*LogoutCurrentSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_LogoutAllSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutAllSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).LogoutAllSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_LogoutAllSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).LogoutAllSessions(ctx, req.(*LogoutAllSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_CheckSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).CheckSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_CheckSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).CheckSession(ctx, req.(*CheckSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IdentityService_ServiceDesc is the grpc.ServiceDesc for IdentityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -284,6 +476,26 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ClaimUnverifiedAccount",
 			Handler:    _IdentityService_ClaimUnverifiedAccount_Handler,
+		},
+		{
+			MethodName: "CreatePasswordSession",
+			Handler:    _IdentityService_CreatePasswordSession_Handler,
+		},
+		{
+			MethodName: "RefreshSession",
+			Handler:    _IdentityService_RefreshSession_Handler,
+		},
+		{
+			MethodName: "LogoutCurrentSession",
+			Handler:    _IdentityService_LogoutCurrentSession_Handler,
+		},
+		{
+			MethodName: "LogoutAllSessions",
+			Handler:    _IdentityService_LogoutAllSessions_Handler,
+		},
+		{
+			MethodName: "CheckSession",
+			Handler:    _IdentityService_CheckSession_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

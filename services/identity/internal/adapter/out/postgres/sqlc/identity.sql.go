@@ -341,6 +341,30 @@ func (q *Queries) GetActiveAccountForUpdate(ctx context.Context, subject string)
 	return i, err
 }
 
+const getActiveSessionState = `-- name: GetActiveSessionState :one
+SELECT account.email_verified_at
+FROM identity_accounts AS account
+JOIN identity_sessions AS session ON session.account_subject = account.subject
+WHERE account.subject = $1
+  AND session.id = $2
+  AND account.retired_at IS NULL
+  AND session.revoked_at IS NULL
+  AND session.idle_expires_at > statement_timestamp()
+  AND session.absolute_expires_at > statement_timestamp()
+`
+
+type GetActiveSessionStateParams struct {
+	Subject   string
+	SessionID pgtype.UUID
+}
+
+func (q *Queries) GetActiveSessionState(ctx context.Context, arg GetActiveSessionStateParams) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, getActiveSessionState, arg.Subject, arg.SessionID)
+	var email_verified_at pgtype.Timestamptz
+	err := row.Scan(&email_verified_at)
+	return email_verified_at, err
+}
+
 const getChallengeDelivery = `-- name: GetChallengeDelivery :one
 SELECT key_version, nonce, ciphertext
 FROM identity_challenge_deliveries

@@ -29,6 +29,17 @@ WHERE account.subject = sqlc.arg(subject)
   AND session.absolute_expires_at > statement_timestamp()
 FOR UPDATE OF account, session;
 
+-- name: GetActiveSessionState :one
+SELECT account.email_verified_at
+FROM identity_accounts AS account
+JOIN identity_sessions AS session ON session.account_subject = account.subject
+WHERE account.subject = sqlc.arg(subject)
+  AND session.id = sqlc.arg(session_id)
+  AND account.retired_at IS NULL
+  AND session.revoked_at IS NULL
+  AND session.idle_expires_at > statement_timestamp()
+  AND session.absolute_expires_at > statement_timestamp();
+
 -- name: GetActiveAccountByEmailForUpdate :one
 SELECT subject, email_local, email_domain, email_verified_at
 FROM identity_accounts

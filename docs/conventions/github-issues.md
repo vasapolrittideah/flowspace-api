@@ -45,7 +45,7 @@ Estimated scope: <expected size>.
 - Use one Issue for each task. Use the body fields in the template order, with the same spelling and capitalization.
 - State the task outcome in the Issue title. Keep the title and body consistent with the approved specification, module plan, and task scope.
 - Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.
-- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies. When creating it from `tasks/.todo.md`, also assign the milestone for its approved module plan.
+- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies. Assign the [plan milestone](github-milestones.md) to each Issue in the plan's numbered Task list.
 - Use as many acceptance criteria items as the task needs.
 - Keep inspection of a command's output in the same Verification item when they form one check. Put separate manual checks in separate items.
 - Write `Dependencies: None.` when no Issue blocks the task. Otherwise, write one `Blocked by` sentence with the blocking Issue numbers. Separate three or more numbers with commas and put `and` before the last number. Add a prerequisite without an Issue number as a separate sentence. Do not use semicolons or repeat `Blocked by` in the same sentence.

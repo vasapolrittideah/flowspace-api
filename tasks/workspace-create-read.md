@@ -12,8 +12,6 @@ Build `CreateWorkspace` and `GetWorkspace` for authenticated users. Creation sto
 
 The plan follows [the approved specification](../docs/specs/workspace-create-read.md). No capability map includes this module.
 
-Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4).
-
 ## Architecture decisions
 
 - Protobuf remains the source for RPC and REST. Generated files contain no business rules.
@@ -45,6 +43,8 @@ flowchart TD
 ```
 
 ## Task list
+
+Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [Workspace creation and reading milestone](https://github.com/vasapolrittideah/flowspace-api/milestone/3).
 
 ### Phase 1: Contract and foundations
 

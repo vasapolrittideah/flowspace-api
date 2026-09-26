@@ -23,6 +23,8 @@ jobs:
           fetch-depth: 0
       - name: Test constraint checker
         run: node --test scripts/constraint-check.test.mjs
+      - name: Test local session TLS rotation
+        run: sh scripts/rotate-identity-session-tls-local.test.sh
       - name: Enforce constraint floor
         run: node scripts/constraint-check.mjs floor --base "$CONSTRAINT_BASE"
       - name: Set up Go

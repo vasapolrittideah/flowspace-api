@@ -176,6 +176,31 @@ tasks:
     cmds:
       - sh scripts/setup-identity-session-tls-local.sh
 
+  identity:session-tls:rotate-server:
+    desc: Replace the local Identity session server certificate
+    cmds:
+      - sh scripts/rotate-identity-session-tls-local.sh identity
+
+  identity:session-tls:rotate-client:
+    desc: Replace the local Workspace session client certificate
+    cmds:
+      - sh scripts/rotate-identity-session-tls-local.sh workspace
+
+  identity:session-tls:revoke-client:
+    desc: Replace a leaked Workspace session client key without overlap
+    cmds:
+      - sh scripts/rotate-identity-session-tls-local.sh workspace-revoke
+
+  identity:session-tls:rotate-ca:
+    desc: Replace the local session CA and all signed certificates
+    cmds:
+      - sh scripts/rotate-identity-session-ca-local.sh
+
+  identity:session-tls:test:
+    desc: Test local session TLS rotation without a cluster
+    cmds:
+      - sh scripts/rotate-identity-session-tls-local.test.sh
+
   secrets:local-test:
     desc: Test local secret paths and Git and Docker exclusions
     cmds:
@@ -199,5 +224,6 @@ tasks:
     desc: Run all local handoff checks
     cmds:
       - task: check:fast
+      - task: identity:session-tls:test
       - task: lint
       - sh scripts/check-numbered-constraints.sh

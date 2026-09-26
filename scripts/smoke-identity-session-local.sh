@@ -4,6 +4,12 @@ set -eu
 context=k3d-flowspace
 namespace=flowspace-local
 certs=.secrets/identity-session
+test "$#" -eq 0 || test "$#" -eq 2 || test "$#" -eq 5
+workspace_cert=${1:-$certs/workspace.crt}
+workspace_key=${2:-$certs/workspace.key}
+ca_cert=${3:-$certs/ca.crt}
+unapproved_cert=${4:-$certs/unapproved.crt}
+unapproved_key=${5:-$certs/unapproved.key}
 descriptor=$(mktemp)
 trap 'rm -f "$descriptor"; kill "${forward:-}" 2>/dev/null || true' EXIT HUP INT TERM
 
@@ -23,13 +29,13 @@ nc -z 127.0.0.1 18083
 
 request='{"subject":"missing-subject","sessionId":"00000000-0000-0000-0000-000000000000"}'
 approved=$(grpcurl -max-time 5 -authority identity-session.flowspace-local.svc \
-  -cacert "$certs/ca.crt" -cert "$certs/workspace.crt" -key "$certs/workspace.key" \
+  -cacert "$ca_cert" -cert "$workspace_cert" -key "$workspace_key" \
   -protoset "$descriptor" -d "$request" 127.0.0.1:18083 \
   flowspace.identity.v1.IdentityService/CheckSession 2>&1) && exit 1
 printf '%s' "$approved" | grep -q 'Code: Unauthenticated'
 
 unapproved=$(grpcurl -max-time 5 -authority identity-session.flowspace-local.svc \
-  -cacert "$certs/ca.crt" -cert "$certs/unapproved.crt" -key "$certs/unapproved.key" \
+  -cacert "$ca_cert" -cert "$unapproved_cert" -key "$unapproved_key" \
   -protoset "$descriptor" -d "$request" 127.0.0.1:18083 \
   flowspace.identity.v1.IdentityService/CheckSession 2>&1) && exit 1
 if printf '%s' "$unapproved" | grep -q 'Code: Unauthenticated'; then

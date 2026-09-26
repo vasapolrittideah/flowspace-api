@@ -171,6 +171,11 @@ tasks:
     cmds:
       - node scripts/setup-secrets.mjs
 
+  identity:session-tls:setup:
+    desc: Issue and seal local Identity session TLS certificates
+    cmds:
+      - sh scripts/setup-identity-session-tls-local.sh
+
   secrets:local-test:
     desc: Test local secret paths and Git and Docker exclusions
     cmds:

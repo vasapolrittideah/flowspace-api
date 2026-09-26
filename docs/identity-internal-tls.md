@@ -7,7 +7,7 @@ Identity serves `CheckSession` at the cluster-only `identity-session.flowspace-l
 With the `k3d-flowspace` context selected and `helm`, `kubeseal`, `openssl`, `kubectl`, Tilt, Task, and `grpcurl` installed, run this from the repository root:
 
 ```sh
-sh scripts/setup-identity-session-tls-local.sh
+task identity:session-tls:setup
 tilt up
 ```
 

@@ -43,5 +43,6 @@ Read the matching convention before writing or updating an artifact. If a skill 
 | Writing or updating module specifications in `docs/specs/<module-id>.md` | [Module specs](docs/conventions/module-specs.md) |
 | Writing or updating module plans in `tasks/<module-id>.md` and tracking tasks | [Module plans](docs/conventions/module-plans.md) |
 | Drafting Issues in `tasks/.todo.md` or creating or updating GitHub Issues | [GitHub Issues](docs/conventions/github-issues.md) |
+| Creating or updating GitHub milestones | [GitHub milestones](docs/conventions/github-milestones.md) |
 | Applying labels when creating or updating Issues or pull requests | [GitHub labels](docs/conventions/github-labels.md) |
 | Creating or updating pull requests or preparing suggested squash messages | [Pull requests](docs/conventions/pull-requests.md) |

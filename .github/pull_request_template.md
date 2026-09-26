@@ -1,4 +1,4 @@
-<!-- Use a paragraph for one connected point and bullets for multiple independent points in Change, Reason, and Risks or limitations. -->
+<!-- Use a paragraph for one connected point and bullets for multiple independent points in Change, Reason, Risks or limitations, and Notes. -->
 
 ## Change
 
@@ -14,7 +14,7 @@
 
 ### Checks
 
-| Check | Result | Notes |
+| Check | Result | Command |
 | --- | --- | --- |
 
 ### Measurements
@@ -22,8 +22,10 @@
 | Measurement | Requirement | Value | Status |
 | --- | --- | --- | --- |
 
-### Commands
-
 ## Risks or limitations
 
 <!-- Include material compatibility effects, remaining limitations, or follow-up work. Omit this section when none apply. -->
+
+## Notes
+
+<!-- Include useful context about this PR that does not fit the sections above. Write `-` when there is nothing to add. -->

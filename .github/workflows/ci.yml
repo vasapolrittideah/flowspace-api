@@ -27,6 +27,8 @@ jobs:
         run: node --test scripts/constraint-check.test.mjs
       - name: Test local session TLS rotation
         run: sh scripts/rotate-identity-session-tls-local.test.sh
+      - name: Test local signing key retirement
+        run: sh scripts/retire-identity-signing-key-local.test.sh
       - name: Enforce constraint floor
         run: node scripts/constraint-check.mjs floor --base "$CONSTRAINT_BASE"
       - name: Set up Go

@@ -1,14 +1,19 @@
 # Local Identity session TLS
 
-Identity serves `CheckSession` at the cluster-only `identity-session.flowspace-local.svc:8082` Service. The local NetworkPolicy admits Workspace pods to this port. Identity requires TLS 1.3 and a Workspace client certificate signed by the local CA, with URI `urn:flowspace:service:workspace` and an approved public-key fingerprint. Its public API remains on port 8080, while health and signing keys are on the separate `identity-internal` Service at port 8081. Workspace will call `CheckSession` in Issue #116.
+Identity serves `CheckSession` at the cluster-only `identity-session.flowspace-local.svc:8082` Service. The local NetworkPolicy admits Workspace pods to this port. Identity requires TLS 1.3 and a Workspace client certificate signed by the local CA, with URI `urn:flowspace:service:workspace` and an approved public-key fingerprint. Workspace must validate Identity's server certificate against the same CA and the Service DNS name. Identity's public API remains on port 8080, while health and signing keys are on the separate `identity-internal` Service at port 8081. Workspace will call `CheckSession` in Issue #116.
 
 ## Set up local certificates
 
-With the `k3d-flowspace` context selected and `helm`, `kubeseal`, `openssl`, `kubectl`, Tilt, and `grpcurl` installed, run this from the repository root:
+With the `k3d-flowspace` context selected and `helm`, `kubeseal`, `openssl`, `kubectl`, Tilt, Task, and `grpcurl` installed, run this from the repository root:
 
 ```sh
 sh scripts/setup-identity-session-tls-local.sh
 tilt up
+```
+
+After Tilt deploys Identity, run these checks in another terminal:
+
+```sh
 task secrets
 sh scripts/smoke-identity-session-local.sh
 ```

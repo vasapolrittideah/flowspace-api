@@ -8,7 +8,7 @@ Status: Approved.
 
 Build account signup, email verification, and recovery of an unverified address through an account claim. The [approved specification](../docs/specs/identity-signup-and-email-verification.md) defines this flow. Signup returns one session and token pair after a database commit. The account, first challenge, and email outbox record commit together. An Identity worker sends the email after an outbox relay publishes a delivery request through Redpanda. Broker or Mailpit failure delays delivery without changing a committed signup result.
 
-The first clients use disposable data. Password login, refresh, logout, provider login, password reset, and real email delivery belong to other capabilities. Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4).
+The first clients use disposable data. Password login, refresh, logout, provider login, password reset, and real email delivery belong to other capabilities.
 
 ## Architecture decisions
 
@@ -51,6 +51,8 @@ flowchart TD
 ```
 
 ## Task list
+
+Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [Identity signup and email verification milestone](https://github.com/vasapolrittideah/flowspace-api/milestone/1).
 
 ### Phase 1: Decisions and foundations
 

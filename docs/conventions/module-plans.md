@@ -15,7 +15,7 @@ Status: Draft.
 
 ## Overview
 
-<capability, approved specification, and GitHub Project>
+<capability and approved specification>
 
 ## Architecture decisions
 
@@ -27,6 +27,8 @@ Status: Draft.
 
 ## Task list
 
+Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [<capability name> milestone](<milestone-url>).
+
 <numbered tasks, phases, checkpoints, and Issue links>
 
 ## Risks and controls
@@ -37,10 +39,10 @@ Status: Draft.
 | Part | Content and format |
 | --- | --- |
 | Header | The capability name and module ID from the approved specification. The status is `Draft`, `Approved`, or `Complete`. |
-| Overview | State the capability, link the approved specification, and name the GitHub Project that tracks tasks. |
+| Overview | State the capability and link the approved specification. |
 | Architecture decisions | The decisions that set task boundaries. |
 | Dependency graph | Show the order between major pieces of work in a Mermaid diagram. |
-| Task list | Numbered tasks grouped into phases, with checkable checkpoints and an ordered index of Issue links. |
+| Task list | Link the GitHub Project and the plan's milestone, then number tasks by phase with checkable checkpoints and an ordered index of Issue links. |
 | Risks and controls | Name each material risk, its impact, and its control in a table. |
 
 ## Rules
@@ -56,4 +58,4 @@ Status: Draft.
 
 ## Examples
 
-The [Identity plan](../../tasks/identity-signup-and-email-verification.md) and [Workspace plan](../../tasks/workspace-create-read.md) show this format.
+The [Identity plan](../../tasks/identity-signup-and-email-verification.md) and [Workspace plan](../../tasks/workspace-creation-and-reading.md) show this format.

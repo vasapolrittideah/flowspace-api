@@ -1,6 +1,6 @@
 # Spec: Workspace creation and reading
 
-Module id: `workspace-create-read`
+Module id: `workspace-creation-and-reading`
 
 Status: Approved.
 

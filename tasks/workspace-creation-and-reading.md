@@ -1,6 +1,6 @@
 # Implementation plan: Workspace creation and reading
 
-Module id: `workspace-create-read`
+Module id: `workspace-creation-and-reading`
 
 Status: Complete.
 
@@ -10,9 +10,7 @@ Completion record: [PR #79](https://github.com/vasapolrittideah/flowspace-api/pu
 
 Build `CreateWorkspace` and `GetWorkspace` for authenticated users. Creation stores one owner and supports safe retries for 24 hours. Reading requires Workspace-owned membership data.
 
-The plan follows [the approved specification](../docs/specs/workspace-create-read.md). No capability map includes this module.
-
-Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4).
+The plan follows [the approved specification](../docs/specs/workspace-creation-and-reading.md). No capability map includes this module.
 
 ## Architecture decisions
 
@@ -45,6 +43,8 @@ flowchart TD
 ```
 
 ## Task list
+
+Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [Workspace creation and reading milestone](https://github.com/vasapolrittideah/flowspace-api/milestone/3).
 
 ### Phase 1: Contract and foundations
 

@@ -4,7 +4,7 @@ FlowSpace is a work-management backend for learning how to build and operate dis
 
 ## Current status
 
-The Workspace service can create a workspace and read a workspace that the caller belongs to. The local setup uses Keycloak for authentication while the planned FlowSpace Identity service is built. Work and Notifications are also planned; their APIs are not available yet. See the [Workspace specification](docs/specs/workspace-create-read.md) for the available routes and request details.
+The Workspace service can create a workspace and read a workspace that the caller belongs to. The local setup uses Keycloak for authentication while the planned FlowSpace Identity service is built. Work and Notifications are also planned; their APIs are not available yet. See the [Workspace specification](docs/specs/workspace-creation-and-reading.md) for the available routes and request details.
 
 Local data is disposable, and the project is not ready for real user data.
 

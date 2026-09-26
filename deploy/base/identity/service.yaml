@@ -9,3 +9,29 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-internal
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: identity-api
+  ports:
+    - name: health
+      port: 8081
+      targetPort: health
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-session
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: identity-api
+  ports:
+    - name: grpc-tls
+      port: 8082
+      targetPort: session-grpc

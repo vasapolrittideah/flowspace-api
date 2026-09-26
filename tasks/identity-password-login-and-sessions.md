@@ -66,9 +66,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Session admission
 
-- [ ] Identity rejects a wrong subject, revoked or expired session, and retired account. A verified-email change appears on the next check.
-- [ ] Missing or unapproved client certificates fail, and the public gRPC path rejects `CheckSession`.
-- [ ] The local Service and NetworkPolicy expose the private listener only to approved callers. Issue #116 can use it without another Identity session-check path.
+- [x] Identity rejects a wrong subject, revoked or expired session, and retired account. A verified-email change appears on the next check.
+- [x] Missing or unapproved client certificates fail, and the public gRPC path rejects `CheckSession`.
+- [x] The local Service and NetworkPolicy expose the private listener only to approved callers. Issue #116 can use it without another Identity session-check path.
 
 ### Phase 3: Signing keys and password login
 

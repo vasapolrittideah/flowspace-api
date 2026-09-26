@@ -103,6 +103,15 @@ k8s_yaml(encode_yaml({
     'stringData': {'BROKER_PASSWORD': identity_broker_password},
 }))
 
+helm_repo('sealed-secrets', 'https://bitnami.github.io/sealed-secrets', resource_name='sealed-secrets-chart-repo')
+helm_resource(
+    'sealed-secrets',
+    'sealed-secrets/sealed-secrets',
+    namespace='kube-system',
+    flags=['--version=2.19.1', '--set-string=fullnameOverride=sealed-secrets-controller'],
+    resource_deps=['sealed-secrets-chart-repo'],
+)
+
 helm_resource(
     'keycloak',
     'oci://ghcr.io/codecentric/helm-charts/keycloakx',
@@ -125,10 +134,11 @@ docker_build(
     only=['go.mod', 'go.sum', 'gen', 'services/workspace'],
 )
 k8s_yaml(kustomize('deploy/overlays/local/workspace'))
+k8s_resource(new_name='workspace-session-tls', objects=['workspace-session-tls:sealedsecret'], resource_deps=['sealed-secrets'])
 k8s_resource('workspace-migrate', resource_deps=['workspace-postgres'])
 k8s_resource(
     'workspace-api',
-    resource_deps=['keycloak', 'workspace-migrate'],
+    resource_deps=['keycloak', 'workspace-migrate', 'workspace-session-tls'],
     port_forwards=[port_forward(8081, 8080, name='Workspace API')],
 )
 
@@ -139,6 +149,7 @@ docker_build(
     only=['go.mod', 'go.sum', 'contracts/events', 'gen', 'internal', 'services/identity'],
 )
 k8s_yaml(kustomize('deploy/overlays/local/identity'))
+k8s_resource(new_name='identity-session-tls', objects=['identity-session-tls:sealedsecret'], resource_deps=['sealed-secrets'])
 k8s_resource(
     new_name='identity-secrets',
     objects=['identity-database:secret', 'identity-signing-key:secret', 'identity-code-key:secret', 'identity-delivery-key:secret', 'redpanda-bootstrap-user:secret', 'redpanda-superusers:secret', 'identity-broker:secret'],
@@ -164,7 +175,7 @@ k8s_resource('identity-migrate', resource_deps=['identity-postgres'])
 k8s_resource('identity-broker-bootstrap', resource_deps=['redpanda', 'identity-secrets'])
 k8s_resource(
     'identity-api',
-    resource_deps=['identity-migrate', 'identity-secrets'],
+    resource_deps=['identity-migrate', 'identity-secrets', 'identity-session-tls'],
     port_forwards=[port_forward(8082, 8080, name='Identity API')],
 )
 k8s_resource('identity-worker', resource_deps=['identity-migrate', 'identity-secrets', 'identity-broker-bootstrap', 'mailpit'])

@@ -5,6 +5,7 @@ resources:
   - ../../../base/workspace
   - namespace.yaml
   - postgres.yaml
+  - session-tls-sealed-secret.yaml
 configMapGenerator:
   - name: workspace-config
     literals:

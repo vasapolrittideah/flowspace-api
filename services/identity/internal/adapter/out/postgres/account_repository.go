@@ -18,8 +18,9 @@ import (
 type AccountRepository struct{ pool *pgxpool.Pool }
 
 var (
-	_ outbound.AccountRepository       = (*AccountRepository)(nil)
-	_ outbound.PasswordLoginRepository = (*AccountRepository)(nil)
+	_ outbound.AccountRepository          = (*AccountRepository)(nil)
+	_ outbound.PasswordLoginRepository    = (*AccountRepository)(nil)
+	_ outbound.AllSessionLogoutRepository = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
@@ -44,6 +45,16 @@ func (r *AccountRepository) WithinAccountClaimTransaction(ctx context.Context, f
 
 func (r *AccountRepository) WithinPasswordSessionTransaction(ctx context.Context, fn func(outbound.PasswordSessionTransaction) error) error {
 	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (r *AccountRepository) RevokeAll(ctx context.Context, subject, sessionID string) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error {
+		if _, err := tx.GetActiveAccountForSession(ctx, subject, sessionID); err != nil {
+			return err
+		}
+		_, err := tx.queries.RevokeAccountSessions(ctx, subject)
+		return err
+	})
 }
 
 func (r *AccountRepository) withinTransaction(ctx context.Context, fn func(*accountTransaction) error) error {

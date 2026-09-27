@@ -90,9 +90,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Session lifecycle
 
-- [ ] Concurrent refreshes cannot both succeed. Reusing a known old token revokes only its device session.
-- [ ] Current-session logout stops later checks for that session, while another device stays active.
-- [ ] All-session logout revokes sessions committed before it and permits a new login committed afterward.
+- [x] Concurrent refreshes cannot both succeed. Reusing a known old token revokes only its device session.
+- [x] Current-session logout stops later checks for that session, while another device stays active.
+- [x] All-session logout revokes sessions committed before it and permits a new login committed afterward.
 
 ### Phase 5: Completion evidence
 

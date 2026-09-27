@@ -32,6 +32,47 @@ func (r *LimitRepository) Record(ctx context.Context, scope, key, action string,
 		return false, err
 	}
 	queries := sqlc.New(tx)
+	allowed, err := recordLimit(ctx, queries, scope, key, action, maximum, dailyMaximum, now, window, interval)
+	if err != nil || !allowed {
+		return false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *LimitRepository) RecordLogin(ctx context.Context, source, emailKey string, sourceMaximum, emailMaximum int, sourceWindow, emailWindow time.Duration) (bool, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	for _, key := range []string{"source:password-login:" + source, "email:password-login:" + emailKey} {
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, key); err != nil {
+			return false, err
+		}
+	}
+	var now time.Time
+	if err := tx.QueryRow(ctx, `SELECT statement_timestamp()`).Scan(&now); err != nil {
+		return false, err
+	}
+	queries := sqlc.New(tx)
+	allowed, err := recordLimit(ctx, queries, "source", source, "password-login", sourceMaximum, 0, now, sourceWindow, 0)
+	if err != nil || !allowed {
+		return false, err
+	}
+	allowed, err = recordLimit(ctx, queries, "email", emailKey, "password-login", emailMaximum, 0, now, emailWindow, 0)
+	if err != nil || !allowed {
+		return false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func recordLimit(ctx context.Context, queries *sqlc.Queries, scope, key, action string, maximum, dailyMaximum int, now time.Time, window, interval time.Duration) (bool, error) {
 	usage, err := queries.GetLimitUsage(ctx, sqlc.GetLimitUsageParams{
 		Scope: scope, CounterKey: key, Action: action,
 		HourCutoff: pgtype.Timestamptz{Time: now.Add(-window), Valid: true},
@@ -48,9 +89,6 @@ func (r *LimitRepository) Record(ctx context.Context, scope, key, action string,
 		WindowStart: pgtype.Timestamptz{Time: now, Valid: true},
 	})
 	if err != nil {
-		return false, err
-	}
-	if err := tx.Commit(ctx); err != nil {
 		return false, err
 	}
 	return true, nil

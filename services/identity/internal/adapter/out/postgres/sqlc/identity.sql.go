@@ -838,6 +838,32 @@ func (q *Queries) RevokeAccountSessions(ctx context.Context, accountSubject stri
 	return result.RowsAffected(), nil
 }
 
+const revokeCurrentSession = `-- name: RevokeCurrentSession :execrows
+UPDATE identity_sessions AS session
+SET revoked_at = statement_timestamp()
+FROM identity_accounts AS account
+WHERE session.id = $1
+  AND session.account_subject = $2
+  AND account.subject = session.account_subject
+  AND account.retired_at IS NULL
+  AND session.revoked_at IS NULL
+  AND session.idle_expires_at > statement_timestamp()
+  AND session.absolute_expires_at > statement_timestamp()
+`
+
+type RevokeCurrentSessionParams struct {
+	SessionID pgtype.UUID
+	Subject   string
+}
+
+func (q *Queries) RevokeCurrentSession(ctx context.Context, arg RevokeCurrentSessionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, revokeCurrentSession, arg.SessionID, arg.Subject)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const revokeRefreshSession = `-- name: RevokeRefreshSession :exec
 UPDATE identity_sessions SET revoked_at = statement_timestamp()
 WHERE id = $1 AND revoked_at IS NULL

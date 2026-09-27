@@ -107,6 +107,24 @@ func TestRefreshTelemetryOmitsToken(t *testing.T) {
 	}
 }
 
+func TestLogoutTelemetryOmitsToken(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	handler := observeRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}), zap.New(core))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/v1/session-logouts?access_token=secret-access-token", nil)
+	request.Header.Set("Authorization", "Bearer secret-access-token")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || logs.Len() != 1 {
+		t.Fatalf("logout log count = %d, status = %d", logs.Len(), response.Code)
+	}
+	fields := fmt.Sprint(logs.All()[0].ContextMap())
+	if strings.Contains(fields, "secret-access-token") || logs.All()[0].ContextMap()["operation"] != "POST /v1/session-logouts" {
+		t.Fatal("logout telemetry contains token or misses its operation")
+	}
+}
+
 func TestSigningKeyPublicationRejectsInvalidAdditionalKey(t *testing.T) {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

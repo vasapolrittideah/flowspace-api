@@ -100,7 +100,8 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 		app.NewAccountClaimService(accountRepo, signer, limits.WrongCode, limits.AccountWrongCode, checkPassword, verifierKey),
 		verifier, trusted,
 	).WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
-		WithRefreshSession(app.NewRefreshSessionService(postgres.NewRefreshSessionRepository(pool), signer))
+		WithRefreshSession(app.NewRefreshSessionService(postgres.NewRefreshSessionRepository(pool), signer)).
+		WithCurrentSessionLogout(app.NewLogoutCurrentSessionService(postgres.NewSessionRepository(pool)))
 	public, session, err := newIdentityRPCHandlers(ctx, config, pool, handler, logger, trusted)
 	if err != nil {
 		pool.Close()
@@ -353,7 +354,7 @@ func validRequestID(value string) bool {
 func safeOperation(r *http.Request) string {
 	for _, path := range []string{
 		"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
-		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-sessions", "/v1/session-refreshes",
+		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts",
 	} {
 		if r.URL.Path == path {
 			return r.Method + " " + path

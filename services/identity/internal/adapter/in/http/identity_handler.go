@@ -32,6 +32,7 @@ type IdentityHandler struct {
 	claims        inbound.AccountClaimService
 	passwordLogin inbound.PasswordLoginService
 	refresh       inbound.RefreshSessionService
+	currentLogout inbound.LogoutCurrentSessionService
 	verifier      outbound.AccessTokenVerifier
 	trusted       []netip.Prefix
 }
@@ -43,6 +44,11 @@ func (h *IdentityHandler) WithPasswordLogin(service inbound.PasswordLoginService
 
 func (h *IdentityHandler) WithRefreshSession(service inbound.RefreshSessionService) *IdentityHandler {
 	h.refresh = service
+	return h
+}
+
+func (h *IdentityHandler) WithCurrentSessionLogout(service inbound.LogoutCurrentSessionService) *IdentityHandler {
+	h.currentLogout = service
 	return h
 }
 
@@ -135,6 +141,25 @@ func (h *IdentityHandler) RefreshSession(ctx context.Context, request *identityv
 		RefreshTokenExpiresAt: timestamppb.New(result.RefreshTokenExpiresAt),
 		SessionExpiresAt:      timestamppb.New(result.SessionExpiresAt),
 	}, nil
+}
+
+func (h *IdentityHandler) LogoutCurrentSession(ctx context.Context, request *identityv1.LogoutCurrentSessionRequest) (*identityv1.LogoutCurrentSessionResponse, error) {
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	identity, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if h.currentLogout == nil {
+		return nil, status.Error(codes.Unavailable, "logout unavailable")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if err := h.currentLogout.LogoutCurrentSession(ctx, inbound.LogoutCurrentSessionInput{Subject: identity.Subject, SessionID: identity.SessionID}); err != nil {
+		return nil, currentLogoutRPCError(err)
+	}
+	return &identityv1.LogoutCurrentSessionResponse{Revoked: true}, nil
 }
 
 func (h *IdentityHandler) RequestEmailVerificationCode(ctx context.Context, request *identityv1.RequestEmailVerificationCodeRequest) (*identityv1.RequestEmailVerificationCodeResponse, error) {
@@ -377,6 +402,17 @@ func refreshRPCError(err error) error {
 		return status.FromContextError(err).Err()
 	default:
 		return status.Error(codes.Unavailable, "refresh unavailable")
+	}
+}
+
+func currentLogoutRPCError(err error) error {
+	switch {
+	case errors.Is(err, outbound.ErrUnauthenticated):
+		return status.Error(codes.Unauthenticated, "authentication required")
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return status.FromContextError(err).Err()
+	default:
+		return status.Error(codes.Unavailable, "logout unavailable")
 	}
 }
 

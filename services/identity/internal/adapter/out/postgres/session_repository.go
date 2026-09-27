@@ -13,7 +13,10 @@ import (
 
 type SessionRepository struct{ queries *sqlc.Queries }
 
-var _ outbound.SessionCheckRepository = (*SessionRepository)(nil)
+var (
+	_ outbound.SessionCheckRepository         = (*SessionRepository)(nil)
+	_ outbound.CurrentSessionLogoutRepository = (*SessionRepository)(nil)
+)
 
 func NewSessionRepository(db sqlc.DBTX) *SessionRepository {
 	return &SessionRepository{queries: sqlc.New(db)}
@@ -42,4 +45,19 @@ func (r *SessionRepository) Check(ctx context.Context, subject, sessionID string
 		return false, outbound.ErrUnauthenticated
 	}
 	return verifiedAt.Valid, err
+}
+
+func (r *SessionRepository) RevokeCurrent(ctx context.Context, subject, sessionID string) error {
+	id, err := parseUUID(sessionID)
+	if err != nil {
+		return outbound.ErrUnauthenticated
+	}
+	rows, err := r.queries.RevokeCurrentSession(ctx, sqlc.RevokeCurrentSessionParams{SessionID: id, Subject: subject})
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return outbound.ErrUnauthenticated
+	}
+	return nil
 }

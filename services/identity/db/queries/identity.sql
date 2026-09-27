@@ -123,6 +123,18 @@ SET revoked_at = statement_timestamp()
 WHERE account_subject = sqlc.arg(account_subject)
   AND revoked_at IS NULL;
 
+-- name: RevokeCurrentSession :execrows
+UPDATE identity_sessions AS session
+SET revoked_at = statement_timestamp()
+FROM identity_accounts AS account
+WHERE session.id = sqlc.arg(session_id)
+  AND session.account_subject = sqlc.arg(subject)
+  AND account.subject = session.account_subject
+  AND account.retired_at IS NULL
+  AND session.revoked_at IS NULL
+  AND session.idle_expires_at > statement_timestamp()
+  AND session.absolute_expires_at > statement_timestamp();
+
 -- name: ReplaceCurrentChallenge :execrows
 UPDATE identity_challenges
 SET replaced_at = statement_timestamp()

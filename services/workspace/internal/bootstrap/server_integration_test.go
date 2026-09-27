@@ -4,10 +4,19 @@ package bootstrap
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
+	"math/big"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -20,7 +29,7 @@ import (
 	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
 )
 
-const integrationIssuer = "https://identity.test/realms/flowspace"
+const integrationIssuer = "urn:flowspace:identity:test"
 
 func TestServerStartsAndShutsDownWithDependencies(t *testing.T) {
 	ctx := t.Context()
@@ -45,19 +54,30 @@ func TestServerStartsAndShutsDownWithDependencies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	discoveryURL := newOIDCDiscoveryServer(t)
+	certFile, keyFile, caFile, _, _ := testIdentityTLSFiles(t)
+	jwksURL := testJWKSURL(t)
 	failedDatabaseURL, err := container.ConnectionString(ctx, "sslmode=disable", "application_name=workspace-api-failed")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := NewServer(ctx, Config{
-		HTTPAddress:      "127.0.0.1:0",
-		DatabaseURL:      sharedconfig.Secret(failedDatabaseURL),
-		OIDCDiscoveryURL: discoveryURL + "/missing",
-		OIDCIssuer:       integrationIssuer,
-		OIDCAudience:     "workspace-api",
+		HTTPAddress:     "127.0.0.1:0",
+		DatabaseURL:     sharedconfig.Secret(failedDatabaseURL),
+		IdentityJWKSURL: jwksURL,
+		IdentityIssuer:  integrationIssuer, IdentityAudience: "flowspace-api",
+		IdentitySessionAddress: "identity.test:8082", IdentitySessionServerName: "identity.test",
+		IdentityClientCertFile: certFile, IdentityClientKeyFile: keyFile, IdentityCAFile: caFile,
+		OIDCDiscoveryURL: "http://keycloak/missing",
 	}, zap.NewNop()); err == nil {
 		t.Fatal("NewServer() accepted failed OIDC discovery")
+	}
+	if _, err := NewServer(ctx, Config{
+		DatabaseURL: sharedconfig.Secret(failedDatabaseURL), IdentityJWKSURL: jwksURL,
+		IdentityIssuer: integrationIssuer, IdentityAudience: "flowspace-api",
+		IdentitySessionAddress: "identity.test:8082", IdentitySessionServerName: "identity.test",
+		IdentityClientCertFile: certFile + ".missing", IdentityClientKeyFile: keyFile, IdentityCAFile: caFile,
+	}, zap.NewNop()); err == nil {
+		t.Fatal("NewServer() accepted missing client certificate")
 	}
 	assertNoDatabaseConnections(t, container, "workspace-api-failed")
 
@@ -65,12 +85,13 @@ func TestServerStartsAndShutsDownWithDependencies(t *testing.T) {
 	core, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(core, zap.Fields(zap.String("service", "workspace-api"), zap.String("environment", "integration")))
 	server, err := NewServer(ctx, Config{
-		Environment:      "integration",
-		HTTPAddress:      address,
-		DatabaseURL:      sharedconfig.Secret(databaseURL),
-		OIDCDiscoveryURL: discoveryURL,
-		OIDCIssuer:       integrationIssuer,
-		OIDCAudience:     "workspace-api",
+		Environment:     "integration",
+		HTTPAddress:     address,
+		DatabaseURL:     sharedconfig.Secret(databaseURL),
+		IdentityJWKSURL: jwksURL,
+		IdentityIssuer:  integrationIssuer, IdentityAudience: "flowspace-api",
+		IdentitySessionAddress: "identity.test:8082", IdentitySessionServerName: "identity.test",
+		IdentityClientCertFile: certFile, IdentityClientKeyFile: keyFile, IdentityCAFile: caFile,
 	}, logger)
 	if err != nil {
 		t.Fatal(err)
@@ -97,26 +118,74 @@ func TestServerStartsAndShutsDownWithDependencies(t *testing.T) {
 	assertNoDatabaseConnections(t, container, "workspace-api")
 }
 
-func newOIDCDiscoveryServer(t *testing.T) string {
+func testJWKSURL(t *testing.T) string {
 	t.Helper()
-	var serverURL string
-	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		if request.URL.Path != "/.well-known/openid-configuration" {
-			http.NotFound(response, request)
-			return
-		}
-		response.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(response).Encode(map[string]any{
-			"issuer":                                integrationIssuer,
-			"jwks_uri":                              serverURL + "/keys",
-			"id_token_signing_alg_values_supported": []string{"RS256"},
-		}); err != nil {
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		if err := json.NewEncoder(response).Encode(map[string]any{"keys": []any{}}); err != nil {
 			t.Error(err)
 		}
 	}))
-	serverURL = server.URL
 	t.Cleanup(server.Close)
-	return serverURL
+	return server.URL
+}
+
+func testIdentityTLSFiles(t *testing.T) (string, string, string, tls.Certificate, *x509.CertPool) {
+	t.Helper()
+	_, caKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	caTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "test CA"},
+		NotBefore: now.Add(-time.Hour), NotAfter: now.Add(time.Hour), IsCA: true,
+		BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign,
+	}
+	caDER, err := x509.CreateCertificate(rand.Reader, caTemplate, caTemplate, caKey.Public(), caKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ca, err := x509.ParseCertificate(caDER)
+	if err != nil {
+		t.Fatal(err)
+	}
+	issue := func(serial int64, usage x509.ExtKeyUsage) (tls.Certificate, []byte) {
+		t.Helper()
+		_, key, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		template := &x509.Certificate{
+			SerialNumber: big.NewInt(serial), DNSNames: []string{"identity.test"},
+			NotBefore: now.Add(-time.Hour), NotAfter: now.Add(time.Hour),
+			KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{usage},
+		}
+		der, err := x509.CreateCertificate(rand.Reader, template, ca, key.Public(), caKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		keyDER, err := x509.MarshalPKCS8PrivateKey(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}, keyDER
+	}
+	client, keyDER := issue(2, x509.ExtKeyUsageClientAuth)
+	server, _ := issue(3, x509.ExtKeyUsageServerAuth)
+	directory := t.TempDir()
+	certFile, keyFile, caFile := filepath.Join(directory, "client.crt"), filepath.Join(directory, "client.key"), filepath.Join(directory, "ca.crt")
+	for path, content := range map[string][]byte{
+		certFile: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: client.Certificate[0]}),
+		keyFile:  pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER}),
+		caFile:   pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER}),
+	} {
+		if err := os.WriteFile(path, content, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pool := x509.NewCertPool()
+	pool.AddCert(ca)
+	return certFile, keyFile, caFile, server, pool
 }
 
 func freeAddress(t *testing.T) string {

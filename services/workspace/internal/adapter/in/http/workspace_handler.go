@@ -156,6 +156,12 @@ func (h *WorkspaceHandler) authenticate(ctx context.Context) (string, error) {
 		if contextErr := ctx.Err(); contextErr != nil {
 			return "", rpcError(contextErr)
 		}
+		if errors.Is(err, outbound.ErrIdentityUnavailable) {
+			return "", status.Error(codes.Unavailable, "identity unavailable")
+		}
+		if errors.Is(err, outbound.ErrEmailUnverified) {
+			return "", status.Error(codes.PermissionDenied, "email verification required")
+		}
 		return "", status.Error(codes.Unauthenticated, "authentication required")
 	}
 	if subject == "" {

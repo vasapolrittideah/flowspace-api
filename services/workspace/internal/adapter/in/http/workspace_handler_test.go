@@ -18,6 +18,7 @@ import (
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/in"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 )
 
 func TestWorkspaceHandlerCreateWorkspace(t *testing.T) {
@@ -117,6 +118,29 @@ func TestWorkspaceHandlerRejectsInvalidBearerToken(t *testing.T) {
 	_, err := handler.GetWorkspace(metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Basic token")), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
 	if status.Code(err) != codes.Unauthenticated {
 		t.Fatalf("code = %v, want Unauthenticated", status.Code(err))
+	}
+}
+
+func TestWorkspaceHandlerDeniesUnverifiedAndUnavailableSessionsBeforeUsecase(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		code codes.Code
+	}{
+		{name: "unverified", err: outbound.ErrEmailUnverified, code: codes.PermissionDenied},
+		{name: "identity unavailable", err: outbound.ErrIdentityUnavailable, code: codes.Unavailable},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			calls := 0
+			handler := NewWorkspaceHandler(&fakeWorkspaceUsecase{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
+				calls++
+				return domain.Workspace{}, nil
+			}}, fakeTokenVerifier{err: test.err}, zap.NewNop())
+			_, err := handler.GetWorkspace(authenticatedContext(""), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
+			if status.Code(err) != test.code || calls != 0 {
+				t.Fatalf("code = %v, usecase calls = %d; want %v, 0", status.Code(err), calls, test.code)
+			}
+		})
 	}
 }
 

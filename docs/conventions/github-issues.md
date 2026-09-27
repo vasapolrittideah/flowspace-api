@@ -8,6 +8,7 @@ An Issue has a title and the body fields shown below.
 
 ```markdown
 Module: `<module-id>`
+
 Estimated scope: <expected size>.
 
 ## Description

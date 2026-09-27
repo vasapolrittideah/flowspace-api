@@ -33,6 +33,7 @@ type IdentityHandler struct {
 	passwordLogin inbound.PasswordLoginService
 	refresh       inbound.RefreshSessionService
 	currentLogout inbound.LogoutCurrentSessionService
+	allLogout     inbound.LogoutAllSessionsService
 	verifier      outbound.AccessTokenVerifier
 	trusted       []netip.Prefix
 }
@@ -49,6 +50,11 @@ func (h *IdentityHandler) WithRefreshSession(service inbound.RefreshSessionServi
 
 func (h *IdentityHandler) WithCurrentSessionLogout(service inbound.LogoutCurrentSessionService) *IdentityHandler {
 	h.currentLogout = service
+	return h
+}
+
+func (h *IdentityHandler) WithAllSessionLogout(service inbound.LogoutAllSessionsService) *IdentityHandler {
+	h.allLogout = service
 	return h
 }
 
@@ -157,9 +163,28 @@ func (h *IdentityHandler) LogoutCurrentSession(ctx context.Context, request *ide
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	if err := h.currentLogout.LogoutCurrentSession(ctx, inbound.LogoutCurrentSessionInput{Subject: identity.Subject, SessionID: identity.SessionID}); err != nil {
-		return nil, currentLogoutRPCError(err)
+		return nil, logoutRPCError(err)
 	}
 	return &identityv1.LogoutCurrentSessionResponse{Revoked: true}, nil
+}
+
+func (h *IdentityHandler) LogoutAllSessions(ctx context.Context, request *identityv1.LogoutAllSessionsRequest) (*identityv1.LogoutAllSessionsResponse, error) {
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	identity, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if h.allLogout == nil {
+		return nil, status.Error(codes.Unavailable, "logout unavailable")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if err := h.allLogout.LogoutAllSessions(ctx, inbound.LogoutAllSessionsInput{Subject: identity.Subject, SessionID: identity.SessionID}); err != nil {
+		return nil, logoutRPCError(err)
+	}
+	return &identityv1.LogoutAllSessionsResponse{Revoked: true}, nil
 }
 
 func (h *IdentityHandler) RequestEmailVerificationCode(ctx context.Context, request *identityv1.RequestEmailVerificationCodeRequest) (*identityv1.RequestEmailVerificationCodeResponse, error) {
@@ -405,7 +430,7 @@ func refreshRPCError(err error) error {
 	}
 }
 
-func currentLogoutRPCError(err error) error {
+func logoutRPCError(err error) error {
 	switch {
 	case errors.Is(err, outbound.ErrUnauthenticated):
 		return status.Error(codes.Unauthenticated, "authentication required")

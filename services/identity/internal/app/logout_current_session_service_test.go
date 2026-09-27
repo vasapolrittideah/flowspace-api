@@ -21,6 +21,10 @@ func (r *logoutRepositoryStub) RevokeCurrent(_ context.Context, subject, session
 	return r.err
 }
 
+func (r *logoutRepositoryStub) RevokeAll(ctx context.Context, subject, sessionID string) error {
+	return r.RevokeCurrent(ctx, subject, sessionID)
+}
+
 func TestLogoutCurrentSessionService(t *testing.T) {
 	repository := &logoutRepositoryStub{}
 	service := NewLogoutCurrentSessionService(repository)

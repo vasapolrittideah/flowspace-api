@@ -125,6 +125,15 @@ func TestLogoutTelemetryOmitsToken(t *testing.T) {
 	}
 }
 
+func TestAllLogoutTelemetryOmitsToken(t *testing.T) {
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/v1/account-session-logouts?access_token=secret-access-token", nil)
+	request.Header.Set("Authorization", "Bearer secret-access-token")
+	operation := safeOperation(request)
+	if operation != "POST /v1/account-session-logouts" || strings.Contains(operation, "secret-access-token") {
+		t.Fatal("all-session logout telemetry contains token or misses its operation")
+	}
+}
+
 func TestSigningKeyPublicationRejectsInvalidAdditionalKey(t *testing.T) {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

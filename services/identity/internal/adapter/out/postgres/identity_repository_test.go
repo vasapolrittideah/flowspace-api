@@ -91,6 +91,7 @@ func TestIdentityRepository(t *testing.T) {
 	t.Cleanup(pool.Close)
 	t.Run("refresh rotation and replay", func(t *testing.T) { testRefreshSessionRepository(t, pool) })
 	t.Run("current session logout", func(t *testing.T) { testCurrentSessionLogout(t, pool) })
+	t.Run("all session logout", func(t *testing.T) { testAllSessionLogout(t, pool) })
 
 	t.Run("session check reads current account and session state", func(t *testing.T) {
 		queries := identitysqlc.New(pool)

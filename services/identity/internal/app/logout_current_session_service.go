@@ -21,17 +21,25 @@ func NewLogoutCurrentSessionService(repository outbound.CurrentSessionLogoutRepo
 }
 
 func (s *LogoutCurrentSessionService) LogoutCurrentSession(ctx context.Context, input inbound.LogoutCurrentSessionInput) error {
-	if input.Subject == "" || input.SessionID == "" {
+	var revoke func(context.Context, string, string) error
+	if s.repository != nil {
+		revoke = s.repository.RevokeCurrent
+	}
+	return revokeSessions(ctx, input.Subject, input.SessionID, revoke, ErrCurrentLogoutUnavailable)
+}
+
+func revokeSessions(ctx context.Context, subject, sessionID string, revoke func(context.Context, string, string) error, unavailable error) error {
+	if subject == "" || sessionID == "" {
 		return outbound.ErrUnauthenticated
 	}
-	if s.repository == nil {
-		return ErrCurrentLogoutUnavailable
+	if revoke == nil {
+		return unavailable
 	}
-	err := s.repository.RevokeCurrent(ctx, input.Subject, input.SessionID)
+	err := revoke(ctx, subject, sessionID)
 	switch {
 	case err == nil, errors.Is(err, outbound.ErrUnauthenticated), errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 		return err
 	default:
-		return ErrCurrentLogoutUnavailable
+		return unavailable
 	}
 }

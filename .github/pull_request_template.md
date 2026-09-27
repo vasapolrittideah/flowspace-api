@@ -1,4 +1,4 @@
-<!-- Use a paragraph for one connected point and bullets for multiple independent points in What changed, Why, Risks or limitations, and Additional notes. -->
+<!-- Use a paragraph for one connected point and bullets for multiple independent points in What changed, Why, Related issues, Risks or limitations, and Additional notes. -->
 
 ## What changed
 
@@ -6,7 +6,13 @@
 
 ## Why
 
-<!-- Explain the problem and why this change is needed. Include relevant issue or decision links. -->
+<!-- Explain the problem and why this change is needed. Include relevant decision links. -->
+
+## Related issues
+
+<!-- Add one line per Issue: `Closes #<issue-number>.` if this PR completes it, or `Refs #<issue-number>.` if it remains open. -->
+
+n/a
 
 ## Risks or limitations
 

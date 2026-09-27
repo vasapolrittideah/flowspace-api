@@ -96,7 +96,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Phase 5: Completion evidence
 
-- Task 12: [#166 Prove public, private, and failure paths](https://github.com/vasapolrittideah/flowspace-api/issues/166)
+- Task 12: [#166 Prove public, private, and failure paths](https://github.com/vasapolrittideah/flowspace-api/issues/166). [PR #189](https://github.com/vasapolrittideah/flowspace-api/pull/189) records the final verification.
 
 ### Checkpoint: Complete
 

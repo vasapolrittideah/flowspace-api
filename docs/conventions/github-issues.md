@@ -8,36 +8,39 @@ An Issue has a title and the body fields shown below.
 
 ```markdown
 Module: `<module-id>`
+Estimated scope: <expected size>.
 
-Description: <task outcome and scope>
+## Description
 
-Acceptance criteria:
+<task outcome and scope>
+
+## Acceptance criteria
 
 - [ ] <outcome that can be checked on its own>
 
-Verification:
+## Verification
 
 - [ ] Run `<command>` to check <behavior>.
 
-Dependencies: None.
+## Dependencies
 
-Files likely touched:
+- #<blocking-issue-number>
+
+## Files likely touched
 
 - `<source, test, contract, or configuration path>`
-
-Estimated scope: <expected size>.
 ```
 
 | Field | Content and format |
 | --- | --- |
 | Title | The task outcome. |
 | Module | Use the module ID from the approved specification. |
+| Estimated scope | State the expected size of the task. |
 | Description | State the task outcome and scope in one paragraph. |
 | Acceptance criteria | Independently checkable outcomes, each as a `- [ ]` item. |
 | Verification | Commands and the behavior each command checks, each as a `- [ ]` item. |
-| Dependencies | Blocking Issue numbers or `None.` when there are no blockers. Other prerequisites follow in a separate sentence. |
+| Dependencies | One Issue reference per bullet, or `None.` when there are no blockers. Put other prerequisites in a separate paragraph. |
 | Files likely touched | Source, test, contract, and configuration paths. Generated output appears as a folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). |
-| Estimated scope | State the expected size of the task based on the work described above. |
 
 ## Rules
 
@@ -45,11 +48,11 @@ Estimated scope: <expected size>.
 - Use one Issue for each task. Use the body fields in the template order, with the same spelling and capitalization.
 - State the task outcome in the Issue title. Keep the title and body consistent with the approved specification, module plan, and task scope.
 - Before creating an Issue, compare its title, body, acceptance criteria, verification, dependencies, and file list with the approved specification and module plan.
-- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its numbered dependencies. Assign the [plan milestone](github-milestones.md) to each Issue in the plan's numbered Task list.
+- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its dependencies. Assign the [plan milestone](github-milestones.md) to each Issue in the plan's numbered Task list.
 - Use as many acceptance criteria items as the task needs.
 - Keep inspection of a command's output in the same Verification item when they form one check. Put separate manual checks in separate items.
-- Write `Dependencies: None.` when no Issue blocks the task. Otherwise, write one `Blocked by` sentence with the blocking Issue numbers. Separate three or more numbers with commas and put `and` before the last number. Add a prerequisite without an Issue number as a separate sentence. Do not use semicolons or repeat `Blocked by` in the same sentence.
-- Use the exact dependency forms shown in Examples.
+- Under `## Dependencies`, write `- #<issue-number>` on its own line for each blocking Issue. Do not use checkboxes or code fences. Write `None.` when no Issue blocks the task.
+- Add a native GitHub `Blocked by` relationship for each dependency bullet. Make sure that the relationships and bullets match. Put prerequisites without an Issue number in a separate paragraph.
 - For generated output, list only its folder. Do not list generated file names.
 
 ## Final Prove task
@@ -69,11 +72,17 @@ The final task in each module plan proves the approved specification and records
 
 The [Workspace creation Issue](https://github.com/vasapolrittideah/flowspace-api/issues/48) shows a complete Issue using this template.
 
-Dependency forms for zero, one, two, or three blockers:
+Dependency forms for zero or multiple blockers:
 
-```text
-Dependencies: None.
-Dependencies: Blocked by #45.
-Dependencies: Blocked by #45 and #46.
-Dependencies: Blocked by #45, #46, and #47.
+```markdown
+## Dependencies
+
+None.
+```
+
+```markdown
+## Dependencies
+
+- #45
+- #46
 ```

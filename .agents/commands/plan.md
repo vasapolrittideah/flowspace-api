@@ -24,7 +24,7 @@ Use GitHub Issues as the task list. Use GitHub Projects to show task status.
 12. Create or reuse the approved plan's GitHub milestone.
 13. Create one GitHub Issue from each task in `tasks/.todo.md` using the Issue and milestone conventions.
 14. Add each issue to the GitHub Project with the `Todo` status.
-15. Record each dependency as `Blocked by #<issue-number>` in the dependent issue.
+15. Record each dependency as a `- #<issue-number>` bullet under `## Dependencies` in the dependent Issue. Add a native GitHub `Blocked by` relationship for each bullet and make sure that both lists match.
 16. Replace the plan Task List with an ordered index of issue links without duplicate checklists.
 17. Make sure that `gh project item-list` shows every new issue with `Todo` status and `gh issue list --milestone "<milestone title>" --state all --limit 1000` shows every Task Issue in the plan.
 18. Delete `tasks/.todo.md` after both checks succeed. An issue-side Project link alone is not enough.

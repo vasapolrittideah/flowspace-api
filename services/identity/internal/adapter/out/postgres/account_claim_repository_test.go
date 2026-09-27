@@ -162,6 +162,14 @@ func testAccountClaimRepository(t *testing.T, pool *pgxpool.Pool) {
 		}); err != nil {
 			t.Fatal(err)
 		}
+		login := app.NewPasswordLoginService(repository, signer, func(context.Context, string, string) error { return nil })
+		recovered, err := login.CreatePasswordSession(ctx, inbound.CreatePasswordSessionInput{
+			Email: old.email, Password: old.input().NewPassword, Source: "192.0.2.130",
+		})
+		if err != nil || recovered.Subject != result.Subject || !recovered.EmailVerified ||
+			recovered.RefreshToken == result.RefreshToken || recovered.AccessToken == "" {
+			t.Fatalf("login after lost claim response failed: %v", err)
+		}
 		replayed, err := service.ClaimUnverifiedAccount(ctx, old.input())
 		if !errors.Is(err, app.ErrInvalidClaimCode) || replayed.AccessToken != "" || replayed.RefreshToken != "" {
 			t.Fatalf("replayed claim = %+v, error = %v", replayed, err)

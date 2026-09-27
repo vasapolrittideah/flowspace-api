@@ -7,7 +7,9 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"errors"
+	"sort"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -63,9 +65,14 @@ func testPasswordLoginRepository(t *testing.T, pool *pgxpool.Pool) {
 	if _, err := queries.MarkEmailVerified(ctx, "login-subject"); err != nil {
 		t.Fatal(err)
 	}
+	firstToken := result.RefreshToken
 	result, err = service.CreatePasswordSession(ctx, input)
-	if err != nil || !result.EmailVerified {
+	if err != nil || !result.EmailVerified || result.RefreshToken == firstToken {
 		t.Fatalf("verified login failed: %v", err)
+	}
+	if verified, err := app.NewSessionCheckService(identitypostgres.NewSessionRepository(pool)).CheckSession(ctx,
+		inbound.CheckSessionInput{Subject: identity.Subject, SessionID: identity.SessionID}); err != nil || !verified {
+		t.Fatalf("first session after repeated login = %t, %v", verified, err)
 	}
 	for _, invalid := range []inbound.CreatePasswordSessionInput{
 		{Email: "missing@example.com", Password: input.Password, Source: input.Source},
@@ -75,6 +82,27 @@ func testPasswordLoginRepository(t *testing.T, pool *pgxpool.Pool) {
 		if !errors.Is(err, app.ErrInvalidCredentials) || result.AccessToken != "" {
 			t.Fatalf("invalid login returned %v", err)
 		}
+	}
+	var missingTimes, wrongTimes []time.Duration
+	for range 8 {
+		for _, sample := range []struct {
+			input inbound.CreatePasswordSessionInput
+			times *[]time.Duration
+		}{
+			{inbound.CreatePasswordSessionInput{Email: "missing@example.com", Password: "wrong-password", Source: input.Source}, &missingTimes},
+			{inbound.CreatePasswordSessionInput{Email: input.Email, Password: "wrong-password", Source: input.Source}, &wrongTimes},
+		} {
+			started := time.Now()
+			if _, err := service.CreatePasswordSession(ctx, sample.input); !errors.Is(err, app.ErrInvalidCredentials) {
+				t.Fatalf("invalid login = %v", err)
+			}
+			*sample.times = append(*sample.times, time.Since(started))
+		}
+	}
+	sort.Slice(missingTimes, func(i, j int) bool { return missingTimes[i] < missingTimes[j] })
+	sort.Slice(wrongTimes, func(i, j int) bool { return wrongTimes[i] < wrongTimes[j] })
+	if missingTimes[4] > 3*wrongTimes[4] || wrongTimes[4] > 3*missingTimes[4] {
+		t.Fatalf("login median timings differ: unknown = %s, wrong password = %s", missingTimes[4], wrongTimes[4])
 	}
 	if _, err := pool.Exec(ctx, `UPDATE identity_accounts SET email_verified_at = NULL, retired_at = statement_timestamp() WHERE subject = $1`, "login-subject"); err != nil {
 		t.Fatal(err)

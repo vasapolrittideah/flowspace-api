@@ -2,7 +2,7 @@
 
 Module id: `identity-password-login-and-sessions`
 
-Status: Approved.
+Status: Complete.
 
 ## Overview
 
@@ -100,9 +100,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Complete
 
-- [ ] Public REST and typed RPC tests cover every applicable specification success criterion and threat ID.
-- [ ] Workspace Issue #116 proves local access-token validation, the live check, verified-email admission, and fail-closed behavior. The signup capability keeps its own final evidence in Issue #117.
-- [ ] Generated output matches source contracts and queries. Required repository checks pass without weaker settings, and the review diff contains no unrelated changes or secrets.
+- [x] Public REST and typed RPC tests cover every applicable specification success criterion and threat ID. The [evidence map](../docs/evidence/identity-password-login-and-sessions.md) records the tests and verification results.
+- [x] Workspace Issue #116 proves local access-token validation, the live check, verified-email admission, and fail-closed behavior. The signup capability keeps its own final evidence in Issue #117.
+- [x] Generated output matches source contracts and queries. Required repository checks pass without weaker settings, and the review diff contains no unrelated changes or secrets.
 
 ## Risks and controls
 

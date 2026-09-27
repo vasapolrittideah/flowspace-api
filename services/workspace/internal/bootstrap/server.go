@@ -19,7 +19,7 @@ import (
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
-	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/keycloak"
+	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/identity"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/app"
 )
@@ -35,9 +35,13 @@ type Server struct {
 	httpServer *http.Server
 	logger     *zap.Logger
 	pool       *pgxpool.Pool
+	verifier   *identity.TokenVerifier
 }
 
 func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server, error) {
+	if config.OIDCDiscoveryURL != "" || config.OIDCIssuer != "" || config.OIDCAudience != "" {
+		return nil, errors.New("OIDC configuration is no longer supported")
+	}
 	pool, err := pgxpool.New(ctx, string(config.DatabaseURL))
 	if err != nil {
 		return nil, fmt.Errorf("configure database: %w", err)
@@ -52,10 +56,20 @@ func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server,
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	verifier, err := keycloak.NewTokenVerifier(ctx, config.OIDCDiscoveryURL, config.OIDCIssuer, config.OIDCAudience)
+	verifier, err := identity.NewTokenVerifier(identity.Config{
+		JWKSURL: config.IdentityJWKSURL, Issuer: config.IdentityIssuer, Audience: config.IdentityAudience,
+		SessionAddress: config.IdentitySessionAddress, SessionServerName: config.IdentitySessionServerName,
+		ClientCertFile: config.IdentityClientCertFile, ClientKeyFile: config.IdentityClientKeyFile, CAFile: config.IdentityCAFile,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("configure authentication: %w", err)
 	}
+	keepVerifier := false
+	defer func() {
+		if !keepVerifier {
+			_ = verifier.Close()
+		}
+	}()
 	workspaceService := app.NewWorkspaceService(postgres.NewWorkspaceRepository(pool))
 	handler, err := newHandler(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier, logger))
 	if err != nil {
@@ -75,15 +89,20 @@ func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server,
 		IdleTimeout:       idleTimeout,
 	}
 	keepPool = true
+	keepVerifier = true
 	return &Server{
 		httpServer: httpServer,
 		logger:     logger,
 		pool:       pool,
+		verifier:   verifier,
 	}, nil
 }
 
 func (s *Server) Run(ctx context.Context) error {
 	defer s.pool.Close()
+	if s.verifier != nil {
+		defer func() { _ = s.verifier.Close() }()
+	}
 	s.logger.Info("process_listening", zap.String("address", s.httpServer.Addr))
 	return serve(ctx, s.httpServer.ListenAndServe, s.httpServer.Shutdown)
 }

@@ -3,6 +3,7 @@ package bootstrap
 import "testing"
 
 func TestLoadConfig(t *testing.T) {
+	setIdentityEnv(t)
 	t.Setenv("ENVIRONMENT", "local")
 	t.Setenv("DATABASE_URL", "postgres://workspace")
 	t.Setenv("OIDC_ISSUER", "https://identity.test/realms/flowspace")
@@ -20,6 +21,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigUsesIssuerForDiscoveryByDefault(t *testing.T) {
+	setIdentityEnv(t)
 	t.Setenv("ENVIRONMENT", "local")
 	t.Setenv("DATABASE_URL", "postgres://workspace")
 	t.Setenv("OIDC_ISSUER", "https://identity.test/realms/flowspace")
@@ -36,6 +38,7 @@ func TestLoadConfigUsesIssuerForDiscoveryByDefault(t *testing.T) {
 }
 
 func TestLoadConfigAcceptsPostgresEnvironment(t *testing.T) {
+	setIdentityEnv(t)
 	t.Setenv("ENVIRONMENT", "local")
 	t.Setenv("DATABASE_URL", "")
 	t.Setenv("PGHOST", "workspace-postgres")
@@ -51,9 +54,10 @@ func TestLoadConfigAcceptsPostgresEnvironment(t *testing.T) {
 }
 
 func TestLoadConfigRequiresDependencies(t *testing.T) {
-	tests := []string{"ENVIRONMENT", "DATABASE_URL", "OIDC_ISSUER", "OIDC_AUDIENCE"}
+	tests := []string{"ENVIRONMENT", "DATABASE_URL", "IDENTITY_ISSUER", "IDENTITY_AUDIENCE", "IDENTITY_JWKS_URL", "IDENTITY_SESSION_ADDR", "IDENTITY_SESSION_SERVER_NAME", "IDENTITY_CLIENT_CERT_FILE", "IDENTITY_CLIENT_KEY_FILE", "IDENTITY_CA_FILE"}
 	for _, missing := range tests {
 		t.Run(missing, func(t *testing.T) {
+			setIdentityEnv(t)
 			t.Setenv("ENVIRONMENT", "local")
 			t.Setenv("DATABASE_URL", "postgres://workspace")
 			for _, key := range []string{"PGHOST", "PGDATABASE", "PGUSER", "PGPASSWORD"} {
@@ -68,4 +72,26 @@ func TestLoadConfigRequiresDependencies(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfigRejectsWrongLocalIssuer(t *testing.T) {
+	setIdentityEnv(t)
+	t.Setenv("ENVIRONMENT", "local")
+	t.Setenv("DATABASE_URL", "postgres://workspace")
+	t.Setenv("IDENTITY_ISSUER", "urn:wrong")
+	if _, err := LoadConfig(); err == nil {
+		t.Fatal("LoadConfig() accepted wrong local issuer")
+	}
+}
+
+func setIdentityEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("IDENTITY_ISSUER", "urn:flowspace:identity:local")
+	t.Setenv("IDENTITY_AUDIENCE", "flowspace-api")
+	t.Setenv("IDENTITY_JWKS_URL", "http://identity-internal/.well-known/jwks.json")
+	t.Setenv("IDENTITY_SESSION_ADDR", "identity-session:8082")
+	t.Setenv("IDENTITY_SESSION_SERVER_NAME", "identity-session.flowspace-local.svc")
+	t.Setenv("IDENTITY_CLIENT_CERT_FILE", "/keys/session/tls.crt")
+	t.Setenv("IDENTITY_CLIENT_KEY_FILE", "/keys/session/tls.key")
+	t.Setenv("IDENTITY_CA_FILE", "/keys/session/ca.crt")
 }

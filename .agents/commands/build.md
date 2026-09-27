@@ -44,7 +44,6 @@ An issue is ready when each issue in its `Blocked by` line is complete. In auton
    - Run `gh issue edit <issue-number> --body-file <temporary-file>` with the complete updated body.
 10. Inspect the staged diff and exclude unrelated changes.
 11. Commit only the issue changes. Add `Refs: #<issue-number>` before the co-author trailers.
-12. Record the exact verification results for the pull request.
 
 Leave the issue open and keep its status as `In Progress`. The pull request closes it after the maintainer merges the change.
 

@@ -89,6 +89,7 @@ func TestIdentityRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
+	t.Run("refresh rotation and replay", func(t *testing.T) { testRefreshSessionRepository(t, pool) })
 
 	t.Run("session check reads current account and session state", func(t *testing.T) {
 		queries := identitysqlc.New(pool)

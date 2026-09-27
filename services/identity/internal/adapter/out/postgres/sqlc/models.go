@@ -58,6 +58,11 @@ type IdentityOutboxEvent struct {
 	PublishedAt   pgtype.Timestamptz
 }
 
+type IdentityRotatedRefreshToken struct {
+	TokenHash []byte
+	SessionID pgtype.UUID
+}
+
 type IdentitySession struct {
 	ID                pgtype.UUID
 	AccountSubject    string

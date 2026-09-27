@@ -35,7 +35,7 @@ Status: Draft.
 
 ## Testing strategy
 
-<feature-specific evidence and test ownership>
+<feature-specific tests and test ownership>
 
 ## Boundaries
 
@@ -43,7 +43,7 @@ Status: Draft.
 
 ## Success criteria
 
-<observable Given and Then outcomes>
+<numbered Given, When, Then outcomes>
 
 ## Open questions and approval
 
@@ -62,18 +62,17 @@ Status: Draft.
 | Contract | Define consumer-visible interfaces, inputs, outputs, data, and errors. |
 | Required behavior | Business rules, invariants, security, consistency, and operational behavior. |
 | Commands | List commands that build, test, lint, or generate artifacts for the capability. |
-| Testing strategy | Feature-specific evidence and the test boundary that owns it. |
+| Testing strategy | Feature-specific tests and the boundary that owns them. |
 | Boundaries | Name capability-specific actions to always do, ask about, or never do. |
-| Success criteria | Permanent IDs and observable Given and Then outcomes required for completion. |
+| Success criteria | A numbered list of observable Given, When, Then outcomes required for completion. |
 | Open questions and approval | Unresolved decisions and required approval, when applicable. |
 | Before real users join | Readiness checks, when applicable. |
 
 ## Rules
 
-- Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
-- Give each success criterion a module-scoped ID: `SC-01`, `SC-02`, ... . Never renumber or reuse an ID. Assign the next unused ID to a new criterion. When citing a criterion outside its module, include the module ID, for example `identity-password-login-and-sessions SC-01`.
-- In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each abuse test and success criterion.
-- Put implementation locations in the plan. Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents.
+- Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion passes. An approved specification permits planning.
+- In Identity specifications, map abuse tests in the Testing strategy to applicable [threat IDs](../security/identity-threat-model.md).
+- Put implementation locations in the plan. Repeat a project-wide rule only when it changes observable behavior or completion criteria. Put project-wide rules in their source documents.
 - Save one specification as `docs/specs/<module-id>.md`. Use the sections through `Success criteria` in the template order.
 - Add either optional final section only when the capability needs it. Add a new top-level section to this convention before using it in a specification. Add each specification to the [specification index](../specs/README.md).
 - Use subsections under `Required behavior` for topics specific to the capability.

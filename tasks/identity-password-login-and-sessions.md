@@ -17,7 +17,7 @@ Add password login, refresh, logout, signing-key overlap, and live session check
 - Serve `CheckSession` on a separate TLS 1.3 gRPC listener. Authenticate callers with the CA, URI subject alternative name, and public-key fingerprint allowlist in [ADR-0036](../docs/adr/0036-authenticate-internal-session-checks-with-mutual-tls.md). Keep health and JWKS on their existing listener.
 - Keep only hashes of current and rotated refresh tokens. A transaction consumes the current token once; reuse of a known rotated token revokes that device session. Login, refresh, and logout use the same session expiry and revocation rules as signup and claim.
 - Record login, refresh, replay, logout, session-check failure, and Identity-unavailable outcomes without credentials, tokens, full email addresses, or high-cardinality metric labels.
-- Reuse [Issue #116](https://github.com/vasapolrittideah/flowspace-api/issues/116) for Workspace's local token validation, authenticated `CheckSession` client, and verified-email gate. This plan does not create a second Workspace admission task. [Issue #117](https://github.com/vasapolrittideah/flowspace-api/issues/117) remains the signup capability's final evidence task.
+- Reuse [Issue #116](https://github.com/vasapolrittideah/flowspace-api/issues/116) for Workspace's local token validation, authenticated `CheckSession` client, and verified-email gate. This plan does not create a second Workspace admission task. [Issue #117](https://github.com/vasapolrittideah/flowspace-api/issues/117) remains the signup capability's final test task.
 
 ## Dependency graph
 
@@ -38,10 +38,10 @@ flowchart TD
     CurrentLogout --> AllLogout[All-session logout]
     Login --> AllLogout
     Keys[Signing-key overlap] --> Workspace
-    Keys --> Evidence[Final session evidence]
-    Workspace --> Evidence
-    Refresh --> Evidence
-    AllLogout --> Evidence
+    Keys --> Verify[Final session checks]
+    Workspace --> Verify
+    Refresh --> Verify
+    AllLogout --> Verify
 ```
 
 ## Task list
@@ -94,14 +94,14 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 - [x] Current-session logout stops later checks for that session, while another device stays active.
 - [x] All-session logout revokes sessions committed before it and permits a new login committed afterward.
 
-### Phase 5: Completion evidence
+### Phase 5: Completion checks
 
 - Task 12: [#166 Prove public, private, and failure paths](https://github.com/vasapolrittideah/flowspace-api/issues/166). [PR #189](https://github.com/vasapolrittideah/flowspace-api/pull/189) records the final verification.
 
 ### Checkpoint: Complete
 
-- [x] Public REST and typed RPC tests cover every applicable specification success criterion and threat ID. The [evidence map](../docs/evidence/identity-password-login-and-sessions.md) links each criterion to its tests.
-- [x] Workspace Issue #116 proves local access-token validation, the live check, verified-email admission, and fail-closed behavior. The signup capability keeps its own final evidence in Issue #117.
+- [x] Public REST and typed RPC tests cover every applicable specification success criterion and threat ID.
+- [x] Workspace Issue #116 proves local access-token validation, the live check, verified-email admission, and fail-closed behavior. The signup capability keeps its own final checks in Issue #117.
 - [x] Generated output matches source contracts and queries. Required repository checks pass without weaker settings, and the review diff contains no unrelated changes or secrets.
 
 ## Risks and controls

@@ -103,19 +103,15 @@ The abuse tests cover ID-T01, ID-T03, ID-T04, ID-T05, ID-T12, ID-T16, ID-T17, an
 
 ## Success criteria
 
-Each row describes an observable result required before implementation can claim completion. The last column links its abuse case to the threat model.
-
-| Given | Then | Threat |
-| --- | --- | --- |
-| An eligible account requests a reset code. | Identity queues one six-digit email code and returns `accepted=true` without changing the password or sessions. | ID-T01, ID-T03, ID-T04 |
-| A missing, unverified, or provider-only account requests a code. | Identity returns the same accepted response and practical timing without sending a code or revealing eligibility through limits. | ID-T01, ID-T05 |
-| A user requests another code after the allowed interval. | Only the new reset code works; verification and claim codes remain independent. | ID-T03, ID-T04 |
-| A valid reset code and approved new password arrive. | Identity changes the password once, consumes all reset challenges, revokes all sessions, queues a notice, and returns no tokens. | ID-T04, ID-T05, ID-T12 |
-| A caller supplies a malformed, wrong, expired, replaced, consumed, or wrong-purpose code. | No password or session changes, and all unusable codes return the safe recovery error. | ID-T03, ID-T04, ID-T05 |
-| A client repeats a reset-code request for the same email within 60 seconds. | Identity returns `accepted=true` without issuing another code if the first request committed; a retry after an uncommitted request can issue the first code. | ID-T01, ID-T03, ID-T04 |
-| A source IP exceeds 60 code requests or 100 wrong code guesses per hour across verification, claim, and reset, including across replicas or missing accounts. | Identity denies further attempts without disclosing account eligibility or bypassing an unavailable limit store. | ID-T01, ID-T03, ID-T16 |
-| Two clients submit one valid code or an old-password login races with reset. | Only one reset commits, and no session authenticated with the old password commits after that reset. | ID-T05, ID-T12 |
-| A reset commits while an old access token has time remaining. | The next live session check rejects it and every old refresh token; a request admitted before commit can finish. | ID-T05, ID-T09, ID-T13 |
-| A successful reset response is lost. | Reusing the code cannot reset again; the new password can establish a fresh session without replaying old tokens. | ID-T04, ID-T05 |
-| Email delivery fails before or after a required transaction. | A failed durable queue commit leaves credentials and sessions unchanged; a failure after commit retries delivery without reversing the reset. | ID-T05, ID-T16 |
-| The capability is submitted for implementation review. | Contract, abuse, concurrency, delivery, telemetry, and cross-service tests pass under repository quality checks. | ID-T17, ID-T19, ID-T21 |
+1. Given an account eligible for password recovery, When a client requests a reset code, Then Identity queues one six-digit email code and returns `accepted=true` without changing the password or sessions.
+2. Given an account is missing, unverified, or provider-only, When a client requests a reset code, Then Identity returns the same accepted response and practical timing without sending a code or revealing eligibility through limits.
+3. Given the allowed resend interval has passed, When a user requests another reset code, Then only the new reset code works. Verification and claim codes remain independent.
+4. Given a valid reset code and approved new password are available, When a client submits them, Then Identity changes the password once, consumes all reset challenges, revokes all sessions, queues a notice, and returns no tokens.
+5. Given a code is malformed, wrong, expired, replaced, consumed, or for another purpose, When a caller submits it, Then no password or session changes, and all unusable codes return the safe recovery error.
+6. Given a reset-code request for the same email was made within 60 seconds, When a client repeats the request, Then Identity returns `accepted=true` without issuing another code if the first request committed. A retry after an uncommitted request can issue the first code.
+7. Given a source IP exceeds 60 code requests or 100 wrong code guesses per hour across verification, claim, and reset, When another attempt arrives from any replica or for a missing account, Then Identity denies further attempts without disclosing account eligibility or bypassing an unavailable limit store.
+8. Given one valid code and a possible concurrent old-password login, When two clients submit the code or login overlaps reset, Then only one reset commits, and no session authenticated with the old password commits after that reset.
+9. Given a reset commits while an old access token has time remaining, When the next live session check runs, Then the check rejects the access token, and Identity rejects every old refresh token. A request admitted before commit can finish.
+10. Given a successful reset response is lost, When the client reuses the code or logs in with the new password, Then the code cannot reset again. The new password can establish a fresh session without replaying old tokens.
+11. Given a recovery email is required, When delivery fails before or after the transaction, Then a failed durable queue commit leaves credentials and sessions unchanged. A failure after commit retries delivery without reversing the reset.
+12. Given the capability is submitted for implementation review, When the required repository checks run, Then Contract, abuse, concurrency, delivery, telemetry, and cross-service tests pass under repository quality checks.

@@ -109,26 +109,22 @@ Callback CSRF, code injection, provider mix-up, PKCE, and redirects test ID-T06.
 
 ## Success criteria
 
-Each row describes an observable result required before implementation can claim completion. The last column links its abuse case to the threat model.
-
-| Given | Then | Threat |
-| --- | --- | --- |
-| An API client starts Google or GitHub login. | Identity returns one provider authorization URL and a separate secret attempt token. The URL cannot select an unapproved provider or redirect target. | ID-T06, ID-T15 |
-| A provider calls back with a valid code and state. | Identity checks provider proof once and displays a one-time handoff code without FlowSpace tokens. | ID-T06, ID-T07, ID-T17 |
-| A callback has a wrong provider, state, nonce, verifier, redirect URI, issuer, or audience. | Identity rejects it without issuing a handoff code, account, link, or session. | ID-T06, ID-T07 |
-| A first-time provider identity has an unused verified email. | Identity creates one provider-only account, one link, and one session for a new stable subject. | ID-T07, ID-T08, ID-T12 |
-| A new Google identity has a verified Gmail or Google Workspace email. | The new account starts verified and can pass Workspace's verified-email gate. | ID-T07, ID-T14 |
-| A new Google identity has a verified third-party email, or a new GitHub identity has a verified primary email. | The new account receives a session and a six-digit email challenge; Workspace rejects it until FlowSpace verifies the email. | ID-T03, ID-T07, ID-T14 |
-| A new provider-only account completes its FlowSpace email challenge. | The next live session check reports `email_verified=true`, so Workspace can apply its membership rules. | ID-T03, ID-T14 |
-| A provider identity already has a FlowSpace link, but its provider email changed or is missing. | Identity signs in the same subject, preserves the stored FlowSpace email and verification state, and does not change Workspace access. | ID-T07, ID-T08 |
-| A verified provider email already belongs to another FlowSpace account, or a new provider identity lacks a usable verified email. | Identity creates no new account, link, or session and returns the same safe status and response. | ID-T01, ID-T08 |
-| A client supplies an invalid, expired, or used handoff proof. | No session is issued, and no reusable secret appears in the error. | ID-T09, ID-T12, ID-T17 |
-| Two clients claim the same handoff proof concurrently. | At most one account, link, and session transition commits. | ID-T12 |
-| A client loses a successful `StartProviderLogin` response. | A retry creates a new attempt. The old attempt expires without an account or session. | ID-T12, ID-T19 |
-| A client loses a successful `CreateProviderSession` response. | A new provider login issues a new token pair for the same subject without replaying the lost refresh token. The first session can remain active. | ID-T11, ID-T12 |
-| A required provider call or Identity dependency fails after authorization starts. | Identity leaves no partial account, link, or session and reports a safe temporary failure. | ID-T07, ID-T16 |
-| A request exceeds an approved provider-login limit. | Identity rejects it without issuing another attempt, handoff code, or session. | ID-T06, ID-T16 |
-| The capability is submitted for implementation review. | Contract, provider-adapter, abuse, concurrency, telemetry, and cross-service tests pass under repository quality checks. | ID-T15, ID-T17, ID-T20 |
+1. Given an API client uses Google or GitHub login, When it starts a provider login, Then Identity returns one provider authorization URL and a separate secret attempt token. The URL cannot select an unapproved provider or redirect target.
+2. Given a provider has a valid code and state, When it calls back, Then Identity checks provider proof once and displays a one-time handoff code without FlowSpace tokens.
+3. Given a callback has a wrong provider, state, nonce, verifier, redirect URI, issuer, or audience, When Identity handles it, Then Identity rejects it without issuing a handoff code, account, link, or session.
+4. Given a first-time provider identity has an unused verified email, When the user completes provider login, Then Identity creates one provider-only account, one link, and one session for a new stable subject.
+5. Given a new Google identity has a verified Gmail or Google Workspace email, When the user completes provider login, Then the new account starts verified and can pass Workspace's verified-email gate.
+6. Given a new Google identity has a verified third-party email or a new GitHub identity has a verified primary email, When the user completes provider login, Then the new account receives a session and a six-digit email challenge. Workspace rejects it until FlowSpace verifies the email.
+7. Given a new provider-only account has a FlowSpace email challenge, When the account completes it, Then the next live session check reports `email_verified=true`, so Workspace can apply its membership rules.
+8. Given a provider identity already has a FlowSpace link but its email changed or is missing, When the user logs in again, Then Identity signs in the same subject, preserves the stored FlowSpace email and verification state, and does not change Workspace access.
+9. Given a verified provider email belongs to another FlowSpace account or a new provider identity lacks a usable verified email, When the user attempts provider login, Then Identity creates no new account, link, or session and returns the same safe status and response.
+10. Given a handoff proof is invalid, expired, or used, When a client submits it, Then no session is issued, and no reusable secret appears in the error.
+11. Given one handoff proof is available, When two clients claim it concurrently, Then at most one account, link, and session transition commits.
+12. Given a successful StartProviderLogin response is lost, When a client retries, Then Identity creates a new attempt. The old attempt expires without an account or session.
+13. Given a successful CreateProviderSession response is lost, When a client starts a new provider login, Then Identity issues a new token pair for the same subject without replaying the lost refresh token. The first session can remain active.
+14. Given authorization has started, When a required provider call or Identity dependency fails, Then Identity leaves no partial account, link, or session and reports a safe temporary failure.
+15. Given an approved provider-login limit is reached, When another request arrives, Then Identity rejects it without issuing another attempt, handoff code, or session.
+16. Given the capability is submitted for implementation review, When the required repository checks run, Then Contract, provider-adapter, abuse, concurrency, telemetry, and cross-service tests pass under repository quality checks.
 
 ## Before real users join
 

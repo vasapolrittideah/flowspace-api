@@ -46,8 +46,8 @@ flowchart TD
     Runtime --> Local[Local cluster resources]
     Verify --> Gate[Workspace verified-email gate]
     Claim --> Gate
-    Local --> Evidence[Final public and failure evidence]
-    Gate --> Evidence
+    Local --> FinalChecks[Final public and failure checks]
+    Gate --> FinalChecks
 ```
 
 ## Task list
@@ -94,7 +94,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 - [x] Claim and verification races produce one valid account state; a successful claim retires the old subject and sessions.
 - [x] Missing and ineligible claim-code requests return the same accepted response without an email.
 
-### Phase 4: Runtime and completion evidence
+### Phase 4: Runtime and completion checks
 
 - Task 14: [#113 Start the Identity API and workers](https://github.com/vasapolrittideah/flowspace-api/issues/113)
 - Task 15: [#114 Deploy Identity in the local cluster](https://github.com/vasapolrittideah/flowspace-api/issues/114)

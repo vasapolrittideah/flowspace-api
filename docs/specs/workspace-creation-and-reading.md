@@ -8,7 +8,7 @@ Status: Approved.
 
 Build the first Workspace capability for signed-in users of FlowSpace. A user can create a workspace and read a workspace where that user is a member. Safe retries must prevent duplicate creation after a lost response.
 
-This spec assumes that workspace creation and reading do not exist yet. It defines required behavior and completion evidence. It does not report implementation progress or establish deployment readiness.
+This spec assumes that workspace creation and reading do not exist yet. It defines required behavior and completion criteria. It does not report implementation progress or establish deployment readiness.
 
 Create and read belong to one capability because they share workspace data, ownership, and access rules. The first implementation uses Keycloak for authenticated identity. Work and Notifications are not dependencies of this capability.
 
@@ -189,30 +189,24 @@ The approved scope includes the service-owned schema and migrations needed for c
 
 ## Success criteria
 
-Each Given cell states the setup and operation. Each Then cell states the required observable result. Completion requires every row:
-
-| Given | Then |
-| --- | --- |
-| An authenticated subject sends a valid create through REST or RPC. | The response contains the normalized name, a server-generated UUID, and a creation timestamp. Exactly one owner membership persists for that subject. |
-| An authenticated subject sends a create with an invalid name or idempotency key. | The operation returns `InvalidArgument` (HTTP 400) without creation effects. |
-| A caller uses either method with missing or invalid authentication. | The operation returns `Unauthenticated` (HTTP 401) without creation effects. |
-| A create commits and its owner immediately reads the workspace. | The owner receives the committed resource. |
-| The service restarts with the same database after a committed create, and the owner reads the workspace. | The owner receives the same resource. |
-| The same subject retries a completed create with the same key and normalized name within the 24-hour retry window. | The operation returns the original resource without duplicate workspace or membership records. |
-| A completed creation record has not expired, and the same subject reuses its key with a different normalized name. | The operation returns `AlreadyExists` (HTTP 409) without creating another workspace. |
-| A completed creation record reaches its 24-hour logical expiry, and the same subject reuses its key. | The key can identify a new operation even if physical cleanup has not removed the expired record. |
-| A duplicate create overlaps an attempt that still holds the same subject's key. | The duplicate returns `Aborted` (HTTP 409), and the attempts cannot commit duplicate effects. |
-| A process crashes while its create attempt holds an in-progress claim. | The claim is released with the transaction or connection, and a retry can attempt creation without partial effects. |
-| A different subject uses the same key, or the same subject uses a new key, for a valid create. | The operation can create a separate workspace independently. |
-| An injected failure occurs before the creation transaction commits. | The attempt leaves no partial workspace, owner membership, or completed retry record. |
-| A REST create contains malformed JSON or a body above 1 MiB. | Malformed JSON returns HTTP 400. An oversized body returns HTTP 413. Neither request reaches creation. |
-| A subject with a viewer, member, admin, or owner membership reads that workspace through REST or RPC. | The operation returns the workspace using the same access rules for both transports. |
-| An authenticated subject requests a workspace without membership, a nonexistent workspace, or a malformed UUID. | The operation returns the same `NotFound` (HTTP 404) result without revealing whether an inaccessible workspace exists. |
-| A client supplies identity or role claims to either method through REST or RPC. | Access decisions use the validated token subject and Workspace-owned membership data. Client claims do not prove access. |
-| A request through the generated REST boundary has a shorter caller deadline or exceeds the five-second cap. | The service honors the effective deadline and propagates it to dependencies. Expiry returns `DeadlineExceeded` (HTTP 504). |
-| A caller cancels a request through the generated REST boundary. | Cancellation propagates to token verification and database work. |
-| A request crosses the generated REST boundary with a valid, missing, or invalid request ID. | The service preserves a valid ID or replaces a missing or invalid ID. It forwards and returns the effective ID. |
-| A request fails through the generated REST boundary. | The response uses the specified status and safe error details without exposing internal diagnostics. |
-| The capability is submitted for review. | Applicable builds, tests, coverage, lint, security, contract generation, and compatibility checks meet the contribution policy and constraints. |
-
-These are requirements for future evidence. No criterion is marked complete in this approved specification.
+1. Given a subject is authenticated, When the subject sends a valid create through REST or RPC, Then the response contains the normalized name, a server-generated UUID, and a creation timestamp. Exactly one owner membership persists for that subject.
+2. Given a subject is authenticated, When the subject sends a create with an invalid name or idempotency key, Then the operation returns `InvalidArgument` (HTTP 400) without creation effects.
+3. Given a caller lacks valid authentication, When the caller uses either method, Then the operation returns `Unauthenticated` (HTTP 401) without creation effects.
+4. Given a create has committed, When its owner immediately reads the workspace, Then the owner receives the committed resource.
+5. Given the service restarts with the same database after a committed create, When the owner reads the workspace, Then the owner receives the same resource.
+6. Given a create completed within the 24-hour retry window, When the same subject retries with the same key and normalized name, Then the operation returns the original resource without duplicate workspace or membership records.
+7. Given a completed creation record has not expired, When the same subject reuses its key with a different normalized name, Then the operation returns `AlreadyExists` (HTTP 409) without creating another workspace.
+8. Given a completed creation record reaches its 24-hour logical expiry, When the same subject reuses its key, Then the key can identify a new operation even if physical cleanup has not removed the expired record.
+9. Given an attempt still holds a subject's key, When a duplicate create overlaps it, Then the duplicate returns `Aborted` (HTTP 409), and the attempts cannot commit duplicate effects.
+10. Given a create attempt holds an in-progress claim, When the process crashes, Then the claim is released with the transaction or connection, and a retry can attempt creation without partial effects.
+11. Given a valid create uses the same key with another subject or a new key with the same subject, When the caller sends it, Then the operation can create a separate workspace independently.
+12. Given a creation transaction has not committed, When an injected failure occurs, Then the attempt leaves no partial workspace, owner membership, or completed retry record.
+13. Given a REST create has malformed JSON or a body above 1 MiB, When a client sends it, Then malformed JSON returns HTTP 400. An oversized body returns HTTP 413. Neither request reaches creation.
+14. Given a subject has a viewer, member, admin, or owner membership, When the subject reads that workspace through REST or RPC, Then the operation returns the workspace using the same access rules for both transports.
+15. Given a subject is authenticated, When the subject requests a workspace without membership, a nonexistent workspace, or a malformed UUID, Then the operation returns the same `NotFound` (HTTP 404) result without revealing whether an inaccessible workspace exists.
+16. Given a client supplies identity or role claims, When the client calls either method through REST or RPC, Then access decisions use the validated token subject and Workspace-owned membership data. Client claims do not prove access.
+17. Given a generated REST request has a shorter caller deadline or exceeds the five-second cap, When the service handles it, Then the service honors the effective deadline and propagates it to dependencies. Expiry returns `DeadlineExceeded` (HTTP 504).
+18. Given a request crosses the generated REST boundary, When the caller cancels it, Then cancellation propagates to token verification and database work.
+19. Given a request has a valid, missing, or invalid request ID, When it crosses the generated REST boundary, Then the service preserves a valid ID or replaces a missing or invalid ID. It forwards and returns the effective ID.
+20. Given a request crosses the generated REST boundary, When it fails, Then the response uses the specified status and safe error details without exposing internal diagnostics.
+21. Given the capability is submitted for review, When the required repository checks run, Then applicable builds, tests, coverage, lint, security, contract generation, and compatibility checks meet the contribution policy and constraints.

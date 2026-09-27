@@ -41,8 +41,7 @@ Review the [CI checks](../../.github/workflows/ci.yml) on the PR. CI reports the
 ### Additional notes
 
 - Write useful facts about this PR that do not fit the other sections. Write paragraphs for connected points and bullets for independent points. A note does not need to start with a Check name.
-- State the cause of each unresolved failure and the reason for each local check that did not run. Report warnings even when a command passes. Do not paste routine logs or describe resolved attempts. Link relevant output when it helps review.
-- For vulnerabilities in required modules that the code does not appear to call, use this wording: `Govulncheck reported <count> vulnerabilities in required modules that the code does not appear to call.`
+- State the cause of each unresolved failure and the reason for each local check that did not run. Put material warnings and security risks in `Risks or limitations`. Do not copy module-only Govulncheck counts into `Additional notes`. Do not paste routine logs or describe resolved attempts. Link relevant output when it helps review.
 
 ### Suggested squash commit
 

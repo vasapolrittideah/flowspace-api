@@ -55,6 +55,20 @@ WHERE email_local = sqlc.arg(email_local)
   AND email_domain = sqlc.arg(email_domain)
   AND retired_at IS NULL;
 
+-- name: GetPasswordAccountByEmail :one
+SELECT subject, password_hash, email_verified_at
+FROM identity_accounts
+WHERE email_local = sqlc.arg(email_local)
+  AND email_domain = sqlc.arg(email_domain)
+  AND retired_at IS NULL;
+
+-- name: GetPasswordAccountForUpdate :one
+SELECT subject, password_hash, email_verified_at
+FROM identity_accounts
+WHERE subject = sqlc.arg(subject)
+  AND retired_at IS NULL
+FOR UPDATE;
+
 -- name: MarkEmailVerified :execrows
 UPDATE identity_accounts
 SET email_verified_at = statement_timestamp()

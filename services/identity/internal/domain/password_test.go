@@ -82,3 +82,26 @@ func TestHashPasswordUsesArgon2idAndPerPasswordSalt(t *testing.T) {
 		t.Fatal("two passwords reused one salt")
 	}
 }
+
+func TestVerifyPasswordUsesNFCAndRejectsWrongPassword(t *testing.T) {
+	hash, err := HashPassword(context.Background(), "e\u0301abcdef1", func(context.Context, string) (bool, error) { return false, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		password string
+		want     bool
+	}{
+		{"éabcdef1", true},
+		{"e\u0301abcdef1", true},
+		{"wrong-password", false},
+	} {
+		match, err := VerifyPassword(context.Background(), test.password, hash)
+		if err != nil || match != test.want {
+			t.Fatalf("password match = %t, error = %v; want %t", match, err, test.want)
+		}
+	}
+	if _, err := VerifyPassword(context.Background(), "correct", "$argon2id$broken"); !errors.Is(err, ErrPasswordHashingUnavailable) {
+		t.Fatalf("invalid stored hash error = %v", err)
+	}
+}

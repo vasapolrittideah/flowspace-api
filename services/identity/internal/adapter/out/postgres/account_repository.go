@@ -17,7 +17,10 @@ import (
 
 type AccountRepository struct{ pool *pgxpool.Pool }
 
-var _ outbound.AccountRepository = (*AccountRepository)(nil)
+var (
+	_ outbound.AccountRepository       = (*AccountRepository)(nil)
+	_ outbound.PasswordLoginRepository = (*AccountRepository)(nil)
+)
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
 	return &AccountRepository{pool: pool}
@@ -39,6 +42,10 @@ func (r *AccountRepository) WithinAccountClaimTransaction(ctx context.Context, f
 	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 
+func (r *AccountRepository) WithinPasswordSessionTransaction(ctx context.Context, fn func(outbound.PasswordSessionTransaction) error) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
 func (r *AccountRepository) withinTransaction(ctx context.Context, fn func(*accountTransaction) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -57,11 +64,38 @@ type accountTransaction struct {
 }
 
 var (
-	_ outbound.AccountTransaction      = (*accountTransaction)(nil)
-	_ outbound.VerificationTransaction = (*accountTransaction)(nil)
-	_ outbound.ClaimCodeTransaction    = (*accountTransaction)(nil)
-	_ outbound.AccountClaimTransaction = (*accountTransaction)(nil)
+	_ outbound.AccountTransaction         = (*accountTransaction)(nil)
+	_ outbound.VerificationTransaction    = (*accountTransaction)(nil)
+	_ outbound.ClaimCodeTransaction       = (*accountTransaction)(nil)
+	_ outbound.AccountClaimTransaction    = (*accountTransaction)(nil)
+	_ outbound.PasswordSessionTransaction = (*accountTransaction)(nil)
 )
+
+func (r *AccountRepository) FindPasswordAccount(ctx context.Context, email string) (outbound.PasswordAccount, bool, error) {
+	local, domain, ok := strings.Cut(email, "@")
+	if !ok {
+		return outbound.PasswordAccount{}, false, errors.New("invalid normalized email")
+	}
+	account, err := sqlc.New(r.pool).GetPasswordAccountByEmail(ctx, sqlc.GetPasswordAccountByEmailParams{EmailLocal: local, EmailDomain: domain})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.PasswordAccount{}, false, nil
+	}
+	if err != nil {
+		return outbound.PasswordAccount{}, false, err
+	}
+	return outbound.PasswordAccount{Subject: account.Subject, PasswordHash: account.PasswordHash, EmailVerified: account.EmailVerifiedAt.Valid}, true, nil
+}
+
+func (t *accountTransaction) LockPasswordAccount(ctx context.Context, subject string) (outbound.PasswordAccount, error) {
+	account, err := t.queries.GetPasswordAccountForUpdate(ctx, subject)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.PasswordAccount{}, outbound.ErrUnauthenticated
+	}
+	if err != nil {
+		return outbound.PasswordAccount{}, err
+	}
+	return outbound.PasswordAccount{Subject: account.Subject, PasswordHash: account.PasswordHash, EmailVerified: account.EmailVerifiedAt.Valid}, nil
+}
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {
 	local, domain, ok := strings.Cut(email, "@")

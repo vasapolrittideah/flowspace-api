@@ -148,6 +148,39 @@ func TestIdentityPrivateSessionListener(t *testing.T) {
 	if err != nil || !response.GetEmailVerified() {
 		t.Fatalf("current verification = %+v, %v", response, err)
 	}
+	for _, test := range []struct {
+		name    string
+		request *identityv1.CheckSessionRequest
+	}{
+		{"wrong subject", &identityv1.CheckSessionRequest{Subject: "other-subject", SessionId: sessionID}},
+		{"unknown session", &identityv1.CheckSessionRequest{Subject: "session-subject", SessionId: "00000000-0000-0000-0000-000000000000"}},
+	} {
+		_, err := private.CheckSession(callCtx, test.request)
+		if status.Code(err) != codes.Unauthenticated {
+			t.Fatalf("%s = %v", test.name, err)
+		}
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET revoked_at = statement_timestamp() WHERE id = $1`, sessionID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := private.CheckSession(callCtx, request); status.Code(err) != codes.Unauthenticated {
+		t.Fatalf("revoked session = %v", err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET revoked_at = NULL, idle_expires_at = statement_timestamp() WHERE id = $1`, sessionID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := private.CheckSession(callCtx, request); status.Code(err) != codes.Unauthenticated {
+		t.Fatalf("expired session = %v", err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET idle_expires_at = statement_timestamp() + INTERVAL '30 days' WHERE id = $1`, sessionID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_accounts SET email_verified_at = NULL, retired_at = statement_timestamp() WHERE subject = 'session-subject'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := private.CheckSession(callCtx, request); status.Code(err) != codes.Unauthenticated {
+		t.Fatalf("retired account = %v", err)
+	}
 	publicConnection, err := grpc.NewClient("passthrough:///"+config.HTTPAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

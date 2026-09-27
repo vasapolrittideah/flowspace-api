@@ -64,13 +64,14 @@ Status: Draft.
 | Commands | List commands that build, test, lint, or generate artifacts for the capability. |
 | Testing strategy | Feature-specific evidence and the test boundary that owns it. |
 | Boundaries | Name capability-specific actions to always do, ask about, or never do. |
-| Success criteria | Observable Given and Then outcomes required for completion. |
+| Success criteria | Permanent IDs and observable Given and Then outcomes required for completion. |
 | Open questions and approval | Unresolved decisions and required approval, when applicable. |
 | Before real users join | Readiness checks, when applicable. |
 
 ## Rules
 
 - Use `Draft` before approval, `Approved` after approval, and `Implemented` after every success criterion has evidence. An approved specification permits planning.
+- Give each success criterion a module-scoped ID: `SC-01`, `SC-02`, ... . Never renumber or reuse an ID. Assign the next unused ID to a new criterion. When citing a criterion outside its module, include the module ID, for example `identity-password-login-and-sessions SC-01`.
 - In Identity specifications, reference applicable [threat IDs](../security/identity-threat-model.md) in each abuse test and success criterion.
 - Put implementation locations in the plan. Repeat a project-wide rule only when it changes observable behavior or completion evidence. Put project-wide rules in their source documents.
 - Save one specification as `docs/specs/<module-id>.md`. Use the sections through `Success criteria` in the template order.

@@ -535,6 +535,13 @@ func TestIdentityRepository(t *testing.T) {
 		if retry, err := service.CreateAccount(ctx, request); !errors.Is(err, outbound.ErrAccountExists) || retry.AccessToken != "" || retry.RefreshToken != "" {
 			t.Fatalf("lost-response retry = %+v, %v", retry, err)
 		}
+		login := app.NewPasswordLoginService(identitypostgres.NewAccountRepository(pool), signer, func(context.Context, string, string) error { return nil })
+		recovered, err := login.CreatePasswordSession(ctx, inbound.CreatePasswordSessionInput{
+			Email: request.Email, Password: request.Password, Source: "192.0.2.2",
+		})
+		if err != nil || recovered.Subject != result.Subject || recovered.EmailVerified || recovered.AccessToken == "" || recovered.RefreshToken == "" || recovered.AccessToken == result.AccessToken || recovered.RefreshToken == result.RefreshToken {
+			t.Fatalf("login after lost signup response = %+v, %v", recovered, err)
+		}
 		start := make(chan struct{})
 		results := make(chan error, 2)
 		for range 2 {

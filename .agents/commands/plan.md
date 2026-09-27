@@ -12,7 +12,7 @@ Use GitHub Issues as the task list. Use GitHub Projects to show task status.
 
 1. Enter plan mode. Read files, but do not change implementation code.
 2. Identify the dependency graph between components.
-3. Slice work vertically. Each task must deliver one complete path.
+3. Slice work vertically. Each task must deliver one complete path. The final task must verify the module and write `docs/evidence/<module-id>.md` following the [evidence map conventions](../../docs/conventions/evidence-maps.md).
 4. Write each task in `tasks/.todo.md` using the [GitHub Issue conventions](../../docs/conventions/github-issues.md).
 5. Add checkpoints between phases in the plan document.
 6. Save the plan as `tasks/<module-id>.md` using the [module plan conventions](../../docs/conventions/module-plans.md).

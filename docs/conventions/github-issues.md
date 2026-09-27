@@ -52,6 +52,19 @@ Estimated scope: <expected size>.
 - Use the exact dependency forms shown in Examples.
 - For generated output, list only its folder. Do not list generated file names.
 
+## Final Prove task
+
+The final task in each module plan proves the approved specification and records the evidence. Use the Issue template above.
+
+- Title the Issue `Prove <capability> against its specification`. Name the capability so readers can distinguish it from other modules.
+- In Description, name the final test scope and any cross-service evidence owned by another Issue. Link to that evidence instead of repeating its implementation.
+- In Acceptance criteria, require an [evidence map](evidence-maps.md) with one row per success criterion and a reference to each applicable threat ID. Each row must link to a named test or review artifact and state what it proves.
+- Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
+- If evidence is missing, record the gap and its follow-up Issue in the map. Keep the Prove task and final plan checkpoint open until the gap is resolved.
+- In Verification, list `task check:task`, `task markdown:check`, PR diff inspection, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Record command results in the Issue or PR checks, not in the map.
+- List actual blocking Issues in Dependencies. Include `docs/evidence/<module-id>.md`, `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
+- When the evidence is complete, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
+
 ## Examples
 
 The [Workspace creation Issue](https://github.com/vasapolrittideah/flowspace-api/issues/48) shows a complete Issue using this template.

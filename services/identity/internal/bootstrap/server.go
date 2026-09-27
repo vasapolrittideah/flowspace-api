@@ -99,7 +99,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 		app.NewClaimCodeService(accountRepo, protector, limits.CodeRequest, verifierKey),
 		app.NewAccountClaimService(accountRepo, signer, limits.WrongCode, limits.AccountWrongCode, checkPassword, verifierKey),
 		verifier, trusted,
-	)
+	).WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin))
 	public, session, err := newIdentityRPCHandlers(ctx, config, pool, handler, logger, trusted)
 	if err != nil {
 		pool.Close()
@@ -352,7 +352,7 @@ func validRequestID(value string) bool {
 func safeOperation(r *http.Request) string {
 	for _, path := range []string{
 		"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
-		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims",
+		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-sessions",
 	} {
 		if r.URL.Path == path {
 			return r.Method + " " + path

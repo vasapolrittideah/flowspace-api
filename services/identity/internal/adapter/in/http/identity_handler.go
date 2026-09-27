@@ -26,12 +26,18 @@ type sourceContextKey struct{}
 
 type IdentityHandler struct {
 	identityv1.UnimplementedIdentityServiceServer
-	signup       inbound.SignupService
-	verification inbound.VerificationCodeService
-	claimCodes   inbound.ClaimCodeService
-	claims       inbound.AccountClaimService
-	verifier     outbound.AccessTokenVerifier
-	trusted      []netip.Prefix
+	signup        inbound.SignupService
+	verification  inbound.VerificationCodeService
+	claimCodes    inbound.ClaimCodeService
+	claims        inbound.AccountClaimService
+	passwordLogin inbound.PasswordLoginService
+	verifier      outbound.AccessTokenVerifier
+	trusted       []netip.Prefix
+}
+
+func (h *IdentityHandler) WithPasswordLogin(service inbound.PasswordLoginService) *IdentityHandler {
+	h.passwordLogin = service
+	return h
 }
 
 var _ identityv1.IdentityServiceServer = (*IdentityHandler)(nil)
@@ -67,6 +73,37 @@ func (h *IdentityHandler) CreateAccount(ctx context.Context, request *identityv1
 		Subject: result.Subject, EmailVerified: &unverified,
 		AccessToken: result.AccessToken, RefreshToken: result.RefreshToken,
 		AccessTokenExpiresAt: timestamppb.New(result.AccessTokenExpiresAt),
+	}, nil
+}
+
+func (h *IdentityHandler) CreatePasswordSession(ctx context.Context, request *identityv1.CreatePasswordSessionRequest) (*identityv1.CreatePasswordSessionResponse, error) {
+	if len(metadata.ValueFromIncomingContext(ctx, "idempotency-key")) != 0 {
+		return nil, invalidSignupArgument("idempotency_key", "is not supported")
+	}
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	source, err := h.sourceAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if h.passwordLogin == nil {
+		return nil, status.Error(codes.Unavailable, "password login unavailable")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	result, err := h.passwordLogin.CreatePasswordSession(ctx, inbound.CreatePasswordSessionInput{
+		Email: request.GetEmail(), Password: request.GetPassword(), Source: source,
+	})
+	if err != nil {
+		return nil, passwordLoginRPCError(err)
+	}
+	return &identityv1.CreatePasswordSessionResponse{
+		Subject: result.Subject, EmailVerified: &result.EmailVerified,
+		AccessToken: result.AccessToken, RefreshToken: result.RefreshToken,
+		AccessTokenExpiresAt:  timestamppb.New(result.AccessTokenExpiresAt),
+		RefreshTokenExpiresAt: timestamppb.New(result.RefreshTokenExpiresAt),
+		SessionExpiresAt:      timestamppb.New(result.SessionExpiresAt),
 	}, nil
 }
 
@@ -283,6 +320,23 @@ func signupRPCError(err error) error {
 	}
 }
 
+func passwordLoginRPCError(err error) error {
+	switch {
+	case errors.Is(err, domain.ErrInvalidEmail):
+		return invalidSignupArgument("email", "is invalid")
+	case errors.Is(err, domain.ErrInvalidPassword):
+		return invalidSignupArgument("password", "is invalid")
+	case errors.Is(err, app.ErrRateLimited):
+		return status.Error(codes.ResourceExhausted, "password login limit exceeded")
+	case errors.Is(err, app.ErrInvalidCredentials):
+		return status.Error(codes.Unauthenticated, "invalid credentials")
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return status.FromContextError(err).Err()
+	default:
+		return status.Error(codes.Unavailable, "password login unavailable")
+	}
+}
+
 func invalidSignupArgument(field, reason string) error {
 	result, err := status.New(codes.InvalidArgument, "invalid request").WithDetails(&errdetails.BadRequest{
 		FieldViolations: []*errdetails.BadRequest_FieldViolation{{Field: field, Description: reason}},
@@ -306,7 +360,7 @@ func NewIdentityRequestHandler(next http.Handler, trusted []netip.Prefix) *Ident
 func (h *IdentityRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	if _, present := r.Header[http.CanonicalHeaderKey("Idempotency-Key")]; present &&
-		(r.URL.Path == "/v1/accounts" || r.URL.Path == "/v1/unverified-account-claims") {
+		(r.URL.Path == "/v1/accounts" || r.URL.Path == "/v1/unverified-account-claims" || r.URL.Path == "/v1/password-sessions") {
 		http.Error(w, "idempotency-key is not supported", http.StatusBadRequest)
 		return
 	}

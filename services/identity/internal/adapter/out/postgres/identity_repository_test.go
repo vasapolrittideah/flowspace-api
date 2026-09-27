@@ -1051,6 +1051,9 @@ func TestIdentityRepository(t *testing.T) {
 	t.Run("account claims replace one unverified identity", func(t *testing.T) {
 		testAccountClaimRepository(t, pool)
 	})
+	t.Run("password login commits one session and hides missing accounts", func(t *testing.T) {
+		testPasswordLoginRepository(t, pool)
+	})
 }
 
 func TestDeliveryRepository(t *testing.T) {

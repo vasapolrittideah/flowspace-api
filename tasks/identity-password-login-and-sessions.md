@@ -50,7 +50,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Phase 1: Decisions and contract
 
-- Task 1: [#155 Set numeric password-login limits](https://github.com/vasapolrittideah/flowspace-api/issues/155). [PR #167](https://github.com/vasapolrittideah/flowspace-api/pull/167) recorded the approved numbers. Issue #155 remains open until #161 and #162 finish.
+- Task 1: [#155 Set numeric password-login limits](https://github.com/vasapolrittideah/flowspace-api/issues/155). [PR #167](https://github.com/vasapolrittideah/flowspace-api/pull/167) recorded the approved numbers. Issue #155 also tracks enforcement in Task 7 and use before hashing in Task 8.
 - Task 2: [#156 Define public session and internal CheckSession contracts](https://github.com/vasapolrittideah/flowspace-api/issues/156)
 
 ### Checkpoint: Contract
@@ -78,9 +78,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Login
 
-- [ ] Old and new key IDs work during the approved overlap, and a retired key stops working after its last valid token expires.
-- [ ] A known account receives one new session and token pair. Unknown, retired, and wrong-password requests have the same safe result.
-- [ ] Source and email limits run before password hashing, and a limit-store outage denies login.
+- [x] Old and new key IDs work during the approved overlap, and a retired key stops working after its last valid token expires.
+- [x] A known account receives one new session and token pair. Unknown, retired, and wrong-password requests have the same safe result.
+- [x] Source and email limits run before password hashing, and a limit-store outage denies login.
 
 ### Phase 4: Refresh and logout
 

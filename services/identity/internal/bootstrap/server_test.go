@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/proto"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
@@ -63,6 +65,25 @@ func TestSigningKeyPublicationBeforeAndAfterSwitch(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestPasswordLoginTelemetryOmitsCredentials(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	handler := observeRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}), zap.New(core))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost,
+		"/v1/password-sessions?email=User@example.com", strings.NewReader("secret-password"))
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized || logs.Len() != 1 {
+		t.Fatalf("login log count = %d, status = %d", logs.Len(), response.Code)
+	}
+	fields := fmt.Sprint(logs.All()[0].ContextMap())
+	if strings.Contains(fields, "User@example.com") || strings.Contains(fields, "secret-password") ||
+		logs.All()[0].ContextMap()["operation"] != "POST /v1/password-sessions" {
+		t.Fatal("login telemetry contains request data or misses its operation")
 	}
 }
 

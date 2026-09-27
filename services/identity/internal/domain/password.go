@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -41,6 +42,42 @@ func HashPassword(ctx context.Context, password string, compromised func(context
 	hash := argon2.IDKey([]byte(password), salt, 2, 19456, 1, 32)
 	return fmt.Sprintf("$argon2id$v=%d$m=19456,t=2,p=1$%s$%s", argon2.Version,
 		base64.RawStdEncoding.EncodeToString(salt), base64.RawStdEncoding.EncodeToString(hash)), nil
+}
+
+func VerifyPassword(ctx context.Context, password, stored string) (bool, error) {
+	password, err := NormalizeLoginPassword(password)
+	if err != nil {
+		return false, err
+	}
+	parts := strings.Split(stored, "$")
+	if len(parts) != 6 || parts[0] != "" || parts[1] != "argon2id" ||
+		parts[2] != fmt.Sprintf("v=%d", argon2.Version) || parts[3] != "m=19456,t=2,p=1" {
+		return false, ErrPasswordHashingUnavailable
+	}
+	salt, saltErr := base64.RawStdEncoding.DecodeString(parts[4])
+	expected, hashErr := base64.RawStdEncoding.DecodeString(parts[5])
+	if saltErr != nil || hashErr != nil || len(salt) != 16 || len(expected) != 32 {
+		return false, ErrPasswordHashingUnavailable
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	actual := argon2.IDKey([]byte(password), salt, 2, 19456, 1, 32)
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	return subtle.ConstantTimeCompare(actual, expected) == 1, nil
+}
+
+func NormalizeLoginPassword(password string) (string, error) {
+	if !utf8.ValidString(password) || password == "" {
+		return "", ErrInvalidPassword
+	}
+	password = norm.NFC.String(password)
+	if utf8.RuneCountInString(password) > 64 {
+		return "", ErrInvalidPassword
+	}
+	return password, nil
 }
 
 func validatePassword(password string) (string, error) {

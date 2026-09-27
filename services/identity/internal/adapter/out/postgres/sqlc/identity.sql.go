@@ -531,6 +531,53 @@ func (q *Queries) GetLimitUsage(ctx context.Context, arg GetLimitUsageParams) (G
 	return i, err
 }
 
+const getPasswordAccountByEmail = `-- name: GetPasswordAccountByEmail :one
+SELECT subject, password_hash, email_verified_at
+FROM identity_accounts
+WHERE email_local = $1
+  AND email_domain = $2
+  AND retired_at IS NULL
+`
+
+type GetPasswordAccountByEmailParams struct {
+	EmailLocal  string
+	EmailDomain string
+}
+
+type GetPasswordAccountByEmailRow struct {
+	Subject         string
+	PasswordHash    string
+	EmailVerifiedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetPasswordAccountByEmail(ctx context.Context, arg GetPasswordAccountByEmailParams) (GetPasswordAccountByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getPasswordAccountByEmail, arg.EmailLocal, arg.EmailDomain)
+	var i GetPasswordAccountByEmailRow
+	err := row.Scan(&i.Subject, &i.PasswordHash, &i.EmailVerifiedAt)
+	return i, err
+}
+
+const getPasswordAccountForUpdate = `-- name: GetPasswordAccountForUpdate :one
+SELECT subject, password_hash, email_verified_at
+FROM identity_accounts
+WHERE subject = $1
+  AND retired_at IS NULL
+FOR UPDATE
+`
+
+type GetPasswordAccountForUpdateRow struct {
+	Subject         string
+	PasswordHash    string
+	EmailVerifiedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetPasswordAccountForUpdate(ctx context.Context, subject string) (GetPasswordAccountForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getPasswordAccountForUpdate, subject)
+	var i GetPasswordAccountForUpdateRow
+	err := row.Scan(&i.Subject, &i.PasswordHash, &i.EmailVerifiedAt)
+	return i, err
+}
+
 const incrementChallengeWrongGuess = `-- name: IncrementChallengeWrongGuess :one
 UPDATE identity_challenges
 SET wrong_guesses = wrong_guesses + 1

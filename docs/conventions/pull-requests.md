@@ -4,13 +4,14 @@ This convention defines how to write and review a pull request (PR) and its sugg
 
 ## Template
 
-The [PR template](../../.github/pull_request_template.md) contains `What changed`, `Why`, `Risks or limitations`, and `Additional notes` sections.
+The [PR template](../../.github/pull_request_template.md) contains `What changed`, `Why`, `Related issues`, `Risks or limitations`, and `Additional notes` sections.
 
 | Part | Content and format |
 | --- | --- |
 | Title | A [commit subject](commit-messages.md#template) that describes the result. |
 | What changed | State what changed and the result. |
-| Why | State the problem, why the change is needed, and any related Issue numbers. |
+| Why | State the problem and why the change is needed. |
+| Related issues | Add one reference per related Issue, or `n/a` when there is none. |
 | Risks or limitations | Material compatibility effects, remaining limits, or follow-up work. |
 | Additional notes | Useful context about the PR that does not fit the other sections. |
 
@@ -19,8 +20,8 @@ The [PR template](../../.github/pull_request_template.md) contains `What changed
 - Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
 - Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 - Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
-- End `Why` with one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when the Issue remains open, such as when a PR updates a spec before implementation. Leave one blank line before the first Issue reference and no blank lines between references. `Refs` does not close the Issue; `Closes` closes it after the PR merges into `main`.
-- Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `What changed`, `Why`, `Risks or limitations`, and `Additional notes`. Write `n/a` in either of the last two sections when there is nothing to report.
+- In `Related issues`, write one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when an Issue remains open, such as when a PR updates a spec before implementation. Do not leave blank lines between references. `Refs` does not close the Issue. `Closes` closes it after the PR merges into `main`. GitHub also accepts `Fixes`, but use `Closes` for consistency.
+- Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `What changed`, `Why`, `Related issues`, `Risks or limitations`, and `Additional notes`. Write `n/a` in `Related issues`, `Risks or limitations`, or `Additional notes` when there is nothing to report.
 - Before creating or updating a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review every prose section after editing. Keep new text in an existing paragraph or bullet only when it develops the same point. Start a new paragraph for a separate explanation, or use separate bullets for independent points. Do not use a bullet when a section has only one point.
 
 ### Before requesting review

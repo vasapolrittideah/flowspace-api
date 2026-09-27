@@ -12,7 +12,7 @@ Before you read issues, run `gh auth status --active --hostname github.com` and 
 
 Make sure that the active token has the `project` scope. If this scope is absent, ask the maintainer to run `gh auth refresh -h github.com -s project` and stop. Repeat the authentication checks after the command succeeds. If `tasks/.todo.md` exists, stop because task migration is incomplete.
 
-Use the issue links in the plan as the task list. Read acceptance criteria, verification steps, and dependencies from each issue.
+Use the issue links in the plan as the task list. Read acceptance criteria and verification steps from each Issue body. Read its blockers from the native GitHub `Blocked by` relationships with `gh api repos/{owner}/{repo}/issues/<issue-number>/dependencies/blocked_by`.
 
 ## Modes
 
@@ -20,7 +20,7 @@ Use the issue links in the plan as the task list. Read acceptance criteria, veri
 - `/build <module-id> auto` implements every issue in dependency order after one approval.
 - `/build <module-id> all` is the same as `auto`.
 
-An issue is ready when each issue in its `Blocked by` line is complete. In autonomous mode, a verified commit completes the dependency for the current run.
+An Issue is ready when each Issue in its `Blocked by` relationships is complete. In autonomous mode, a verified commit completes the dependency for the current run.
 
 ## Implement one issue
 

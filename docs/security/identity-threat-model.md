@@ -128,7 +128,7 @@ Every Identity specification and implementation must preserve these rules:
 
 ## Required review and test evidence
 
-Each feature specification must map its success criteria and abuse tests to the relevant threat IDs. Implementation review must include the public API, application rules, database transaction, outbound adapter, telemetry, and deployment configuration for that feature.
+Each feature specification must map its abuse tests to the relevant threat IDs. Implementation review must include the public API, application rules, database transaction, outbound adapter, telemetry, and deployment configuration for that feature.
 
 Before an Identity capability is complete, its tests must cover valid use, malformed input, replay, concurrency, dependency failure, and cancellation. Security tests must run through the public transport when response status, headers, timing, or request limits are part of the control.
 

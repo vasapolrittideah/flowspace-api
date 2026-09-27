@@ -52,16 +52,16 @@ Estimated scope: <expected size>.
 
 ## Final Prove task
 
-The final task in each module plan proves the approved specification and records the evidence. Use the Issue template above.
+The final task in each module plan checks the approved specification through tests and review. Use the Issue template above.
 
 - Title the Issue `Prove <capability> against its specification`. Name the capability so readers can distinguish it from other modules.
-- In Description, name the final test scope and any cross-service evidence owned by another Issue. Link to that evidence instead of repeating its implementation.
-- In Acceptance criteria, require an [evidence map](evidence-maps.md) with one row per success criterion and a reference to each applicable threat ID. Each row must link to a named test or review artifact and state what it proves.
+- In Description, name the final test scope and any cross-service checks owned by another Issue. Link to that Issue instead of repeating its work.
+- In Acceptance criteria, require tests for every success criterion and applicable threat. Do not require a separate evidence file.
 - Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
-- If evidence is missing, record the gap and its follow-up Issue in the map. Keep the Prove task and final plan checkpoint open until the gap is resolved.
-- In Verification, list `task check:task`, `task markdown:check`, PR diff inspection, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Record command results in the Issue or PR checks, not in the map.
-- Add `Blocked by` relationships for actual blocking Issues. Include `docs/evidence/<module-id>.md`, `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
-- When the evidence is complete, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
+- If a check fails or is missing, record the gap and its follow-up Issue in the Prove task. Keep the task and final plan checkpoint open until the gap is resolved.
+- In Verification, list `task check:task`, `task markdown:check`, PR diff inspection, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Use the Issue or PR checks for command results.
+- Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
+- When every criterion passes, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
 
 ## Examples
 

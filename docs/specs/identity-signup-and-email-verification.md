@@ -122,25 +122,21 @@ Enumeration and generic claim responses test ID-T01. The approved `AlreadyExists
 
 ## Success criteria
 
-Each row describes an observable result required before implementation can claim completion. The last column links the result to the applicable threat IDs.
-
-| Given | Then | Threat |
-| --- | --- | --- |
-| A new user submits a valid email address and password. | Identity creates one unverified account and one session, requests an email code, and returns a stable subject plus access and refresh tokens. | ID-T02, ID-T03 |
-| A user tries to sign up with an email address that already belongs to an account. | Identity returns `AlreadyExists` (HTTP 409) without tokens. | ID-T01 |
-| A user loses the signup response but knows the password. | A retry returns `AlreadyExists` if signup committed. Once login exists, the user logs in and obtains new tokens without changing the subject. | ID-T01, ID-T11 |
-| An email owner does not know the password of an unverified signup. | The owner requests a purpose-bound claim code, supplies it with a new password, and receives a verified new subject and session. The old subject and sessions stop working. | ID-T03, ID-T09, ID-T12 |
-| A client requests a claim code for a missing or already verified account. | Identity returns the same accepted response as for an eligible account and sends no code. | ID-T01, ID-T03 |
-| The new user calls Workspace with the access token before email verification. | Workspace rejects the request because Identity reports that the email is unverified. | ID-T14 |
-| The authenticated user submits the valid current code. | Identity consumes the code once and reports that the email is verified. A later session check reports the new state without replacing the tokens. | ID-T03, ID-T04, ID-T14 |
-| An unverified user submits a malformed, wrong, expired, replaced, or consumed code. | Identity does not verify the email and returns the contract's safe error. | ID-T03, ID-T04, ID-T19 |
-| The user requests another code. | Only the newest challenge remains valid, subject to the approved request limits. | ID-T03, ID-T16 |
-| Two requests submit one valid code at the same time. | At most one request consumes the code; the account ends in one verified state. | ID-T04, ID-T12 |
-| A client submits a wrong, expired, used, or ineligible claim code. | Identity returns one generic `InvalidArgument` error without changing an account. | ID-T01, ID-T03 |
-| Email verification races with an account claim. | One transition wins. Verification prevents claim; claim revokes the old subject and its sessions. | ID-T09, ID-T12 |
-| Email delivery fails after account creation. | Signup still returns tokens, the account remains unverified, and durable delivery retries continue. | ID-T16, ID-T17 |
-| A request exceeds a signup or code limit. | Identity rejects the request without issuing another code or verifying the account. | ID-T02, ID-T03, ID-T16 |
-| The capability is submitted for implementation review. | Contract, integration, abuse, and workspace-gate tests pass under repository quality checks. | ID-T15, ID-T17, ID-T20 |
+1. Given a new user, When the user submits a valid email address and password, Then Identity creates one unverified account and one session, requests an email code, and returns a stable subject plus access and refresh tokens.
+2. Given an email address already belongs to an account, When a user tries to sign up with it, Then Identity returns `AlreadyExists` (HTTP 409) without tokens.
+3. Given a committed signup response is lost and the user knows the password, When the user retries signup and then logs in, Then the retry returns `AlreadyExists`. The later login returns new tokens for the same subject.
+4. Given an email owner does not know the password of an unverified signup, When the owner requests a claim code and submits it with a new password, Then the owner receives a verified new subject and session. The old subject and sessions stop working.
+5. Given an account is missing or already verified, When a client requests a claim code for it, Then Identity returns the same accepted response as for an eligible account and sends no code.
+6. Given a new user has an access token but has not verified the email address, When the user calls Workspace, Then Workspace rejects the request because Identity reports that the email is unverified.
+7. Given an authenticated user has the current valid code, When the user submits it, Then Identity consumes the code once and reports that the email is verified. A later session check reports the new state without replacing the tokens.
+8. Given an unverified user has a malformed, wrong, expired, replaced, or consumed code, When the user submits it, Then Identity does not verify the email and returns the contract's safe error.
+9. Given a verification code is active, When the user requests another code, Then only the newest challenge remains valid, subject to the approved request limits.
+10. Given one valid code is active, When two requests submit it at the same time, Then at most one request consumes the code. The account ends in one verified state.
+11. Given a claim code is wrong, expired, used, or ineligible, When a client submits it, Then Identity returns one generic `InvalidArgument` error without changing an account.
+12. Given email verification and account claim target the same account, When the requests race, Then one transition wins. Verification prevents claim. Claim revokes the old subject and its sessions.
+13. Given account creation commits, When email delivery fails, Then signup still returns tokens, the account remains unverified, and durable delivery retries continue.
+14. Given a signup or code limit is reached, When another request arrives, Then Identity rejects the request without issuing another code or verifying the account.
+15. Given the capability is submitted for implementation review, When the required repository checks run, Then Contract, integration, abuse, and workspace-gate tests pass under repository quality checks.
 
 ## Before real users join
 

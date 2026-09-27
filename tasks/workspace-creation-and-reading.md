@@ -39,7 +39,7 @@ flowchart TD
     Contract --> RPC
     RPC --> Gateway[REST gateway and request context]
     Gateway --> Runtime[API and migration processes]
-    Runtime --> Evidence[Final evidence]
+    Runtime --> Verify[Final checks]
 ```
 
 ## Task list
@@ -86,13 +86,13 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 - [x] Invalid input stops before application effects occur.
 - [x] Deadlines, cancellation, request IDs, logs, and trace context cross the public boundary.
 
-### Phase 4: Completion evidence
+### Phase 4: Completion checks
 
 - Task 12: [#56 Run the complete module and repository checks](https://github.com/vasapolrittideah/flowspace-api/issues/56)
 
 ### Checkpoint: Complete
 
-- [x] Every success criterion in the approved specification has recorded evidence.
+- [x] Every success criterion in the approved specification passed its final check.
 - [x] Generated files match their source contracts and queries.
 - [x] The full review diff contains no unrelated changes or secrets.
 - [x] The module is ready for maintainer review.

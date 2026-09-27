@@ -225,6 +225,20 @@ func (q *Queries) DeleteChallengeDelivery(ctx context.Context, challengeID pgtyp
 	return result.RowsAffected(), nil
 }
 
+const findRefreshSession = `-- name: FindRefreshSession :one
+SELECT id FROM identity_sessions WHERE refresh_token_hash = $1
+UNION ALL
+SELECT session_id AS id FROM identity_rotated_refresh_tokens WHERE token_hash = $1
+LIMIT 1
+`
+
+func (q *Queries) FindRefreshSession(ctx context.Context, tokenHash []byte) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, findRefreshSession, tokenHash)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getActiveAccountByEmail = `-- name: GetActiveAccountByEmail :one
 SELECT subject, email_verified_at
 FROM identity_accounts
@@ -578,6 +592,30 @@ func (q *Queries) GetPasswordAccountForUpdate(ctx context.Context, subject strin
 	return i, err
 }
 
+const getRefreshSessionForUpdate = `-- name: GetRefreshSessionForUpdate :one
+SELECT session.account_subject, session.refresh_token_hash,
+    account.retired_at IS NULL AND session.revoked_at IS NULL
+    AND session.idle_expires_at > statement_timestamp()
+    AND session.absolute_expires_at > statement_timestamp() AS active
+FROM identity_sessions AS session
+JOIN identity_accounts AS account ON account.subject = session.account_subject
+WHERE session.id = $1
+FOR UPDATE OF account, session
+`
+
+type GetRefreshSessionForUpdateRow struct {
+	AccountSubject   string
+	RefreshTokenHash []byte
+	Active           pgtype.Bool
+}
+
+func (q *Queries) GetRefreshSessionForUpdate(ctx context.Context, sessionID pgtype.UUID) (GetRefreshSessionForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getRefreshSessionForUpdate, sessionID)
+	var i GetRefreshSessionForUpdateRow
+	err := row.Scan(&i.AccountSubject, &i.RefreshTokenHash, &i.Active)
+	return i, err
+}
+
 const incrementChallengeWrongGuess = `-- name: IncrementChallengeWrongGuess :one
 UPDATE identity_challenges
 SET wrong_guesses = wrong_guesses + 1
@@ -690,6 +728,21 @@ func (q *Queries) PurgeTerminalDeliveries(ctx context.Context) (int64, error) {
 	return result.RowsAffected(), nil
 }
 
+const recordRotatedRefreshToken = `-- name: RecordRotatedRefreshToken :exec
+INSERT INTO identity_rotated_refresh_tokens (token_hash, session_id)
+VALUES ($1, $2)
+`
+
+type RecordRotatedRefreshTokenParams struct {
+	TokenHash []byte
+	SessionID pgtype.UUID
+}
+
+func (q *Queries) RecordRotatedRefreshToken(ctx context.Context, arg RecordRotatedRefreshTokenParams) error {
+	_, err := q.db.Exec(ctx, recordRotatedRefreshToken, arg.TokenHash, arg.SessionID)
+	return err
+}
+
 const releaseOutboxClaim = `-- name: ReleaseOutboxClaim :execrows
 UPDATE identity_outbox_events
 SET attempt_count = attempt_count + 1,
@@ -783,6 +836,47 @@ func (q *Queries) RevokeAccountSessions(ctx context.Context, accountSubject stri
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const revokeRefreshSession = `-- name: RevokeRefreshSession :exec
+UPDATE identity_sessions SET revoked_at = statement_timestamp()
+WHERE id = $1 AND revoked_at IS NULL
+`
+
+func (q *Queries) RevokeRefreshSession(ctx context.Context, sessionID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, revokeRefreshSession, sessionID)
+	return err
+}
+
+const rotateCurrentRefreshToken = `-- name: RotateCurrentRefreshToken :one
+UPDATE identity_sessions
+SET refresh_token_hash = $1,
+    idle_expires_at = LEAST(statement_timestamp() + INTERVAL '30 days', absolute_expires_at)
+WHERE id = $2
+  AND refresh_token_hash = $3
+  AND revoked_at IS NULL
+  AND idle_expires_at > statement_timestamp()
+  AND absolute_expires_at > statement_timestamp()
+RETURNING statement_timestamp()::timestamptz AS issued_at, idle_expires_at, absolute_expires_at
+`
+
+type RotateCurrentRefreshTokenParams struct {
+	NewHash   []byte
+	SessionID pgtype.UUID
+	OldHash   []byte
+}
+
+type RotateCurrentRefreshTokenRow struct {
+	IssuedAt          pgtype.Timestamptz
+	IdleExpiresAt     pgtype.Timestamptz
+	AbsoluteExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) RotateCurrentRefreshToken(ctx context.Context, arg RotateCurrentRefreshTokenParams) (RotateCurrentRefreshTokenRow, error) {
+	row := q.db.QueryRow(ctx, rotateCurrentRefreshToken, arg.NewHash, arg.SessionID, arg.OldHash)
+	var i RotateCurrentRefreshTokenRow
+	err := row.Scan(&i.IssuedAt, &i.IdleExpiresAt, &i.AbsoluteExpiresAt)
+	return i, err
 }
 
 const storeChallengeDelivery = `-- name: StoreChallengeDelivery :exec

@@ -87,6 +87,26 @@ func TestPasswordLoginTelemetryOmitsCredentials(t *testing.T) {
 	}
 }
 
+func TestRefreshTelemetryOmitsToken(t *testing.T) {
+	for _, outcome := range []int{http.StatusOK, http.StatusUnauthorized} {
+		core, logs := observer.New(zap.InfoLevel)
+		handler := observeRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(outcome)
+		}), zap.New(core))
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost,
+			"/v1/session-refreshes?refresh_token=secret-refresh-token", strings.NewReader(`{"refreshToken":"secret-refresh-token"}`))
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != outcome || logs.Len() != 1 {
+			t.Fatalf("refresh log count = %d, status = %d", logs.Len(), response.Code)
+		}
+		fields := fmt.Sprint(logs.All()[0].ContextMap())
+		if strings.Contains(fields, "secret-refresh-token") || logs.All()[0].ContextMap()["operation"] != "POST /v1/session-refreshes" {
+			t.Fatal("refresh telemetry contains token or misses its operation")
+		}
+	}
+}
+
 func TestSigningKeyPublicationRejectsInvalidAdditionalKey(t *testing.T) {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

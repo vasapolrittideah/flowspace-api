@@ -31,12 +31,18 @@ type IdentityHandler struct {
 	claimCodes    inbound.ClaimCodeService
 	claims        inbound.AccountClaimService
 	passwordLogin inbound.PasswordLoginService
+	refresh       inbound.RefreshSessionService
 	verifier      outbound.AccessTokenVerifier
 	trusted       []netip.Prefix
 }
 
 func (h *IdentityHandler) WithPasswordLogin(service inbound.PasswordLoginService) *IdentityHandler {
 	h.passwordLogin = service
+	return h
+}
+
+func (h *IdentityHandler) WithRefreshSession(service inbound.RefreshSessionService) *IdentityHandler {
+	h.refresh = service
 	return h
 }
 
@@ -100,6 +106,30 @@ func (h *IdentityHandler) CreatePasswordSession(ctx context.Context, request *id
 	}
 	return &identityv1.CreatePasswordSessionResponse{
 		Subject: result.Subject, EmailVerified: &result.EmailVerified,
+		AccessToken: result.AccessToken, RefreshToken: result.RefreshToken,
+		AccessTokenExpiresAt:  timestamppb.New(result.AccessTokenExpiresAt),
+		RefreshTokenExpiresAt: timestamppb.New(result.RefreshTokenExpiresAt),
+		SessionExpiresAt:      timestamppb.New(result.SessionExpiresAt),
+	}, nil
+}
+
+func (h *IdentityHandler) RefreshSession(ctx context.Context, request *identityv1.RefreshSessionRequest) (*identityv1.RefreshSessionResponse, error) {
+	if len(metadata.ValueFromIncomingContext(ctx, "idempotency-key")) != 0 {
+		return nil, invalidSignupArgument("idempotency_key", "is not supported")
+	}
+	if request == nil || request.GetRefreshToken() == "" {
+		return nil, invalidSignupArgument("refresh_token", "is required")
+	}
+	if h.refresh == nil {
+		return nil, status.Error(codes.Unavailable, "refresh unavailable")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	result, err := h.refresh.RefreshSession(ctx, request.GetRefreshToken())
+	if err != nil {
+		return nil, refreshRPCError(err)
+	}
+	return &identityv1.RefreshSessionResponse{
 		AccessToken: result.AccessToken, RefreshToken: result.RefreshToken,
 		AccessTokenExpiresAt:  timestamppb.New(result.AccessTokenExpiresAt),
 		RefreshTokenExpiresAt: timestamppb.New(result.RefreshTokenExpiresAt),
@@ -337,6 +367,19 @@ func passwordLoginRPCError(err error) error {
 	}
 }
 
+func refreshRPCError(err error) error {
+	switch {
+	case errors.Is(err, app.ErrInvalidRefreshToken):
+		return invalidSignupArgument("refresh_token", "is invalid")
+	case errors.Is(err, app.ErrUnauthenticatedRefresh):
+		return status.Error(codes.Unauthenticated, "invalid refresh token")
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return status.FromContextError(err).Err()
+	default:
+		return status.Error(codes.Unavailable, "refresh unavailable")
+	}
+}
+
 func invalidSignupArgument(field, reason string) error {
 	result, err := status.New(codes.InvalidArgument, "invalid request").WithDetails(&errdetails.BadRequest{
 		FieldViolations: []*errdetails.BadRequest_FieldViolation{{Field: field, Description: reason}},
@@ -360,7 +403,7 @@ func NewIdentityRequestHandler(next http.Handler, trusted []netip.Prefix) *Ident
 func (h *IdentityRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	if _, present := r.Header[http.CanonicalHeaderKey("Idempotency-Key")]; present &&
-		(r.URL.Path == "/v1/accounts" || r.URL.Path == "/v1/unverified-account-claims" || r.URL.Path == "/v1/password-sessions") {
+		(r.URL.Path == "/v1/accounts" || r.URL.Path == "/v1/unverified-account-claims" || r.URL.Path == "/v1/password-sessions" || r.URL.Path == "/v1/session-refreshes") {
 		http.Error(w, "idempotency-key is not supported", http.StatusBadRequest)
 		return
 	}

@@ -23,8 +23,7 @@ spec:
             - name: http
               containerPort: 8080
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: http
           resources:
             requests:
@@ -33,16 +32,40 @@ spec:
             limits:
               cpu: 250m
               memory: 128Mi
+          volumeMounts:
+            - name: autologin
+              mountPath: /var/www/html/plugins-enabled/local-autologin.php
+              subPath: local-autologin.php
+              readOnly: true
+            - name: database-passwords
+              mountPath: /run/secrets/adminer
+              readOnly: true
+      volumes:
+        - name: autologin
+          configMap:
+            name: adminer-autologin
+        - name: database-passwords
+          projected:
+            sources:
+              - secret:
+                  name: workspace-database
+                  items:
+                    - key: PGPASSWORD
+                      path: workspace-password
+              - secret:
+                  name: identity-database
+                  items:
+                    - key: POSTGRES_PASSWORD
+                      path: identity-password
 ---
-apiVersion: v1
-kind: Service
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: adminer
   namespace: flowspace-local
 spec:
-  selector:
-    app.kubernetes.io/name: adminer
-  ports:
-    - name: http
-      port: 8080
-      targetPort: http
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: adminer
+  policyTypes:
+    - Ingress

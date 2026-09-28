@@ -54,6 +54,7 @@ k8s_yaml(encode_yaml({
     },
     'stringData': {
         'PGPASSWORD': workspace_database_password,
+        'DATABASE_URL': 'postgres://workspace:%s@workspace-postgres:5432/workspace?sslmode=disable' % workspace_database_password,
     },
 }))
 
@@ -136,12 +137,13 @@ docker_build(
     only=['go.mod', 'go.sum', 'gen', 'internal', 'services/workspace'],
 )
 k8s_yaml(kustomize('deploy/overlays/local/workspace'))
-k8s_resource('workspace-postgres', labels='workspace')
+k8s_resource(new_name='workspace-secrets', objects=['workspace-database:secret'], labels='workspace')
+k8s_resource('workspace-postgres', resource_deps=['workspace-secrets'], labels='workspace')
 k8s_resource(new_name='workspace-session-tls', objects=['workspace-session-tls:sealedsecret'], resource_deps=['sealed-secrets'], labels='workspace')
-k8s_resource('workspace-migrate', resource_deps=['workspace-postgres'], labels='workspace')
+k8s_resource('workspace-migrate', resource_deps=['workspace-postgres', 'workspace-secrets'], labels='workspace')
 k8s_resource(
     'workspace-api',
-    resource_deps=['keycloak', 'workspace-migrate', 'workspace-session-tls'],
+    resource_deps=['keycloak', 'workspace-migrate', 'workspace-secrets', 'workspace-session-tls'],
     port_forwards=[port_forward(8081, 8080, name='Workspace API')],
     labels='workspace',
 )

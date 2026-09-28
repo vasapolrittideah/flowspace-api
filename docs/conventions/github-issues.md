@@ -58,7 +58,7 @@ After verification, check each completed item in the Issue body. Leave failed an
 ```markdown
 ## Result
 
-Date: YYYY-MM-DD (Asia/Bangkok)
+Date: YYYY-MM-DD
 Status: Complete | Blocked
 Outcome: <State the result in one sentence.>
 Environment: <State where the local checks ran and name any test services, or write CI only.>
@@ -85,7 +85,7 @@ PR: #<number>
 Follow-up: #<number> or None
 ```
 
-- Use the date in Asia/Bangkok. Set `Status` to `Complete` only when all required checks pass.
+- Set `Status` to `Complete` only when all required checks pass.
 - Do not repeat the completed Verification checklist in the comment. Keep `None` under `Gaps` when every required check passes. For each failed or unrun item, leave its checkbox clear. Replace `None` with a bullet that names the item, cause, and next action.
 - Prefer CI measurements. Use local output if CI did not produce a measurement. Include Bruno rows only when Bruno applies. Use `n/a` for changed-line coverage when the task adds no executable Go lines. If a command stops before it reports a measurement, omit that row and explain the failure under `Gaps`.
 - Keep the CI run link in every report. If CI did not run, replace the link with the reason. Link a follow-up Issue when work remains. Do not include secrets or test account data.

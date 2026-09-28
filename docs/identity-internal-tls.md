@@ -41,4 +41,26 @@ If a task stops, inspect the live Secret, allowlist, and saved files before retr
 
 To replace the CA and all three leaf certificates together, run `task identity:session-tls:rotate-ca`. The task validates both new SealedSecrets before applying them, restarts Identity and Workspace, and tests the new CA and certificates. Session checks can briefly fail while the two workloads restart. Review and commit both encrypted manifests and the updated allowlist. The prior CA key and certificates remain in the ignored archive printed by the task.
 
-If the local cluster is rebuilt, restore the Sealed Secrets controller keys before applying these manifests, or create a new CA and reseal both Secrets for the new controller key. [Sealed Secrets documents strict scope and key renewal](https://github.com/bitnami/sealed-secrets#scopes).
+If the local cluster is rebuilt, restore the saved controller keys before `tilt up` to reuse the committed manifests. [Sealed Secrets documents key backup and restore](https://github.com/bitnami/sealed-secrets#how-can-i-do-a-backup-of-my-sealedsecrets).
+
+## Rebuild with a new controller key
+
+Use this procedure after deleting the local cluster. Keep the CA and both service certificates and private keys in `.secrets/identity-session/`. Run the commands from the repository root on a short-lived branch before `tilt up`. The reseal task checks the certificates and Workspace allowlist. It installs the pinned controller and validates both encrypted manifests before replacing them. The setup task refuses existing private keys, and the rotation tasks require live Secrets.
+
+```sh
+task cluster:create
+kubectl config use-context k3d-flowspace
+task identity:session-tls:reseal
+tilt up
+```
+
+After Tilt starts, make sure that both SealedSecrets show `True` in another terminal:
+
+```sh
+kubectl --context k3d-flowspace -n flowspace-local get sealedsecret identity-session-tls workspace-session-tls -o 'custom-columns=NAME:.metadata.name,SYNCED:.status.conditions[0].status'
+sh scripts/smoke-identity-session-local.sh
+```
+
+The Workspace allowlist stays the same because this procedure reuses its certificate.
+
+Review and commit both encrypted manifests, then open a PR.

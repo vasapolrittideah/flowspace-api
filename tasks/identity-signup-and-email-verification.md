@@ -105,6 +105,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Checkpoint: Complete
 
 - [ ] Public REST and typed RPC tests cover every success criterion and applicable threat ID in the specification.
+- [ ] Bruno smoke tests for signup, email verification, and account claim pass against the running local Identity API.
 - [ ] Generated files match source contracts and queries. Required repository checks pass without weaker settings.
 - [ ] The review diff contains no unrelated changes or secrets, and the module is ready for maintainer review.
 

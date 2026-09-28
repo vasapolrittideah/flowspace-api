@@ -176,9 +176,12 @@ func TestWorkspaceAdmissionUsesLocalTokenAndLiveIdentityState(t *testing.T) {
 	}
 	assertStatus := func(response *http.Response, want int) {
 		t.Helper()
-		defer func() { _ = response.Body.Close() }()
+		body, err := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
 		if response.StatusCode != want {
-			body, _ := io.ReadAll(response.Body)
 			t.Fatalf("status = %d, want %d; body = %s", response.StatusCode, want, body)
 		}
 	}
@@ -193,10 +196,14 @@ func TestWorkspaceAdmissionUsesLocalTokenAndLiveIdentityState(t *testing.T) {
 			ID string `json:"id"`
 		} `json:"workspace"`
 	}
-	if err := json.NewDecoder(created.Body).Decode(&payload); err != nil {
+	createdBody, err := io.ReadAll(created.Body)
+	_ = created.Body.Close()
+	if err != nil {
 		t.Fatal(err)
 	}
-	_ = created.Body.Close()
+	if err := json.Unmarshal(createdBody, &payload); err != nil {
+		t.Fatal(err)
+	}
 	if payload.Workspace.ID == "" {
 		t.Fatal("verified session created no workspace")
 	}

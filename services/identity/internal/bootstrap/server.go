@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/hibp"
@@ -78,12 +79,11 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	if err != nil {
 		return nil, err
 	}
-	pool, err := pgxpool.New(ctx, string(config.DatabaseURL))
-	if err != nil {
+	pool, err := postgrespool.Open(ctx, string(config.DatabaseURL))
+	if errors.Is(err, postgrespool.ErrInvalidConfiguration) {
 		return nil, errors.New("invalid database configuration")
 	}
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
+	if err != nil {
 		return nil, errors.New("identity database unavailable")
 	}
 	if _, err := pool.Exec(ctx, "SELECT 1 FROM identity_outbox_events LIMIT 0"); err != nil {

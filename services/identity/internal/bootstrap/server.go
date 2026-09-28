@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
-	"github.com/vasapolrittideah/flowspace-api/internal/postgresconnect"
+	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/hibp"
@@ -79,8 +79,8 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	if err != nil {
 		return nil, err
 	}
-	pool, err := postgresconnect.Open(ctx, string(config.DatabaseURL))
-	if errors.Is(err, postgresconnect.ErrInvalidConfiguration) {
+	pool, err := postgrespool.Open(ctx, string(config.DatabaseURL))
+	if errors.Is(err, postgrespool.ErrInvalidConfiguration) {
 		return nil, errors.New("invalid database configuration")
 	}
 	if err != nil {

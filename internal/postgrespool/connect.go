@@ -1,5 +1,5 @@
-// Package postgresconnect opens PostgreSQL pools during service startup.
-package postgresconnect
+// Package postgrespool opens PostgreSQL pools during service startup.
+package postgrespool
 
 import (
 	"context"

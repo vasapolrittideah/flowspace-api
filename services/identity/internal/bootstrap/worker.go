@@ -14,7 +14,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 
-	"github.com/vasapolrittideah/flowspace-api/internal/postgresconnect"
+	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	inboundevent "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/event"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/email"
@@ -45,8 +45,8 @@ func NewWorker(ctx context.Context, config WorkerConfig, logger *zap.Logger) (*W
 	if err != nil {
 		return nil, errors.New("invalid mail configuration")
 	}
-	pool, err := postgresconnect.Open(ctx, string(config.DatabaseURL))
-	if errors.Is(err, postgresconnect.ErrInvalidConfiguration) {
+	pool, err := postgrespool.Open(ctx, string(config.DatabaseURL))
+	if errors.Is(err, postgrespool.ErrInvalidConfiguration) {
 		return nil, errors.New("invalid database configuration")
 	}
 	if err != nil {

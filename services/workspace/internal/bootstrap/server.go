@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc"
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
-	"github.com/vasapolrittideah/flowspace-api/internal/postgresconnect"
+	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/identity"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres"
@@ -43,8 +43,8 @@ func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server,
 	if config.OIDCDiscoveryURL != "" || config.OIDCIssuer != "" || config.OIDCAudience != "" {
 		return nil, errors.New("OIDC configuration is no longer supported")
 	}
-	pool, err := postgresconnect.Open(ctx, string(config.DatabaseURL))
-	if errors.Is(err, postgresconnect.ErrInvalidConfiguration) {
+	pool, err := postgrespool.Open(ctx, string(config.DatabaseURL))
+	if errors.Is(err, postgrespool.ErrInvalidConfiguration) {
 		return nil, fmt.Errorf("configure database: %w", err)
 	}
 	if err != nil {

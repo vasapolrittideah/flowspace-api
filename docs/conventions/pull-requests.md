@@ -4,7 +4,7 @@ This convention defines how to write and review a pull request (PR) and its sugg
 
 ## Template
 
-The [PR template](../../.github/pull_request_template.md) contains `What changed`, `Why`, `Related issues`, `Risks or limitations`, and `Additional notes` sections.
+The [PR template](../../.github/pull_request_template.md) contains `What changed`, `Why`, `Related issues`, and `Risks or limitations` sections.
 
 | Part | Content and format |
 | --- | --- |
@@ -12,8 +12,7 @@ The [PR template](../../.github/pull_request_template.md) contains `What changed
 | What changed | State what changed and the result. |
 | Why | State the problem and why the change is needed. |
 | Related issues | Add one reference per related Issue, or `n/a` when there is none. |
-| Risks or limitations | Material compatibility effects, remaining limits, or follow-up work. |
-| Additional notes | Useful context about the PR that does not fit the other sections. |
+| Risks or limitations | Material compatibility effects, unresolved failures, checks that did not run, remaining limits, or follow-up work. |
 
 ## Rules
 
@@ -21,7 +20,7 @@ The [PR template](../../.github/pull_request_template.md) contains `What changed
 - Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 - Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
 - In `Related issues`, write one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when an Issue remains open, such as when a PR updates a spec before implementation. Do not leave blank lines between references. `Refs` does not close the Issue. `Closes` closes it after the PR merges into `main`. GitHub also accepts `Fixes`, but use `Closes` for consistency.
-- Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `What changed`, `Why`, `Related issues`, `Risks or limitations`, and `Additional notes`. Write `n/a` in `Related issues`, `Risks or limitations`, or `Additional notes` when there is nothing to report.
+- Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete `What changed`, `Why`, `Related issues`, and `Risks or limitations`. Write `n/a` in `Related issues` or `Risks or limitations` when there is nothing to report.
 - Before creating or updating a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review every prose section after editing. Keep new text in an existing paragraph or bullet only when it develops the same point. Start a new paragraph for a separate explanation, or use separate bullets for independent points. Do not use a bullet when a section has only one point.
 
 ### Before requesting review
@@ -39,10 +38,7 @@ Run `task check:task` before requesting review. If Markdown changes, run `task m
 
 Review the [CI checks](../../.github/workflows/ci.yml) on the PR. CI reports the required results and measurements, including coverage and reachable vulnerabilities. Do not copy those results into the PR description.
 
-### Additional notes
-
-- Write useful facts about this PR that do not fit the other sections. Write paragraphs for connected points and bullets for independent points. A note does not need to start with a Check name.
-- State the cause of each unresolved failure and the reason for each local check that did not run. Put material warnings and security risks in `Risks or limitations`. Do not copy module-only Govulncheck counts into `Additional notes`. Do not paste routine logs or describe resolved attempts. Link relevant output when it helps review.
+In `Risks or limitations`, state the cause of each unresolved failure and the reason for each local check that did not run. Include material warnings and security risks. Do not copy module-only Govulncheck counts, paste routine logs, or describe resolved attempts. Link relevant output when it helps review.
 
 ### Suggested squash commit
 

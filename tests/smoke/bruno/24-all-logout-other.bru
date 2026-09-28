@@ -1,0 +1,27 @@
+meta {
+  name: Reject other session after all-session logout
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/v1/session-refreshes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refreshToken": "{{signupRotatedRefreshToken}}"
+  }
+}
+
+tests {
+  test("the other device cannot refresh", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

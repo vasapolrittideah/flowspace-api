@@ -1,0 +1,27 @@
+meta {
+  name: Reject reused refresh token
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/v1/session-refreshes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refreshToken": "{{loginRefreshToken}}"
+  }
+}
+
+tests {
+  test("reusing the old refresh token fails", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

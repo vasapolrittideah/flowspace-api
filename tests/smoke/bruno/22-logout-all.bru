@@ -1,0 +1,27 @@
+meta {
+  name: Log out all devices
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/v1/account-session-logouts
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{allLogoutAccessToken}}
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("all-session logout revokes the account's sessions", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().revoked).to.equal(true);
+  });
+}

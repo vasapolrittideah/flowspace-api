@@ -37,5 +37,6 @@ tests {
     expect(body.refreshToken).to.be.a("string").and.not.be.empty;
     bru.setVar("subject", body.subject);
     bru.setVar("accessToken", body.accessToken);
+    bru.setVar("signupRefreshToken", body.refreshToken);
   });
 }

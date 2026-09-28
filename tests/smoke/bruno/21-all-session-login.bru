@@ -1,0 +1,32 @@
+meta {
+  name: Log in before all-session logout
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/v1/password-sessions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+tests {
+  test("password login creates another active session", function () {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body.subject).to.equal(bru.getVar("subject"));
+    bru.setVar("allLogoutAccessToken", body.accessToken);
+    bru.setVar("allLogoutRefreshToken", body.refreshToken);
+  });
+}

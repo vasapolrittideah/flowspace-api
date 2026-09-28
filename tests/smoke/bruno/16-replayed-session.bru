@@ -1,0 +1,27 @@
+meta {
+  name: Reject refresh after replay
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/v1/session-refreshes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refreshToken": "{{rotatedRefreshToken}}"
+  }
+}
+
+tests {
+  test("replay revokes the current token for that session", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

@@ -17,6 +17,7 @@ These tables are the source of truth for replaceable implementation tools and Go
 | Local Kubernetes | k3d | Kubernetes cluster inside local Docker Desktop. | [ADR-0021](adr/0021-run-kubernetes-locally-and-on-the-self-hosted-server.md) |
 | Local container runtime | Docker Desktop | Run the local k3d cluster on Mac. | [ADR-0021](adr/0021-run-kubernetes-locally-and-on-the-self-hosted-server.md) |
 | Local orchestration | Tilt | Build, deploy, inspect, and port-forward the local k3d loop. | [ADR-0021](adr/0021-run-kubernetes-locally-and-on-the-self-hosted-server.md) |
+| Local database UI | Adminer | Inspect the local service databases through Tilt. | [ADR-0015](adr/0015-each-service-owns-a-postgresql-instance.md) |
 | Initial volumes | K3s Local Path Provisioner | Node-local learning-environment persistence. | [ADR-0022](adr/0022-single-host-storage-holds-disposable-data.md) |
 | Cluster ingress | Traefik (K3s bundled) | Route tunnel traffic to Kubernetes services; exact origin path remains proposed. | [ADR-0026](adr/0026-an-outbound-tunnel-exposes-selected-routes.md) |
 | Source and CI | GitHub + GitHub Actions | Public source/reviews and hosted CI within the zero-spend limit. | [ADR-0023](adr/0023-hosted-ci-stays-within-the-zero-spend-limit.md) |

@@ -1,0 +1,41 @@
+meta {
+  name: Sign up for account claim
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/v1/accounts
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{claimEmail}}",
+    "password": "{{claimPassword}}"
+  }
+}
+
+script:pre-request {
+  const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  bru.setVar("claimEmail", `bruno-claim-${suffix}@example.test`);
+  bru.setVar("claimPassword", `Bruno-${suffix}-old-password`);
+  bru.setVar("newPassword", `Bruno-${suffix}-new-password`);
+}
+
+tests {
+  test("the account to claim starts unverified", function () {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body.emailVerified).to.equal(false);
+    expect(body.subject).to.be.a("string").and.not.be.empty;
+    expect(body.accessToken).to.be.a("string").and.not.be.empty;
+    bru.setVar("oldSubject", body.subject);
+    bru.setVar("oldAccessToken", body.accessToken);
+  });
+}

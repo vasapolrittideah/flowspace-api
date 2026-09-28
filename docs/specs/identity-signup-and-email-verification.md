@@ -2,7 +2,7 @@
 
 Module id: `identity-signup-and-email-verification`
 
-Status: Approved.
+Status: Implemented.
 
 ## Objective
 
@@ -80,7 +80,7 @@ If the email address already belongs to an account, `CreateAccount` returns `Alr
 
 ## Commands
 
-Run commands from the repository root. These are future implementation checks; this spec does not claim that Identity code or generated contracts already exist.
+Run these checks from the repository root.
 
 | Purpose | Command |
 | --- | --- |

@@ -1,0 +1,35 @@
+meta {
+  name: Claim unverified account
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/v1/unverified-account-claims
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{claimEmail}}",
+    "code": "{{claimCode}}",
+    "newPassword": "{{newPassword}}"
+  }
+}
+
+tests {
+  test("claim retires the old subject and returns a verified session", function () {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body.subject).to.be.a("string").and.not.be.empty;
+    expect(body.subject).to.not.equal(bru.getVar("oldSubject"));
+    expect(body.emailVerified).to.equal(true);
+    expect(body.accessToken).to.be.a("string").and.not.be.empty;
+    expect(body.refreshToken).to.be.a("string").and.not.be.empty;
+  });
+}

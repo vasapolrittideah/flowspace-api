@@ -3,6 +3,7 @@ version: '3.9'
 vars:
   ACTIONLINT_VERSION: v1.7.7
   BIN_DIR: '{{.ROOT_DIR}}/bin'
+  BRUNO_VERSION: 4.2.0
   BUF_VERSION: v1.54.0
   CLUSTER_NAME: flowspace
   GITLEAKS_VERSION: v8.18.4
@@ -73,7 +74,7 @@ tasks:
   smoke:bruno:
     desc: Run Bruno smoke tests against the local API
     cmds:
-      - cd tests/smoke/bruno && bru run --env local
+      - cd tests/smoke/bruno && npx --yes @usebruno/cli@{{.BRUNO_VERSION}} run --env local --noproxy {{.CLI_ARGS}}
 
   go:tidy:
     desc: Update Go module files

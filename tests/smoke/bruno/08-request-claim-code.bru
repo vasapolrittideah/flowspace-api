@@ -1,0 +1,32 @@
+meta {
+  name: Request account claim code
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/v1/unverified-account-claim-codes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{claimEmail}}"
+  }
+}
+
+script:pre-request {
+  await new Promise(resolve => setTimeout(resolve, 61000));
+}
+
+tests {
+  test("an eligible account gets the generic response", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().accepted).to.equal(true);
+  });
+}

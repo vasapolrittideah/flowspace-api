@@ -1,0 +1,41 @@
+meta {
+  name: Sign up
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/accounts
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+script:pre-request {
+  const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  bru.setVar("email", `bruno-verify-${suffix}@example.test`);
+  bru.setVar("password", `Bruno-${suffix}-valid-password`);
+}
+
+tests {
+  test("signup returns an unverified session", function () {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body.subject).to.be.a("string").and.not.be.empty;
+    expect(body.emailVerified).to.equal(false);
+    expect(body.accessToken).to.be.a("string").and.not.be.empty;
+    expect(body.refreshToken).to.be.a("string").and.not.be.empty;
+    bru.setVar("subject", body.subject);
+    bru.setVar("accessToken", body.accessToken);
+  });
+}

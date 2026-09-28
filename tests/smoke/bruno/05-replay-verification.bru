@@ -1,0 +1,29 @@
+meta {
+  name: Repeat verification after success
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/v1/email-verifications
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "code": "{{verificationCode}}"
+  }
+}
+
+tests {
+  test("the verified account keeps its state on retry", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().emailVerified).to.equal(true);
+  });
+}

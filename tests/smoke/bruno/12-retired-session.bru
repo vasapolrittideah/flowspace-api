@@ -1,0 +1,26 @@
+meta {
+  name: Reject retired session
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/v1/email-verification-codes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{oldAccessToken}}
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("the claimed account's old session no longer works", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

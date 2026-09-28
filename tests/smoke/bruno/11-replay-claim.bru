@@ -1,0 +1,29 @@
+meta {
+  name: Reject used account claim code
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/v1/unverified-account-claims
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{claimEmail}}",
+    "code": "{{claimCode}}",
+    "newPassword": "{{newPassword}}"
+  }
+}
+
+tests {
+  test("a used claim code cannot create another subject", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

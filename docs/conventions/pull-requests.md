@@ -35,7 +35,7 @@ The [PR template](../../.github/pull_request_template.md) contains `What changed
 
 ### Checks
 
-Run `task check:task` before requesting review. If Markdown changes, run `task markdown:check`. Check the PR diff with `git diff origin/main...HEAD --check`. Use a focused check when it proves behavior that these commands do not cover.
+Run `task check:task` before requesting review. If Markdown changes, run `task markdown:check`. Check the PR diff with `task git:diff:check`. Use a focused check when it proves behavior that these commands do not cover.
 
 Review the [CI checks](../../.github/workflows/ci.yml) on the PR. CI reports the required results and measurements, including coverage and reachable vulnerabilities. Do not copy those results into the PR description.
 

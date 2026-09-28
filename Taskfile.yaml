@@ -85,6 +85,11 @@ tasks:
     cmds:
       - git diff {{.CLI_ARGS}}
 
+  git:diff:check:
+    desc: Check the branch diff for whitespace errors
+    cmds:
+      - git diff origin/main...HEAD --check
+
   git:log:
     desc: Show recent Git history
     cmds:

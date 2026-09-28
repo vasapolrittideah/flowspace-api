@@ -64,7 +64,7 @@ Outcome: <State the result in one sentence.>
 ## Verification
 
 - `task check:task`: <Passed | Failed | Not run>. <State the reason if it did not pass.>
-- `git diff origin/main...HEAD --check`: <Passed | Failed | Not run>.
+- `task git:diff:check`: <Passed | Failed | Not run>.
 - `task markdown:check`: <Passed | Failed | Not run>.
 - `<task-specific command>`: <Passed | Failed | Not run>. <State the result or reason.>
 - `cd tests/smoke/bruno && bru run --env local`: <Passed | Failed | Not run>. Environment: <name>.
@@ -88,7 +88,7 @@ Follow-up: #<number> or None
 ```
 
 - Use the date in Asia/Bangkok. Set `Status` to `Complete` only when all required checks pass.
-- Keep `task check:task`, the PR diff check, and CI in every report. Include `task markdown:check` when Markdown changed. Include other commands and Bruno rows only when they apply.
+- Keep `task check:task`, `task git:diff:check`, and CI in every report. Include `task markdown:check` when Markdown changed. Include other commands and Bruno rows only when they apply.
 - Copy measurements from the command output. Use `n/a` for changed-line coverage when the task adds no executable Go lines. If a command stops before it reports a measurement, omit that row. State the failure in Verification.
 - For `Failed` or `Not run`, state the cause. If CI did not run, replace the run link with the reason. Link a follow-up Issue when work remains. Do not include secrets or test account data.
 
@@ -102,7 +102,7 @@ The final task in each module plan checks the approved specification through tes
 - Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
 - For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Record the command and passing result in the task result comment.
 - If a check fails or is missing, record the gap and its follow-up Issue in the task result comment. Keep the task and final plan checkpoint open until the gap is resolved.
-- In Verification, list `task check:task`, `task markdown:check`, PR diff inspection, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Report command results in the task result comment.
+- In Verification, list `task check:task`, `task markdown:check`, `task git:diff:check`, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Report command results in the task result comment.
 - Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
 - When every criterion passes, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
 

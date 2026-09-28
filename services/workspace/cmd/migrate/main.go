@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -18,7 +19,7 @@ import (
 
 type config struct {
 	Environment string              `env:"ENVIRONMENT,required,notEmpty"`
-	DatabaseURL sharedconfig.Secret `env:"DATABASE_URL,required,notEmpty"`
+	DatabaseURL sharedconfig.Secret `env:"DATABASE_URL"`
 }
 
 func main() {
@@ -29,6 +30,13 @@ func migrate() error {
 	configuration, err := sharedconfig.Load[config]()
 	if err != nil {
 		return err
+	}
+	if configuration.DatabaseURL == "" {
+		for _, key := range []string{"PGHOST", "PGDATABASE", "PGUSER", "PGPASSWORD"} {
+			if os.Getenv(key) == "" {
+				return errors.New("DATABASE_URL or PGHOST, PGDATABASE, PGUSER, and PGPASSWORD are required")
+			}
+		}
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

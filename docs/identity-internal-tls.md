@@ -45,40 +45,12 @@ If the local cluster is rebuilt, restore the saved controller keys before `tilt 
 
 ## Rebuild with a new controller key
 
-Use this procedure after deleting the local cluster if the CA and both service certificates and private keys remain in `.secrets/identity-session/`. Run it from the repository root on a short-lived branch before `tilt up`. The setup task refuses existing private keys, and the rotation tasks require live Secrets.
+Use this procedure after deleting the local cluster. Keep the CA and both service certificates and private keys in `.secrets/identity-session/`. Run the commands from the repository root on a short-lived branch before `tilt up`. The reseal task checks the certificates and Workspace allowlist. It installs the pinned controller and validates both encrypted manifests before replacing them. The setup task refuses existing private keys, and the rotation tasks require live Secrets.
 
 ```sh
-set -euo pipefail
-umask 077
 task cluster:create
 kubectl config use-context k3d-flowspace
-certs=.secrets/identity-session
-for file in ca.crt identity.crt identity.key workspace.crt workspace.key; do
-  test -s "$certs/$file"
-done
-openssl verify -CAfile "$certs/ca.crt" -purpose sslserver "$certs/identity.crt"
-openssl verify -CAfile "$certs/ca.crt" -purpose sslclient "$certs/workspace.crt"
-helm repo add sealed-secrets https://bitnami.github.io/sealed-secrets
-helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets \
-  --version 2.19.1 --namespace kube-system --kube-context k3d-flowspace \
-  --set-string fullnameOverride=sealed-secrets-controller --wait
-kubeseal --controller-name sealed-secrets-controller \
-  --controller-namespace kube-system --fetch-cert > "$certs/sealing.crt"
-
-for name in identity workspace; do
-  kubectl --context k3d-flowspace create secret generic "$name-session-tls" \
-    --namespace flowspace-local \
-    --from-file="tls.crt=$certs/$name.crt" \
-    --from-file="tls.key=$certs/$name.key" \
-    --from-file="ca.crt=$certs/ca.crt" \
-    --dry-run=client -o json |
-    kubeseal --cert "$certs/sealing.crt" --format yaml > "$certs/$name-sealed.yaml"
-  kubeseal --controller-name sealed-secrets-controller \
-    --controller-namespace kube-system --validate < "$certs/$name-sealed.yaml"
-done
-
-mv "$certs/identity-sealed.yaml" deploy/overlays/local/identity/session-tls-sealed-secret.yaml
-mv "$certs/workspace-sealed.yaml" deploy/overlays/local/workspace/session-tls-sealed-secret.yaml
+task identity:session-tls:reseal
 tilt up
 ```
 

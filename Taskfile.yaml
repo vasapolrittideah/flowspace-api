@@ -187,6 +187,11 @@ tasks:
     cmds:
       - sh scripts/setup-identity-session-tls-local.sh
 
+  identity:session-tls:reseal:
+    desc: Reseal local session TLS with the current cluster key
+    cmds:
+      - sh scripts/reseal-identity-session-tls-local.sh
+
   identity:session-tls:rotate-server:
     desc: Replace the local Identity session server certificate
     cmds:
@@ -208,9 +213,10 @@ tasks:
       - sh scripts/rotate-identity-session-ca-local.sh
 
   identity:session-tls:test:
-    desc: Test local session TLS rotation without a cluster
+    desc: Test local session TLS maintenance without a cluster
     cmds:
       - sh scripts/rotate-identity-session-tls-local.test.sh
+      - sh scripts/reseal-identity-session-tls-local.test.sh
 
   identity:signing-key:retire:
     desc: Remove the prior local signing public key after the overlap

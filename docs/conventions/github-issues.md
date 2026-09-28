@@ -83,8 +83,8 @@ Outcome: <State the result in one sentence.>
 
 ## References
 
-PR: <link>
-Follow-up: <Issue link or None>
+PR: #<number>
+Follow-up: #<number> or None
 ```
 
 - Use the date in Asia/Bangkok. Set `Status` to `Complete` only when all required checks pass.

@@ -46,13 +46,14 @@ Estimated scope: <expected size>.
 - Before creating an Issue, compare its title, body, acceptance criteria, verification, file list, and planned blockers with the approved specification and module plan.
 - After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its blockers as native GitHub `Blocked by` relationships. Assign the [plan milestone](github-milestones.md) to each Issue in the plan's numbered Task list.
 - Use as many acceptance criteria items as the task needs.
+- Include `task check:task`, `task git:diff:check`, and CI review in every Verification list. Include `task markdown:check` when Markdown changes. Add commands that check the task's behavior.
 - Keep inspection of a command's output in the same Verification item when they form one check. Put separate manual checks in separate items.
 - Add one native GitHub `Blocked by` relationship for each blocking Issue. Use these relationships as the dependency list.
 - For generated output, list only its folder. Do not list generated file names.
 
 ## Task result comment
 
-Post the result on the task Issue as a comment. Do not edit the Issue body to report results.
+After verification, check each completed item in the Issue body. Leave failed and unrun items unchecked. Post the run result as a comment. Keep measurements and run details out of the Issue body.
 
 ```markdown
 ## Result
@@ -60,15 +61,8 @@ Post the result on the task Issue as a comment. Do not edit the Issue body to re
 Date: YYYY-MM-DD (Asia/Bangkok)
 Status: Complete | Blocked
 Outcome: <State the result in one sentence.>
-
-## Verification
-
-- `task check:task`: <Passed | Failed | Not run>. <State the reason if it did not pass.>
-- `task git:diff:check`: <Passed | Failed | Not run>.
-- `task markdown:check`: <Passed | Failed | Not run>.
-- `<task-specific command>`: <Passed | Failed | Not run>. <State the result or reason.>
-- `task smoke:bruno`: <Passed | Failed | Not run>. Environment: <name>.
-- CI: <Passed | Failed | Not run>. [Run <run-id>](https://github.com/vasapolrittideah/flowspace-api/actions/runs/<run-id>).
+Environment: <State where the local checks ran and name any test services, or write CI only.>
+CI: <Passed | Failed | Not run>. [Run <run-id>](https://github.com/vasapolrittideah/flowspace-api/actions/runs/<run-id>).
 
 ## Measurements
 
@@ -81,6 +75,10 @@ Outcome: <State the result in one sentence.>
 | Bruno tests | `<passed>/<total>` | all pass |
 | Bruno assertions | `<passed>/<total>` | all pass |
 
+## Gaps
+
+None
+
 ## References
 
 PR: #<number>
@@ -88,9 +86,9 @@ Follow-up: #<number> or None
 ```
 
 - Use the date in Asia/Bangkok. Set `Status` to `Complete` only when all required checks pass.
-- Keep `task check:task`, `task git:diff:check`, and CI in every report. Include `task markdown:check` when Markdown changed. Include other commands and Bruno rows only when they apply.
-- Copy measurements from the command output. Use `n/a` for changed-line coverage when the task adds no executable Go lines. If a command stops before it reports a measurement, omit that row. State the failure in Verification.
-- For `Failed` or `Not run`, state the cause. If CI did not run, replace the run link with the reason. Link a follow-up Issue when work remains. Do not include secrets or test account data.
+- Do not repeat the completed Verification checklist in the comment. Keep `None` under `Gaps` when every required check passes. For each failed or unrun item, leave its checkbox clear. Replace `None` with a bullet that names the item, cause, and next action.
+- Prefer CI measurements. Use local output if CI did not produce a measurement. Include Bruno rows only when Bruno applies. Use `n/a` for changed-line coverage when the task adds no executable Go lines. If a command stops before it reports a measurement, omit that row and explain the failure under `Gaps`.
+- Keep the CI run link in every report. If CI did not run, replace the link with the reason. Link a follow-up Issue when work remains. Do not include secrets or test account data.
 
 ## Final Prove task
 
@@ -102,7 +100,7 @@ The final task in each module plan checks the approved specification through tes
 - Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
 - For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Run `task smoke:bruno` and record the result in the task result comment.
 - If a check fails or is missing, record the gap and its follow-up Issue in the task result comment. Keep the task and final plan checkpoint open until the gap is resolved.
-- In Verification, list `task check:task`, `task markdown:check`, `task git:diff:check`, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Report command results in the task result comment.
+- Add separate Verification items for the module's applicable integration, smoke, contract, and generation checks. Check completed items in the Issue body and report only gaps in the task result comment.
 - Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
 - When every criterion passes, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
 

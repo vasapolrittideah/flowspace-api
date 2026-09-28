@@ -15,15 +15,55 @@ func TestMigrateRequiresEnvironment(t *testing.T) {
 	}
 }
 
-func TestMigrateRequiresDatabaseURL(t *testing.T) {
+func TestMigrateRequiresDatabaseConfiguration(t *testing.T) {
 	t.Setenv("ENVIRONMENT", "local")
 	t.Setenv("DATABASE_URL", "")
+	for _, key := range []string{"PGHOST", "PGDATABASE", "PGUSER", "PGPASSWORD"} {
+		t.Setenv(key, "")
+	}
 
 	err := migrate()
 	if err == nil {
 		t.Fatal("migrate() accepted a missing database URL")
 	}
 	if !strings.Contains(err.Error(), "DATABASE_URL") {
+		t.Fatalf("migrate() error = %v, want DATABASE_URL configuration error", err)
+	}
+}
+
+func TestMigrateUsesDatabaseURLWithPostgresEnvironment(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "local")
+	t.Setenv("DATABASE_URL", "postgres://workspace:test-password@127.0.0.1:1/workspace?sslmode=disable")
+	t.Setenv("PGHOST", "127.0.0.1")
+	t.Setenv("PGPORT", "2")
+	t.Setenv("PGDATABASE", "workspace")
+	t.Setenv("PGUSER", "workspace")
+	t.Setenv("PGPASSWORD", "test-password")
+	t.Setenv("PGSSLMODE", "disable")
+
+	err := migrate()
+	if err == nil {
+		t.Fatal("migrate() accepted an unavailable PostgreSQL server")
+	}
+	if !strings.Contains(err.Error(), "migrate workspace database") {
+		t.Fatalf("migrate() error = %v, want migration error", err)
+	}
+	if !strings.Contains(err.Error(), "127.0.0.1:1") {
+		t.Fatalf("migrate() error = %v, want DATABASE_URL host and port", err)
+	}
+}
+
+func TestMigrateRequiresDatabaseURLWithPostgresEnvironment(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "local")
+	t.Setenv("DATABASE_URL", "")
+	t.Setenv("PGHOST", "127.0.0.1")
+	t.Setenv("PGPORT", "1")
+	t.Setenv("PGDATABASE", "workspace")
+	t.Setenv("PGUSER", "workspace")
+	t.Setenv("PGPASSWORD", "test-password")
+
+	err := migrate()
+	if err == nil || !strings.Contains(err.Error(), "DATABASE_URL") {
 		t.Fatalf("migrate() error = %v, want DATABASE_URL configuration error", err)
 	}
 }

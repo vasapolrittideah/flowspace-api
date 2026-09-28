@@ -58,6 +58,7 @@ The final task in each module plan checks the approved specification through tes
 - In Description, name the final test scope and any cross-service checks owned by another Issue. Link to that Issue instead of repeating its work.
 - In Acceptance criteria, require tests for every success criterion and applicable threat. Do not require a separate evidence file.
 - Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
+- For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Record the command and passing result in the Issue or PR checks.
 - If a check fails or is missing, record the gap and its follow-up Issue in the Prove task. Keep the task and final plan checkpoint open until the gap is resolved.
 - In Verification, list `task check:task`, `task markdown:check`, PR diff inspection, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Use the Issue or PR checks for command results.
 - Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.

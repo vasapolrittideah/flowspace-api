@@ -133,7 +133,7 @@ docker_build(
     'flowspace/workspace-api',
     '.',
     dockerfile='services/workspace/Dockerfile',
-    only=['go.mod', 'go.sum', 'gen', 'services/workspace'],
+    only=['go.mod', 'go.sum', 'gen', 'internal', 'services/workspace'],
 )
 k8s_yaml(kustomize('deploy/overlays/local/workspace'))
 k8s_resource('workspace-postgres', labels='workspace')

@@ -70,6 +70,11 @@ tasks:
     cmds:
       - go test {{.CLI_ARGS}} ./...
 
+  smoke:bruno:
+    desc: Run Bruno smoke tests against the local API
+    cmds:
+      - cd tests/smoke/bruno && bru run --env local
+
   go:tidy:
     desc: Update Go module files
     cmds:

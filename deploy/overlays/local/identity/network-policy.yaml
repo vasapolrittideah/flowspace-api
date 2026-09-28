@@ -65,6 +65,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: identity-migrate
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: adminer
       ports:
         - protocol: TCP
           port: 5432

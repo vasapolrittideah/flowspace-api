@@ -32,6 +32,8 @@ tilt up
 
 Tilt starts Keycloak, PostgreSQL, migrations, and the Workspace API. It forwards the Workspace API to `http://localhost:8081` and Keycloak to `http://localhost:8080`.
 
+Tilt also starts Adminer at `http://localhost:8083` for the local PostgreSQL databases. In Adminer, choose PostgreSQL. For Workspace, enter `workspace-postgres` as the server and `workspace` as both the username and database. Read the password from `.secrets/workspace-database-password`. For Identity, use `identity-postgres` as the server and `identity` as both the username and database. Read its password from `.secrets/identity-database-password`.
+
 ## Development
 
 | Command | Purpose |

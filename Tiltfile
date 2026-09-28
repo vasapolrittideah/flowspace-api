@@ -149,6 +149,7 @@ docker_build(
     only=['go.mod', 'go.sum', 'contracts/events', 'gen', 'internal', 'services/identity'],
 )
 k8s_yaml(kustomize('deploy/overlays/local/identity'))
+k8s_yaml('deploy/overlays/local/adminer.yaml')
 k8s_resource(new_name='identity-session-tls', objects=['identity-session-tls:sealedsecret'], resource_deps=['sealed-secrets'])
 k8s_resource(
     new_name='identity-secrets',
@@ -171,6 +172,11 @@ helm_resource(
     flags=['--version=0.36.0', '--values=deploy/overlays/local/mailpit-values.yaml', '--create-namespace'],
 )
 k8s_resource('identity-postgres', resource_deps=['identity-secrets'])
+k8s_resource(
+    'adminer',
+    resource_deps=['workspace-postgres', 'identity-postgres'],
+    port_forwards=[port_forward(8083, 8080, name='Adminer')],
+)
 k8s_resource('identity-migrate', resource_deps=['identity-postgres'])
 k8s_resource('identity-broker-bootstrap', resource_deps=['redpanda', 'identity-secrets'])
 k8s_resource(

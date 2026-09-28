@@ -1,6 +1,6 @@
 # GitHub Issue conventions
 
-This convention defines the title and body of a GitHub Issue for one task.
+This convention defines the Issue body and result comment for one task.
 
 ## Template
 
@@ -50,6 +50,48 @@ Estimated scope: <expected size>.
 - Add one native GitHub `Blocked by` relationship for each blocking Issue. Use these relationships as the dependency list.
 - For generated output, list only its folder. Do not list generated file names.
 
+## Task result comment
+
+Post the result on the task Issue as a comment. Do not edit the Issue body to report results.
+
+```markdown
+## Result
+
+Date: YYYY-MM-DD (Asia/Bangkok)
+Status: Complete | Blocked
+Outcome: <State the result in one sentence.>
+
+## Verification
+
+- `task check:task`: <Passed | Failed | Not run>. <State the reason if it did not pass.>
+- `git diff origin/main...HEAD --check`: <Passed | Failed | Not run>.
+- `task markdown:check`: <Passed | Failed | Not run>.
+- `<task-specific command>`: <Passed | Failed | Not run>. <State the result or reason.>
+- `cd tests/smoke/bruno && bru run --env local`: <Passed | Failed | Not run>. Environment: <name>.
+- CI: <Passed | Failed | Not run>. <Link to the run or state the reason.>
+
+## Measurements
+
+| Measure | Result | Required |
+| --- | --- | --- |
+| Project coverage | `<actual>%` | at least 25.0% |
+| Changed-line coverage | `<actual>%` or `n/a` | at least 80% when applicable |
+| Reachable vulnerabilities | `<actual>` | 0 |
+| Bruno requests | `<passed>/<total>` | all pass |
+| Bruno tests | `<passed>/<total>` | all pass |
+| Bruno assertions | `<passed>/<total>` | all pass |
+
+## References
+
+PR: <link>
+Follow-up: <Issue link or None>
+```
+
+- Use the date in Asia/Bangkok. Set `Status` to `Complete` only when all required checks pass.
+- Keep `task check:task`, the PR diff check, and CI in every report. Include `task markdown:check` when Markdown changed. Include other commands and Bruno rows only when they apply.
+- Copy measurements from the command output. Use `n/a` for changed-line coverage when the task adds no executable Go lines. If a command stops before it reports a measurement, omit that row. State the failure in Verification.
+- For `Failed` or `Not run`, state the cause. Link a follow-up Issue when work remains. Do not include secrets or test account data.
+
 ## Final Prove task
 
 The final task in each module plan checks the approved specification through tests and review. Use the Issue template above.
@@ -58,9 +100,9 @@ The final task in each module plan checks the approved specification through tes
 - In Description, name the final test scope and any cross-service checks owned by another Issue. Link to that Issue instead of repeating its work.
 - In Acceptance criteria, require tests for every success criterion and applicable threat. Do not require a separate evidence file.
 - Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
-- For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Record the command and passing result in the Issue or PR checks.
-- If a check fails or is missing, record the gap and its follow-up Issue in the Prove task. Keep the task and final plan checkpoint open until the gap is resolved.
-- In Verification, list `task check:task`, `task markdown:check`, PR diff inspection, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Use the Issue or PR checks for command results.
+- For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Record the command and passing result in the task result comment.
+- If a check fails or is missing, record the gap and its follow-up Issue in the task result comment. Keep the task and final plan checkpoint open until the gap is resolved.
+- In Verification, list `task check:task`, `task markdown:check`, PR diff inspection, and CI review. Add separate command items for the module's applicable integration, smoke, contract, and generation checks. Report command results in the task result comment.
 - Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
 - When every criterion passes, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
 

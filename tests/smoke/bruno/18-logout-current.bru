@@ -1,0 +1,27 @@
+meta {
+  name: Log out one device
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/v1/session-logouts
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{deviceAccessToken}}
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("logout revokes the current device", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().revoked).to.equal(true);
+  });
+}

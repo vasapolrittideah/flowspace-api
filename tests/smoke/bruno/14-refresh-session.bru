@@ -1,0 +1,34 @@
+meta {
+  name: Refresh password session
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/v1/session-refreshes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refreshToken": "{{loginRefreshToken}}"
+  }
+}
+
+tests {
+  test("refresh rotates both tokens without extending the session", function () {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body.accessToken).to.be.a("string").and.not.be.empty;
+    expect(body.refreshToken).to.be.a("string").and.not.be.empty;
+    expect(body.accessToken).to.not.equal(bru.getVar("loginAccessToken"));
+    expect(body.refreshToken).to.not.equal(bru.getVar("loginRefreshToken"));
+    expect(body.sessionExpiresAt).to.equal(bru.getVar("loginSessionExpiresAt"));
+    bru.setVar("rotatedRefreshToken", body.refreshToken);
+  });
+}

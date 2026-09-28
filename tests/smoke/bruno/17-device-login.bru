@@ -1,0 +1,32 @@
+meta {
+  name: Log in on one device
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/v1/password-sessions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+tests {
+  test("a new device session is active", function () {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body.subject).to.equal(bru.getVar("subject"));
+    bru.setVar("deviceAccessToken", body.accessToken);
+    bru.setVar("deviceRefreshToken", body.refreshToken);
+  });
+}

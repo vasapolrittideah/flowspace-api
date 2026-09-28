@@ -14,6 +14,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 
+	"github.com/vasapolrittideah/flowspace-api/internal/postgresconnect"
 	inboundevent "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/event"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/email"
@@ -44,12 +45,11 @@ func NewWorker(ctx context.Context, config WorkerConfig, logger *zap.Logger) (*W
 	if err != nil {
 		return nil, errors.New("invalid mail configuration")
 	}
-	pool, err := pgxpool.New(ctx, string(config.DatabaseURL))
-	if err != nil {
+	pool, err := postgresconnect.Open(ctx, string(config.DatabaseURL))
+	if errors.Is(err, postgresconnect.ErrInvalidConfiguration) {
 		return nil, errors.New("invalid database configuration")
 	}
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
+	if err != nil {
 		return nil, errors.New("identity database unavailable")
 	}
 	brokerOptions := []kgo.Opt{kgo.SeedBrokers(config.BrokerAddress)}

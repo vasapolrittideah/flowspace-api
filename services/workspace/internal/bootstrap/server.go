@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/postgresconnect"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/identity"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres"
@@ -42,9 +43,12 @@ func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server,
 	if config.OIDCDiscoveryURL != "" || config.OIDCIssuer != "" || config.OIDCAudience != "" {
 		return nil, errors.New("OIDC configuration is no longer supported")
 	}
-	pool, err := pgxpool.New(ctx, string(config.DatabaseURL))
-	if err != nil {
+	pool, err := postgresconnect.Open(ctx, string(config.DatabaseURL))
+	if errors.Is(err, postgresconnect.ErrInvalidConfiguration) {
 		return nil, fmt.Errorf("configure database: %w", err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 	keepPool := false
 	defer func() {
@@ -52,9 +56,6 @@ func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server,
 			pool.Close()
 		}
 	}()
-	if err := pool.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("connect to database: %w", err)
-	}
 
 	verifier, err := identity.NewTokenVerifier(identity.Config{
 		JWKSURL: config.IdentityJWKSURL, Issuer: config.IdentityIssuer, Audience: config.IdentityAudience,

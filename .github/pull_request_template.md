@@ -1,4 +1,4 @@
-<!-- Use a paragraph for one connected point and bullets for multiple independent points in What changed, Why, Related issues, Risks or limitations, and Additional notes. -->
+<!-- Use a paragraph for one connected point and bullets for multiple independent points in What changed, Why, Related issues, and Risks or limitations. -->
 
 ## What changed
 
@@ -16,12 +16,6 @@ n/a
 
 ## Risks or limitations
 
-<!-- Include material compatibility effects, remaining limitations, or follow-up work when present. -->
-
-n/a
-
-## Additional notes
-
-<!-- Include useful context about this PR that does not fit the sections above when present. -->
+<!-- Include material compatibility effects, unresolved failures, checks that did not run, remaining limitations, or follow-up work when present. -->
 
 n/a

@@ -103,13 +103,14 @@ k8s_yaml(encode_yaml({
     'stringData': {'BROKER_PASSWORD': identity_broker_password},
 }))
 
-helm_repo('sealed-secrets', 'https://bitnami.github.io/sealed-secrets', resource_name='sealed-secrets-chart-repo')
+helm_repo('sealed-secrets', 'https://bitnami.github.io/sealed-secrets', resource_name='sealed-secrets-chart-repo', labels='shared')
 helm_resource(
     'sealed-secrets',
     'sealed-secrets/sealed-secrets',
     namespace='kube-system',
     flags=['--version=2.19.1', '--set-string=fullnameOverride=sealed-secrets-controller'],
     resource_deps=['sealed-secrets-chart-repo'],
+    labels='shared',
 )
 
 helm_resource(
@@ -125,6 +126,7 @@ helm_resource(
         '--set-file=secrets.realm.stringData.realm=deploy/overlays/local/flowspace-realm.json',
     ],
     port_forwards=[port_forward(8080, 8080, name='Keycloak admin', link_path='/auth/admin/')],
+    labels='shared',
 )
 
 docker_build(
@@ -134,12 +136,14 @@ docker_build(
     only=['go.mod', 'go.sum', 'gen', 'services/workspace'],
 )
 k8s_yaml(kustomize('deploy/overlays/local/workspace'))
-k8s_resource(new_name='workspace-session-tls', objects=['workspace-session-tls:sealedsecret'], resource_deps=['sealed-secrets'])
-k8s_resource('workspace-migrate', resource_deps=['workspace-postgres'])
+k8s_resource('workspace-postgres', labels='workspace')
+k8s_resource(new_name='workspace-session-tls', objects=['workspace-session-tls:sealedsecret'], resource_deps=['sealed-secrets'], labels='workspace')
+k8s_resource('workspace-migrate', resource_deps=['workspace-postgres'], labels='workspace')
 k8s_resource(
     'workspace-api',
     resource_deps=['keycloak', 'workspace-migrate', 'workspace-session-tls'],
     port_forwards=[port_forward(8081, 8080, name='Workspace API')],
+    labels='workspace',
 )
 
 docker_build(
@@ -156,12 +160,13 @@ k8s_yaml(encode_yaml({
     'data': {'local-autologin.php': str(read_file('deploy/overlays/local/adminer-autologin.php'))},
 }))
 k8s_yaml('deploy/overlays/local/adminer.yaml')
-k8s_resource(new_name='identity-session-tls', objects=['identity-session-tls:sealedsecret'], resource_deps=['sealed-secrets'])
+k8s_resource(new_name='identity-session-tls', objects=['identity-session-tls:sealedsecret'], resource_deps=['sealed-secrets'], labels='identity')
 k8s_resource(
     new_name='identity-secrets',
     objects=['identity-database:secret', 'identity-signing-key:secret', 'identity-code-key:secret', 'identity-delivery-key:secret', 'redpanda-bootstrap-user:secret', 'redpanda-superusers:secret', 'identity-broker:secret'],
+    labels='identity',
 )
-helm_repo('redpanda', 'https://charts.redpanda.com', resource_name='redpanda-chart-repo')
+helm_repo('redpanda', 'https://charts.redpanda.com', resource_name='redpanda-chart-repo', labels='shared')
 helm_resource(
     'redpanda',
     'redpanda/redpanda',
@@ -169,6 +174,7 @@ helm_resource(
     deps=['deploy/overlays/local/redpanda-values.yaml'],
     flags=['--version=26.2.4', '--values=deploy/overlays/local/redpanda-values.yaml', '--create-namespace'],
     resource_deps=['redpanda-chart-repo', 'identity-secrets'],
+    labels='shared',
 )
 helm_resource(
     'mailpit',
@@ -176,18 +182,21 @@ helm_resource(
     namespace='flowspace-local',
     deps=['deploy/overlays/local/mailpit-values.yaml'],
     flags=['--version=0.36.0', '--values=deploy/overlays/local/mailpit-values.yaml', '--create-namespace'],
+    labels='shared',
 )
-k8s_resource('identity-postgres', resource_deps=['identity-secrets'])
+k8s_resource('identity-postgres', resource_deps=['identity-secrets'], labels='identity')
 k8s_resource(
     'adminer',
     resource_deps=['workspace-postgres', 'identity-postgres'],
     port_forwards=[port_forward(8083, 8080, name='Adminer')],
+    labels='tools',
 )
-k8s_resource('identity-migrate', resource_deps=['identity-postgres'])
-k8s_resource('identity-broker-bootstrap', resource_deps=['redpanda', 'identity-secrets'])
+k8s_resource('identity-migrate', resource_deps=['identity-postgres'], labels='identity')
+k8s_resource('identity-broker-bootstrap', resource_deps=['redpanda', 'identity-secrets'], labels='identity')
 k8s_resource(
     'identity-api',
     resource_deps=['identity-migrate', 'identity-secrets', 'identity-session-tls'],
     port_forwards=[port_forward(8082, 8080, name='Identity API')],
+    labels='identity',
 )
-k8s_resource('identity-worker', resource_deps=['identity-migrate', 'identity-secrets', 'identity-broker-bootstrap', 'mailpit'])
+k8s_resource('identity-worker', resource_deps=['identity-migrate', 'identity-secrets', 'identity-broker-bootstrap', 'mailpit'], labels='identity')

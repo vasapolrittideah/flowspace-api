@@ -68,7 +68,7 @@ Outcome: <State the result in one sentence.>
 - `task markdown:check`: <Passed | Failed | Not run>.
 - `<task-specific command>`: <Passed | Failed | Not run>. <State the result or reason.>
 - `cd tests/smoke/bruno && bru run --env local`: <Passed | Failed | Not run>. Environment: <name>.
-- CI: <Passed | Failed | Not run>. <Link to the run or state the reason.>
+- CI: <Passed | Failed | Not run>. [Run <run-id>](https://github.com/vasapolrittideah/flowspace-api/actions/runs/<run-id>).
 
 ## Measurements
 
@@ -90,7 +90,7 @@ Follow-up: #<number> or None
 - Use the date in Asia/Bangkok. Set `Status` to `Complete` only when all required checks pass.
 - Keep `task check:task`, the PR diff check, and CI in every report. Include `task markdown:check` when Markdown changed. Include other commands and Bruno rows only when they apply.
 - Copy measurements from the command output. Use `n/a` for changed-line coverage when the task adds no executable Go lines. If a command stops before it reports a measurement, omit that row. State the failure in Verification.
-- For `Failed` or `Not run`, state the cause. Link a follow-up Issue when work remains. Do not include secrets or test account data.
+- For `Failed` or `Not run`, state the cause. If CI did not run, replace the run link with the reason. Link a follow-up Issue when work remains. Do not include secrets or test account data.
 
 ## Final Prove task
 

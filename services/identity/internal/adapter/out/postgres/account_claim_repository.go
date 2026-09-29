@@ -67,3 +67,24 @@ func (t *accountTransaction) RetireAndRevokeAccount(ctx context.Context, subject
 	changed, err := t.queries.RetireUnverifiedAccount(ctx, subject)
 	return changed == 1, err
 }
+
+func (r *AccountRepository) WithinAccountClaimTransaction(ctx context.Context, fn func(outbound.AccountClaimTransaction) error) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (t *accountTransaction) GetAccountForClaim(ctx context.Context, email string) (outbound.ClaimAccount, bool, error) {
+	local, domain, ok := strings.Cut(email, "@")
+	if !ok {
+		return outbound.ClaimAccount{}, false, errors.New("invalid normalized email")
+	}
+	account, err := t.queries.GetActiveAccountByEmailForUpdate(ctx, sqlc.GetActiveAccountByEmailForUpdateParams{
+		EmailLocal: local, EmailDomain: domain,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.ClaimAccount{}, false, nil
+	}
+	if err != nil {
+		return outbound.ClaimAccount{}, false, err
+	}
+	return outbound.ClaimAccount{Subject: account.Subject, EmailVerified: account.EmailVerifiedAt.Valid}, true, nil
+}

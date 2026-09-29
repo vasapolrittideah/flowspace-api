@@ -17,7 +17,7 @@ type verificationRepository struct {
 	commitErr error
 }
 
-func (r verificationRepository) WithinTransaction(_ context.Context, fn func(outbound.AccountTransaction) error) error {
+func (r verificationRepository) WithinVerificationCodeIssueTransaction(_ context.Context, fn func(outbound.VerificationCodeIssueTransaction) error) error {
 	if err := fn(r.tx); err != nil {
 		return err
 	}

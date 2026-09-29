@@ -764,7 +764,7 @@ func TestIdentityRepository(t *testing.T) {
 		verified := func(t *testing.T, input inbound.VerifyEmailInput) bool {
 			t.Helper()
 			var state outbound.AccountState
-			if err := repository.WithinTransaction(ctx, func(tx outbound.AccountTransaction) error {
+			if err := repository.WithinVerificationTransaction(ctx, func(tx outbound.VerificationTransaction) error {
 				var err error
 				state, err = tx.GetActiveAccountForSession(ctx, input.Subject, input.SessionID)
 				return err

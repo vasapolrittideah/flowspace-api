@@ -10,27 +10,27 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var ErrPasswordRecoveryRequestUnavailable = errors.New("password recovery request unavailable")
+var ErrPasswordResetCodeUnavailable = errors.New("password recovery request unavailable")
 
-type PasswordRecoveryRequestService struct {
-	repository  outbound.PasswordRecoveryRequestRepository
+type RequestPasswordResetCodeService struct {
+	repository  outbound.RequestPasswordResetCodeRepository
 	protector   outbound.DeliveryProtector
 	sourceLimit func(context.Context, string) error
 	emailLimit  func(context.Context, string) error
 	verifierKey []byte
 }
 
-var _ inbound.PasswordRecoveryRequestService = (*PasswordRecoveryRequestService)(nil)
+var _ inbound.RequestPasswordResetCodeService = (*RequestPasswordResetCodeService)(nil)
 
-func NewPasswordRecoveryRequestService(repository outbound.PasswordRecoveryRequestRepository, protector outbound.DeliveryProtector,
+func NewRequestPasswordResetCodeService(repository outbound.RequestPasswordResetCodeRepository, protector outbound.DeliveryProtector,
 	sourceLimit, emailLimit func(context.Context, string) error, verifierKey []byte,
-) *PasswordRecoveryRequestService {
-	return &PasswordRecoveryRequestService{repository: repository, protector: protector, sourceLimit: sourceLimit, emailLimit: emailLimit, verifierKey: verifierKey}
+) *RequestPasswordResetCodeService {
+	return &RequestPasswordResetCodeService{repository: repository, protector: protector, sourceLimit: sourceLimit, emailLimit: emailLimit, verifierKey: verifierKey}
 }
 
-func (s *PasswordRecoveryRequestService) RequestPasswordResetCode(ctx context.Context, input inbound.PasswordRecoveryRequestInput) error {
+func (s *RequestPasswordResetCodeService) RequestPasswordResetCode(ctx context.Context, input inbound.RequestPasswordResetCodeInput) error {
 	if s.repository == nil || s.protector == nil || s.sourceLimit == nil || s.emailLimit == nil || len(s.verifierKey) != 32 {
-		return ErrPasswordRecoveryRequestUnavailable
+		return ErrPasswordResetCodeUnavailable
 	}
 	email, err := domain.NormalizeEmail(input.Email)
 	if err != nil {
@@ -43,13 +43,13 @@ func (s *PasswordRecoveryRequestService) RequestPasswordResetCode(ctx context.Co
 	if err := s.emailLimit(ctx, email); err != nil {
 		return err
 	}
-	if err := s.repository.WithinPasswordRecoveryRequestTransaction(ctx, func(tx outbound.PasswordRecoveryRequestTransaction) error {
+	if err := s.repository.WithinRequestPasswordResetCodeTransaction(ctx, func(tx outbound.RequestPasswordResetCodeTransaction) error {
 		return s.issue(ctx, tx, email)
 	}); err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
-		return ErrPasswordRecoveryRequestUnavailable
+		return ErrPasswordResetCodeUnavailable
 	}
 	if remaining := claimResponseFloor - time.Since(started); remaining > 0 {
 		timer := time.NewTimer(remaining)
@@ -63,7 +63,7 @@ func (s *PasswordRecoveryRequestService) RequestPasswordResetCode(ctx context.Co
 	return ctx.Err()
 }
 
-func (s *PasswordRecoveryRequestService) issue(ctx context.Context, tx outbound.PasswordRecoveryRequestTransaction, email string) error {
+func (s *RequestPasswordResetCodeService) issue(ctx context.Context, tx outbound.RequestPasswordResetCodeTransaction, email string) error {
 	account, found, err := tx.GetAccountForPasswordRecovery(ctx, email)
 	if err != nil {
 		return err

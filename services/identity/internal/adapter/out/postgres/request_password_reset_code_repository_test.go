@@ -22,7 +22,7 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-func testPasswordRecoveryRequest(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+func testRequestPasswordResetCode(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Run("recovery request commits one current challenge and outbox event", func(t *testing.T) {
 		queries := identitysqlc.New(pool)
 		account, err := queries.CreateAccount(ctx, identitysqlc.CreateAccountParams{
@@ -47,9 +47,9 @@ func testPasswordRecoveryRequest(t *testing.T, ctx context.Context, pool *pgxpoo
 		}
 		key := bytes.Repeat([]byte{4}, 32)
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
-		service := app.NewPasswordRecoveryRequestService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
+		service := app.NewRequestPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
 			func(ctx context.Context, email string) error { return limits.PasswordRecoveryEmail(ctx, email, key) }, key)
-		input := inbound.PasswordRecoveryRequestInput{Email: "Recovery@EXAMPLE.COM", Source: "192.0.2.199"}
+		input := inbound.RequestPasswordResetCodeInput{Email: "Recovery@EXAMPLE.COM", Source: "192.0.2.199"}
 		request := func() {
 			t.Helper()
 			if err := service.RequestPasswordResetCode(ctx, input); err != nil {
@@ -107,9 +107,9 @@ func testPasswordRecoveryRequest(t *testing.T, ctx context.Context, pool *pgxpoo
 		if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET issued_at=issued_at-INTERVAL '61 seconds',expires_at=expires_at-INTERVAL '61 seconds' WHERE id=$1::uuid`, challengeID); err != nil {
 			t.Fatal(err)
 		}
-		failed := app.NewPasswordRecoveryRequestService(identitypostgres.NewAccountRepository(pool), failingDeliveryProtector{}, limits.CodeRequest,
+		failed := app.NewRequestPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), failingDeliveryProtector{}, limits.CodeRequest,
 			func(ctx context.Context, email string) error { return limits.PasswordRecoveryEmail(ctx, email, key) }, key)
-		if err := failed.RequestPasswordResetCode(ctx, input); !errors.Is(err, app.ErrPasswordRecoveryRequestUnavailable) {
+		if err := failed.RequestPasswordResetCode(ctx, input); !errors.Is(err, app.ErrPasswordResetCodeUnavailable) {
 			t.Fatalf("failed transaction=%v", err)
 		}
 		var afterFailure string
@@ -149,12 +149,12 @@ func testPasswordRecoveryRequest(t *testing.T, ctx context.Context, pool *pgxpoo
 		}
 		key := bytes.Repeat([]byte{6}, 32)
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
-		newService := func() *app.PasswordRecoveryRequestService {
-			return app.NewPasswordRecoveryRequestService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
+		newService := func() *app.RequestPasswordResetCodeService {
+			return app.NewRequestPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
 				func(ctx context.Context, email string) error { return limits.PasswordRecoveryEmail(ctx, email, key) }, key)
 		}
 		for _, email := range []string{"Missing@example.com", "RecoveryUnverified@example.com"} {
-			if err := newService().RequestPasswordResetCode(ctx, inbound.PasswordRecoveryRequestInput{Email: email, Source: "192.0.2.200"}); err != nil {
+			if err := newService().RequestPasswordResetCode(ctx, inbound.RequestPasswordResetCodeInput{Email: email, Source: "192.0.2.200"}); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -172,7 +172,7 @@ func testPasswordRecoveryRequest(t *testing.T, ctx context.Context, pool *pgxpoo
 			VALUES('source','192.0.2.201','code-request',statement_timestamp(),59)`); err != nil {
 			t.Fatal(err)
 		}
-		input := inbound.PasswordRecoveryRequestInput{Email: "Missing@example.com", Source: "192.0.2.201"}
+		input := inbound.RequestPasswordResetCodeInput{Email: "Missing@example.com", Source: "192.0.2.201"}
 		if err := newService().RequestPasswordResetCode(ctx, input); err != nil {
 			t.Fatalf("60th request=%v", err)
 		}

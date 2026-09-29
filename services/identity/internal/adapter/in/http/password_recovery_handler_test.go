@@ -19,19 +19,19 @@ import (
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
 )
 
-type fakePasswordRecoveryRequestService struct {
-	input inbound.PasswordRecoveryRequestInput
+type fakeRequestPasswordResetCodeService struct {
+	input inbound.RequestPasswordResetCodeInput
 	err   error
 }
 
-func (f *fakePasswordRecoveryRequestService) RequestPasswordResetCode(_ context.Context, input inbound.PasswordRecoveryRequestInput) error {
+func (f *fakeRequestPasswordResetCodeService) RequestPasswordResetCode(_ context.Context, input inbound.RequestPasswordResetCodeInput) error {
 	f.input = input
 	return f.err
 }
 
-func TestPasswordRecoveryRequestHandlerReturnsGenericResponse(t *testing.T) {
-	service := &fakePasswordRecoveryRequestService{}
-	handler := identityhttp.NewIdentityHandler(nil, nil, nil, nil, nil, nil).WithPasswordRecoveryRequest(service)
+func TestRequestPasswordResetCodeHandlerReturnsGenericResponse(t *testing.T) {
+	service := &fakeRequestPasswordResetCodeService{}
+	handler := identityhttp.NewIdentityHandler(nil, nil, nil, nil, nil, nil).WithRequestPasswordResetCode(service)
 	response, err := handler.RequestPasswordResetCode(claimCodeContext(), &identityv1.RequestPasswordResetCodeRequest{Email: "User@example.com"})
 	if err != nil || !response.GetAccepted() || service.input.Email != "User@example.com" || service.input.Source == "" {
 		t.Fatalf("response=%v error=%v input=%+v", response, err, service.input)
@@ -63,11 +63,11 @@ func TestPasswordRecoveryRequestHandlerReturnsGenericResponse(t *testing.T) {
 	}
 }
 
-func TestPasswordRecoveryRequestRESTRouteIsPublic(t *testing.T) {
-	service := &fakePasswordRecoveryRequestService{}
+func TestRequestPasswordResetCodeRESTRouteIsPublic(t *testing.T) {
+	service := &fakeRequestPasswordResetCodeService{}
 	mux := runtime.NewServeMux()
 	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux,
-		identityhttp.NewIdentityHandler(nil, nil, nil, nil, nil, nil).WithPasswordRecoveryRequest(service)); err != nil {
+		identityhttp.NewIdentityHandler(nil, nil, nil, nil, nil, nil).WithRequestPasswordResetCode(service)); err != nil {
 		t.Fatal(err)
 	}
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/password-reset-codes", strings.NewReader(`{"email":"User@example.com"}`))

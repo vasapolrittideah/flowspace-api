@@ -17,7 +17,7 @@ type recoveryRequestRepository struct {
 	err error
 }
 
-func (r recoveryRequestRepository) WithinPasswordRecoveryRequestTransaction(_ context.Context, fn func(outbound.PasswordRecoveryRequestTransaction) error) error {
+func (r recoveryRequestRepository) WithinRequestPasswordResetCodeTransaction(_ context.Context, fn func(outbound.RequestPasswordResetCodeTransaction) error) error {
 	if err := fn(r.tx); err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (t *recoveryRequestTransaction) CreateOutboxEvent(context.Context, string) 
 	return nil
 }
 
-func TestPasswordRecoveryRequestQueuesOnlyEligibleAccount(t *testing.T) {
+func TestRequestPasswordResetCodeQueuesOnlyEligibleAccount(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
 		account                outbound.PasswordRecoveryAccount
@@ -76,7 +76,7 @@ func TestPasswordRecoveryRequestQueuesOnlyEligibleAccount(t *testing.T) {
 			tx := &recoveryRequestTransaction{account: test.account, found: test.found, allowed: test.allowed}
 			protector := &claimProtector{}
 			sourceCalls, emailCalls := 0, 0
-			service := app.NewPasswordRecoveryRequestService(recoveryRequestRepository{tx: tx}, protector,
+			service := app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx}, protector,
 				func(_ context.Context, source string) error {
 					sourceCalls++
 					if source != "192.0.2.1" {
@@ -93,7 +93,7 @@ func TestPasswordRecoveryRequestQueuesOnlyEligibleAccount(t *testing.T) {
 				},
 				make([]byte, 32))
 			started := time.Now()
-			err := service.RequestPasswordResetCode(context.Background(), inbound.PasswordRecoveryRequestInput{Email: "User@EXAMPLE.COM", Source: "192.0.2.1"})
+			err := service.RequestPasswordResetCode(context.Background(), inbound.RequestPasswordResetCodeInput{Email: "User@EXAMPLE.COM", Source: "192.0.2.1"})
 			if err != nil || sourceCalls != 1 || emailCalls != 1 || time.Since(started) < 100*time.Millisecond {
 				t.Fatalf("response=%v source=%d email=%d duration=%s", err, sourceCalls, emailCalls, time.Since(started))
 			}
@@ -108,22 +108,22 @@ func TestPasswordRecoveryRequestQueuesOnlyEligibleAccount(t *testing.T) {
 	}
 }
 
-func TestPasswordRecoveryRequestFailsClosed(t *testing.T) {
+func TestRequestPasswordResetCodeFailsClosed(t *testing.T) {
 	tx := &recoveryRequestTransaction{account: outbound.PasswordRecoveryAccount{Subject: "subject", EmailVerified: true, HasPassword: true}, found: true, allowed: true}
-	input := inbound.PasswordRecoveryRequestInput{Email: "User@example.com", Source: "192.0.2.1"}
-	service := app.NewPasswordRecoveryRequestService(recoveryRequestRepository{tx: tx}, &claimProtector{},
+	input := inbound.RequestPasswordResetCodeInput{Email: "User@example.com", Source: "192.0.2.1"}
+	service := app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
 		func(context.Context, string) error { return app.ErrRateLimited }, func(context.Context, string) error { return nil }, make([]byte, 32))
 	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrRateLimited) || len(tx.steps) != 0 {
 		t.Fatalf("source limit=%v steps=%v", err, tx.steps)
 	}
-	service = app.NewPasswordRecoveryRequestService(recoveryRequestRepository{tx: tx}, &claimProtector{},
+	service = app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return app.ErrLimitUnavailable }, make([]byte, 32))
 	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrLimitUnavailable) || len(tx.steps) != 0 {
 		t.Fatalf("email limit=%v steps=%v", err, tx.steps)
 	}
-	service = app.NewPasswordRecoveryRequestService(recoveryRequestRepository{tx: tx, err: errors.New("commit failed")}, &claimProtector{},
+	service = app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx, err: errors.New("commit failed")}, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, make([]byte, 32))
-	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrPasswordRecoveryRequestUnavailable) {
+	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrPasswordResetCodeUnavailable) {
 		t.Fatalf("transaction=%v", err)
 	}
 	input.Email = "invalid"
@@ -131,17 +131,17 @@ func TestPasswordRecoveryRequestFailsClosed(t *testing.T) {
 		t.Fatalf("email=%v", err)
 	}
 	input.Email = "User@example.com"
-	service = app.NewPasswordRecoveryRequestService(nil, &claimProtector{},
+	service = app.NewRequestPasswordResetCodeService(nil, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, make([]byte, 32))
-	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrPasswordRecoveryRequestUnavailable) {
+	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrPasswordResetCodeUnavailable) {
 		t.Fatalf("missing repository=%v", err)
 	}
-	service = app.NewPasswordRecoveryRequestService(recoveryRequestRepository{tx: tx, err: context.Canceled}, &claimProtector{},
+	service = app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx, err: context.Canceled}, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, make([]byte, 32))
 	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled transaction=%v", err)
 	}
-	service = app.NewPasswordRecoveryRequestService(recoveryRequestRepository{tx: tx}, &claimProtector{},
+	service = app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, make([]byte, 32))
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

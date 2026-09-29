@@ -8,7 +8,7 @@ type PasswordRecoveryAccount struct {
 	HasPassword   bool
 }
 
-type PasswordRecoveryRequestTransaction interface {
+type RequestPasswordResetCodeTransaction interface {
 	GetAccountForPasswordRecovery(ctx context.Context, email string) (PasswordRecoveryAccount, bool, error)
 	CanIssueCode(ctx context.Context, subject string) (bool, error)
 	ReplacePasswordResetChallenge(ctx context.Context, subject string) error
@@ -17,6 +17,6 @@ type PasswordRecoveryRequestTransaction interface {
 	CreateOutboxEvent(ctx context.Context, challengeID string) error
 }
 
-type PasswordRecoveryRequestRepository interface {
-	WithinPasswordRecoveryRequestTransaction(ctx context.Context, fn func(PasswordRecoveryRequestTransaction) error) error
+type RequestPasswordResetCodeRepository interface {
+	WithinRequestPasswordResetCodeTransaction(ctx context.Context, fn func(RequestPasswordResetCodeTransaction) error) error
 }

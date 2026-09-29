@@ -27,7 +27,7 @@ func (h *IdentityHandler) RequestPasswordResetCode(ctx context.Context, request 
 	if h.passwordRecovery == nil {
 		return nil, status.Error(codes.Unavailable, "password recovery unavailable")
 	}
-	if err := h.passwordRecovery.RequestPasswordResetCode(ctx, inbound.PasswordRecoveryRequestInput{Email: request.GetEmail(), Source: source}); err != nil {
+	if err := h.passwordRecovery.RequestPasswordResetCode(ctx, inbound.RequestPasswordResetCodeInput{Email: request.GetEmail(), Source: source}); err != nil {
 		switch {
 		case errors.Is(err, domain.ErrInvalidEmail):
 			return nil, invalidSignupArgument("email", "is invalid")

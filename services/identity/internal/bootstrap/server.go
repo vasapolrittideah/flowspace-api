@@ -99,7 +99,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 		app.NewClaimCodeService(accountRepo, protector, limits.CodeRequest, verifierKey),
 		app.NewAccountClaimService(accountRepo, signer, limits.WrongCode, limits.AccountWrongCode, checkPassword, verifierKey),
 		verifier, trusted,
-	).WithPasswordRecoveryRequest(app.NewPasswordRecoveryRequestService(accountRepo, protector, limits.CodeRequest,
+	).WithRequestPasswordResetCode(app.NewRequestPasswordResetCodeService(accountRepo, protector, limits.CodeRequest,
 		func(ctx context.Context, email string) error {
 			return limits.PasswordRecoveryEmail(ctx, email, verifierKey)
 		}, verifierKey)).

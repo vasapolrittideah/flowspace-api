@@ -25,7 +25,7 @@ type Claims struct {
 
 func VerifyAccessToken(raw, issuer, audience string, keyFor func(string) (ed25519.PublicKey, error)) (Claims, error) {
 	token, err := jwt.ParseSigned(raw, []jose.SignatureAlgorithm{jose.EdDSA})
-	if err != nil || len(token.Headers) != 1 || token.Headers[0].ExtraHeaders[jose.HeaderKey("typ")] != "at+jwt" {
+	if err != nil || len(token.Headers) != 1 || token.Headers[0].KeyID == "" || token.Headers[0].ExtraHeaders[jose.HeaderKey("typ")] != "at+jwt" {
 		return Claims{}, ErrUnauthenticated
 	}
 	key, err := keyFor(token.Headers[0].KeyID)
@@ -48,6 +48,9 @@ func VerifyAccessToken(raw, issuer, audience string, keyFor func(string) (ed2551
 }
 
 func CheckSession(ctx context.Context, claims Claims, check func(context.Context, *identityv1.CheckSessionRequest) (*identityv1.CheckSessionResponse, error)) (bool, error) {
+	if claims.Subject == "" || claims.SessionID == "" {
+		return false, ErrUnauthenticated
+	}
 	response, err := check(ctx, &identityv1.CheckSessionRequest{Subject: claims.Subject, SessionId: claims.SessionID})
 	if status.Code(err) == codes.Unauthenticated {
 		return false, ErrUnauthenticated

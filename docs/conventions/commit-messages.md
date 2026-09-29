@@ -71,6 +71,7 @@ A scope names the repository area that a change affects. Use one lowercase scope
 | `config` | Shared environment configuration under `internal/config/` |
 | `logging` | Shared structured logging under `internal/logging/` |
 | `postgrespool` | Shared PostgreSQL startup connections under `internal/postgrespool/` |
+| `requestid` | Shared request ID validation and generation under `internal/requestid/` |
 | `workspace` | Workspaces, memberships, invitations, roles, and authorization |
 | `work` | Projects, tasks, assignments, status transitions, comments, activity history, and the event outbox |
 | `notifications` | In-app notification inbox, read state, and event deduplication |

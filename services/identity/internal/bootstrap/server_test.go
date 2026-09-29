@@ -19,6 +19,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 )
 
 func TestSigningKeyPublicationBeforeAndAfterSwitch(t *testing.T) {
@@ -236,7 +237,7 @@ func TestPublicHandlerRejectsCheckSession(t *testing.T) {
 }
 
 func TestPublicRequestIdentifiersAndProxyConfiguration(t *testing.T) {
-	if validRequestID("bad value") || validRequestID(strings.Repeat("a", 129)) || !validRequestID("safe-1") {
+	if requestid.Valid("bad value") || requestid.Valid(strings.Repeat("a", 129)) || !requestid.Valid("safe-1") {
 		t.Fatal("request ID validation failed")
 	}
 	if _, err := loadTrustedProxies("0.0.0.0/0"); err == nil {

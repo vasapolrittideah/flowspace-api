@@ -19,6 +19,7 @@ import (
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	"github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1/workspacev1connect"
 	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
+	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 )
 
@@ -112,16 +113,16 @@ func assertRESTContext(ctx context.Context, t *testing.T) {
 }
 
 func TestRequestIDValidatesHeader(t *testing.T) {
-	if got := requestID("request-3"); got != "request-3" {
+	if got := requestid.ValidOrNew("request-3"); got != "request-3" {
 		t.Fatalf("requestID() = %q, want request-3", got)
 	}
-	for _, safe := range []string{"a", "Request.ID_3-", strings.Repeat("x", maxRequestIDBytes)} {
-		if got := requestID(safe); got != safe {
+	for _, safe := range []string{"a", "Request.ID_3-", strings.Repeat("x", 128)} {
+		if got := requestid.ValidOrNew(safe); got != safe {
 			t.Fatalf("requestID(%q) = %q", safe, got)
 		}
 	}
-	for _, unsafe := range []string{"", "unsafe request id", "request/id", "คำขอ", strings.Repeat("x", maxRequestIDBytes+1)} {
-		if got := requestID(unsafe); got == unsafe || !validRequestID(got) {
+	for _, unsafe := range []string{"", "unsafe request id", "request/id", "คำขอ", strings.Repeat("x", 129)} {
+		if got := requestid.ValidOrNew(unsafe); got == unsafe || !requestid.Valid(got) {
 			t.Fatalf("requestID(%q) = %q", unsafe, got)
 		}
 	}
@@ -150,7 +151,7 @@ func TestHandlerReplacesInvalidRequestID(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body)
 	}
-	if returned := response.Header().Get("X-Request-ID"); returned != forwarded || !validRequestID(returned) {
+	if returned := response.Header().Get("X-Request-ID"); returned != forwarded || !requestid.Valid(returned) {
 		t.Fatalf("returned request ID = %q, forwarded = %q", returned, forwarded)
 	}
 }

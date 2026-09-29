@@ -15,7 +15,7 @@ This convention names and groups handwritten Go components and SQL files inside 
 - Define at most one exported `New<Capability>` constructor in a hexagonal component file. Its name must match the file name, such as `NewWorkspaceService` in `workspace_service.go`.
 - Keep bootstrap file names based on their server or worker role. Their constructor names do not have to match the file names.
 - Keep related actions in one capability file, such as `email_verification_handler.go` or `workspace_service.go`. If no existing capability owns the work, add a file. Do not create a file for each method or action.
-- Name test files after the production file that owns the behavior. Use `<name>_test.go`, or `<name>_integration_test.go` when the integration build tag needs a separate file.
+- Name test files after the production file that owns the behavior. Use `<name>_test.go` for unit tests and `<name>_integration_test.go` for integration tests.
 - Keep generated Protobuf names and generated database code as produced by their tools.
 - Apply this convention to new code and code changed for another task. Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 

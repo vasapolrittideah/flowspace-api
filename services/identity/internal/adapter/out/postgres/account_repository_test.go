@@ -115,6 +115,9 @@ func TestIdentityRepository(t *testing.T) {
 	t.Run("password login commits one session and hides missing accounts", func(t *testing.T) {
 		testPasswordLoginRepository(t, pool)
 	})
+	t.Run("password reset consumes proof and revokes sessions atomically", func(t *testing.T) {
+		testPasswordResetRepository(t, pool)
+	})
 }
 
 func testActiveEmailUniqueness(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {

@@ -58,6 +58,19 @@ type IdentityOutboxEvent struct {
 	PublishedAt   pgtype.Timestamptz
 }
 
+type IdentityPasswordChangeNotice struct {
+	ID             pgtype.UUID
+	AccountSubject string
+	EmailLocal     string
+	EmailDomain    string
+	CreatedAt      pgtype.Timestamptz
+	NextAttemptAt  pgtype.Timestamptz
+	AttemptCount   int32
+	ClaimOwner     pgtype.Text
+	ClaimedUntil   pgtype.Timestamptz
+	DeliveredAt    pgtype.Timestamptz
+}
+
 type IdentityRotatedRefreshToken struct {
 	TokenHash []byte
 	SessionID pgtype.UUID

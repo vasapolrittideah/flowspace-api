@@ -33,6 +33,9 @@ UNION ALL
 SELECT session_id AS id FROM identity_rotated_refresh_tokens WHERE token_hash = sqlc.arg(token_hash)
 LIMIT 1;
 
+-- name: GetRefreshSessionSubject :one
+SELECT account_subject FROM identity_sessions WHERE id = sqlc.arg(session_id);
+
 -- name: GetRefreshSessionForUpdate :one
 SELECT session.account_subject, session.refresh_token_hash,
     account.retired_at IS NULL AND session.revoked_at IS NULL
@@ -41,7 +44,7 @@ SELECT session.account_subject, session.refresh_token_hash,
 FROM identity_sessions AS session
 JOIN identity_accounts AS account ON account.subject = session.account_subject
 WHERE session.id = sqlc.arg(session_id)
-FOR UPDATE OF account, session;
+FOR UPDATE OF session;
 
 -- name: RecordRotatedRefreshToken :exec
 INSERT INTO identity_rotated_refresh_tokens (token_hash, session_id)

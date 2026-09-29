@@ -41,3 +41,12 @@ WHERE id = sqlc.arg(id)
   AND claim_owner = sqlc.arg(claim_owner)
   AND claimed_until > statement_timestamp()
   AND published_at IS NULL;
+
+-- name: QueuePasswordChangeNotice :one
+INSERT INTO identity_password_change_notices (account_subject, email_local, email_domain)
+SELECT subject, email_local, email_domain
+FROM identity_accounts
+WHERE subject = sqlc.arg(subject)
+  AND email_verified_at IS NOT NULL
+  AND retired_at IS NULL
+RETURNING id;

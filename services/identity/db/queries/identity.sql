@@ -60,3 +60,10 @@ SET email_verified_at = statement_timestamp()
 WHERE subject = sqlc.arg(subject)
   AND email_verified_at IS NULL
   AND retired_at IS NULL;
+
+-- name: UpdatePasswordHash :execrows
+UPDATE identity_accounts
+SET password_hash = sqlc.arg(password_hash)
+WHERE subject = sqlc.arg(subject)
+  AND email_verified_at IS NOT NULL
+  AND retired_at IS NULL;

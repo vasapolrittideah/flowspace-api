@@ -42,9 +42,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Recovery code
 
-- [ ] Buf accepts both public routes and generated output matches the source contract.
-- [ ] An eligible account receives one current code while a missing, unverified, or provider-only account gets the same accepted response without mail.
-- [ ] The 60-second interval, shared source and account limits, stale-delivery rejection, and durable retry behavior pass focused tests.
+- [x] Buf accepts both public routes and generated output matches the source contract.
+- [x] An eligible account receives one current code while a missing, unverified, or provider-only account gets the same accepted response without mail.
+- [x] The 60-second interval, shared source and account limits, stale-delivery rejection, and durable retry behavior pass focused tests.
 
 ### Phase 2: Password change
 

@@ -26,6 +26,7 @@ type IdentityHandler struct {
 	verifyEmail      inbound.EmailVerificationService
 	claimCodes       inbound.ClaimCodeService
 	passwordRecovery inbound.PasswordResetCodeService
+	passwordReset    inbound.PasswordResetService
 	claims           inbound.AccountClaimService
 	passwordLogin    inbound.PasswordLoginService
 	refresh          inbound.SessionRefreshService
@@ -42,6 +43,11 @@ func (h *IdentityHandler) WithPasswordLogin(service inbound.PasswordLoginService
 
 func (h *IdentityHandler) WithRequestPasswordResetCode(service inbound.PasswordResetCodeService) *IdentityHandler {
 	h.passwordRecovery = service
+	return h
+}
+
+func (h *IdentityHandler) WithPasswordReset(service inbound.PasswordResetService) *IdentityHandler {
+	h.passwordReset = service
 	return h
 }
 

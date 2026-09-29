@@ -152,3 +152,27 @@ func TestPasswordRecoveryEmailLimitUsesKeyedNormalizedEmail(t *testing.T) {
 		t.Fatalf("unavailable = %v", err)
 	}
 }
+
+func TestPasswordRecoveryGuessEmailUsesSamePrivateBucketForEveryAccountState(t *testing.T) {
+	repository := &limitRepositoryStub{allowed: true}
+	limits := NewLimitService(repository)
+	key := make([]byte, 32)
+	if err := limits.PasswordRecoveryGuessEmail(context.Background(), "User@EXAMPLE.COM", key); err != nil {
+		t.Fatal(err)
+	}
+	first := repository.requests[0]
+	if first.scope != "email" || first.action != "code-guess" || first.maximum != 10 || first.dailyMaximum != 20 ||
+		len(first.key) != 64 || first.key == "User@example.com" {
+		t.Fatalf("guess email limit = %+v", first)
+	}
+	if err := limits.PasswordRecoveryGuessEmail(context.Background(), "User@example.com", key); err != nil {
+		t.Fatal(err)
+	}
+	if repository.requests[1].key != first.key {
+		t.Fatal("equivalent emails used different guess buckets")
+	}
+	repository.allowed = false
+	if err := limits.PasswordRecoveryGuessEmail(context.Background(), "User@example.com", key); !errors.Is(err, ErrRateLimited) {
+		t.Fatalf("denied guess = %v", err)
+	}
+}

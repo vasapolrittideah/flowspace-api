@@ -80,3 +80,63 @@ func TestRequestPasswordResetCodeRESTRouteIsPublic(t *testing.T) {
 		t.Fatalf("status=%d body=%q input=%+v", response.Code, response.Body.String(), service.input)
 	}
 }
+
+type fakePasswordResetService struct {
+	input inbound.ResetPasswordInput
+	err   error
+}
+
+func (f *fakePasswordResetService) ResetPassword(_ context.Context, input inbound.ResetPasswordInput) error {
+	f.input = input
+	return f.err
+}
+
+func TestResetPasswordRESTRouteIsPublic(t *testing.T) {
+	service := &fakePasswordResetService{}
+	mux := runtime.NewServeMux()
+	if err := identityv1.RegisterIdentityServiceHandlerServer(context.Background(), mux,
+		identityhttp.NewIdentityHandler(nil, nil, nil, nil, nil, nil).WithPasswordReset(service)); err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/v1/password-resets", strings.NewReader(`{"email":"User@example.com","code":"012345","newPassword":"fresh password 123"}`))
+	request.RemoteAddr = "192.0.2.5:1234"
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	identityhttp.NewIdentityRequestHandler(mux, nil).ServeHTTP(response, request)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"passwordChanged":true`) ||
+		!strings.Contains(response.Body.String(), `"sessionsRevoked":true`) || service.input.Code != "012345" ||
+		service.input.NewPassword != "fresh password 123" || response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("status=%d body=%q input=%+v", response.Code, response.Body.String(), service.input)
+	}
+}
+
+func TestResetPasswordMapsSafeErrors(t *testing.T) {
+	service := &fakePasswordResetService{}
+	handler := identityhttp.NewIdentityHandler(nil, nil, nil, nil, nil, nil).WithPasswordReset(service)
+	request := &identityv1.ResetPasswordRequest{Email: "User@example.com", Code: "012345", NewPassword: "fresh password 123"}
+	for _, test := range []struct {
+		err  error
+		want codes.Code
+	}{
+		{app.ErrInvalidPasswordResetCode, codes.InvalidArgument},
+		{domain.ErrInvalidPassword, codes.InvalidArgument},
+		{domain.ErrInvalidEmail, codes.InvalidArgument},
+		{app.ErrRateLimited, codes.ResourceExhausted},
+		{context.Canceled, codes.Canceled},
+		{errors.New("database unavailable"), codes.Unavailable},
+	} {
+		service.err = test.err
+		if _, err := handler.ResetPassword(claimCodeContext(), request); status.Code(err) != test.want {
+			t.Fatalf("error %v mapped to %s", test.err, status.Code(err))
+		}
+	}
+	if _, err := handler.ResetPassword(claimCodeContext(), nil); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("nil request=%v", err)
+	}
+	if _, err := handler.ResetPassword(context.Background(), request); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("missing source=%v", err)
+	}
+	if _, err := identityhttp.NewIdentityHandler(nil, nil, nil, nil, nil, nil).ResetPassword(claimCodeContext(), request); status.Code(err) != codes.Unavailable {
+		t.Fatalf("missing service=%v", err)
+	}
+}

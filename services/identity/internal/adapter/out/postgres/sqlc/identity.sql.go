@@ -240,3 +240,24 @@ func (q *Queries) RetireUnverifiedAccount(ctx context.Context, subject string) (
 	}
 	return result.RowsAffected(), nil
 }
+
+const updatePasswordHash = `-- name: UpdatePasswordHash :execrows
+UPDATE identity_accounts
+SET password_hash = $1
+WHERE subject = $2
+  AND email_verified_at IS NOT NULL
+  AND retired_at IS NULL
+`
+
+type UpdatePasswordHashParams struct {
+	PasswordHash string
+	Subject      string
+}
+
+func (q *Queries) UpdatePasswordHash(ctx context.Context, arg UpdatePasswordHashParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updatePasswordHash, arg.PasswordHash, arg.Subject)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

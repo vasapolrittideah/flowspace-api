@@ -11,8 +11,8 @@ This convention names and groups handwritten Go components and SQL files inside 
 - Name database adapters and their outbound ports `<Capability>Repository`. Reserve this pattern for database access. Do not use `<Capability>Store` or `<Capability>Storage`.
 - Name other outbound adapters and ports for the capability they provide.
 - Name handwritten Go files in snake_case after their main component or capability.
-- Start component and file names with a noun phrase for the capability, such as `PasswordLoginService` in `password_login_service.go` or `ClaimCodeService` in `claim_code_service.go`. Name methods for the actions they perform.
-- Keep related actions in the same capability file, such as `email_verification_handler.go` or `workspace_service.go`. Add a new file when no existing capability owns the work; do not create one file per method or action.
+- Use a noun phrase for each component and file name. Examples are `PasswordLoginService` in `password_login_service.go` and `ClaimCodeService` in `claim_code_service.go`. Name methods for their actions.
+- Keep related actions in one capability file, such as `email_verification_handler.go` or `workspace_service.go`. If no existing capability owns the work, add a file. Do not create a file for each method or action.
 - Keep generated Protobuf names and generated database code as produced by their tools.
 - Apply this convention to new code and code changed for another task. Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 

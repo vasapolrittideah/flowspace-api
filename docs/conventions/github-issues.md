@@ -96,7 +96,7 @@ The final task in each module plan checks the approved specification through tes
 
 - Title the Issue `Prove <capability> against its specification`. Name the capability so readers can distinguish it from other modules.
 - In Description, name the final test scope and any cross-service checks owned by another Issue. Link to that Issue instead of repeating its work.
-- In Acceptance criteria, require tests for every success criterion and applicable threat. Do not require a separate evidence file.
+- In Acceptance criteria, require tests for every success criterion and applicable threat.
 - Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
 - For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Run `task smoke:bruno` and record the result in the task result comment.
 - If a check fails or is missing, record the gap and its follow-up Issue in the task result comment. Keep the task and final plan checkpoint open until the gap is resolved.

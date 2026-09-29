@@ -119,3 +119,36 @@ func TestPasswordLoginLimitRejectsDeniedUnavailableAndInvalid(t *testing.T) {
 		}
 	}
 }
+
+func TestPasswordRecoveryEmailLimitUsesKeyedNormalizedEmail(t *testing.T) {
+	repository := &limitRepositoryStub{allowed: true}
+	limits := NewLimitService(repository)
+	key := make([]byte, 32)
+	if err := limits.PasswordRecoveryEmail(context.Background(), "User@EXAMPLE.COM", key); err != nil {
+		t.Fatal(err)
+	}
+	first := repository.requests[0]
+	if first.scope != "email" || first.action != "code-request" || first.maximum != 60 || first.key == "User@example.com" || len(first.key) != 64 {
+		t.Fatalf("email limit = %+v", first)
+	}
+	if err := limits.PasswordRecoveryEmail(context.Background(), "User@example.com", key); err != nil {
+		t.Fatal(err)
+	}
+	if repository.requests[1].key != first.key {
+		t.Fatal("equivalent emails used different keys")
+	}
+	if err := limits.PasswordRecoveryEmail(context.Background(), "user@example.com", key); err != nil {
+		t.Fatal(err)
+	}
+	if repository.requests[2].key == first.key {
+		t.Fatal("distinct local parts used the same key")
+	}
+	repository.allowed = false
+	if err := limits.PasswordRecoveryEmail(context.Background(), "User@example.com", key); !errors.Is(err, ErrRateLimited) {
+		t.Fatalf("denied = %v", err)
+	}
+	repository.err = errors.New("database unavailable")
+	if err := limits.PasswordRecoveryEmail(context.Background(), "User@example.com", key); !errors.Is(err, ErrLimitUnavailable) {
+		t.Fatalf("unavailable = %v", err)
+	}
+}

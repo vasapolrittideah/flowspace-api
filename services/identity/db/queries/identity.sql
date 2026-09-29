@@ -62,6 +62,14 @@ WHERE email_local = sqlc.arg(email_local)
   AND email_domain = sqlc.arg(email_domain)
   AND retired_at IS NULL;
 
+-- name: GetRecoveryAccountForUpdate :one
+SELECT subject, password_hash, email_verified_at
+FROM identity_accounts
+WHERE email_local = sqlc.arg(email_local)
+  AND email_domain = sqlc.arg(email_domain)
+  AND retired_at IS NULL
+FOR UPDATE;
+
 -- name: GetPasswordAccountForUpdate :one
 SELECT subject, password_hash, email_verified_at
 FROM identity_accounts
@@ -210,6 +218,14 @@ USING identity_challenges AS challenge
 WHERE delivery.challenge_id = challenge.id
   AND challenge.account_subject = sqlc.arg(account_subject);
 
+-- name: DeleteReplacedChallengeDeliveries :execrows
+DELETE FROM identity_challenge_deliveries AS delivery
+USING identity_challenges AS challenge
+WHERE delivery.challenge_id = challenge.id
+  AND challenge.account_subject = sqlc.arg(account_subject)
+  AND challenge.purpose = sqlc.arg(purpose)
+  AND challenge.replaced_at IS NOT NULL;
+
 -- name: GetDeliveryAccountForUpdate :one
 SELECT account.subject, account.email_local, account.email_domain, account.email_verified_at, account.retired_at
 FROM identity_accounts AS account
@@ -242,7 +258,7 @@ WITH terminal AS (
        OR challenge.email_local <> account.email_local
        OR challenge.email_domain <> account.email_domain
        OR account.retired_at IS NOT NULL
-       OR account.email_verified_at IS NOT NULL
+       OR (account.email_verified_at IS NOT NULL AND challenge.purpose <> 'password-reset')
     FOR UPDATE OF account, challenge, delivery SKIP LOCKED
 )
 DELETE FROM identity_challenge_deliveries AS delivery
@@ -256,14 +272,16 @@ RETURNING id;
 
 -- name: ClaimOutboxEvent :one
 WITH next_event AS (
-    SELECT id
-    FROM identity_outbox_events
-    WHERE published_at IS NULL
-      AND next_attempt_at <= statement_timestamp()
-      AND (claimed_until IS NULL OR claimed_until <= statement_timestamp())
-    ORDER BY next_attempt_at, created_at
+    SELECT event.id
+    FROM identity_outbox_events AS event
+    JOIN identity_challenges AS challenge ON challenge.id = event.challenge_id
+    WHERE challenge.purpose <> 'password-reset'
+      AND event.published_at IS NULL
+      AND event.next_attempt_at <= statement_timestamp()
+      AND (event.claimed_until IS NULL OR event.claimed_until <= statement_timestamp())
+    ORDER BY event.next_attempt_at, event.created_at
     LIMIT 1
-    FOR UPDATE SKIP LOCKED
+    FOR UPDATE OF event SKIP LOCKED
 )
 UPDATE identity_outbox_events AS event
 SET claim_owner = sqlc.arg(claim_owner),

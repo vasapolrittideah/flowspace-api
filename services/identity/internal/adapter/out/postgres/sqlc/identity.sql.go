@@ -28,14 +28,16 @@ func (q *Queries) CanIssueCode(ctx context.Context, accountSubject string) (pgty
 
 const claimOutboxEvent = `-- name: ClaimOutboxEvent :one
 WITH next_event AS (
-    SELECT id
-    FROM identity_outbox_events
-    WHERE published_at IS NULL
-      AND next_attempt_at <= statement_timestamp()
-      AND (claimed_until IS NULL OR claimed_until <= statement_timestamp())
-    ORDER BY next_attempt_at, created_at
+    SELECT event.id
+    FROM identity_outbox_events AS event
+    JOIN identity_challenges AS challenge ON challenge.id = event.challenge_id
+    WHERE challenge.purpose <> 'password-reset'
+      AND event.published_at IS NULL
+      AND event.next_attempt_at <= statement_timestamp()
+      AND (event.claimed_until IS NULL OR event.claimed_until <= statement_timestamp())
+    ORDER BY event.next_attempt_at, event.created_at
     LIMIT 1
-    FOR UPDATE SKIP LOCKED
+    FOR UPDATE OF event SKIP LOCKED
 )
 UPDATE identity_outbox_events AS event
 SET claim_owner = $1,
@@ -219,6 +221,28 @@ WHERE challenge_id = $1
 
 func (q *Queries) DeleteChallengeDelivery(ctx context.Context, challengeID pgtype.UUID) (int64, error) {
 	result, err := q.db.Exec(ctx, deleteChallengeDelivery, challengeID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteReplacedChallengeDeliveries = `-- name: DeleteReplacedChallengeDeliveries :execrows
+DELETE FROM identity_challenge_deliveries AS delivery
+USING identity_challenges AS challenge
+WHERE delivery.challenge_id = challenge.id
+  AND challenge.account_subject = $1
+  AND challenge.purpose = $2
+  AND challenge.replaced_at IS NOT NULL
+`
+
+type DeleteReplacedChallengeDeliveriesParams struct {
+	AccountSubject string
+	Purpose        string
+}
+
+func (q *Queries) DeleteReplacedChallengeDeliveries(ctx context.Context, arg DeleteReplacedChallengeDeliveriesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteReplacedChallengeDeliveries, arg.AccountSubject, arg.Purpose)
 	if err != nil {
 		return 0, err
 	}
@@ -592,6 +616,33 @@ func (q *Queries) GetPasswordAccountForUpdate(ctx context.Context, subject strin
 	return i, err
 }
 
+const getRecoveryAccountForUpdate = `-- name: GetRecoveryAccountForUpdate :one
+SELECT subject, password_hash, email_verified_at
+FROM identity_accounts
+WHERE email_local = $1
+  AND email_domain = $2
+  AND retired_at IS NULL
+FOR UPDATE
+`
+
+type GetRecoveryAccountForUpdateParams struct {
+	EmailLocal  string
+	EmailDomain string
+}
+
+type GetRecoveryAccountForUpdateRow struct {
+	Subject         string
+	PasswordHash    string
+	EmailVerifiedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetRecoveryAccountForUpdate(ctx context.Context, arg GetRecoveryAccountForUpdateParams) (GetRecoveryAccountForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getRecoveryAccountForUpdate, arg.EmailLocal, arg.EmailDomain)
+	var i GetRecoveryAccountForUpdateRow
+	err := row.Scan(&i.Subject, &i.PasswordHash, &i.EmailVerifiedAt)
+	return i, err
+}
+
 const getRefreshSessionForUpdate = `-- name: GetRefreshSessionForUpdate :one
 SELECT session.account_subject, session.refresh_token_hash,
     account.retired_at IS NULL AND session.revoked_at IS NULL
@@ -712,7 +763,7 @@ WITH terminal AS (
        OR challenge.email_local <> account.email_local
        OR challenge.email_domain <> account.email_domain
        OR account.retired_at IS NOT NULL
-       OR account.email_verified_at IS NOT NULL
+       OR (account.email_verified_at IS NOT NULL AND challenge.purpose <> 'password-reset')
     FOR UPDATE OF account, challenge, delivery SKIP LOCKED
 )
 DELETE FROM identity_challenge_deliveries AS delivery

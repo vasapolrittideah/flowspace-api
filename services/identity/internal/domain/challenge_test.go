@@ -73,3 +73,20 @@ func TestNewChallengeRejectsInvalidInputsWithoutSecrets(t *testing.T) {
 		}
 	}
 }
+
+func TestPasswordResetChallengeCannotCrossPurposes(t *testing.T) {
+	key := bytes.Repeat([]byte{1}, 32)
+	now := time.Now()
+	code, verifier, expiresAt, err := NewChallenge(key, "subject", "User@example.com", PurposePasswordReset, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !VerifyChallenge(key, "subject", "User@example.com", PurposePasswordReset, code, verifier, expiresAt, now) {
+		t.Fatal("reset challenge rejected")
+	}
+	for _, purpose := range []CodePurpose{PurposeVerifyEmail, PurposeClaimAccount} {
+		if VerifyChallenge(key, "subject", "User@example.com", purpose, code, verifier, expiresAt, now) {
+			t.Fatalf("reset challenge accepted for %s", purpose)
+		}
+	}
+}

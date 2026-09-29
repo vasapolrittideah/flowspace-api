@@ -14,8 +14,9 @@ import (
 type CodePurpose string
 
 const (
-	PurposeVerifyEmail  CodePurpose = "verify-email"
-	PurposeClaimAccount CodePurpose = "claim-account"
+	PurposeVerifyEmail   CodePurpose = "verify-email"
+	PurposeClaimAccount  CodePurpose = "claim-account"
+	PurposePasswordReset CodePurpose = "password-reset"
 )
 
 func newCode(reader io.Reader) (string, error) {
@@ -59,7 +60,7 @@ func VerifyChallenge(key []byte, subject, address string, purpose CodePurpose, c
 }
 
 func validPurpose(purpose CodePurpose) bool {
-	return purpose == PurposeVerifyEmail || purpose == PurposeClaimAccount
+	return purpose == PurposeVerifyEmail || purpose == PurposeClaimAccount || purpose == PurposePasswordReset
 }
 
 func codeVerifier(key []byte, subject, email string, purpose CodePurpose, code string) [32]byte {

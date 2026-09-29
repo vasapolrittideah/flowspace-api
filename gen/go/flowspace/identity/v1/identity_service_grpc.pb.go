@@ -24,6 +24,8 @@ const (
 	IdentityService_VerifyEmail_FullMethodName                       = "/flowspace.identity.v1.IdentityService/VerifyEmail"
 	IdentityService_RequestUnverifiedAccountClaimCode_FullMethodName = "/flowspace.identity.v1.IdentityService/RequestUnverifiedAccountClaimCode"
 	IdentityService_ClaimUnverifiedAccount_FullMethodName            = "/flowspace.identity.v1.IdentityService/ClaimUnverifiedAccount"
+	IdentityService_RequestPasswordResetCode_FullMethodName          = "/flowspace.identity.v1.IdentityService/RequestPasswordResetCode"
+	IdentityService_ResetPassword_FullMethodName                     = "/flowspace.identity.v1.IdentityService/ResetPassword"
 	IdentityService_CreatePasswordSession_FullMethodName             = "/flowspace.identity.v1.IdentityService/CreatePasswordSession"
 	IdentityService_RefreshSession_FullMethodName                    = "/flowspace.identity.v1.IdentityService/RefreshSession"
 	IdentityService_LogoutCurrentSession_FullMethodName              = "/flowspace.identity.v1.IdentityService/LogoutCurrentSession"
@@ -49,6 +51,11 @@ type IdentityServiceClient interface {
 	// Replaces an unverified account after email ownership is proved.
 	// Rejects the Idempotency-Key HTTP header.
 	ClaimUnverifiedAccount(ctx context.Context, in *ClaimUnverifiedAccountRequest, opts ...grpc.CallOption) (*ClaimUnverifiedAccountResponse, error)
+	// Requests a password recovery code without disclosing account eligibility.
+	RequestPasswordResetCode(ctx context.Context, in *RequestPasswordResetCodeRequest, opts ...grpc.CallOption) (*RequestPasswordResetCodeResponse, error)
+	// Changes a password and revokes all sessions after email code proof.
+	// Does not create a session or return tokens.
+	ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*ResetPasswordResponse, error)
 	// Creates a device session with an email address and password.
 	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
 	CreatePasswordSession(ctx context.Context, in *CreatePasswordSessionRequest, opts ...grpc.CallOption) (*CreatePasswordSessionResponse, error)
@@ -125,6 +132,26 @@ func (c *identityServiceClient) ClaimUnverifiedAccount(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *identityServiceClient) RequestPasswordResetCode(ctx context.Context, in *RequestPasswordResetCodeRequest, opts ...grpc.CallOption) (*RequestPasswordResetCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestPasswordResetCodeResponse)
+	err := c.cc.Invoke(ctx, IdentityService_RequestPasswordResetCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*ResetPasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetPasswordResponse)
+	err := c.cc.Invoke(ctx, IdentityService_ResetPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *identityServiceClient) CreatePasswordSession(ctx context.Context, in *CreatePasswordSessionRequest, opts ...grpc.CallOption) (*CreatePasswordSessionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreatePasswordSessionResponse)
@@ -193,6 +220,11 @@ type IdentityServiceServer interface {
 	// Replaces an unverified account after email ownership is proved.
 	// Rejects the Idempotency-Key HTTP header.
 	ClaimUnverifiedAccount(context.Context, *ClaimUnverifiedAccountRequest) (*ClaimUnverifiedAccountResponse, error)
+	// Requests a password recovery code without disclosing account eligibility.
+	RequestPasswordResetCode(context.Context, *RequestPasswordResetCodeRequest) (*RequestPasswordResetCodeResponse, error)
+	// Changes a password and revokes all sessions after email code proof.
+	// Does not create a session or return tokens.
+	ResetPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error)
 	// Creates a device session with an email address and password.
 	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
 	CreatePasswordSession(context.Context, *CreatePasswordSessionRequest) (*CreatePasswordSessionResponse, error)
@@ -233,6 +265,12 @@ func (UnimplementedIdentityServiceServer) RequestUnverifiedAccountClaimCode(cont
 }
 func (UnimplementedIdentityServiceServer) ClaimUnverifiedAccount(context.Context, *ClaimUnverifiedAccountRequest) (*ClaimUnverifiedAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ClaimUnverifiedAccount not implemented")
+}
+func (UnimplementedIdentityServiceServer) RequestPasswordResetCode(context.Context, *RequestPasswordResetCodeRequest) (*RequestPasswordResetCodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestPasswordResetCode not implemented")
+}
+func (UnimplementedIdentityServiceServer) ResetPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResetPassword not implemented")
 }
 func (UnimplementedIdentityServiceServer) CreatePasswordSession(context.Context, *CreatePasswordSessionRequest) (*CreatePasswordSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePasswordSession not implemented")
@@ -360,6 +398,42 @@ func _IdentityService_ClaimUnverifiedAccount_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IdentityService_RequestPasswordResetCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestPasswordResetCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).RequestPasswordResetCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_RequestPasswordResetCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).RequestPasswordResetCode(ctx, req.(*RequestPasswordResetCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_ResetPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).ResetPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_ResetPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).ResetPassword(ctx, req.(*ResetPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IdentityService_CreatePasswordSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreatePasswordSessionRequest)
 	if err := dec(in); err != nil {
@@ -476,6 +550,14 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ClaimUnverifiedAccount",
 			Handler:    _IdentityService_ClaimUnverifiedAccount_Handler,
+		},
+		{
+			MethodName: "RequestPasswordResetCode",
+			Handler:    _IdentityService_RequestPasswordResetCode_Handler,
+		},
+		{
+			MethodName: "ResetPassword",
+			Handler:    _IdentityService_ResetPassword_Handler,
 		},
 		{
 			MethodName: "CreatePasswordSession",

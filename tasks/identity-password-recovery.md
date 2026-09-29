@@ -63,7 +63,7 @@ Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/u
 ### Checkpoint: Complete
 
 - [ ] Public REST, typed RPC, PostgreSQL, Mailpit, concurrency, failure, and cross-service tests cover the specification and applicable threat IDs.
-- [ ] The final evidence file records results, gaps, and the review PR. Required repository checks pass without weaker settings.
+- [ ] The final Issue result comment records results, gaps, and the review PR. Required repository checks pass without weaker settings.
 
 ## Risks and controls
 
@@ -74,4 +74,3 @@ Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/u
 | Reset races with login or refresh. | An old credential creates a valid session after reset. | Lock the same account row in each transition and test both commit orders with concurrent requests. |
 | A delivery or database failure leaves partial state. | A code or notice is lost, or a password changes without revocation. | Commit the challenge or password transition with its outbox record; retry delivery after commit and roll back all state if the durable write fails. |
 | Secrets reach logs, broker records, or email notices. | Credentials or recovery codes can be reused. | Keep code material encrypted until delivery, publish opaque identifiers, and test telemetry and email contents. |
-| The command names `docs/conventions/evidence-maps.md`, but that file does not exist. | The final evidence file has no approved format. | Confirm the evidence format before the final Prove task; do not mark the module complete without reviewable evidence. |

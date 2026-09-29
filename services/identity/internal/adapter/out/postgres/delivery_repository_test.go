@@ -109,7 +109,7 @@ func TestDeliveryRepository(t *testing.T) {
 	if err := repository.WithCurrentDelivery(ctx, challengeID, "verify-email", send); err != nil || sends != 2 {
 		t.Fatalf("replay sent %d messages, %v", sends, err)
 	}
-	seed := func(subject string) pgtype.UUID {
+	seed := func(subject, purpose string) pgtype.UUID {
 		t.Helper()
 		if _, err := queries.CreateAccount(ctx, identitysqlc.CreateAccountParams{
 			Subject: subject, EmailLocal: subject, EmailDomain: "example.com", PasswordHash: "$argon2id$test",
@@ -117,7 +117,7 @@ func TestDeliveryRepository(t *testing.T) {
 			t.Fatal(err)
 		}
 		created, err := queries.CreateChallenge(ctx, identitysqlc.CreateChallengeParams{
-			AccountSubject: subject, Purpose: "verify-email", EmailLocal: subject,
+			AccountSubject: subject, Purpose: purpose, EmailLocal: subject,
 			EmailDomain: "example.com", CodeVerifier: bytes.Repeat([]byte{1}, 32),
 		})
 		if err != nil {
@@ -141,12 +141,12 @@ func TestDeliveryRepository(t *testing.T) {
 		t.Fatal("stale delivery sent mail")
 		return nil
 	}
-	wrongPurpose := seed("wrong-purpose")
+	wrongPurpose := seed("wrong-purpose", "verify-email")
 	if err := repository.WithCurrentDelivery(ctx, uuid.UUID(wrongPurpose.Bytes).String(), "claim-account", neverSend); err != nil {
 		t.Fatal(err)
 	}
 	countMaterial(wrongPurpose, 1)
-	replaced := seed("replaced")
+	replaced := seed("replaced", "verify-email")
 	if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET replaced_at = statement_timestamp() WHERE id = $1`, replaced); err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestDeliveryRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	countMaterial(replaced, 0)
-	verified := seed("verified")
+	verified := seed("verified", "verify-email")
 	if _, err := queries.MarkEmailVerified(ctx, "verified"); err != nil {
 		t.Fatal(err)
 	}
@@ -162,11 +162,11 @@ func TestDeliveryRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	countMaterial(verified, 0)
-	expired := seed("expired")
+	expired := seed("expired", "verify-email")
 	if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET issued_at = statement_timestamp() - INTERVAL '11 minutes', expires_at = statement_timestamp() - INTERVAL '1 minute' WHERE id = $1`, expired); err != nil {
 		t.Fatal(err)
 	}
-	blocked := seed("too-many-guesses")
+	blocked := seed("too-many-guesses", "verify-email")
 	if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET wrong_guesses = 5 WHERE id = $1`, blocked); err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +176,52 @@ func TestDeliveryRepository(t *testing.T) {
 	countMaterial(expired, 0)
 	countMaterial(blocked, 0)
 	countMaterial(wrongPurpose, 1)
-	locked := seed("locked")
+	recovery := seed("recovery-current", "password-reset")
+	if _, err := queries.MarkEmailVerified(ctx, "recovery-current"); err != nil {
+		t.Fatal(err)
+	}
+	recoverySends := 0
+	if err := repository.WithCurrentDelivery(ctx, uuid.UUID(recovery.Bytes).String(), "password-reset", func(_ context.Context, delivery outbound.CurrentDelivery) error {
+		if delivery.Email != "recovery-current@example.com" {
+			t.Fatalf("recovery recipient = %q", delivery.Email)
+		}
+		recoverySends++
+		return nil
+	}); err != nil || recoverySends != 1 {
+		t.Fatalf("current recovery sends=%d error=%v", recoverySends, err)
+	}
+	countMaterial(recovery, 0)
+	for _, test := range []struct{ name, update string }{
+		{"replaced", `UPDATE identity_challenges SET replaced_at=statement_timestamp() WHERE account_subject=$1`},
+		{"consumed", `UPDATE identity_challenges SET consumed_at=statement_timestamp() WHERE account_subject=$1`},
+		{"expired", `UPDATE identity_challenges SET issued_at=statement_timestamp()-INTERVAL '11 minutes', expires_at=statement_timestamp()-INTERVAL '1 minute' WHERE account_subject=$1`},
+		{"retired", `UPDATE identity_accounts SET email_verified_at=NULL, retired_at=statement_timestamp() WHERE subject=$1`},
+	} {
+		subject := "recovery-" + test.name
+		id := seed(subject, "password-reset")
+		if _, err := queries.MarkEmailVerified(ctx, subject); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pool.Exec(ctx, test.update, subject); err != nil {
+			t.Fatal(err)
+		}
+		if err := repository.WithCurrentDelivery(ctx, uuid.UUID(id.Bytes).String(), "password-reset", neverSend); err != nil {
+			t.Fatalf("%s recovery delivery: %v", test.name, err)
+		}
+		countMaterial(id, 0)
+	}
+	expiredRecovery := seed("recovery-expiry-purge", "password-reset")
+	if _, err := queries.MarkEmailVerified(ctx, "recovery-expiry-purge"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET issued_at=statement_timestamp()-INTERVAL '11 minutes', expires_at=statement_timestamp()-INTERVAL '1 minute' WHERE id=$1`, expiredRecovery); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.PurgeTerminal(ctx); err != nil {
+		t.Fatal(err)
+	}
+	countMaterial(expiredRecovery, 0)
+	locked := seed("locked", "verify-email")
 	entered := make(chan struct{})
 	release := make(chan struct{})
 	done := make(chan error, 1)

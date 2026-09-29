@@ -68,7 +68,7 @@ func (w *EmailWorker) HandleRecord(ctx context.Context, record *kgo.Record) erro
 		return ErrInvalidDeliveryEvent
 	}
 	if _, err := uuid.Parse(request.GetChallengeId()); err != nil || string(record.Key) != request.GetEventId() ||
-		(request.GetPurpose() != string(domain.PurposeVerifyEmail) && request.GetPurpose() != string(domain.PurposeClaimAccount)) {
+		!validDeliveryPurpose(request.GetPurpose()) {
 		return ErrInvalidDeliveryEvent
 	}
 	if err := w.repository.WithCurrentDelivery(ctx, request.GetChallengeId(), request.GetPurpose(), func(ctx context.Context, current outbound.CurrentDelivery) error {
@@ -84,6 +84,15 @@ func (w *EmailWorker) HandleRecord(ctx context.Context, record *kgo.Record) erro
 		return ErrEmailDelivery
 	}
 	return nil
+}
+
+func validDeliveryPurpose(purpose string) bool {
+	switch purpose {
+	case string(domain.PurposeVerifyEmail), string(domain.PurposeClaimAccount), string(domain.PurposePasswordReset):
+		return true
+	default:
+		return false
+	}
 }
 
 func (w *EmailWorker) RunOnce(ctx context.Context) (bool, error) {

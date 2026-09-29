@@ -172,7 +172,7 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 		}
 		return worker
 	}
-	createRequest := func(subject, code string) (outbound.OutboxEvent, pgtype.UUID) {
+	createRequest := func(subject, code, purpose string) (outbound.OutboxEvent, pgtype.UUID) {
 		t.Helper()
 		tx, err := pool.Begin(ctx)
 		if err != nil {
@@ -183,12 +183,17 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 		if _, err := tx.Exec(ctx, `INSERT INTO identity_accounts (subject, email_local, email_domain, password_hash) VALUES ($1, $1, 'example.com', '$argon2id$test')`, subject); err != nil {
 			t.Fatal(err)
 		}
+		if purpose == "password-reset" {
+			if _, err := tx.Exec(ctx, `UPDATE identity_accounts SET email_verified_at=statement_timestamp() WHERE subject=$1`, subject); err != nil {
+				t.Fatal(err)
+			}
+		}
 		var challengeID, eventID pgtype.UUID
 		if err := tx.QueryRow(ctx, `INSERT INTO identity_challenges (account_subject, purpose, email_local, email_domain, code_verifier, expires_at)
-			VALUES ($1, 'verify-email', $1, 'example.com', $2, statement_timestamp() + INTERVAL '10 minutes') RETURNING id`, subject, bytes.Repeat([]byte{1}, 32)).Scan(&challengeID); err != nil {
+			VALUES ($1, $2, $1, 'example.com', $3, statement_timestamp() + INTERVAL '10 minutes') RETURNING id`, subject, purpose, bytes.Repeat([]byte{1}, 32)).Scan(&challengeID); err != nil {
 			t.Fatal(err)
 		}
-		material, err := protector.Protect(uuid.UUID(challengeID.Bytes).String(), "verify-email", subject, address, code)
+		material, err := protector.Protect(uuid.UUID(challengeID.Bytes).String(), purpose, subject, address, code)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -201,7 +206,7 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 		if err := tx.Commit(ctx); err != nil {
 			t.Fatal(err)
 		}
-		return outbound.OutboxEvent{ID: uuid.UUID(eventID.Bytes).String(), ChallengeID: uuid.UUID(challengeID.Bytes).String(), Purpose: "verify-email"}, challengeID
+		return outbound.OutboxEvent{ID: uuid.UUID(eventID.Bytes).String(), ChallengeID: uuid.UUID(challengeID.Bytes).String(), Purpose: purpose}, challengeID
 	}
 	mailbox := func() struct {
 		Total    int `json:"total"`
@@ -238,7 +243,7 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 		}
 		return count
 	}
-	outage, outageID := createRequest("mail-outage", "123456")
+	outage, outageID := createRequest("mail-outage", "123456", "password-reset")
 	if err := publisher.Publish(ctx, outage); err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +264,7 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 		t.Fatalf("duplicate event: worked=%v error=%v", worked, err)
 	}
 	recovered.Close()
-	crash, crashID := createRequest("worker-crash", "654321")
+	crash, crashID := createRequest("worker-crash", "654321", "verify-email")
 	if err := publisher.Publish(ctx, crash); err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +296,7 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 			t.Fatal("crash replay changed the emailed code")
 		}
 	}
-	stale, staleID := createRequest("stale", "111111")
+	stale, staleID := createRequest("stale", "111111", "verify-email")
 	if err := publisher.Publish(ctx, stale); err != nil {
 		t.Fatal(err)
 	}
@@ -300,26 +305,6 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 	}
 	if worked, err := replayed.RunOnce(ctx); !worked || err != nil || materialCount(staleID) != 0 || mailbox().Total != 3 {
 		t.Fatalf("stale event: worked=%v error=%v", worked, err)
-	}
-	replayed.Close()
-	observer, err := kgo.NewClient(kgo.SeedBrokers(seed), kgo.ConsumeTopics(topic), kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer observer.Close()
-	var records []*kgo.Record
-	for len(records) < 4 {
-		records = append(records, observer.PollFetches(ctx).Records()...)
-		if err := ctx.Err(); err != nil {
-			t.Fatal(err)
-		}
-	}
-	for _, record := range records {
-		for _, secret := range [][]byte{[]byte("123456"), []byte("654321"), []byte("111111"), []byte("mail-outage@example.com"), []byte("worker-crash@example.com"), []byte("stale@example.com")} {
-			if bytes.Contains(record.Value, secret) || bytes.Contains(record.Key, secret) {
-				t.Fatal("broker record contains email delivery secrets")
-			}
-		}
 	}
 	var workerSpans int
 	for _, span := range spans.GetSpans() {
@@ -330,8 +315,75 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 	if logs.Len() != 6 || workerSpans != 6 {
 		t.Fatalf("delivery telemetry records: logs=%d traces=%d, want 6 each", logs.Len(), workerSpans)
 	}
+	recovery, recoveryID := createRequest("recovery-current", "222222", "password-reset")
+	if err := publisher.Publish(ctx, recovery); err != nil {
+		t.Fatal(err)
+	}
+	if worked, err := replayed.RunOnce(ctx); !worked || err != nil || materialCount(recoveryID) != 0 || mailbox().Total != 4 {
+		t.Fatalf("current recovery event: worked=%v error=%v", worked, err)
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, mailURL+"/api/v1/message/latest/raw", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, readErr := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if readErr != nil || response.StatusCode != http.StatusOK || !bytes.Contains(raw, []byte("FlowSpace password reset code")) ||
+		!bytes.Contains(raw, []byte("222222")) || !bytes.Contains(raw, []byte("expires in 10 minutes")) {
+		t.Fatalf("recovery Mailpit message: status=%d error=%v", response.StatusCode, readErr)
+	}
+	staleRecovery, staleRecoveryID := createRequest("recovery-stale", "333333", "password-reset")
+	if err := publisher.Publish(ctx, staleRecovery); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET replaced_at=statement_timestamp() WHERE id=$1`, staleRecoveryID); err != nil {
+		t.Fatal(err)
+	}
+	if worked, err := replayed.RunOnce(ctx); !worked || err != nil || materialCount(staleRecoveryID) != 0 || mailbox().Total != 4 {
+		t.Fatalf("stale recovery event: worked=%v error=%v", worked, err)
+	}
+	replayed.Close()
+	observer, err := kgo.NewClient(kgo.SeedBrokers(seed), kgo.ConsumeTopics(topic), kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer observer.Close()
+	var records []*kgo.Record
+	for len(records) < 6 {
+		records = append(records, observer.PollFetches(ctx).Records()...)
+		if err := ctx.Err(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, record := range records {
+		for _, secret := range [][]byte{
+			[]byte("123456"), []byte("654321"), []byte("111111"), []byte("222222"), []byte("333333"),
+			[]byte("mail-outage@example.com"), []byte("worker-crash@example.com"), []byte("stale@example.com"),
+			[]byte("recovery-current@example.com"), []byte("recovery-stale@example.com"),
+		} {
+			if bytes.Contains(record.Value, secret) || bytes.Contains(record.Key, secret) {
+				t.Fatal("broker record contains email delivery secrets")
+			}
+		}
+	}
+	workerSpans = 0
+	for _, span := range spans.GetSpans() {
+		if span.Name == "identity.email_delivery" {
+			workerSpans++
+		}
+	}
+	if logs.Len() != 8 || workerSpans != 8 {
+		t.Fatalf("delivery telemetry records: logs=%d traces=%d, want 8 each", logs.Len(), workerSpans)
+	}
 	telemetry := fmt.Sprintf("%+v %+v", logs.All(), spans.GetSpans())
-	for _, secret := range []string{"123456", "654321", "111111", "mail-outage@example.com", "worker-crash@example.com", "stale@example.com"} {
+	for _, secret := range []string{
+		"123456", "654321", "111111", "222222", "333333", "mail-outage@example.com",
+		"worker-crash@example.com", "stale@example.com", "recovery-current@example.com", "recovery-stale@example.com",
+	} {
 		if strings.Contains(telemetry, secret) {
 			t.Fatal("delivery telemetry contains email delivery secrets")
 		}

@@ -15,6 +15,7 @@ import (
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
 	identityevent "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/event"
 	deliverycrypto "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
@@ -36,14 +37,30 @@ func (r *deliveryRepository) PurgeTerminal(context.Context) error {
 }
 
 type capturingSender struct {
-	called int
-	code   string
+	called  int
+	code    string
+	purpose string
 }
 
-func (s *capturingSender) Send(_ context.Context, _, code, _ string) error {
+func (s *capturingSender) Send(_ context.Context, _, code, purpose string) error {
 	s.called++
 	s.code = code
+	s.purpose = purpose
 	return nil
+}
+
+func TestEmailWorkerAcceptsPasswordResetEvent(t *testing.T) {
+	worker, repository, sender, record := newEmailWorkerFixtureForPurpose(t, string(domain.PurposePasswordReset))
+	defer worker.Close()
+	if err := worker.HandleRecord(context.Background(), record); err != nil || repository.called != 1 ||
+		sender.called != 1 || sender.code != "123456" || sender.purpose != string(domain.PurposePasswordReset) {
+		t.Fatalf("recovery delivery: repository=%d sender=%d purpose=%q error=%v", repository.called, sender.called, sender.purpose, err)
+	}
+	for _, secret := range [][]byte{[]byte("Recipient@example.com"), []byte("123456")} {
+		if bytes.Contains(record.Key, secret) || bytes.Contains(record.Value, secret) {
+			t.Fatal("recovery broker record contains delivery secrets")
+		}
+	}
 }
 
 func TestEmailWorkerReadsOnlyOpaqueEventAndChecksRecipient(t *testing.T) {
@@ -105,13 +122,18 @@ func TestEmailWorkerStopsWhenStartupCleanupFails(t *testing.T) {
 
 func newEmailWorkerFixture(t *testing.T) (*identityevent.EmailWorker, *deliveryRepository, *capturingSender, *kgo.Record) {
 	t.Helper()
+	return newEmailWorkerFixtureForPurpose(t, string(domain.PurposeVerifyEmail))
+}
+
+func newEmailWorkerFixtureForPurpose(t *testing.T, purpose string) (*identityevent.EmailWorker, *deliveryRepository, *capturingSender, *kgo.Record) {
+	t.Helper()
 	const eventID = "24cf7dd3-34a9-4f7d-9d51-d2a888b7ed72"
 	const challengeID = "6f2a1f3e-77e4-40f8-9798-54a4522730ae"
 	protector, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{1}, 32), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	material, err := protector.Protect(challengeID, "verify-email", "subject", "Recipient@example.com", "123456")
+	material, err := protector.Protect(challengeID, purpose, "subject", "Recipient@example.com", "123456")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +146,7 @@ func newEmailWorkerFixture(t *testing.T) (*identityevent.EmailWorker, *deliveryR
 		t.Fatal(err)
 	}
 	payload, err := proto.Marshal(&identityv1.EmailDeliveryRequested{
-		EventId: eventID, ChallengeId: challengeID, Purpose: "verify-email",
+		EventId: eventID, ChallengeId: challengeID, Purpose: purpose,
 	})
 	if err != nil {
 		t.Fatal(err)

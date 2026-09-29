@@ -83,10 +83,13 @@ func TestOutboxRelayBrokerRecoveryAndReplay(t *testing.T) {
 		VALUES ('relay-subject', 'Secret', 'example.com', '$argon2id$test')`); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := tx.Exec(ctx, `UPDATE identity_accounts SET email_verified_at=statement_timestamp() WHERE subject='relay-subject'`); err != nil {
+		t.Fatal(err)
+	}
 	var challengeID, eventID pgtype.UUID
 	if err := tx.QueryRow(ctx, `INSERT INTO identity_challenges
 		(account_subject, purpose, email_local, email_domain, code_verifier, expires_at)
-		VALUES ('relay-subject', 'verify-email', 'Secret', 'example.com', $1, statement_timestamp() + INTERVAL '10 minutes')
+		VALUES ('relay-subject', 'password-reset', 'Secret', 'example.com', $1, statement_timestamp() + INTERVAL '10 minutes')
 		RETURNING id`, bytes.Repeat([]byte{3}, 32)).Scan(&challengeID); err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +199,7 @@ func TestOutboxRelayBrokerRecoveryAndReplay(t *testing.T) {
 		if err := proto.Unmarshal(encoded, &message); err != nil {
 			t.Fatal(err)
 		}
-		if message.EventId != uuid.UUID(eventID.Bytes).String() || message.ChallengeId != uuid.UUID(challengeID.Bytes).String() || message.Purpose != "verify-email" {
+		if message.EventId != uuid.UUID(eventID.Bytes).String() || message.ChallengeId != uuid.UUID(challengeID.Bytes).String() || message.Purpose != "password-reset" {
 			t.Fatalf("broker identifiers = %+v", &message)
 		}
 	}

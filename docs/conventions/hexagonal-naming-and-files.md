@@ -6,22 +6,19 @@ This convention names and groups handwritten Go components inside each service. 
 
 ### File naming
 
-- Name inbound adapters `<Capability>Handler`.
-- Name components in `app/` `<Capability>Service`. Use the same suffix for their inbound ports.
-- Name database adapters and their outbound ports `<Capability>Repository`. Reserve this pattern for database access.
+- Name inbound adapters `<Capability>Handler`. Do not use `<Capability>Controller`.
+- Name components in `app/` `<Capability>Service`. Use the same suffix for their inbound ports. Do not use `<Capability>UseCase` or `<Capability>Usecase` for either.
+- Name database adapters and their outbound ports `<Capability>Repository`. Reserve this pattern for database access. Do not use `<Capability>Store` or `<Capability>Storage`.
 - Name other outbound adapters and ports for the capability they provide.
 - Name handwritten Go files in snake_case after their main component or capability.
 - Keep generated Protobuf names and generated database code as produced by their tools.
-- Apply this convention to new code and code changed for another task.
-- Do not name an inbound adapter `<Capability>Controller`.
-- Do not name a database component `<Capability>Store` or `<Capability>Storage`.
-- Do not name a concrete application service or new inbound port `<Capability>UseCase` or `<Capability>Usecase`.
-- Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
+- Apply this convention to new code and code changed for another task. Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 
 ### File boundaries
 
-A capability is a task that the service performs. A transaction groups database changes that must commit or roll back together. Group files by the capability and its transaction boundary. Do not split files only by line count, RPC method, or SQL query.
+A capability is a task that the service performs. A transaction groups database changes that must commit or roll back together.
 
+- Group files by the capability and its transaction boundary. Do not split files only by line count, RPC method, or SQL query.
 - Keep domain rules with the concept whose invariants they protect. Add a rule to an existing concept file when it belongs there.
 - Put a distinct application workflow in its own `<capability>_service.go` when it has a separate outcome or transaction boundary. Keep the steps of one workflow together.
 - Keep an inbound port's interface, input, and result together in the file that matches its application service.

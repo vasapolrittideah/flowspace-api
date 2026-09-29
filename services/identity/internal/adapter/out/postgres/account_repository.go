@@ -25,6 +25,7 @@ var (
 	_ outbound.VerifyEmailRepository                  = (*AccountRepository)(nil)
 	_ outbound.ClaimCodeRepository                    = (*AccountRepository)(nil)
 	_ outbound.AccountClaimRepository                 = (*AccountRepository)(nil)
+	_ outbound.PasswordRecoveryRequestRepository      = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
@@ -49,12 +50,13 @@ type accountTransaction struct {
 }
 
 var (
-	_ outbound.AccountTransaction               = (*accountTransaction)(nil)
-	_ outbound.VerificationCodeIssueTransaction = (*accountTransaction)(nil)
-	_ outbound.VerificationTransaction          = (*accountTransaction)(nil)
-	_ outbound.ClaimCodeTransaction             = (*accountTransaction)(nil)
-	_ outbound.AccountClaimTransaction          = (*accountTransaction)(nil)
-	_ outbound.PasswordSessionTransaction       = (*accountTransaction)(nil)
+	_ outbound.AccountTransaction                 = (*accountTransaction)(nil)
+	_ outbound.VerificationCodeIssueTransaction   = (*accountTransaction)(nil)
+	_ outbound.VerificationTransaction            = (*accountTransaction)(nil)
+	_ outbound.ClaimCodeTransaction               = (*accountTransaction)(nil)
+	_ outbound.AccountClaimTransaction            = (*accountTransaction)(nil)
+	_ outbound.PasswordSessionTransaction         = (*accountTransaction)(nil)
+	_ outbound.PasswordRecoveryRequestTransaction = (*accountTransaction)(nil)
 )
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {

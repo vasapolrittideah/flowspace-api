@@ -83,6 +83,7 @@ func TestIdentityRepository(t *testing.T) {
 	testVerificationCodeResend(t, ctx, pool)
 	testVerifyEmail(t, ctx, pool)
 	testClaimCode(t, ctx, pool)
+	testPasswordRecoveryRequest(t, ctx, pool)
 
 	t.Run("account claims replace one unverified identity", func(t *testing.T) {
 		testAccountClaimRepository(t, pool)

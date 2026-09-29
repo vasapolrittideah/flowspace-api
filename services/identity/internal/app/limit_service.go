@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -29,6 +30,19 @@ func (l *LimitService) Signup(ctx context.Context, source string) error {
 
 func (l *LimitService) CodeRequest(ctx context.Context, source string) error {
 	return l.record(ctx, "source", source, "code-request", 60, 0, 0)
+}
+
+func (l *LimitService) PasswordRecoveryEmail(ctx context.Context, email string, key []byte) error {
+	if len(key) != 32 {
+		return ErrInvalidLimitKey
+	}
+	normalized, err := domain.NormalizeEmail(email)
+	if err != nil {
+		return err
+	}
+	mac := hmac.New(sha256.New, key)
+	_, _ = mac.Write([]byte("password-reset-email:" + normalized))
+	return l.record(ctx, "email", hex.EncodeToString(mac.Sum(nil)), "code-request", 60, 0, 0)
 }
 
 func (l *LimitService) WrongCode(ctx context.Context, source string) error {

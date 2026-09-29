@@ -68,6 +68,7 @@ A scope names the repository area that a change affects. Use one lowercase scope
 
 | Scope | Area |
 | --- | --- |
+| `authn` | Shared access token and live session verification under `internal/authn/` |
 | `config` | Shared environment configuration under `internal/config/` |
 | `logging` | Shared structured logging under `internal/logging/` |
 | `postgrespool` | Shared PostgreSQL startup connections under `internal/postgrespool/` |

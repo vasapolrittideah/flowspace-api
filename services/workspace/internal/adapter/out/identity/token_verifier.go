@@ -14,13 +14,11 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v4"
-	"github.com/go-jose/go-jose/v4/jwt"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/authn"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 )
 
@@ -89,70 +87,54 @@ func (v *TokenVerifier) Close() error {
 }
 
 func (v *TokenVerifier) VerifyToken(ctx context.Context, raw string) (string, error) {
-	subject, sessionID, err := v.verifyClaims(ctx, raw)
-	if err != nil {
-		return "", err
-	}
-	response, err := v.check(ctx, &identityv1.CheckSessionRequest{Subject: subject, SessionId: sessionID})
-	if status.Code(err) == codes.Unauthenticated {
+	if len(raw) == 0 || len(raw) > 8192 {
 		return "", outbound.ErrUnauthenticated
 	}
-	if err != nil || response == nil {
+	claims, err := authn.VerifyAccessToken(raw, v.issuer, v.audience, func(keyID string) (ed25519.PublicKey, error) {
+		return v.publicKey(ctx, keyID)
+	})
+	if err != nil {
+		if errors.Is(err, authn.ErrUnavailable) {
+			return "", outbound.ErrIdentityUnavailable
+		}
+		return "", outbound.ErrUnauthenticated
+	}
+	verified, err := authn.CheckSession(ctx, claims, v.check)
+	if errors.Is(err, authn.ErrUnauthenticated) {
+		return "", outbound.ErrUnauthenticated
+	}
+	if err != nil {
 		return "", outbound.ErrIdentityUnavailable
 	}
-	if !response.GetEmailVerified() {
+	if !verified {
 		return "", outbound.ErrEmailUnverified
 	}
-	return subject, nil
-}
-
-func (v *TokenVerifier) verifyClaims(ctx context.Context, raw string) (string, string, error) {
-	if len(raw) == 0 || len(raw) > 8192 {
-		return "", "", outbound.ErrUnauthenticated
-	}
-	token, err := jwt.ParseSigned(raw, []jose.SignatureAlgorithm{jose.EdDSA})
-	if err != nil || len(token.Headers) != 1 || token.Headers[0].ExtraHeaders[jose.HeaderKey("typ")] != "at+jwt" {
-		return "", "", outbound.ErrUnauthenticated
-	}
-	key, err := v.publicKey(ctx, token.Headers[0].KeyID)
-	if err != nil {
-		return "", "", err
-	}
-	var claims jwt.Claims
-	var extra struct {
-		SessionID string `json:"sid"`
-	}
-	if err := token.Claims(key, &claims, &extra); err != nil || claims.Subject == "" || extra.SessionID == "" ||
-		claims.ID == "" || claims.IssuedAt == nil || claims.Expiry == nil ||
-		claims.ValidateWithLeeway(jwt.Expected{Issuer: v.issuer, AnyAudience: jwt.Audience{v.audience}}, 0) != nil {
-		return "", "", outbound.ErrUnauthenticated
-	}
-	return claims.Subject, extra.SessionID, nil
+	return claims.Subject, nil
 }
 
 func (v *TokenVerifier) publicKey(ctx context.Context, keyID string) (ed25519.PublicKey, error) {
 	if keyID == "" {
-		return nil, outbound.ErrUnauthenticated
+		return nil, authn.ErrUnauthenticated
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, v.jwksURL, nil)
 	if err != nil {
-		return nil, outbound.ErrIdentityUnavailable
+		return nil, authn.ErrUnavailable
 	}
 	response, err := v.client.Do(request)
 	if err != nil {
-		return nil, outbound.ErrIdentityUnavailable
+		return nil, authn.ErrUnavailable
 	}
 	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
-		return nil, outbound.ErrIdentityUnavailable
+		return nil, authn.ErrUnavailable
 	}
 	body, err := io.ReadAll(io.LimitReader(response.Body, 65537))
 	if err != nil || len(body) > 65536 {
-		return nil, outbound.ErrIdentityUnavailable
+		return nil, authn.ErrUnavailable
 	}
 	var keys jose.JSONWebKeySet
 	if err := json.Unmarshal(body, &keys); err != nil {
-		return nil, outbound.ErrIdentityUnavailable
+		return nil, authn.ErrUnavailable
 	}
 	for _, candidate := range keys.Keys {
 		if candidate.KeyID == keyID && candidate.Algorithm == string(jose.EdDSA) && candidate.Use == "sig" {
@@ -162,5 +144,5 @@ func (v *TokenVerifier) publicKey(ctx context.Context, keyID string) (ed25519.Pu
 			}
 		}
 	}
-	return nil, outbound.ErrUnauthenticated
+	return nil, authn.ErrUnauthenticated
 }

@@ -11,6 +11,8 @@ This convention names and groups handwritten Go components inside each service. 
 - Name database adapters and their outbound ports `<Capability>Repository`. Reserve this pattern for database access. Do not use `<Capability>Store` or `<Capability>Storage`.
 - Name other outbound adapters and ports for the capability they provide.
 - Name handwritten Go files in snake_case after their main component or capability.
+- Start the name of a workflow that performs one action with the action, as in `request_email_verification_code_service.go`. Use the same capability name for its dedicated ports and adapters.
+- Name a file that groups related actions for their shared capability, as in `email_verification_handler.go` or `password_recovery_handler.go`.
 - Keep generated Protobuf names and generated database code as produced by their tools.
 - Apply this convention to new code and code changed for another task. Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 

@@ -18,12 +18,13 @@ import (
 type AccountRepository struct{ pool *pgxpool.Pool }
 
 var (
-	_ outbound.AccountRepository          = (*AccountRepository)(nil)
-	_ outbound.PasswordLoginRepository    = (*AccountRepository)(nil)
-	_ outbound.AllSessionLogoutRepository = (*AccountRepository)(nil)
-	_ outbound.VerificationCodeRepository = (*AccountRepository)(nil)
-	_ outbound.ClaimCodeRepository        = (*AccountRepository)(nil)
-	_ outbound.AccountClaimRepository     = (*AccountRepository)(nil)
+	_ outbound.AccountRepository                      = (*AccountRepository)(nil)
+	_ outbound.PasswordLoginRepository                = (*AccountRepository)(nil)
+	_ outbound.AllSessionLogoutRepository             = (*AccountRepository)(nil)
+	_ outbound.RequestEmailVerificationCodeRepository = (*AccountRepository)(nil)
+	_ outbound.VerifyEmailRepository                  = (*AccountRepository)(nil)
+	_ outbound.ClaimCodeRepository                    = (*AccountRepository)(nil)
+	_ outbound.AccountClaimRepository                 = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {

@@ -106,13 +106,13 @@ func TestRequestVerificationCode(t *testing.T) {
 	tx := &verificationTransaction{account: outbound.AccountState{Email: "User@example.com"}, allowed: true}
 	repository := verificationRepository{tx: tx}
 	sourceCalls := 0
-	service := app.NewVerificationCodeService(repository, signupProtector{}, func(_ context.Context, source string) error {
+	service := app.NewRequestEmailVerificationCodeService(repository, signupProtector{}, func(_ context.Context, source string) error {
 		sourceCalls++
 		if source != "192.0.2.1" {
 			t.Fatalf("source = %q", source)
 		}
 		return nil
-	}, nil, nil, make([]byte, 32))
+	}, make([]byte, 32))
 	err := service.RequestEmailVerificationCode(context.Background(), inbound.RequestEmailVerificationCodeInput{
 		Subject: "subject", SessionID: "session", Source: "192.0.2.1",
 	})
@@ -129,7 +129,7 @@ func TestRequestVerificationCode(t *testing.T) {
 		}
 	}
 	repository.commitErr = errors.New("commit failed")
-	if err := app.NewVerificationCodeService(repository, signupProtector{}, func(context.Context, string) error { return nil }, nil, nil, make([]byte, 32)).RequestEmailVerificationCode(
+	if err := app.NewRequestEmailVerificationCodeService(repository, signupProtector{}, func(context.Context, string) error { return nil }, make([]byte, 32)).RequestEmailVerificationCode(
 		context.Background(), inbound.RequestEmailVerificationCodeInput{Subject: "subject", SessionID: "session", Source: "192.0.2.1"},
 	); !errors.Is(err, app.ErrVerificationCodeUnavailable) {
 		t.Fatalf("commit failure = %v", err)
@@ -153,8 +153,8 @@ func TestRequestVerificationCodeRejectsBeforeReplacement(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tx := &verificationTransaction{account: test.account, err: test.accountErr, allowed: test.allowed}
-			service := app.NewVerificationCodeService(verificationRepository{tx: tx}, signupProtector{},
-				func(context.Context, string) error { return test.limitErr }, nil, nil, make([]byte, 32))
+			service := app.NewRequestEmailVerificationCodeService(verificationRepository{tx: tx}, signupProtector{},
+				func(context.Context, string) error { return test.limitErr }, make([]byte, 32))
 			err := service.RequestEmailVerificationCode(context.Background(), inbound.RequestEmailVerificationCodeInput{
 				Subject: "subject", SessionID: "session", Source: "192.0.2.1",
 			})
@@ -179,9 +179,8 @@ func TestVerifyEmailConsumesCurrentCodeAndReturnsVerifiedOnRetry(t *testing.T) {
 	tx := &verificationTransaction{account: outbound.AccountState{Email: "User@example.com"}, challenge: outbound.ChallengeState{
 		ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expires,
 	}}
-	service := app.NewVerificationCodeService(verificationRepository{tx: tx}, signupProtector{},
-		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil },
-		func(context.Context, string) error { return nil }, key)
+	service := app.NewVerifyEmailService(verificationRepository{tx: tx},
+		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, key)
 	input := inbound.VerifyEmailInput{Subject: "subject", SessionID: "session", Source: "192.0.2.1", Code: code}
 	if err := service.VerifyEmail(context.Background(), input); err != nil {
 		t.Fatalf("verify = %v", err)
@@ -208,7 +207,7 @@ func TestVerifyEmailAppliesSharedGuessLimitsBeforeChangingState(t *testing.T) {
 					return nil
 				}
 			}
-			service := app.NewVerificationCodeService(verificationRepository{tx: tx}, nil, nil,
+			service := app.NewVerifyEmailService(verificationRepository{tx: tx},
 				limit("source"), limit("account"), make([]byte, 32))
 			err := service.VerifyEmail(context.Background(), inbound.VerifyEmailInput{
 				Subject: "subject", SessionID: "session", Source: "192.0.2.1", Code: "123456",
@@ -251,7 +250,7 @@ func TestVerifyEmailRejectsInvalidCodesAndFailedTransitions(t *testing.T) {
 				challenge:      outbound.ChallengeState{ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expires},
 				consumeBlocked: test.consumeBlocked, markBlocked: test.markBlocked, markErr: test.markErr,
 			}
-			service := app.NewVerificationCodeService(verificationRepository{tx: tx}, nil, nil,
+			service := app.NewVerifyEmailService(verificationRepository{tx: tx},
 				func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, key)
 			if err := service.VerifyEmail(context.Background(), inbound.VerifyEmailInput{
 				Subject: "subject", SessionID: "session", Source: "192.0.2.1", Code: test.code,

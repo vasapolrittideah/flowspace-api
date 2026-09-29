@@ -645,8 +645,7 @@ func TestIdentityRepository(t *testing.T) {
 			t.Fatal(err)
 		}
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
-		service := app.NewVerificationCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
-			limits.WrongCode, limits.AccountWrongCode, bytes.Repeat([]byte{4}, 32))
+		service := app.NewRequestEmailVerificationCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest, bytes.Repeat([]byte{4}, 32))
 		input := inbound.RequestEmailVerificationCodeInput{Subject: subject, SessionID: uuid.UUID(session.ID.Bytes).String(), Source: "192.0.2.91"}
 		if err := service.RequestEmailVerificationCode(ctx, input); !errors.Is(err, app.ErrRateLimited) {
 			t.Fatalf("immediate resend = %v", err)
@@ -691,8 +690,7 @@ func TestIdentityRepository(t *testing.T) {
 		if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET issued_at = issued_at - INTERVAL '61 seconds', expires_at = expires_at - INTERVAL '61 seconds' WHERE id = $1`, current); err != nil {
 			t.Fatal(err)
 		}
-		failed := app.NewVerificationCodeService(identitypostgres.NewAccountRepository(pool), failingDeliveryProtector{}, limits.CodeRequest,
-			limits.WrongCode, limits.AccountWrongCode, bytes.Repeat([]byte{4}, 32))
+		failed := app.NewRequestEmailVerificationCodeService(identitypostgres.NewAccountRepository(pool), failingDeliveryProtector{}, limits.CodeRequest, bytes.Repeat([]byte{4}, 32))
 		if err := failed.RequestEmailVerificationCode(ctx, input); !errors.Is(err, app.ErrVerificationCodeUnavailable) {
 			t.Fatalf("failed delivery protection = %v", err)
 		}
@@ -727,7 +725,7 @@ func TestIdentityRepository(t *testing.T) {
 		key := bytes.Repeat([]byte{7}, 32)
 		repository := identitypostgres.NewAccountRepository(pool)
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
-		service := app.NewVerificationCodeService(repository, nil, nil, limits.WrongCode, limits.AccountWrongCode, key)
+		service := app.NewVerifyEmailService(repository, limits.WrongCode, limits.AccountWrongCode, key)
 		setup := func(t *testing.T, name, purpose string) (inbound.VerifyEmailInput, pgtype.UUID) {
 			t.Helper()
 			subject := "verify-" + name

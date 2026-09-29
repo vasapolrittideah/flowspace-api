@@ -10,7 +10,22 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-func (s *VerificationCodeService) RequestEmailVerificationCode(ctx context.Context, input inbound.RequestEmailVerificationCodeInput) error {
+type RequestEmailVerificationCodeService struct {
+	repository  outbound.RequestEmailVerificationCodeRepository
+	protector   outbound.DeliveryProtector
+	sourceLimit func(context.Context, string) error
+	verifierKey []byte
+}
+
+var _ inbound.RequestEmailVerificationCodeService = (*RequestEmailVerificationCodeService)(nil)
+
+func NewRequestEmailVerificationCodeService(repository outbound.RequestEmailVerificationCodeRepository, protector outbound.DeliveryProtector,
+	sourceLimit func(context.Context, string) error, verifierKey []byte,
+) *RequestEmailVerificationCodeService {
+	return &RequestEmailVerificationCodeService{repository: repository, protector: protector, sourceLimit: sourceLimit, verifierKey: verifierKey}
+}
+
+func (s *RequestEmailVerificationCodeService) RequestEmailVerificationCode(ctx context.Context, input inbound.RequestEmailVerificationCodeInput) error {
 	if input.Subject == "" || input.SessionID == "" {
 		return outbound.ErrUnauthenticated
 	}
@@ -32,7 +47,7 @@ func (s *VerificationCodeService) RequestEmailVerificationCode(ctx context.Conte
 	}
 }
 
-func (s *VerificationCodeService) issue(ctx context.Context, tx outbound.VerificationCodeIssueTransaction, input inbound.RequestEmailVerificationCodeInput) error {
+func (s *RequestEmailVerificationCodeService) issue(ctx context.Context, tx outbound.VerificationCodeIssueTransaction, input inbound.RequestEmailVerificationCodeInput) error {
 	account, err := tx.GetActiveAccountForSession(ctx, input.Subject, input.SessionID)
 	if err != nil {
 		return err

@@ -10,7 +10,25 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-func (s *VerificationCodeService) VerifyEmail(ctx context.Context, input inbound.VerifyEmailInput) error {
+type VerifyEmailService struct {
+	repository        outbound.VerifyEmailRepository
+	guessSourceLimit  func(context.Context, string) error
+	guessAccountLimit func(context.Context, string) error
+	verifierKey       []byte
+}
+
+var _ inbound.VerifyEmailService = (*VerifyEmailService)(nil)
+
+func NewVerifyEmailService(repository outbound.VerifyEmailRepository,
+	guessSourceLimit, guessAccountLimit func(context.Context, string) error, verifierKey []byte,
+) *VerifyEmailService {
+	return &VerifyEmailService{
+		repository: repository, guessSourceLimit: guessSourceLimit,
+		guessAccountLimit: guessAccountLimit, verifierKey: verifierKey,
+	}
+}
+
+func (s *VerifyEmailService) VerifyEmail(ctx context.Context, input inbound.VerifyEmailInput) error {
 	if input.Subject == "" || input.SessionID == "" {
 		return outbound.ErrUnauthenticated
 	}
@@ -39,7 +57,7 @@ func (s *VerificationCodeService) VerifyEmail(ctx context.Context, input inbound
 	}
 }
 
-func (s *VerificationCodeService) verify(ctx context.Context, tx outbound.VerificationTransaction, input inbound.VerifyEmailInput) (bool, error) {
+func (s *VerifyEmailService) verify(ctx context.Context, tx outbound.VerificationTransaction, input inbound.VerifyEmailInput) (bool, error) {
 	account, err := tx.GetActiveAccountForSession(ctx, input.Subject, input.SessionID)
 	if err != nil {
 		return false, err
@@ -57,7 +75,7 @@ func (s *VerificationCodeService) verify(ctx context.Context, tx outbound.Verifi
 	return s.consume(ctx, tx, input, account.Email, challenge, found)
 }
 
-func (s *VerificationCodeService) consume(ctx context.Context, tx outbound.VerificationTransaction, input inbound.VerifyEmailInput,
+func (s *VerifyEmailService) consume(ctx context.Context, tx outbound.VerificationTransaction, input inbound.VerifyEmailInput,
 	email string, challenge outbound.ChallengeState, found bool,
 ) (bool, error) {
 	if !found || challenge.Email != email || challenge.WrongGuesses >= 5 ||

@@ -53,10 +53,10 @@ func (h *IdentityHandler) VerifyEmail(ctx context.Context, request *identityv1.V
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	if h.verification == nil {
+	if h.verifyEmail == nil {
 		return nil, status.Error(codes.Unavailable, "email verification unavailable")
 	}
-	if err := h.verification.VerifyEmail(ctx, inbound.VerifyEmailInput{
+	if err := h.verifyEmail.VerifyEmail(ctx, inbound.VerifyEmailInput{
 		Subject: identity.Subject, SessionID: identity.SessionID, Source: source, Code: request.GetCode(),
 	}); err != nil {
 		return nil, verifyEmailRPCError(err)

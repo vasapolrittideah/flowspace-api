@@ -10,14 +10,6 @@ func (r *AccountRepository) WithinVerificationCodeIssueTransaction(ctx context.C
 	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 
-func (r *AccountRepository) WithinVerificationTransaction(ctx context.Context, fn func(outbound.VerificationTransaction) error) error {
-	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
-}
-
 func (t *accountTransaction) ReplaceVerificationChallenge(ctx context.Context, subject string) error {
 	return t.replaceChallenge(ctx, subject, "verify-email")
-}
-
-func (t *accountTransaction) GetCurrentVerificationChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
-	return t.getCurrentChallenge(ctx, subject, "verify-email")
 }

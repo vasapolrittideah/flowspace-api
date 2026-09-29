@@ -22,7 +22,8 @@ type sourceContextKey struct{}
 type IdentityHandler struct {
 	identityv1.UnimplementedIdentityServiceServer
 	signup        inbound.SignupService
-	verification  inbound.VerificationCodeService
+	verification  inbound.RequestEmailVerificationCodeService
+	verifyEmail   inbound.VerifyEmailService
 	claimCodes    inbound.ClaimCodeService
 	claims        inbound.AccountClaimService
 	passwordLogin inbound.PasswordLoginService
@@ -35,6 +36,11 @@ type IdentityHandler struct {
 
 func (h *IdentityHandler) WithPasswordLogin(service inbound.PasswordLoginService) *IdentityHandler {
 	h.passwordLogin = service
+	return h
+}
+
+func (h *IdentityHandler) WithVerifyEmail(service inbound.VerifyEmailService) *IdentityHandler {
+	h.verifyEmail = service
 	return h
 }
 
@@ -55,7 +61,7 @@ func (h *IdentityHandler) WithAllSessionLogout(service inbound.LogoutAllSessions
 
 var _ identityv1.IdentityServiceServer = (*IdentityHandler)(nil)
 
-func NewIdentityHandler(signup inbound.SignupService, verification inbound.VerificationCodeService, claimCodes inbound.ClaimCodeService,
+func NewIdentityHandler(signup inbound.SignupService, verification inbound.RequestEmailVerificationCodeService, claimCodes inbound.ClaimCodeService,
 	claims inbound.AccountClaimService,
 	verifier outbound.AccessTokenVerifier, trusted []netip.Prefix,
 ) *IdentityHandler {

@@ -1,11 +1,14 @@
 package identityv1
 
 import (
+	"net/http"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/genproto/googleapis/api/annotations"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -138,4 +141,29 @@ func messageFields(message protoreflect.MessageDescriptor) []string {
 		names[i] = string(fields.Get(i).Name())
 	}
 	return names
+}
+
+func TestPasswordRecoveryRequestJSONRejectsMalformedInput(t *testing.T) {
+	for _, message := range []proto.Message{&RequestPasswordResetCodeRequest{}, &ResetPasswordRequest{}} {
+		for _, input := range []string{`{"email":`, `{"email":123}`} {
+			if err := protojson.Unmarshal([]byte(input), message); err == nil {
+				t.Fatalf("accepted malformed request %q", input)
+			}
+		}
+	}
+}
+
+func TestPasswordRecoveryUsesCanonicalHTTPStatuses(t *testing.T) {
+	for _, test := range []struct {
+		code codes.Code
+		want int
+	}{
+		{codes.InvalidArgument, http.StatusBadRequest},
+		{codes.ResourceExhausted, http.StatusTooManyRequests},
+		{codes.Unavailable, http.StatusServiceUnavailable},
+	} {
+		if got := runtime.HTTPStatusFromCode(test.code); got != test.want {
+			t.Fatalf("gRPC %s maps to HTTP %d, want %d", test.code, got, test.want)
+		}
+	}
 }

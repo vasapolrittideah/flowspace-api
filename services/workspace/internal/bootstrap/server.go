@@ -70,8 +70,10 @@ func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server,
 			_ = verifier.Close()
 		}
 	}()
-	workspaceService := app.NewWorkspaceService(postgres.NewWorkspaceRepository(pool))
-	handler, err := newHandler(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier, logger))
+	workspaceRepository := postgres.NewWorkspaceRepository(pool)
+	createWorkspace := app.NewCreateWorkspaceService(workspaceRepository)
+	getWorkspace := app.NewGetWorkspaceService(workspaceRepository)
+	handler, err := newHandler(ctx, httptransport.NewWorkspaceHandler(createWorkspace, getWorkspace, verifier, logger))
 	if err != nil {
 		return nil, fmt.Errorf("configure transport: %w", err)
 	}

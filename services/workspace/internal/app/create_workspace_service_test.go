@@ -32,7 +32,7 @@ func TestWorkspaceServiceCreateWorkspace(t *testing.T) {
 		},
 	}
 
-	got, err := NewWorkspaceService(repository).CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
+	got, err := NewCreateWorkspaceService(repository).CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
 		Subject:        "subject-1",
 		IdempotencyKey: "request-1",
 		Name:           "  Platform  ",
@@ -68,7 +68,7 @@ func TestWorkspaceServiceAcceptsIdempotencyKeyBoundaries(t *testing.T) {
 				},
 			}
 
-			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
 				Subject:        "subject",
 				IdempotencyKey: tt.key,
 				Name:           "Workspace",
@@ -105,7 +105,7 @@ func TestWorkspaceServiceRejectsInvalidCreate(t *testing.T) {
 					return domain.Workspace{}, nil
 				},
 			}
-			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), tt.input)
+			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), tt.input)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("error = %v, want %v", err, tt.want)
 			}
@@ -116,77 +116,15 @@ func TestWorkspaceServiceRejectsInvalidCreate(t *testing.T) {
 	}
 }
 
-func TestWorkspaceServiceGetWorkspace(t *testing.T) {
-	want := domain.Workspace{ID: "workspace-id", Name: "Platform", CreatedAt: time.Now()}
-	ctx := t.Context()
-	repository := &fakeWorkspaceRepository{
-		get: func(gotContext context.Context, subject, workspaceID string) (domain.Workspace, error) {
-			if gotContext != ctx {
-				t.Fatal("get context differs from request context")
-			}
-			if subject != "subject-1" || workspaceID != "workspace-id" {
-				t.Fatalf("unexpected get input: %q, %q", subject, workspaceID)
-			}
-			return want, nil
-		},
-	}
-
-	got, err := NewWorkspaceService(repository).GetWorkspace(ctx, inbound.GetWorkspaceInput{
-		Subject:     "subject-1",
-		WorkspaceID: "workspace-id",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != want {
-		t.Fatalf("workspace = %+v, want %+v", got, want)
-	}
-}
-
-func TestWorkspaceServiceRejectsInvalidGet(t *testing.T) {
-	tests := []struct {
-		name  string
-		input inbound.GetWorkspaceInput
-		want  error
-	}{
-		{name: "missing subject", input: inbound.GetWorkspaceInput{WorkspaceID: "workspace-id"}, want: domain.ErrUnauthenticated},
-		{name: "missing workspace id", input: inbound.GetWorkspaceInput{Subject: "subject"}, want: domain.ErrInvalidArgument},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repository := &fakeWorkspaceRepository{
-				get: func(context.Context, string, string) (domain.Workspace, error) {
-					t.Fatal("repository called for invalid input")
-					return domain.Workspace{}, nil
-				},
-			}
-			_, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), tt.input)
-			if !errors.Is(err, tt.want) {
-				t.Fatalf("error = %v, want %v", err, tt.want)
-			}
-		})
-	}
-}
-
-func TestWorkspaceServicePreservesRepositoryErrors(t *testing.T) {
+func TestWorkspaceServicePreservesCreateRepositoryError(t *testing.T) {
 	repository := &fakeWorkspaceRepository{
 		create: func(context.Context, string, string, string) (domain.Workspace, error) {
 			return domain.Workspace{}, domain.ErrIdempotencyConflict
 		},
-		get: func(context.Context, string, string) (domain.Workspace, error) {
-			return domain.Workspace{}, domain.ErrNotFound
-		},
 	}
-	service := NewWorkspaceService(repository)
-
-	_, err := service.CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: "Workspace"})
+	_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: "Workspace"})
 	if !errors.Is(err, domain.ErrIdempotencyConflict) {
 		t.Fatalf("create error = %v, want ErrIdempotencyConflict", err)
-	}
-	_, err = service.GetWorkspace(context.Background(), inbound.GetWorkspaceInput{Subject: "subject", WorkspaceID: "workspace-id"})
-	if !errors.Is(err, domain.ErrNotFound) {
-		t.Fatalf("get error = %v, want ErrNotFound", err)
 	}
 }
 
@@ -207,38 +145,10 @@ func TestWorkspaceServicePreservesCreateContextErrors(t *testing.T) {
 				},
 			}
 
-			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
 				Subject:        "subject",
 				IdempotencyKey: "key",
 				Name:           "Workspace",
-			})
-			if !errors.Is(err, tt.want) {
-				t.Fatalf("error = %v, want %v", err, tt.want)
-			}
-		})
-	}
-}
-
-func TestWorkspaceServicePreservesGetContextErrors(t *testing.T) {
-	tests := []struct {
-		name string
-		want error
-	}{
-		{name: "canceled", want: context.Canceled},
-		{name: "deadline exceeded", want: context.DeadlineExceeded},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repository := &fakeWorkspaceRepository{
-				get: func(context.Context, string, string) (domain.Workspace, error) {
-					return domain.Workspace{}, tt.want
-				},
-			}
-
-			_, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{
-				Subject:     "subject",
-				WorkspaceID: "workspace-id",
 			})
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("error = %v, want %v", err, tt.want)

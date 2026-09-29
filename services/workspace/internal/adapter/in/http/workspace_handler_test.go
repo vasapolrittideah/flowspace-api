@@ -25,8 +25,8 @@ func TestWorkspaceHandlerCreateWorkspace(t *testing.T) {
 	createdAt := time.Date(2026, time.September, 11, 8, 30, 0, 0, time.UTC)
 	idempotencyKey := "!" + strings.Repeat("a", 253) + "~"
 	var gotInput inbound.CreateWorkspaceInput
-	handler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{create: func(_ context.Context, input inbound.CreateWorkspaceInput) (domain.Workspace, error) {
+	handler := newTestWorkspaceHandler(
+		&fakeWorkspaceService{create: func(_ context.Context, input inbound.CreateWorkspaceInput) (domain.Workspace, error) {
 			gotInput = input
 			return domain.Workspace{ID: "workspace-1", Name: "Flow Space", CreatedAt: createdAt}, nil
 		}},
@@ -49,8 +49,8 @@ func TestWorkspaceHandlerCreateWorkspace(t *testing.T) {
 func TestWorkspaceHandlerGetWorkspace(t *testing.T) {
 	createdAt := time.Date(2026, time.September, 11, 8, 30, 0, 0, time.UTC)
 	var gotInput inbound.GetWorkspaceInput
-	handler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{get: func(_ context.Context, input inbound.GetWorkspaceInput) (domain.Workspace, error) {
+	handler := newTestWorkspaceHandler(
+		&fakeWorkspaceService{get: func(_ context.Context, input inbound.GetWorkspaceInput) (domain.Workspace, error) {
 			gotInput = input
 			return domain.Workspace{ID: input.WorkspaceID, Name: "Flow Space", CreatedAt: createdAt}, nil
 		}},
@@ -72,8 +72,8 @@ func TestWorkspaceHandlerGetWorkspace(t *testing.T) {
 
 func TestWorkspaceHandlerRejectsInvalidNameBeforeUsecase(t *testing.T) {
 	calls := 0
-	handler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{create: func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error) {
+	handler := newTestWorkspaceHandler(
+		&fakeWorkspaceService{create: func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error) {
 			calls++
 			return domain.Workspace{}, nil
 		}},
@@ -93,8 +93,8 @@ func TestWorkspaceHandlerRejectsInvalidNameBeforeUsecase(t *testing.T) {
 
 func TestWorkspaceHandlerRejectsMissingWorkspaceIDBeforeUsecase(t *testing.T) {
 	calls := 0
-	handler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
+	handler := newTestWorkspaceHandler(
+		&fakeWorkspaceService{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
 			calls++
 			return domain.Workspace{}, nil
 		}},
@@ -113,7 +113,7 @@ func TestWorkspaceHandlerRejectsMissingWorkspaceIDBeforeUsecase(t *testing.T) {
 }
 
 func TestWorkspaceHandlerRejectsInvalidBearerToken(t *testing.T) {
-	handler := NewWorkspaceHandler(&fakeWorkspaceUsecase{}, fakeTokenVerifier{err: errors.New("invalid token")}, zap.NewNop())
+	handler := newTestWorkspaceHandler(&fakeWorkspaceService{}, fakeTokenVerifier{err: errors.New("invalid token")}, zap.NewNop())
 
 	_, err := handler.GetWorkspace(metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Basic token")), &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
 	if status.Code(err) != codes.Unauthenticated {
@@ -132,7 +132,7 @@ func TestWorkspaceHandlerDeniesUnverifiedAndUnavailableSessionsBeforeUsecase(t *
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			calls := 0
-			handler := NewWorkspaceHandler(&fakeWorkspaceUsecase{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
+			handler := newTestWorkspaceHandler(&fakeWorkspaceService{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
 				calls++
 				return domain.Workspace{}, nil
 			}}, fakeTokenVerifier{err: test.err}, zap.NewNop())
@@ -163,8 +163,8 @@ func TestWorkspaceHandlerRequiresOneBearerHeaderForBothMethods(t *testing.T) {
 		for _, method := range []string{"create", "get"} {
 			t.Run(tt.name+"/"+method, func(t *testing.T) {
 				calls := 0
-				handler := NewWorkspaceHandler(
-					&fakeWorkspaceUsecase{
+				handler := newTestWorkspaceHandler(
+					&fakeWorkspaceService{
 						create: func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error) {
 							calls++
 							return domain.Workspace{}, nil
@@ -217,8 +217,8 @@ func TestWorkspaceHandlerRejectsInvalidIdempotencyKeysBeforeUsecase(t *testing.T
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			calls := 0
-			handler := NewWorkspaceHandler(
-				&fakeWorkspaceUsecase{create: func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error) {
+			handler := newTestWorkspaceHandler(
+				&fakeWorkspaceService{create: func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error) {
 					calls++
 					return domain.Workspace{}, nil
 				}},
@@ -274,8 +274,8 @@ func TestWorkspaceHandlerMapsTokenContextErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cancel := tt.ctx()
 			defer cancel()
-			handler := NewWorkspaceHandler(
-				&fakeWorkspaceUsecase{},
+			handler := newTestWorkspaceHandler(
+				&fakeWorkspaceService{},
 				fakeTokenVerifier{verify: func(gotContext context.Context, _ string) (string, error) {
 					if !errors.Is(gotContext.Err(), tt.wanted) {
 						t.Fatalf("context error = %v, want %v", gotContext.Err(), tt.wanted)
@@ -310,8 +310,8 @@ func TestWorkspaceHandlerPropagatesEffectiveDeadline(t *testing.T) {
 			callerDeadline, _ := ctx.Deadline()
 			var tokenDeadline time.Time
 			var usecaseDeadline time.Time
-			handler := NewWorkspaceHandler(
-				&fakeWorkspaceUsecase{get: func(ctx context.Context, _ inbound.GetWorkspaceInput) (domain.Workspace, error) {
+			handler := newTestWorkspaceHandler(
+				&fakeWorkspaceService{get: func(ctx context.Context, _ inbound.GetWorkspaceInput) (domain.Workspace, error) {
 					usecaseDeadline, _ = ctx.Deadline()
 					return domain.Workspace{ID: "workspace-1"}, nil
 				}},
@@ -345,8 +345,8 @@ func TestWorkspaceHandlerPropagatesEffectiveDeadline(t *testing.T) {
 func TestWorkspaceHandlerPropagatesCancellationToUsecase(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	handler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{get: func(gotContext context.Context, _ inbound.GetWorkspaceInput) (domain.Workspace, error) {
+	handler := newTestWorkspaceHandler(
+		&fakeWorkspaceService{get: func(gotContext context.Context, _ inbound.GetWorkspaceInput) (domain.Workspace, error) {
 			if !errors.Is(gotContext.Err(), context.Canceled) {
 				t.Fatalf("context error = %v, want context.Canceled", gotContext.Err())
 			}
@@ -382,8 +382,8 @@ func TestWorkspaceHandlerMapsDomainErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewWorkspaceHandler(
-				&fakeWorkspaceUsecase{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
+			handler := newTestWorkspaceHandler(
+				&fakeWorkspaceService{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
 					return domain.Workspace{}, tt.err
 				}},
 				fakeTokenVerifier{subject: "user-1"},
@@ -406,8 +406,8 @@ func TestWorkspaceHandlerMapsDomainErrors(t *testing.T) {
 
 func TestWorkspaceHandlerLogsCompletedCreate(t *testing.T) {
 	core, logs := observer.New(zap.InfoLevel)
-	handler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{create: func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error) {
+	handler := newTestWorkspaceHandler(
+		&fakeWorkspaceService{create: func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error) {
 			return domain.Workspace{ID: "workspace-1", Name: "Flow Space"}, nil
 		}},
 		fakeTokenVerifier{subject: "user-1"},
@@ -436,8 +436,8 @@ func TestWorkspaceHandlerLogsCompletedCreate(t *testing.T) {
 
 func TestWorkspaceHandlerLogsInternalFailure(t *testing.T) {
 	core, logs := observer.New(zap.InfoLevel)
-	handler := NewWorkspaceHandler(
-		&fakeWorkspaceUsecase{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
+	handler := newTestWorkspaceHandler(
+		&fakeWorkspaceService{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
 			return domain.Workspace{}, errors.New("database unavailable")
 		}},
 		fakeTokenVerifier{subject: "user-1"},
@@ -484,19 +484,19 @@ func assertFieldViolation(t *testing.T, err error, field string) {
 	t.Fatalf("error details = %v, want violation for %q", status.Convert(err).Details(), field)
 }
 
-type fakeWorkspaceUsecase struct {
+type fakeWorkspaceService struct {
 	create func(context.Context, inbound.CreateWorkspaceInput) (domain.Workspace, error)
 	get    func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error)
 }
 
-func (f *fakeWorkspaceUsecase) CreateWorkspace(ctx context.Context, input inbound.CreateWorkspaceInput) (domain.Workspace, error) {
+func (f *fakeWorkspaceService) CreateWorkspace(ctx context.Context, input inbound.CreateWorkspaceInput) (domain.Workspace, error) {
 	if f.create == nil {
 		return domain.Workspace{}, errors.New("unexpected CreateWorkspace call")
 	}
 	return f.create(ctx, input)
 }
 
-func (f *fakeWorkspaceUsecase) GetWorkspace(ctx context.Context, input inbound.GetWorkspaceInput) (domain.Workspace, error) {
+func (f *fakeWorkspaceService) GetWorkspace(ctx context.Context, input inbound.GetWorkspaceInput) (domain.Workspace, error) {
 	if f.get == nil {
 		return domain.Workspace{}, errors.New("unexpected GetWorkspace call")
 	}
@@ -514,4 +514,8 @@ func (f fakeTokenVerifier) VerifyToken(ctx context.Context, token string) (strin
 		return f.verify(ctx, token)
 	}
 	return f.subject, f.err
+}
+
+func newTestWorkspaceHandler(service *fakeWorkspaceService, verifier outbound.TokenVerifier, logger *zap.Logger) *WorkspaceHandler {
+	return NewWorkspaceHandler(service, service, verifier, logger)
 }

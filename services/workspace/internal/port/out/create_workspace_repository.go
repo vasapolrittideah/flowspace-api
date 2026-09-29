@@ -6,9 +6,8 @@ import (
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
 )
 
-type WorkspaceRepository interface {
+type CreateWorkspaceRepository interface {
 	WithinTransaction(ctx context.Context, fn func(WorkspaceTransaction) error) error
-	GetWorkspace(ctx context.Context, subject, workspaceID string) (domain.Workspace, error)
 }
 
 type WorkspaceTransaction interface {

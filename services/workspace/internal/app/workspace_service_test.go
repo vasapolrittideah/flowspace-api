@@ -32,7 +32,7 @@ func TestWorkspaceServiceCreateWorkspace(t *testing.T) {
 		},
 	}
 
-	got, err := NewWorkspaceService(repository).CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
+	got, err := NewCreateWorkspaceService(repository).CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
 		Subject:        "subject-1",
 		IdempotencyKey: "request-1",
 		Name:           "  Platform  ",
@@ -68,7 +68,7 @@ func TestWorkspaceServiceAcceptsIdempotencyKeyBoundaries(t *testing.T) {
 				},
 			}
 
-			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
 				Subject:        "subject",
 				IdempotencyKey: tt.key,
 				Name:           "Workspace",
@@ -105,7 +105,7 @@ func TestWorkspaceServiceRejectsInvalidCreate(t *testing.T) {
 					return domain.Workspace{}, nil
 				},
 			}
-			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), tt.input)
+			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), tt.input)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("error = %v, want %v", err, tt.want)
 			}
@@ -131,7 +131,7 @@ func TestWorkspaceServiceGetWorkspace(t *testing.T) {
 		},
 	}
 
-	got, err := NewWorkspaceService(repository).GetWorkspace(ctx, inbound.GetWorkspaceInput{
+	got, err := NewGetWorkspaceService(repository).GetWorkspace(ctx, inbound.GetWorkspaceInput{
 		Subject:     "subject-1",
 		WorkspaceID: "workspace-id",
 	})
@@ -161,7 +161,7 @@ func TestWorkspaceServiceRejectsInvalidGet(t *testing.T) {
 					return domain.Workspace{}, nil
 				},
 			}
-			_, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), tt.input)
+			_, err := NewGetWorkspaceService(repository).GetWorkspace(context.Background(), tt.input)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("error = %v, want %v", err, tt.want)
 			}
@@ -178,13 +178,11 @@ func TestWorkspaceServicePreservesRepositoryErrors(t *testing.T) {
 			return domain.Workspace{}, domain.ErrNotFound
 		},
 	}
-	service := NewWorkspaceService(repository)
-
-	_, err := service.CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: "Workspace"})
+	_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: "Workspace"})
 	if !errors.Is(err, domain.ErrIdempotencyConflict) {
 		t.Fatalf("create error = %v, want ErrIdempotencyConflict", err)
 	}
-	_, err = service.GetWorkspace(context.Background(), inbound.GetWorkspaceInput{Subject: "subject", WorkspaceID: "workspace-id"})
+	_, err = NewGetWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{Subject: "subject", WorkspaceID: "workspace-id"})
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("get error = %v, want ErrNotFound", err)
 	}
@@ -207,7 +205,7 @@ func TestWorkspaceServicePreservesCreateContextErrors(t *testing.T) {
 				},
 			}
 
-			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
 				Subject:        "subject",
 				IdempotencyKey: "key",
 				Name:           "Workspace",
@@ -236,7 +234,7 @@ func TestWorkspaceServicePreservesGetContextErrors(t *testing.T) {
 				},
 			}
 
-			_, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{
+			_, err := NewGetWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{
 				Subject:     "subject",
 				WorkspaceID: "workspace-id",
 			})

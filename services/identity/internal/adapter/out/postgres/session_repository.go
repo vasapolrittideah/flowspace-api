@@ -2,8 +2,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
@@ -31,4 +33,31 @@ func (r *SessionRepository) Create(ctx context.Context, subject string, hash []b
 		ID: uuid.UUID(row.ID.Bytes).String(), CreatedAt: row.CreatedAt.Time,
 		IdleExpiresAt: row.IdleExpiresAt.Time, AbsoluteExpiresAt: row.AbsoluteExpiresAt.Time,
 	}, nil
+}
+
+func (r *SessionRepository) Check(ctx context.Context, subject, sessionID string) (bool, error) {
+	id, err := parseUUID(sessionID)
+	if err != nil {
+		return false, outbound.ErrUnauthenticated
+	}
+	verifiedAt, err := r.queries.GetActiveSessionState(ctx, sqlc.GetActiveSessionStateParams{Subject: subject, SessionID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, outbound.ErrUnauthenticated
+	}
+	return verifiedAt.Valid, err
+}
+
+func (r *SessionRepository) RevokeCurrent(ctx context.Context, subject, sessionID string) error {
+	id, err := parseUUID(sessionID)
+	if err != nil {
+		return outbound.ErrUnauthenticated
+	}
+	rows, err := r.queries.RevokeCurrentSession(ctx, sqlc.RevokeCurrentSessionParams{SessionID: id, Subject: subject})
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return outbound.ErrUnauthenticated
+	}
+	return nil
 }

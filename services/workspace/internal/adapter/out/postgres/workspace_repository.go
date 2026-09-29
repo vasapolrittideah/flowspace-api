@@ -1,15 +1,19 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	workspacesqlc "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres/sqlc"
+	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 )
 
@@ -17,10 +21,7 @@ type WorkspaceRepository struct {
 	pool *pgxpool.Pool
 }
 
-var (
-	_ outbound.CreateWorkspaceRepository = (*WorkspaceRepository)(nil)
-	_ outbound.GetWorkspaceRepository    = (*WorkspaceRepository)(nil)
-)
+var _ outbound.WorkspaceRepository = (*WorkspaceRepository)(nil)
 
 func NewWorkspaceRepository(pool *pgxpool.Pool) *WorkspaceRepository {
 	return &WorkspaceRepository{pool: pool}
@@ -57,4 +58,79 @@ func parseUUID(value string) (pgtype.UUID, error) {
 	var id pgtype.UUID
 	err := id.Scan(value)
 	return id, err
+}
+
+func (tx *workspaceTransaction) CreateWorkspace(ctx context.Context, subject, idempotencyKey, name string) (domain.Workspace, error) {
+	locked, err := tx.queries.TryCreateWorkspaceLock(ctx, createWorkspaceLockID(subject, idempotencyKey))
+	if err != nil {
+		return domain.Workspace{}, fmt.Errorf("lock workspace create: %w", err)
+	}
+	if !locked {
+		return domain.Workspace{}, domain.ErrCreateInProgress
+	}
+	if _, err := tx.queries.DeleteExpiredWorkspaceCreation(ctx, workspacesqlc.DeleteExpiredWorkspaceCreationParams{
+		Subject:        subject,
+		IdempotencyKey: idempotencyKey,
+	}); err != nil {
+		return domain.Workspace{}, fmt.Errorf("delete expired workspace creation: %w", err)
+	}
+
+	requestHash := sha256.Sum256([]byte(name))
+	creation, err := tx.queries.GetWorkspaceCreation(ctx, workspacesqlc.GetWorkspaceCreationParams{
+		Subject:        subject,
+		IdempotencyKey: idempotencyKey,
+	})
+	if err == nil {
+		if !bytes.Equal(creation.RequestHash, requestHash[:]) {
+			return domain.Workspace{}, domain.ErrIdempotencyConflict
+		}
+		return domain.Workspace{ID: creation.ID, Name: creation.Name, CreatedAt: creation.CreatedAt.Time}, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return domain.Workspace{}, fmt.Errorf("get workspace creation: %w", err)
+	}
+
+	created, err := tx.queries.CreateWorkspace(ctx, name)
+	if err != nil {
+		return domain.Workspace{}, fmt.Errorf("create workspace: %w", err)
+	}
+	workspaceID, err := parseUUID(created.ID)
+	if err != nil {
+		return domain.Workspace{}, fmt.Errorf("parse created workspace id: %w", err)
+	}
+	if err := tx.queries.CreateWorkspaceOwner(ctx, workspacesqlc.CreateWorkspaceOwnerParams{
+		WorkspaceID: workspaceID,
+		Subject:     subject,
+	}); err != nil {
+		return domain.Workspace{}, fmt.Errorf("create workspace owner: %w", err)
+	}
+	if err := tx.queries.RecordWorkspaceCreation(ctx, workspacesqlc.RecordWorkspaceCreationParams{
+		Subject:            subject,
+		IdempotencyKey:     idempotencyKey,
+		RequestHash:        requestHash[:],
+		WorkspaceID:        workspaceID,
+		WorkspaceName:      created.Name,
+		WorkspaceCreatedAt: created.CreatedAt,
+	}); err != nil {
+		return domain.Workspace{}, fmt.Errorf("record workspace creation: %w", err)
+	}
+	return domain.Workspace{ID: created.ID, Name: created.Name, CreatedAt: created.CreatedAt.Time}, nil
+}
+
+func (r *WorkspaceRepository) GetWorkspace(ctx context.Context, subject, workspaceID string) (domain.Workspace, error) {
+	id, err := parseUUID(workspaceID)
+	if err != nil {
+		return domain.Workspace{}, domain.ErrNotFound
+	}
+	row, err := workspacesqlc.New(r.pool).GetWorkspaceForSubject(ctx, workspacesqlc.GetWorkspaceForSubjectParams{
+		WorkspaceID: id,
+		Subject:     subject,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Workspace{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.Workspace{}, fmt.Errorf("get workspace: %w", err)
+	}
+	return domain.Workspace{ID: row.ID, Name: row.Name, CreatedAt: row.CreatedAt.Time}, nil
 }

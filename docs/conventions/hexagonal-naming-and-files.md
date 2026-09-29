@@ -11,8 +11,11 @@ This convention names and groups handwritten Go components and SQL files inside 
 - Name database adapters and their outbound ports `<Capability>Repository`. Reserve this pattern for database access. Do not use `<Capability>Store` or `<Capability>Storage`.
 - Name other outbound adapters and ports for the capability they provide.
 - Name handwritten Go files in snake_case after their main component or capability.
-- Start the name of a workflow that performs one action with the action, as in `request_email_verification_code_service.go`. Use the same capability name for its dedicated ports and adapters.
-- Name a file that groups related actions for their shared capability, as in `email_verification_handler.go` or `password_recovery_handler.go`.
+- Use a noun phrase for each component and file name. Examples are `PasswordLoginService` in `password_login_service.go` and `ClaimCodeService` in `claim_code_service.go`. Name methods for their actions.
+- Define at most one exported `New<Capability>` constructor in a hexagonal component file. Its name must match the file name, such as `NewWorkspaceService` in `workspace_service.go`.
+- Keep bootstrap file names based on their server or worker role. Their constructor names do not have to match the file names.
+- Keep related actions in one capability file, such as `email_verification_handler.go` or `workspace_service.go`. If no existing capability owns the work, add a file. Do not create a file for each method or action.
+- Name test files after the production file that owns the behavior. Use `<name>_test.go`, or `<name>_integration_test.go` when the integration build tag needs a separate file.
 - Keep generated Protobuf names and generated database code as produced by their tools.
 - Apply this convention to new code and code changed for another task. Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 
@@ -22,13 +25,13 @@ A capability is a task that the service performs. A transaction groups database 
 
 - Group files by the capability and its transaction boundary. Do not split files only by line count, RPC method, or SQL query.
 - Keep domain rules with the concept whose invariants they protect. Add a rule to an existing concept file when it belongs there.
-- Put a distinct application workflow in its own `<capability>_service.go` when it has a separate outcome or transaction boundary. Keep the steps of one workflow together.
-- Keep an inbound port's interface, input, and result together in the file that matches its application service.
+- Keep related application workflows in one `<capability>_service.go`. Separate them only when their outcomes or transaction boundaries define distinct capabilities. Keep the steps of each workflow together.
+- Keep an inbound port's interface, input, and result in the file for its capability.
 - Define an outbound port for an external capability that the application needs. Group methods and transaction interfaces by the work they support, rather than by individual queries.
-- Reuse a concrete repository when it owns the same data and transaction mechanism. Keep its type, constructor, and shared transaction code together. Put capability-specific methods in separate files when their workflows differ.
+- Reuse a concrete repository when it owns the same data and transaction mechanism. Keep its type, constructor, shared transaction code, and methods in one file. Add a repository component when a distinct capability needs different data or a different transaction mechanism.
 - When one handler type serves several capabilities, keep its type, constructor, and shared transport helpers in the main handler file. Put related RPC methods and error mapping in `<capability>_handler.go`. Do not add a handler type or interface only to split files.
 - Keep bootstrap wiring in the existing composition root.
-- Group test files by the behavior and transaction they verify. Name each file for the behavior it tests. Keep shared test setup together, and do not require one test file per production file.
+- Keep tests for one production file in its matching test file. Keep shared test setup with the component that owns the behavior.
 
 ### SQL queries
 

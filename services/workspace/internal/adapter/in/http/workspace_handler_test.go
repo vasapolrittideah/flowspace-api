@@ -517,5 +517,5 @@ func (f fakeTokenVerifier) VerifyToken(ctx context.Context, token string) (strin
 }
 
 func newTestWorkspaceHandler(service *fakeWorkspaceService, verifier outbound.TokenVerifier, logger *zap.Logger) *WorkspaceHandler {
-	return NewWorkspaceHandler(service, service, verifier, logger)
+	return NewWorkspaceHandler(service, verifier, logger)
 }

@@ -22,16 +22,16 @@ type sourceContextKey struct{}
 type IdentityHandler struct {
 	identityv1.UnimplementedIdentityServiceServer
 	signup           inbound.SignupService
-	verification     inbound.RequestEmailVerificationCodeService
-	verifyEmail      inbound.VerifyEmailService
+	verification     inbound.EmailVerificationCodeService
+	verifyEmail      inbound.EmailVerificationService
 	claimCodes       inbound.ClaimCodeService
-	passwordRecovery inbound.RequestPasswordResetCodeService
+	passwordRecovery inbound.PasswordResetCodeService
 	passwordReset    inbound.PasswordResetService
 	claims           inbound.AccountClaimService
 	passwordLogin    inbound.PasswordLoginService
-	refresh          inbound.RefreshSessionService
-	currentLogout    inbound.LogoutCurrentSessionService
-	allLogout        inbound.LogoutAllSessionsService
+	refresh          inbound.SessionRefreshService
+	currentLogout    inbound.CurrentSessionLogoutService
+	allLogout        inbound.AllSessionLogoutService
 	verifier         outbound.AccessTokenVerifier
 	trusted          []netip.Prefix
 }
@@ -41,7 +41,7 @@ func (h *IdentityHandler) WithPasswordLogin(service inbound.PasswordLoginService
 	return h
 }
 
-func (h *IdentityHandler) WithRequestPasswordResetCode(service inbound.RequestPasswordResetCodeService) *IdentityHandler {
+func (h *IdentityHandler) WithRequestPasswordResetCode(service inbound.PasswordResetCodeService) *IdentityHandler {
 	h.passwordRecovery = service
 	return h
 }
@@ -51,29 +51,29 @@ func (h *IdentityHandler) WithPasswordReset(service inbound.PasswordResetService
 	return h
 }
 
-func (h *IdentityHandler) WithVerifyEmail(service inbound.VerifyEmailService) *IdentityHandler {
+func (h *IdentityHandler) WithVerifyEmail(service inbound.EmailVerificationService) *IdentityHandler {
 	h.verifyEmail = service
 	return h
 }
 
-func (h *IdentityHandler) WithRefreshSession(service inbound.RefreshSessionService) *IdentityHandler {
+func (h *IdentityHandler) WithRefreshSession(service inbound.SessionRefreshService) *IdentityHandler {
 	h.refresh = service
 	return h
 }
 
-func (h *IdentityHandler) WithCurrentSessionLogout(service inbound.LogoutCurrentSessionService) *IdentityHandler {
+func (h *IdentityHandler) WithCurrentSessionLogout(service inbound.CurrentSessionLogoutService) *IdentityHandler {
 	h.currentLogout = service
 	return h
 }
 
-func (h *IdentityHandler) WithAllSessionLogout(service inbound.LogoutAllSessionsService) *IdentityHandler {
+func (h *IdentityHandler) WithAllSessionLogout(service inbound.AllSessionLogoutService) *IdentityHandler {
 	h.allLogout = service
 	return h
 }
 
 var _ identityv1.IdentityServiceServer = (*IdentityHandler)(nil)
 
-func NewIdentityHandler(signup inbound.SignupService, verification inbound.RequestEmailVerificationCodeService, claimCodes inbound.ClaimCodeService,
+func NewIdentityHandler(signup inbound.SignupService, verification inbound.EmailVerificationCodeService, claimCodes inbound.ClaimCodeService,
 	claims inbound.AccountClaimService,
 	verifier outbound.AccessTokenVerifier, trusted []netip.Prefix,
 ) *IdentityHandler {

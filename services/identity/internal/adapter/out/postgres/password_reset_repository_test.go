@@ -169,7 +169,7 @@ func testPasswordResetRepository(t *testing.T, pool *pgxpool.Pool) {
 		inbound.CheckSessionInput{Subject: subject, SessionID: oldSessionID}); err == nil {
 		t.Fatal("old access session still works")
 	}
-	refresh := app.NewRefreshSessionService(identitypostgres.NewRefreshSessionRepository(pool), signer)
+	refresh := app.NewSessionRefreshService(identitypostgres.NewSessionRefreshRepository(pool), signer)
 	if _, err := refresh.RefreshSession(ctx, oldRefresh); !errors.Is(err, app.ErrUnauthenticatedRefresh) {
 		t.Fatalf("old refresh still works: %v", err)
 	}

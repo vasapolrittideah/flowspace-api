@@ -71,7 +71,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	if err != nil {
 		return nil, err
 	}
-	verifier, err := token.NewVerifierKeys(keys, config.TokenIssuer, config.TokenAudience)
+	verifier, err := token.NewVerifier(keys, config.TokenIssuer, config.TokenAudience)
 	if err != nil {
 		return nil, err
 	}
@@ -95,24 +95,24 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	checkPassword := hibp.NewPasswordChecker(&http.Client{Timeout: 4 * time.Second}).Compromised
 	handler := httptransport.NewIdentityHandler(
 		app.NewSignupService(accountRepo, signer, protector, limits.Signup, checkPassword, verifierKey),
-		app.NewRequestEmailVerificationCodeService(accountRepo, protector, limits.CodeRequest, verifierKey),
+		app.NewEmailVerificationCodeService(accountRepo, protector, limits.CodeRequest, verifierKey),
 		app.NewClaimCodeService(accountRepo, protector, limits.CodeRequest, verifierKey),
 		app.NewAccountClaimService(accountRepo, signer, limits.WrongCode, limits.AccountWrongCode, checkPassword, verifierKey),
 		verifier, trusted,
-	).WithRequestPasswordResetCode(app.NewRequestPasswordResetCodeService(accountRepo, protector, limits.CodeRequest,
+	).WithRequestPasswordResetCode(app.NewPasswordResetCodeService(accountRepo, protector, limits.CodeRequest,
 		func(ctx context.Context, email string) error {
 			return limits.PasswordRecoveryEmail(ctx, email, verifierKey)
 		}, verifierKey)).
-		WithVerifyEmail(app.NewVerifyEmailService(accountRepo, limits.WrongCode, limits.AccountWrongCode, verifierKey)).
+		WithVerifyEmail(app.NewEmailVerificationService(accountRepo, limits.WrongCode, limits.AccountWrongCode, verifierKey)).
 		WithPasswordReset(app.NewPasswordResetService(accountRepo, limits.WrongCode,
 			func(ctx context.Context, email string) error {
 				return limits.PasswordRecoveryGuessEmail(ctx, email, verifierKey)
 			},
 			limits.AccountWrongCode, checkPassword, verifierKey)).
 		WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
-		WithRefreshSession(app.NewRefreshSessionService(postgres.NewRefreshSessionRepository(pool), signer)).
-		WithCurrentSessionLogout(app.NewLogoutCurrentSessionService(postgres.NewSessionRepository(pool))).
-		WithAllSessionLogout(app.NewLogoutAllSessionsService(accountRepo))
+		WithRefreshSession(app.NewSessionRefreshService(postgres.NewSessionRefreshRepository(pool), signer)).
+		WithCurrentSessionLogout(app.NewCurrentSessionLogoutService(postgres.NewSessionRepository(pool))).
+		WithAllSessionLogout(app.NewAllSessionLogoutService(accountRepo))
 	public, session, err := newIdentityRPCHandlers(ctx, config, pool, handler, logger, trusted)
 	if err != nil {
 		pool.Close()

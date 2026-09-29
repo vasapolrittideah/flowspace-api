@@ -23,16 +23,15 @@ const requestTimeout = 5 * time.Second
 
 type WorkspaceHandler struct {
 	workspacev1.UnimplementedWorkspaceServiceServer
-	create   inbound.CreateWorkspaceService
-	get      inbound.GetWorkspaceService
+	service  inbound.WorkspaceService
 	verifier outbound.TokenVerifier
 	logger   *zap.Logger
 }
 
 var _ workspacev1.WorkspaceServiceServer = (*WorkspaceHandler)(nil)
 
-func NewWorkspaceHandler(create inbound.CreateWorkspaceService, get inbound.GetWorkspaceService, verifier outbound.TokenVerifier, logger *zap.Logger) *WorkspaceHandler {
-	return &WorkspaceHandler{create: create, get: get, verifier: verifier, logger: logger}
+func NewWorkspaceHandler(service inbound.WorkspaceService, verifier outbound.TokenVerifier, logger *zap.Logger) *WorkspaceHandler {
+	return &WorkspaceHandler{service: service, verifier: verifier, logger: logger}
 }
 
 func (h *WorkspaceHandler) requestLogger(ctx context.Context, operation string) *zap.Logger {
@@ -147,4 +146,75 @@ func workspaceMessage(workspace domain.Workspace) *workspacev1.Workspace {
 		Name:      workspace.Name,
 		CreatedAt: timestamppb.New(workspace.CreatedAt),
 	}
+}
+
+const maxIdempotencyKeyBytes = 255
+
+func (h *WorkspaceHandler) CreateWorkspace(ctx context.Context, request *workspacev1.CreateWorkspaceRequest) (_ *workspacev1.CreateWorkspaceResponse, err error) {
+	logger := h.requestLogger(ctx, workspacev1.WorkspaceService_CreateWorkspace_FullMethodName)
+	started := time.Now()
+	var cause error
+	defer func() { logRequest(logger, err, cause, time.Since(started)) }()
+
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	subject, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	idempotencyKey, err := requiredMetadata(ctx, "idempotency-key")
+	if err != nil {
+		return nil, invalidArgument("idempotency_key", err.Error())
+	}
+	if len(idempotencyKey) > maxIdempotencyKeyBytes {
+		return nil, invalidArgument("idempotency_key", "must be at most 255 bytes")
+	}
+	for index := range len(idempotencyKey) {
+		if idempotencyKey[index] < 0x21 || idempotencyKey[index] > 0x7e {
+			return nil, invalidArgument("idempotency_key", "must contain only visible ASCII characters")
+		}
+	}
+	if request == nil {
+		return nil, invalidArgument("request", "is required")
+	}
+	newWorkspace, err := domain.NewWorkspace(request.GetName())
+	if err != nil {
+		return nil, rpcError(err)
+	}
+
+	workspace, cause := h.service.CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
+		Subject:        subject,
+		IdempotencyKey: idempotencyKey,
+		Name:           newWorkspace.Name,
+	})
+	if cause != nil {
+		return nil, rpcError(cause)
+	}
+	logger = logger.With(zap.String("workspace_id", workspace.ID))
+	return &workspacev1.CreateWorkspaceResponse{Workspace: workspaceMessage(workspace)}, nil
+}
+
+func (h *WorkspaceHandler) GetWorkspace(ctx context.Context, request *workspacev1.GetWorkspaceRequest) (_ *workspacev1.GetWorkspaceResponse, err error) {
+	logger := h.requestLogger(ctx, workspacev1.WorkspaceService_GetWorkspace_FullMethodName)
+	started := time.Now()
+	var cause error
+	defer func() { logRequest(logger, err, cause, time.Since(started)) }()
+
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	subject, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if request == nil || request.GetWorkspaceId() == "" {
+		return nil, invalidArgument("workspace_id", "is required")
+	}
+
+	workspace, cause := h.service.GetWorkspace(ctx, inbound.GetWorkspaceInput{Subject: subject, WorkspaceID: request.GetWorkspaceId()})
+	if cause != nil {
+		return nil, rpcError(cause)
+	}
+	return &workspacev1.GetWorkspaceResponse{Workspace: workspaceMessage(workspace)}, nil
 }

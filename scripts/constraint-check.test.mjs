@@ -29,6 +29,24 @@ test('floor guard catches attempts to weaken the bar', () => {
   assert.deepEqual(rules.sort(), ['assertion-removed', 'new-exception', 'silenced-checker', 'test-made-easier', 'threshold-lowered'].sort());
 });
 
+test('floor guard allows moved assertions but catches missing duplicates', () => {
+  const diff = [
+    'diff --git a/old_test.go b/new_test.go',
+    '--- a/old_test.go',
+    '+++ b/new_test.go',
+    '@@ -1,2 +1,0 @@',
+    '-t.Fatal("failed")',
+    '-t.Fatal("failed")',
+    'diff --git a/other_test.go b/other_test.go',
+    '--- a/other_test.go',
+    '+++ b/other_test.go',
+    '@@ -1,0 +1,1 @@',
+    '+t.Fatal("failed")',
+  ].join('\n');
+
+  assert.deepEqual(floorFindings(parseDiff(diff)), [{ rule: 'assertion-removed', file: 'new_test.go' }]);
+});
+
 test('changed-line coverage counts instrumented added Go lines', () => {
   const diff = [
     'diff --git a/service.go b/service.go',

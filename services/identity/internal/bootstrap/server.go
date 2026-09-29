@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"context"
 	"crypto/ed25519"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -27,6 +26,7 @@ import (
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
 	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
+	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/hibp"
@@ -262,7 +262,7 @@ func newPublicHandler(ctx context.Context, handler identityv1.IdentityServiceSer
 		}
 		id := metadata.ValueFromIncomingContext(ctx, "x-request-id")
 		requestID := ""
-		if len(id) == 1 && validRequestID(id[0]) {
+		if len(id) == 1 && requestid.Valid(id[0]) {
 			requestID = id[0]
 		}
 		logger.Info("identity_rpc", zap.String("request_id", requestID), zap.String("operation", info.FullMethod),
@@ -314,10 +314,7 @@ func observeRequests(next http.Handler, logger *zap.Logger) http.Handler {
 	propagator := propagation.TraceContext{}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
-		requestID := r.Header.Get("X-Request-ID")
-		if !validRequestID(requestID) {
-			requestID = rand.Text()
-		}
+		requestID := requestid.ValidOrNew(r.Header.Get("X-Request-ID"))
 		w.Header().Set("X-Request-ID", requestID)
 		r.Header.Set("X-Request-ID", requestID)
 		observed := &statusWriter{ResponseWriter: w, status: http.StatusOK}
@@ -336,20 +333,6 @@ func traceID(ctx context.Context) string {
 		return spanContext.TraceID().String()
 	}
 	return ""
-}
-
-func validRequestID(value string) bool {
-	if value == "" || len(value) > 128 {
-		return false
-	}
-	for _, character := range value {
-		if character >= 'a' && character <= 'z' || character >= 'A' && character <= 'Z' ||
-			character >= '0' && character <= '9' || character == '-' || character == '_' || character == '.' {
-			continue
-		}
-		return false
-	}
-	return true
 }
 
 func safeOperation(r *http.Request) string {

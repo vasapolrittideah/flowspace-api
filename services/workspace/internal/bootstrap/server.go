@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +18,7 @@ import (
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
+	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/identity"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres"
@@ -29,7 +29,6 @@ const (
 	serverTimeout       = 5 * time.Second
 	idleTimeout         = 30 * time.Second
 	maxRequestBodyBytes = 1 << 20
-	maxRequestIDBytes   = 128
 )
 
 type Server struct {
@@ -188,31 +187,11 @@ func withTraceContext(next http.Handler) http.Handler {
 
 func withRequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		id := requestID(request.Header.Get("X-Request-ID"))
+		id := requestid.ValidOrNew(request.Header.Get("X-Request-ID"))
 		request.Header.Set("X-Request-ID", id)
 		response.Header().Set("X-Request-ID", id)
 		next.ServeHTTP(response, request)
 	})
-}
-
-func requestID(value string) string {
-	if validRequestID(value) {
-		return value
-	}
-	return rand.Text()
-}
-
-func validRequestID(value string) bool {
-	if value == "" || len(value) > maxRequestIDBytes {
-		return false
-	}
-	for _, character := range value {
-		if character >= 'a' && character <= 'z' || character >= 'A' && character <= 'Z' || character >= '0' && character <= '9' || character == '-' || character == '_' || character == '.' {
-			continue
-		}
-		return false
-	}
-	return true
 }
 
 func incomingHeader(key string) (string, bool) {

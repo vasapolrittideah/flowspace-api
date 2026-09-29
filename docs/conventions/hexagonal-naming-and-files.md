@@ -25,7 +25,8 @@ A capability is a task that the service performs. A transaction groups database 
 - Define an outbound port for an external capability that the application needs. Group methods and transaction interfaces by the work they support, rather than by individual queries.
 - Reuse a concrete repository when it owns the same data and transaction mechanism. Keep its type, constructor, and shared transaction code together. Put capability-specific methods in separate files when their workflows differ.
 - When one handler type serves several capabilities, keep its type, constructor, and shared transport helpers in the main handler file. Put related RPC methods and error mapping in `<capability>_handler.go`. Do not add a handler type or interface only to split files.
-- Keep bootstrap wiring in the existing composition root. Keep tests beside the behavior they verify, with file names based on that behavior.
+- Keep bootstrap wiring in the existing composition root.
+- Group test files by the behavior and transaction they verify. Name each file for the behavior it tests. Keep shared test setup together, and do not require one test file per production file.
 
 ## Examples
 

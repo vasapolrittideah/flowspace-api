@@ -21,7 +21,7 @@ func TestVerifyEmailConsumesCurrentCodeAndReturnsVerifiedOnRetry(t *testing.T) {
 	tx := &verificationTransaction{account: outbound.AccountState{Email: "User@example.com"}, challenge: outbound.ChallengeState{
 		ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expires,
 	}}
-	service := app.NewVerifyEmailService(verificationRepository{tx: tx},
+	service := app.NewEmailVerificationService(verificationRepository{tx: tx},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, key)
 	input := inbound.VerifyEmailInput{Subject: "subject", SessionID: "session", Source: "192.0.2.1", Code: code}
 	if err := service.VerifyEmail(context.Background(), input); err != nil {
@@ -49,7 +49,7 @@ func TestVerifyEmailAppliesSharedGuessLimitsBeforeChangingState(t *testing.T) {
 					return nil
 				}
 			}
-			service := app.NewVerifyEmailService(verificationRepository{tx: tx},
+			service := app.NewEmailVerificationService(verificationRepository{tx: tx},
 				limit("source"), limit("account"), make([]byte, 32))
 			err := service.VerifyEmail(context.Background(), inbound.VerifyEmailInput{
 				Subject: "subject", SessionID: "session", Source: "192.0.2.1", Code: "123456",
@@ -92,7 +92,7 @@ func TestVerifyEmailRejectsInvalidCodesAndFailedTransitions(t *testing.T) {
 				challenge:      outbound.ChallengeState{ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expires},
 				consumeBlocked: test.consumeBlocked, markBlocked: test.markBlocked, markErr: test.markErr,
 			}
-			service := app.NewVerifyEmailService(verificationRepository{tx: tx},
+			service := app.NewEmailVerificationService(verificationRepository{tx: tx},
 				func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, key)
 			if err := service.VerifyEmail(context.Background(), inbound.VerifyEmailInput{
 				Subject: "subject", SessionID: "session", Source: "192.0.2.1", Code: test.code,

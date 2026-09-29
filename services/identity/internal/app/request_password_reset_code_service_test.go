@@ -17,7 +17,7 @@ type recoveryRequestRepository struct {
 	err error
 }
 
-func (r recoveryRequestRepository) WithinRequestPasswordResetCodeTransaction(_ context.Context, fn func(outbound.RequestPasswordResetCodeTransaction) error) error {
+func (r recoveryRequestRepository) WithinRequestPasswordResetCodeTransaction(_ context.Context, fn func(outbound.PasswordResetCodeTransaction) error) error {
 	if err := fn(r.tx); err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func TestRequestPasswordResetCodeQueuesOnlyEligibleAccount(t *testing.T) {
 			tx := &recoveryRequestTransaction{account: test.account, found: test.found, allowed: test.allowed}
 			protector := &claimProtector{}
 			sourceCalls, emailCalls := 0, 0
-			service := app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx}, protector,
+			service := app.NewPasswordResetCodeService(recoveryRequestRepository{tx: tx}, protector,
 				func(_ context.Context, source string) error {
 					sourceCalls++
 					if source != "192.0.2.1" {
@@ -111,17 +111,17 @@ func TestRequestPasswordResetCodeQueuesOnlyEligibleAccount(t *testing.T) {
 func TestRequestPasswordResetCodeFailsClosed(t *testing.T) {
 	tx := &recoveryRequestTransaction{account: outbound.PasswordRecoveryAccount{Subject: "subject", EmailVerified: true, HasPassword: true}, found: true, allowed: true}
 	input := inbound.RequestPasswordResetCodeInput{Email: "User@example.com", Source: "192.0.2.1"}
-	service := app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
+	service := app.NewPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
 		func(context.Context, string) error { return app.ErrRateLimited }, func(context.Context, string) error { return nil }, make([]byte, 32))
 	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrRateLimited) || len(tx.steps) != 0 {
 		t.Fatalf("source limit=%v steps=%v", err, tx.steps)
 	}
-	service = app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
+	service = app.NewPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return app.ErrLimitUnavailable }, make([]byte, 32))
 	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrLimitUnavailable) || len(tx.steps) != 0 {
 		t.Fatalf("email limit=%v steps=%v", err, tx.steps)
 	}
-	service = app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx, err: errors.New("commit failed")}, &claimProtector{},
+	service = app.NewPasswordResetCodeService(recoveryRequestRepository{tx: tx, err: errors.New("commit failed")}, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, make([]byte, 32))
 	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrPasswordResetCodeUnavailable) {
 		t.Fatalf("transaction=%v", err)
@@ -131,17 +131,17 @@ func TestRequestPasswordResetCodeFailsClosed(t *testing.T) {
 		t.Fatalf("email=%v", err)
 	}
 	input.Email = "User@example.com"
-	service = app.NewRequestPasswordResetCodeService(nil, &claimProtector{},
+	service = app.NewPasswordResetCodeService(nil, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, make([]byte, 32))
 	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, app.ErrPasswordResetCodeUnavailable) {
 		t.Fatalf("missing repository=%v", err)
 	}
-	service = app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx, err: context.Canceled}, &claimProtector{},
+	service = app.NewPasswordResetCodeService(recoveryRequestRepository{tx: tx, err: context.Canceled}, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, make([]byte, 32))
 	if err := service.RequestPasswordResetCode(context.Background(), input); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled transaction=%v", err)
 	}
-	service = app.NewRequestPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
+	service = app.NewPasswordResetCodeService(recoveryRequestRepository{tx: tx}, &claimProtector{},
 		func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, make([]byte, 32))
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

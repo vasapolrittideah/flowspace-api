@@ -18,14 +18,14 @@ import (
 type AccountRepository struct{ pool *pgxpool.Pool }
 
 var (
-	_ outbound.AccountRepository                      = (*AccountRepository)(nil)
-	_ outbound.PasswordLoginRepository                = (*AccountRepository)(nil)
-	_ outbound.AllSessionLogoutRepository             = (*AccountRepository)(nil)
-	_ outbound.RequestEmailVerificationCodeRepository = (*AccountRepository)(nil)
-	_ outbound.VerifyEmailRepository                  = (*AccountRepository)(nil)
-	_ outbound.ClaimCodeRepository                    = (*AccountRepository)(nil)
-	_ outbound.AccountClaimRepository                 = (*AccountRepository)(nil)
-	_ outbound.RequestPasswordResetCodeRepository     = (*AccountRepository)(nil)
+	_ outbound.AccountRepository               = (*AccountRepository)(nil)
+	_ outbound.PasswordLoginRepository         = (*AccountRepository)(nil)
+	_ outbound.AllSessionLogoutRepository      = (*AccountRepository)(nil)
+	_ outbound.EmailVerificationCodeRepository = (*AccountRepository)(nil)
+	_ outbound.EmailVerificationRepository     = (*AccountRepository)(nil)
+	_ outbound.ClaimCodeRepository             = (*AccountRepository)(nil)
+	_ outbound.AccountClaimRepository          = (*AccountRepository)(nil)
+	_ outbound.PasswordResetCodeRepository     = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
@@ -50,13 +50,13 @@ type accountTransaction struct {
 }
 
 var (
-	_ outbound.AccountTransaction                  = (*accountTransaction)(nil)
-	_ outbound.VerificationCodeIssueTransaction    = (*accountTransaction)(nil)
-	_ outbound.VerificationTransaction             = (*accountTransaction)(nil)
-	_ outbound.ClaimCodeTransaction                = (*accountTransaction)(nil)
-	_ outbound.AccountClaimTransaction             = (*accountTransaction)(nil)
-	_ outbound.PasswordSessionTransaction          = (*accountTransaction)(nil)
-	_ outbound.RequestPasswordResetCodeTransaction = (*accountTransaction)(nil)
+	_ outbound.AccountTransaction               = (*accountTransaction)(nil)
+	_ outbound.VerificationCodeIssueTransaction = (*accountTransaction)(nil)
+	_ outbound.VerificationTransaction          = (*accountTransaction)(nil)
+	_ outbound.ClaimCodeTransaction             = (*accountTransaction)(nil)
+	_ outbound.AccountClaimTransaction          = (*accountTransaction)(nil)
+	_ outbound.PasswordSessionTransaction       = (*accountTransaction)(nil)
+	_ outbound.PasswordResetCodeTransaction     = (*accountTransaction)(nil)
 )
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {

@@ -58,7 +58,7 @@ func testRefreshSessionRepository(t *testing.T, pool *pgxpool.Pool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := app.NewRefreshSessionService(identitypostgres.NewRefreshSessionRepository(pool), signer)
+	service := app.NewSessionRefreshService(identitypostgres.NewSessionRefreshRepository(pool), signer)
 	result, err := service.RefreshSession(ctx, first)
 	if err != nil || result.RefreshToken == first || result.AccessToken == "" {
 		t.Fatalf("rotation = %+v, %v", result, err)
@@ -130,7 +130,7 @@ func testRefreshSessionRepository(t *testing.T, pool *pgxpool.Pool) {
 	}
 
 	rollback, _ := create(4)
-	failing := app.NewRefreshSessionService(identitypostgres.NewRefreshSessionRepository(pool), failingTokenSigner{})
+	failing := app.NewSessionRefreshService(identitypostgres.NewSessionRefreshRepository(pool), failingTokenSigner{})
 	if _, err := failing.RefreshSession(ctx, rollback); !errors.Is(err, app.ErrRefreshUnavailable) {
 		t.Fatalf("signing failure = %v", err)
 	}
@@ -142,7 +142,7 @@ func testRefreshSessionRepository(t *testing.T, pool *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	unavailablePool.Close()
-	unavailable := app.NewRefreshSessionService(identitypostgres.NewRefreshSessionRepository(unavailablePool), signer)
+	unavailable := app.NewSessionRefreshService(identitypostgres.NewSessionRefreshRepository(unavailablePool), signer)
 	if _, err := unavailable.RefreshSession(ctx, shortResult.RefreshToken); !errors.Is(err, app.ErrRefreshUnavailable) {
 		t.Fatalf("store failure = %v", err)
 	}

@@ -12,23 +12,23 @@ import (
 
 var ErrPasswordResetCodeUnavailable = errors.New("password recovery request unavailable")
 
-type RequestPasswordResetCodeService struct {
-	repository  outbound.RequestPasswordResetCodeRepository
+type PasswordResetCodeService struct {
+	repository  outbound.PasswordResetCodeRepository
 	protector   outbound.DeliveryProtector
 	sourceLimit func(context.Context, string) error
 	emailLimit  func(context.Context, string) error
 	verifierKey []byte
 }
 
-var _ inbound.RequestPasswordResetCodeService = (*RequestPasswordResetCodeService)(nil)
+var _ inbound.PasswordResetCodeService = (*PasswordResetCodeService)(nil)
 
-func NewRequestPasswordResetCodeService(repository outbound.RequestPasswordResetCodeRepository, protector outbound.DeliveryProtector,
+func NewPasswordResetCodeService(repository outbound.PasswordResetCodeRepository, protector outbound.DeliveryProtector,
 	sourceLimit, emailLimit func(context.Context, string) error, verifierKey []byte,
-) *RequestPasswordResetCodeService {
-	return &RequestPasswordResetCodeService{repository: repository, protector: protector, sourceLimit: sourceLimit, emailLimit: emailLimit, verifierKey: verifierKey}
+) *PasswordResetCodeService {
+	return &PasswordResetCodeService{repository: repository, protector: protector, sourceLimit: sourceLimit, emailLimit: emailLimit, verifierKey: verifierKey}
 }
 
-func (s *RequestPasswordResetCodeService) RequestPasswordResetCode(ctx context.Context, input inbound.RequestPasswordResetCodeInput) error {
+func (s *PasswordResetCodeService) RequestPasswordResetCode(ctx context.Context, input inbound.RequestPasswordResetCodeInput) error {
 	if s.repository == nil || s.protector == nil || s.sourceLimit == nil || s.emailLimit == nil || len(s.verifierKey) != 32 {
 		return ErrPasswordResetCodeUnavailable
 	}
@@ -43,7 +43,7 @@ func (s *RequestPasswordResetCodeService) RequestPasswordResetCode(ctx context.C
 	if err := s.emailLimit(ctx, email); err != nil {
 		return err
 	}
-	if err := s.repository.WithinRequestPasswordResetCodeTransaction(ctx, func(tx outbound.RequestPasswordResetCodeTransaction) error {
+	if err := s.repository.WithinRequestPasswordResetCodeTransaction(ctx, func(tx outbound.PasswordResetCodeTransaction) error {
 		return s.issue(ctx, tx, email)
 	}); err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -63,7 +63,7 @@ func (s *RequestPasswordResetCodeService) RequestPasswordResetCode(ctx context.C
 	return ctx.Err()
 }
 
-func (s *RequestPasswordResetCodeService) issue(ctx context.Context, tx outbound.RequestPasswordResetCodeTransaction, email string) error {
+func (s *PasswordResetCodeService) issue(ctx context.Context, tx outbound.PasswordResetCodeTransaction, email string) error {
 	account, found, err := tx.GetAccountForPasswordRecovery(ctx, email)
 	if err != nil {
 		return err

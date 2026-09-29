@@ -38,7 +38,7 @@ func TestRefreshSessionService(t *testing.T) {
 		IdleExpiresAt: now.Add(30 * 24 * time.Hour), AbsoluteExpiresAt: now.Add(90 * 24 * time.Hour),
 	}}
 	signer := &tokenSignerStub{}
-	service := NewRefreshSessionService(repo, signer)
+	service := NewSessionRefreshService(repo, signer)
 	result, err := service.RefreshSession(context.Background(), current)
 	if err != nil || result.AccessToken == "" || result.RefreshToken == "" || result.RefreshToken == current {
 		t.Fatalf("refresh result = %+v, %v", result, err)
@@ -60,7 +60,7 @@ func TestRefreshSessionService(t *testing.T) {
 func TestRefreshSessionServiceFailures(t *testing.T) {
 	current := base64.RawURLEncoding.EncodeToString(make([]byte, 32))
 	repo := &refreshRepositoryStub{}
-	service := NewRefreshSessionService(repo, &tokenSignerStub{})
+	service := NewSessionRefreshService(repo, &tokenSignerStub{})
 	for _, invalid := range []string{"", "not-base64", base64.RawURLEncoding.EncodeToString(make([]byte, 31))} {
 		if _, err := service.RefreshSession(context.Background(), invalid); !errors.Is(err, ErrInvalidRefreshToken) {
 			t.Fatalf("invalid token %q: %v", invalid, err)

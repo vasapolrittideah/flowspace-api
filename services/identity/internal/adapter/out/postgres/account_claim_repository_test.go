@@ -91,7 +91,7 @@ func testAccountClaimRepository(t *testing.T, pool *pgxpool.Pool) {
 	limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
 	compromised := func(context.Context, string) (bool, error) { return false, nil }
 	service := app.NewAccountClaimService(repository, signer, limits.WrongCode, limits.AccountWrongCode, compromised, key)
-	verification := app.NewVerifyEmailService(repository, limits.WrongCode, limits.AccountWrongCode, key)
+	verification := app.NewEmailVerificationService(repository, limits.WrongCode, limits.AccountWrongCode, key)
 
 	t.Run("missing and verified accounts have the same claim error", func(t *testing.T) {
 		verified := seedAccountClaim(t, ctx, pool, "ClaimVerified", key)

@@ -48,7 +48,7 @@ func testRequestPasswordResetCode(t *testing.T, ctx context.Context, pool *pgxpo
 		}
 		key := bytes.Repeat([]byte{4}, 32)
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
-		service := app.NewRequestPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
+		service := app.NewPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
 			func(ctx context.Context, email string) error { return limits.PasswordRecoveryEmail(ctx, email, key) }, key)
 		input := inbound.RequestPasswordResetCodeInput{Email: "Recovery@EXAMPLE.COM", Source: "192.0.2.199"}
 		request := func() {
@@ -112,7 +112,7 @@ func testRequestPasswordResetCode(t *testing.T, ctx context.Context, pool *pgxpo
 		if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET issued_at=issued_at-INTERVAL '61 seconds',expires_at=expires_at-INTERVAL '61 seconds' WHERE id=$1::uuid`, challengeID); err != nil {
 			t.Fatal(err)
 		}
-		failed := app.NewRequestPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), failingDeliveryProtector{}, limits.CodeRequest,
+		failed := app.NewPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), failingDeliveryProtector{}, limits.CodeRequest,
 			func(ctx context.Context, email string) error { return limits.PasswordRecoveryEmail(ctx, email, key) }, key)
 		if err := failed.RequestPasswordResetCode(ctx, input); !errors.Is(err, app.ErrPasswordResetCodeUnavailable) {
 			t.Fatalf("failed transaction=%v", err)
@@ -154,8 +154,8 @@ func testRequestPasswordResetCode(t *testing.T, ctx context.Context, pool *pgxpo
 		}
 		key := bytes.Repeat([]byte{6}, 32)
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
-		newService := func() *app.RequestPasswordResetCodeService {
-			return app.NewRequestPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
+		newService := func() *app.PasswordResetCodeService {
+			return app.NewPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
 				func(ctx context.Context, email string) error { return limits.PasswordRecoveryEmail(ctx, email, key) }, key)
 		}
 		for _, email := range []string{"Missing@example.com", "RecoveryUnverified@example.com"} {

@@ -27,7 +27,7 @@ func (r *logoutRepositoryStub) RevokeAll(ctx context.Context, subject, sessionID
 
 func TestLogoutCurrentSessionService(t *testing.T) {
 	repository := &logoutRepositoryStub{}
-	service := NewLogoutCurrentSessionService(repository)
+	service := NewCurrentSessionLogoutService(repository)
 	input := inbound.LogoutCurrentSessionInput{Subject: "subject-1", SessionID: "session-1"}
 	if err := service.LogoutCurrentSession(t.Context(), input); err != nil || repository.subject != input.Subject || repository.sessionID != input.SessionID || repository.calls != 1 {
 		t.Fatalf("logout = %v, repository = %+v", err, repository)
@@ -47,7 +47,7 @@ func TestLogoutCurrentSessionService(t *testing.T) {
 			t.Fatalf("repository error = %v, result = %v", test.source, err)
 		}
 	}
-	if err := NewLogoutCurrentSessionService(nil).LogoutCurrentSession(t.Context(), input); !errors.Is(err, ErrCurrentLogoutUnavailable) {
+	if err := NewCurrentSessionLogoutService(nil).LogoutCurrentSession(t.Context(), input); !errors.Is(err, ErrCurrentLogoutUnavailable) {
 		t.Fatalf("missing repository = %v", err)
 	}
 }

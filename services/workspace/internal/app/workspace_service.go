@@ -11,17 +11,17 @@ import (
 
 const maxIdempotencyKeyBytes = 255
 
-type CreateWorkspaceService struct {
-	repository outbound.CreateWorkspaceRepository
+type WorkspaceService struct {
+	repository outbound.WorkspaceRepository
 }
 
-var _ inbound.CreateWorkspaceService = (*CreateWorkspaceService)(nil)
+var _ inbound.WorkspaceService = (*WorkspaceService)(nil)
 
-func NewCreateWorkspaceService(repository outbound.CreateWorkspaceRepository) *CreateWorkspaceService {
-	return &CreateWorkspaceService{repository: repository}
+func NewWorkspaceService(repository outbound.WorkspaceRepository) *WorkspaceService {
+	return &WorkspaceService{repository: repository}
 }
 
-func (s *CreateWorkspaceService) CreateWorkspace(ctx context.Context, input inbound.CreateWorkspaceInput) (domain.Workspace, error) {
+func (s *WorkspaceService) CreateWorkspace(ctx context.Context, input inbound.CreateWorkspaceInput) (domain.Workspace, error) {
 	if input.Subject == "" {
 		return domain.Workspace{}, domain.ErrUnauthenticated
 	}
@@ -56,4 +56,19 @@ func (s *CreateWorkspaceService) CreateWorkspace(ctx context.Context, input inbo
 
 func invalid(field, reason string) error {
 	return &domain.InvalidArgumentError{Field: field, Reason: reason}
+}
+
+func (s *WorkspaceService) GetWorkspace(ctx context.Context, input inbound.GetWorkspaceInput) (domain.Workspace, error) {
+	if input.Subject == "" {
+		return domain.Workspace{}, domain.ErrUnauthenticated
+	}
+	if input.WorkspaceID == "" {
+		return domain.Workspace{}, invalid("workspace_id", "is required")
+	}
+
+	workspace, err := s.repository.GetWorkspace(ctx, input.Subject, input.WorkspaceID)
+	if err != nil {
+		return domain.Workspace{}, fmt.Errorf("get workspace: %w", err)
+	}
+	return workspace, nil
 }

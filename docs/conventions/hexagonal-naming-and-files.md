@@ -11,8 +11,8 @@ This convention names and groups handwritten Go components and SQL files inside 
 - Name database adapters and their outbound ports `<Capability>Repository`. Reserve this pattern for database access. Do not use `<Capability>Store` or `<Capability>Storage`.
 - Name other outbound adapters and ports for the capability they provide.
 - Name handwritten Go files in snake_case after their main component or capability.
-- Start the name of a workflow that performs one action with the action, as in `request_email_verification_code_service.go`. Use the same capability name for its dedicated ports and adapters.
-- Name a file that groups related actions for their shared capability, as in `email_verification_handler.go` or `password_recovery_handler.go`.
+- Start component and file names with a noun phrase for the capability, such as `PasswordLoginService` in `password_login_service.go` or `ClaimCodeService` in `claim_code_service.go`. Name methods for the actions they perform.
+- Keep related actions in the same capability file, such as `email_verification_handler.go` or `workspace_service.go`. Add a new file when no existing capability owns the work; do not create one file per method or action.
 - Keep generated Protobuf names and generated database code as produced by their tools.
 - Apply this convention to new code and code changed for another task. Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 
@@ -22,10 +22,10 @@ A capability is a task that the service performs. A transaction groups database 
 
 - Group files by the capability and its transaction boundary. Do not split files only by line count, RPC method, or SQL query.
 - Keep domain rules with the concept whose invariants they protect. Add a rule to an existing concept file when it belongs there.
-- Put a distinct application workflow in its own `<capability>_service.go` when it has a separate outcome or transaction boundary. Keep the steps of one workflow together.
-- Keep an inbound port's interface, input, and result together in the file that matches its application service.
+- Keep related application workflows in one `<capability>_service.go`. Separate them only when their outcomes or transaction boundaries define distinct capabilities. Keep the steps of each workflow together.
+- Keep an inbound port's interface, input, and result in the file for its capability.
 - Define an outbound port for an external capability that the application needs. Group methods and transaction interfaces by the work they support, rather than by individual queries.
-- Reuse a concrete repository when it owns the same data and transaction mechanism. Keep its type, constructor, and shared transaction code together. Put capability-specific methods in separate files when their workflows differ.
+- Reuse a concrete repository when it owns the same data and transaction mechanism. Keep its type, constructor, shared transaction code, and related methods in the capability file. Separate methods only when they support distinct capabilities.
 - When one handler type serves several capabilities, keep its type, constructor, and shared transport helpers in the main handler file. Put related RPC methods and error mapping in `<capability>_handler.go`. Do not add a handler type or interface only to split files.
 - Keep bootstrap wiring in the existing composition root.
 - Group test files by the behavior and transaction they verify. Name each file for the behavior it tests. Keep shared test setup together, and do not require one test file per production file.

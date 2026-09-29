@@ -10,7 +10,7 @@ import (
 
 func TestLogoutAllSessionsService(t *testing.T) {
 	repository := &logoutRepositoryStub{}
-	service := NewLogoutAllSessionsService(repository)
+	service := NewAllSessionLogoutService(repository)
 	input := inbound.LogoutAllSessionsInput{Subject: "account-subject", SessionID: "current-session"}
 	if err := service.LogoutAllSessions(t.Context(), input); err != nil || repository.calls != 1 || repository.subject != input.Subject || repository.sessionID != input.SessionID {
 		t.Fatalf("all-session logout = %v, repository = %+v", err, repository)
@@ -26,7 +26,7 @@ func TestLogoutAllSessionsService(t *testing.T) {
 	if err := service.LogoutAllSessions(t.Context(), input); !errors.Is(err, ErrAllLogoutUnavailable) {
 		t.Fatalf("database failure = %v", err)
 	}
-	if err := NewLogoutAllSessionsService(nil).LogoutAllSessions(t.Context(), input); !errors.Is(err, ErrAllLogoutUnavailable) {
+	if err := NewAllSessionLogoutService(nil).LogoutAllSessions(t.Context(), input); !errors.Is(err, ErrAllLogoutUnavailable) {
 		t.Fatalf("missing repository = %v", err)
 	}
 }

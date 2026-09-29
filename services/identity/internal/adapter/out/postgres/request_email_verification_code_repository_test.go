@@ -60,7 +60,7 @@ func testVerificationCodeResend(t *testing.T, ctx context.Context, pool *pgxpool
 			t.Fatal(err)
 		}
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
-		service := app.NewRequestEmailVerificationCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest, bytes.Repeat([]byte{4}, 32))
+		service := app.NewEmailVerificationCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest, bytes.Repeat([]byte{4}, 32))
 		input := inbound.RequestEmailVerificationCodeInput{Subject: subject, SessionID: uuid.UUID(session.ID.Bytes).String(), Source: "192.0.2.91"}
 		if err := service.RequestEmailVerificationCode(ctx, input); !errors.Is(err, app.ErrRateLimited) {
 			t.Fatalf("immediate resend = %v", err)
@@ -105,7 +105,7 @@ func testVerificationCodeResend(t *testing.T, ctx context.Context, pool *pgxpool
 		if _, err := pool.Exec(ctx, `UPDATE identity_challenges SET issued_at = issued_at - INTERVAL '61 seconds', expires_at = expires_at - INTERVAL '61 seconds' WHERE id = $1`, current); err != nil {
 			t.Fatal(err)
 		}
-		failed := app.NewRequestEmailVerificationCodeService(identitypostgres.NewAccountRepository(pool), failingDeliveryProtector{}, limits.CodeRequest, bytes.Repeat([]byte{4}, 32))
+		failed := app.NewEmailVerificationCodeService(identitypostgres.NewAccountRepository(pool), failingDeliveryProtector{}, limits.CodeRequest, bytes.Repeat([]byte{4}, 32))
 		if err := failed.RequestEmailVerificationCode(ctx, input); !errors.Is(err, app.ErrVerificationCodeUnavailable) {
 			t.Fatalf("failed delivery protection = %v", err)
 		}

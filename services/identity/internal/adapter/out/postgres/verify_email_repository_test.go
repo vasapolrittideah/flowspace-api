@@ -28,7 +28,7 @@ func testVerifyEmail(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 		key := bytes.Repeat([]byte{7}, 32)
 		repository := identitypostgres.NewAccountRepository(pool)
 		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
-		service := app.NewVerifyEmailService(repository, limits.WrongCode, limits.AccountWrongCode, key)
+		service := app.NewEmailVerificationService(repository, limits.WrongCode, limits.AccountWrongCode, key)
 		setup := func(t *testing.T, name, purpose string) (inbound.VerifyEmailInput, pgtype.UUID) {
 			t.Helper()
 			subject := "verify-" + name

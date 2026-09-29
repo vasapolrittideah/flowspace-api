@@ -25,7 +25,7 @@ func TestWorkspaceServiceGetWorkspace(t *testing.T) {
 		},
 	}
 
-	got, err := NewGetWorkspaceService(repository).GetWorkspace(ctx, inbound.GetWorkspaceInput{
+	got, err := NewWorkspaceService(repository).GetWorkspace(ctx, inbound.GetWorkspaceInput{
 		Subject:     "subject-1",
 		WorkspaceID: "workspace-id",
 	})
@@ -55,7 +55,7 @@ func TestWorkspaceServiceRejectsInvalidGet(t *testing.T) {
 					return domain.Workspace{}, nil
 				},
 			}
-			_, err := NewGetWorkspaceService(repository).GetWorkspace(context.Background(), tt.input)
+			_, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), tt.input)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("error = %v, want %v", err, tt.want)
 			}
@@ -69,7 +69,7 @@ func TestWorkspaceServicePreservesGetRepositoryError(t *testing.T) {
 			return domain.Workspace{}, domain.ErrNotFound
 		},
 	}
-	_, err := NewGetWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{Subject: "subject", WorkspaceID: "workspace-id"})
+	_, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{Subject: "subject", WorkspaceID: "workspace-id"})
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("get error = %v, want ErrNotFound", err)
 	}
@@ -92,7 +92,7 @@ func TestWorkspaceServicePreservesGetContextErrors(t *testing.T) {
 				},
 			}
 
-			_, err := NewGetWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{
+			_, err := NewWorkspaceService(repository).GetWorkspace(context.Background(), inbound.GetWorkspaceInput{
 				Subject:     "subject",
 				WorkspaceID: "workspace-id",
 			})

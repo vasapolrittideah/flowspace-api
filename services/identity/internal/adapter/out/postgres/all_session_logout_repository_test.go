@@ -53,7 +53,7 @@ func testAllSessionLogout(t *testing.T, pool *pgxpool.Pool) {
 	currentID, currentRefresh := createSession("all-logout-subject", 21)
 	otherID, otherRefresh := createSession("all-logout-subject", 22)
 	unrelatedID, unrelatedRefresh := createSession("all-logout-other", 23)
-	logout := app.NewLogoutAllSessionsService(identitypostgres.NewAccountRepository(pool))
+	logout := app.NewAllSessionLogoutService(identitypostgres.NewAccountRepository(pool))
 	check := app.NewSessionCheckService(identitypostgres.NewSessionRepository(pool))
 	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -63,7 +63,7 @@ func testAllSessionLogout(t *testing.T, pool *pgxpool.Pool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	refresh := app.NewRefreshSessionService(identitypostgres.NewRefreshSessionRepository(pool), signer)
+	refresh := app.NewSessionRefreshService(identitypostgres.NewSessionRefreshRepository(pool), signer)
 	input := inbound.LogoutAllSessionsInput{Subject: "all-logout-subject", SessionID: currentID}
 	if err := logout.LogoutAllSessions(ctx, inbound.LogoutAllSessionsInput{Subject: "all-logout-other", SessionID: currentID}); !errors.Is(err, outbound.ErrUnauthenticated) {
 		t.Fatalf("wrong subject = %v", err)
@@ -138,7 +138,7 @@ func testAllSessionLogout(t *testing.T, pool *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	closedPool.Close()
-	if err := app.NewLogoutAllSessionsService(identitypostgres.NewAccountRepository(closedPool)).LogoutAllSessions(ctx,
+	if err := app.NewAllSessionLogoutService(identitypostgres.NewAccountRepository(closedPool)).LogoutAllSessions(ctx,
 		inbound.LogoutAllSessionsInput{Subject: "all-logout-other", SessionID: unrelatedID}); !errors.Is(err, app.ErrAllLogoutUnavailable) {
 		t.Fatalf("database failure = %v", err)
 	}

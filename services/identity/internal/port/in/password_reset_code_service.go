@@ -7,6 +7,6 @@ type RequestPasswordResetCodeInput struct {
 	Source string
 }
 
-type RequestPasswordResetCodeService interface {
+type PasswordResetCodeService interface {
 	RequestPasswordResetCode(ctx context.Context, input RequestPasswordResetCodeInput) error
 }

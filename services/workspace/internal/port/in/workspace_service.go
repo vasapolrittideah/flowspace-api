@@ -12,6 +12,12 @@ type CreateWorkspaceInput struct {
 	Name           string
 }
 
-type CreateWorkspaceService interface {
+type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, input CreateWorkspaceInput) (domain.Workspace, error)
+	GetWorkspace(ctx context.Context, input GetWorkspaceInput) (domain.Workspace, error)
+}
+
+type GetWorkspaceInput struct {
+	Subject     string
+	WorkspaceID string
 }

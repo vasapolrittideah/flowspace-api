@@ -32,7 +32,7 @@ func TestWorkspaceServiceCreateWorkspace(t *testing.T) {
 		},
 	}
 
-	got, err := NewCreateWorkspaceService(repository).CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
+	got, err := NewWorkspaceService(repository).CreateWorkspace(ctx, inbound.CreateWorkspaceInput{
 		Subject:        "subject-1",
 		IdempotencyKey: "request-1",
 		Name:           "  Platform  ",
@@ -68,7 +68,7 @@ func TestWorkspaceServiceAcceptsIdempotencyKeyBoundaries(t *testing.T) {
 				},
 			}
 
-			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
 				Subject:        "subject",
 				IdempotencyKey: tt.key,
 				Name:           "Workspace",
@@ -105,7 +105,7 @@ func TestWorkspaceServiceRejectsInvalidCreate(t *testing.T) {
 					return domain.Workspace{}, nil
 				},
 			}
-			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), tt.input)
+			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), tt.input)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("error = %v, want %v", err, tt.want)
 			}
@@ -122,7 +122,7 @@ func TestWorkspaceServicePreservesCreateRepositoryError(t *testing.T) {
 			return domain.Workspace{}, domain.ErrIdempotencyConflict
 		},
 	}
-	_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: "Workspace"})
+	_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{Subject: "subject", IdempotencyKey: "key", Name: "Workspace"})
 	if !errors.Is(err, domain.ErrIdempotencyConflict) {
 		t.Fatalf("create error = %v, want ErrIdempotencyConflict", err)
 	}
@@ -145,7 +145,7 @@ func TestWorkspaceServicePreservesCreateContextErrors(t *testing.T) {
 				},
 			}
 
-			_, err := NewCreateWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
+			_, err := NewWorkspaceService(repository).CreateWorkspace(context.Background(), inbound.CreateWorkspaceInput{
 				Subject:        "subject",
 				IdempotencyKey: "key",
 				Name:           "Workspace",

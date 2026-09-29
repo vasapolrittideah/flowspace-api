@@ -11,7 +11,7 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-func (r *AccountRepository) WithinRequestPasswordResetCodeTransaction(ctx context.Context, fn func(outbound.RequestPasswordResetCodeTransaction) error) error {
+func (r *AccountRepository) WithinRequestPasswordResetCodeTransaction(ctx context.Context, fn func(outbound.PasswordResetCodeTransaction) error) error {
 	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 

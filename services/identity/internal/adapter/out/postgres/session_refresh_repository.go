@@ -13,15 +13,15 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-type RefreshSessionRepository struct{ pool *pgxpool.Pool }
+type SessionRefreshRepository struct{ pool *pgxpool.Pool }
 
-var _ outbound.RefreshSessionRepository = (*RefreshSessionRepository)(nil)
+var _ outbound.SessionRefreshRepository = (*SessionRefreshRepository)(nil)
 
-func NewRefreshSessionRepository(pool *pgxpool.Pool) *RefreshSessionRepository {
-	return &RefreshSessionRepository{pool: pool}
+func NewSessionRefreshRepository(pool *pgxpool.Pool) *SessionRefreshRepository {
+	return &SessionRefreshRepository{pool: pool}
 }
 
-func (r *RefreshSessionRepository) Rotate(ctx context.Context, oldHash, newHash []byte, issue func(outbound.RefreshSessionRecord) error) (bool, error) {
+func (r *SessionRefreshRepository) Rotate(ctx context.Context, oldHash, newHash []byte, issue func(outbound.RefreshSessionRecord) error) (bool, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return false, err

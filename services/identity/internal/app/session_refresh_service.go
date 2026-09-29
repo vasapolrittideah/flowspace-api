@@ -18,18 +18,18 @@ var (
 	ErrRefreshUnavailable     = errors.New("refresh unavailable")
 )
 
-type RefreshSessionService struct {
-	repository outbound.RefreshSessionRepository
+type SessionRefreshService struct {
+	repository outbound.SessionRefreshRepository
 	signer     outbound.TokenSigner
 }
 
-var _ inbound.RefreshSessionService = (*RefreshSessionService)(nil)
+var _ inbound.SessionRefreshService = (*SessionRefreshService)(nil)
 
-func NewRefreshSessionService(repository outbound.RefreshSessionRepository, signer outbound.TokenSigner) *RefreshSessionService {
-	return &RefreshSessionService{repository: repository, signer: signer}
+func NewSessionRefreshService(repository outbound.SessionRefreshRepository, signer outbound.TokenSigner) *SessionRefreshService {
+	return &SessionRefreshService{repository: repository, signer: signer}
 }
 
-func (s *RefreshSessionService) RefreshSession(ctx context.Context, raw string) (inbound.RefreshSessionResult, error) {
+func (s *SessionRefreshService) RefreshSession(ctx context.Context, raw string) (inbound.RefreshSessionResult, error) {
 	if s.repository == nil || s.signer == nil {
 		return inbound.RefreshSessionResult{}, ErrRefreshUnavailable
 	}

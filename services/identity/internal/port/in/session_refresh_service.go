@@ -13,6 +13,6 @@ type RefreshSessionResult struct {
 	SessionExpiresAt      time.Time
 }
 
-type RefreshSessionService interface {
+type SessionRefreshService interface {
 	RefreshSession(ctx context.Context, token string) (RefreshSessionResult, error)
 }

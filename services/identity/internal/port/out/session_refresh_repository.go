@@ -13,6 +13,6 @@ type RefreshSessionRecord struct {
 	AbsoluteExpiresAt time.Time
 }
 
-type RefreshSessionRepository interface {
+type SessionRefreshRepository interface {
 	Rotate(ctx context.Context, oldHash, newHash []byte, issue func(RefreshSessionRecord) error) (replayed bool, err error)
 }

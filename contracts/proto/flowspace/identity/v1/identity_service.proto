@@ -53,6 +53,23 @@ service IdentityService {
     };
   }
 
+  // Requests a password recovery code without disclosing account eligibility.
+  rpc RequestPasswordResetCode(RequestPasswordResetCodeRequest) returns (RequestPasswordResetCodeResponse) {
+    option (google.api.http) = {
+      post: "/v1/password-reset-codes"
+      body: "*"
+    };
+  }
+
+  // Changes a password and revokes all sessions after email code proof.
+  // Does not create a session or return tokens.
+  rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/password-resets"
+      body: "*"
+    };
+  }
+
   // Creates a device session with an email address and password.
   // Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
   rpc CreatePasswordSession(CreatePasswordSessionRequest) returns (CreatePasswordSessionResponse) {
@@ -142,6 +159,25 @@ message ClaimUnverifiedAccountResponse {
   string access_token = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   string refresh_token = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp access_token_expires_at = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message RequestPasswordResetCodeRequest {
+  string email = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RequestPasswordResetCodeResponse {
+  bool accepted = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ResetPasswordRequest {
+  string email = 1 [(google.api.field_behavior) = REQUIRED];
+  string code = 2 [(google.api.field_behavior) = REQUIRED];
+  string new_password = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ResetPasswordResponse {
+  bool password_changed = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool sessions_revoked = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message CreatePasswordSessionRequest {

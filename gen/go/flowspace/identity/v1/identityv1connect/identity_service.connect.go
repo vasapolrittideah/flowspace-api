@@ -48,6 +48,12 @@ const (
 	// IdentityServiceClaimUnverifiedAccountProcedure is the fully-qualified name of the
 	// IdentityService's ClaimUnverifiedAccount RPC.
 	IdentityServiceClaimUnverifiedAccountProcedure = "/flowspace.identity.v1.IdentityService/ClaimUnverifiedAccount"
+	// IdentityServiceRequestPasswordResetCodeProcedure is the fully-qualified name of the
+	// IdentityService's RequestPasswordResetCode RPC.
+	IdentityServiceRequestPasswordResetCodeProcedure = "/flowspace.identity.v1.IdentityService/RequestPasswordResetCode"
+	// IdentityServiceResetPasswordProcedure is the fully-qualified name of the IdentityService's
+	// ResetPassword RPC.
+	IdentityServiceResetPasswordProcedure = "/flowspace.identity.v1.IdentityService/ResetPassword"
 	// IdentityServiceCreatePasswordSessionProcedure is the fully-qualified name of the
 	// IdentityService's CreatePasswordSession RPC.
 	IdentityServiceCreatePasswordSessionProcedure = "/flowspace.identity.v1.IdentityService/CreatePasswordSession"
@@ -81,6 +87,11 @@ type IdentityServiceClient interface {
 	// Replaces an unverified account after email ownership is proved.
 	// Rejects the Idempotency-Key HTTP header.
 	ClaimUnverifiedAccount(context.Context, *connect.Request[v1.ClaimUnverifiedAccountRequest]) (*connect.Response[v1.ClaimUnverifiedAccountResponse], error)
+	// Requests a password recovery code without disclosing account eligibility.
+	RequestPasswordResetCode(context.Context, *connect.Request[v1.RequestPasswordResetCodeRequest]) (*connect.Response[v1.RequestPasswordResetCodeResponse], error)
+	// Changes a password and revokes all sessions after email code proof.
+	// Does not create a session or return tokens.
+	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[v1.ResetPasswordResponse], error)
 	// Creates a device session with an email address and password.
 	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
 	CreatePasswordSession(context.Context, *connect.Request[v1.CreatePasswordSessionRequest]) (*connect.Response[v1.CreatePasswordSessionResponse], error)
@@ -140,6 +151,18 @@ func NewIdentityServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(identityServiceMethods.ByName("ClaimUnverifiedAccount")),
 			connect.WithClientOptions(opts...),
 		),
+		requestPasswordResetCode: connect.NewClient[v1.RequestPasswordResetCodeRequest, v1.RequestPasswordResetCodeResponse](
+			httpClient,
+			baseURL+IdentityServiceRequestPasswordResetCodeProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("RequestPasswordResetCode")),
+			connect.WithClientOptions(opts...),
+		),
+		resetPassword: connect.NewClient[v1.ResetPasswordRequest, v1.ResetPasswordResponse](
+			httpClient,
+			baseURL+IdentityServiceResetPasswordProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("ResetPassword")),
+			connect.WithClientOptions(opts...),
+		),
 		createPasswordSession: connect.NewClient[v1.CreatePasswordSessionRequest, v1.CreatePasswordSessionResponse](
 			httpClient,
 			baseURL+IdentityServiceCreatePasswordSessionProcedure,
@@ -180,6 +203,8 @@ type identityServiceClient struct {
 	verifyEmail                       *connect.Client[v1.VerifyEmailRequest, v1.VerifyEmailResponse]
 	requestUnverifiedAccountClaimCode *connect.Client[v1.RequestUnverifiedAccountClaimCodeRequest, v1.RequestUnverifiedAccountClaimCodeResponse]
 	claimUnverifiedAccount            *connect.Client[v1.ClaimUnverifiedAccountRequest, v1.ClaimUnverifiedAccountResponse]
+	requestPasswordResetCode          *connect.Client[v1.RequestPasswordResetCodeRequest, v1.RequestPasswordResetCodeResponse]
+	resetPassword                     *connect.Client[v1.ResetPasswordRequest, v1.ResetPasswordResponse]
 	createPasswordSession             *connect.Client[v1.CreatePasswordSessionRequest, v1.CreatePasswordSessionResponse]
 	refreshSession                    *connect.Client[v1.RefreshSessionRequest, v1.RefreshSessionResponse]
 	logoutCurrentSession              *connect.Client[v1.LogoutCurrentSessionRequest, v1.LogoutCurrentSessionResponse]
@@ -212,6 +237,16 @@ func (c *identityServiceClient) RequestUnverifiedAccountClaimCode(ctx context.Co
 // ClaimUnverifiedAccount calls flowspace.identity.v1.IdentityService.ClaimUnverifiedAccount.
 func (c *identityServiceClient) ClaimUnverifiedAccount(ctx context.Context, req *connect.Request[v1.ClaimUnverifiedAccountRequest]) (*connect.Response[v1.ClaimUnverifiedAccountResponse], error) {
 	return c.claimUnverifiedAccount.CallUnary(ctx, req)
+}
+
+// RequestPasswordResetCode calls flowspace.identity.v1.IdentityService.RequestPasswordResetCode.
+func (c *identityServiceClient) RequestPasswordResetCode(ctx context.Context, req *connect.Request[v1.RequestPasswordResetCodeRequest]) (*connect.Response[v1.RequestPasswordResetCodeResponse], error) {
+	return c.requestPasswordResetCode.CallUnary(ctx, req)
+}
+
+// ResetPassword calls flowspace.identity.v1.IdentityService.ResetPassword.
+func (c *identityServiceClient) ResetPassword(ctx context.Context, req *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[v1.ResetPasswordResponse], error) {
+	return c.resetPassword.CallUnary(ctx, req)
 }
 
 // CreatePasswordSession calls flowspace.identity.v1.IdentityService.CreatePasswordSession.
@@ -255,6 +290,11 @@ type IdentityServiceHandler interface {
 	// Replaces an unverified account after email ownership is proved.
 	// Rejects the Idempotency-Key HTTP header.
 	ClaimUnverifiedAccount(context.Context, *connect.Request[v1.ClaimUnverifiedAccountRequest]) (*connect.Response[v1.ClaimUnverifiedAccountResponse], error)
+	// Requests a password recovery code without disclosing account eligibility.
+	RequestPasswordResetCode(context.Context, *connect.Request[v1.RequestPasswordResetCodeRequest]) (*connect.Response[v1.RequestPasswordResetCodeResponse], error)
+	// Changes a password and revokes all sessions after email code proof.
+	// Does not create a session or return tokens.
+	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[v1.ResetPasswordResponse], error)
 	// Creates a device session with an email address and password.
 	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
 	CreatePasswordSession(context.Context, *connect.Request[v1.CreatePasswordSessionRequest]) (*connect.Response[v1.CreatePasswordSessionResponse], error)
@@ -310,6 +350,18 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 		connect.WithSchema(identityServiceMethods.ByName("ClaimUnverifiedAccount")),
 		connect.WithHandlerOptions(opts...),
 	)
+	identityServiceRequestPasswordResetCodeHandler := connect.NewUnaryHandler(
+		IdentityServiceRequestPasswordResetCodeProcedure,
+		svc.RequestPasswordResetCode,
+		connect.WithSchema(identityServiceMethods.ByName("RequestPasswordResetCode")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceResetPasswordHandler := connect.NewUnaryHandler(
+		IdentityServiceResetPasswordProcedure,
+		svc.ResetPassword,
+		connect.WithSchema(identityServiceMethods.ByName("ResetPassword")),
+		connect.WithHandlerOptions(opts...),
+	)
 	identityServiceCreatePasswordSessionHandler := connect.NewUnaryHandler(
 		IdentityServiceCreatePasswordSessionProcedure,
 		svc.CreatePasswordSession,
@@ -352,6 +404,10 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 			identityServiceRequestUnverifiedAccountClaimCodeHandler.ServeHTTP(w, r)
 		case IdentityServiceClaimUnverifiedAccountProcedure:
 			identityServiceClaimUnverifiedAccountHandler.ServeHTTP(w, r)
+		case IdentityServiceRequestPasswordResetCodeProcedure:
+			identityServiceRequestPasswordResetCodeHandler.ServeHTTP(w, r)
+		case IdentityServiceResetPasswordProcedure:
+			identityServiceResetPasswordHandler.ServeHTTP(w, r)
 		case IdentityServiceCreatePasswordSessionProcedure:
 			identityServiceCreatePasswordSessionHandler.ServeHTTP(w, r)
 		case IdentityServiceRefreshSessionProcedure:
@@ -389,6 +445,14 @@ func (UnimplementedIdentityServiceHandler) RequestUnverifiedAccountClaimCode(con
 
 func (UnimplementedIdentityServiceHandler) ClaimUnverifiedAccount(context.Context, *connect.Request[v1.ClaimUnverifiedAccountRequest]) (*connect.Response[v1.ClaimUnverifiedAccountResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.ClaimUnverifiedAccount is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) RequestPasswordResetCode(context.Context, *connect.Request[v1.RequestPasswordResetCodeRequest]) (*connect.Response[v1.RequestPasswordResetCodeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.RequestPasswordResetCode is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[v1.ResetPasswordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.ResetPassword is not implemented"))
 }
 
 func (UnimplementedIdentityServiceHandler) CreatePasswordSession(context.Context, *connect.Request[v1.CreatePasswordSessionRequest]) (*connect.Response[v1.CreatePasswordSessionResponse], error) {

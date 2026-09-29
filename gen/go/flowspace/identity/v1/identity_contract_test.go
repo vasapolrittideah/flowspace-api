@@ -103,6 +103,34 @@ func TestSessionRPCContract(t *testing.T) {
 	}
 }
 
+func TestPasswordRecoveryRPCContract(t *testing.T) {
+	service := File_flowspace_identity_v1_identity_service_proto.Services().ByName("IdentityService")
+	for _, test := range []struct {
+		name, route       string
+		request, response []string
+	}{
+		{"RequestPasswordResetCode", "/v1/password-reset-codes", []string{"email"}, []string{"accepted"}},
+		{"ResetPassword", "/v1/password-resets", []string{"email", "code", "new_password"}, []string{"password_changed", "sessions_revoked"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			method := service.Methods().ByName(protoreflect.Name(test.name))
+			if method == nil {
+				t.Fatal("RPC missing")
+			}
+			if got := messageFields(method.Input()); !slices.Equal(got, test.request) {
+				t.Fatalf("request fields = %v, want %v", got, test.request)
+			}
+			if got := messageFields(method.Output()); !slices.Equal(got, test.response) {
+				t.Fatalf("response fields = %v, want %v", got, test.response)
+			}
+			rule, ok := proto.GetExtension(method.Options(), annotations.E_Http).(*annotations.HttpRule)
+			if !ok || rule.GetPost() != test.route || rule.GetBody() != "*" {
+				t.Fatalf("HTTP rule = %v, want POST %s with body *", rule, test.route)
+			}
+		})
+	}
+}
+
 func messageFields(message protoreflect.MessageDescriptor) []string {
 	fields := message.Fields()
 	names := make([]string, fields.Len())

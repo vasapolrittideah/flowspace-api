@@ -16,11 +16,7 @@ type Verifier struct {
 
 var _ outbound.AccessTokenVerifier = (*Verifier)(nil)
 
-func NewVerifier(key ed25519.PublicKey, keyID, issuer, audience string) (*Verifier, error) {
-	return NewVerifierKeys(map[string]ed25519.PublicKey{keyID: key}, issuer, audience)
-}
-
-func NewVerifierKeys(keys map[string]ed25519.PublicKey, issuer, audience string) (*Verifier, error) {
+func NewVerifier(keys map[string]ed25519.PublicKey, issuer, audience string) (*Verifier, error) {
 	if len(keys) == 0 || issuer == "" || audience == "" {
 		return nil, errors.New("invalid token verifier configuration")
 	}

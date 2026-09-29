@@ -71,7 +71,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	if err != nil {
 		return nil, err
 	}
-	verifier, err := token.NewVerifierKeys(keys, config.TokenIssuer, config.TokenAudience)
+	verifier, err := token.NewVerifier(keys, config.TokenIssuer, config.TokenAudience)
 	if err != nil {
 		return nil, err
 	}

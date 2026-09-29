@@ -46,7 +46,7 @@ func testPasswordLoginRepository(t *testing.T, pool *pgxpool.Pool) {
 	if err != nil || result.Subject != "login-subject" || result.EmailVerified || result.AccessToken == "" || result.RefreshToken == "" {
 		t.Fatalf("unverified login failed: %v", err)
 	}
-	verifier, err := token.NewVerifier(publicKey, "login-key", "urn:flowspace:identity:local", "flowspace-api")
+	verifier, err := token.NewVerifier(map[string]ed25519.PublicKey{"login-key": publicKey}, "urn:flowspace:identity:local", "flowspace-api")
 	if err != nil {
 		t.Fatal(err)
 	}

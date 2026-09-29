@@ -18,7 +18,7 @@ func TestAccessTokenVerifier(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	verifier, err := NewVerifier(public, "local-1", "issuer", "audience")
+	verifier, err := NewVerifier(map[string]ed25519.PublicKey{"local-1": public}, "issuer", "audience")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestAccessTokenVerifierKeyOverlapAndRetirement(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		verifier, err := NewVerifierKeys(map[string]ed25519.PublicKey{"old": oldPublic, "new": newPublic}, "issuer", "audience")
+		verifier, err := NewVerifier(map[string]ed25519.PublicKey{"old": oldPublic, "new": newPublic}, "issuer", "audience")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -98,7 +98,7 @@ func TestAccessTokenVerifierKeyOverlapAndRetirement(t *testing.T) {
 			t.Fatalf("overlap rejected %s token: %v", candidate.id, err)
 		}
 		if candidate.id == "old" {
-			retired, err := NewVerifierKeys(map[string]ed25519.PublicKey{"new": newPublic}, "issuer", "audience")
+			retired, err := NewVerifier(map[string]ed25519.PublicKey{"new": newPublic}, "issuer", "audience")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -114,7 +114,7 @@ func TestAccessTokenVerifierRejectsInvalidClaims(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	verifier, err := NewVerifier(public, "local-1", "issuer", "audience")
+	verifier, err := NewVerifier(map[string]ed25519.PublicKey{"local-1": public}, "issuer", "audience")
 	if err != nil {
 		t.Fatal(err)
 	}

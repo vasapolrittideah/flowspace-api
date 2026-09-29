@@ -54,7 +54,7 @@ func testRefreshSessionRepository(t *testing.T, pool *pgxpool.Pool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	verifier, err := token.NewVerifier(publicKey, "refresh-key", "urn:flowspace:identity:local", "flowspace-api")
+	verifier, err := token.NewVerifier(map[string]ed25519.PublicKey{"refresh-key": publicKey}, "urn:flowspace:identity:local", "flowspace-api")
 	if err != nil {
 		t.Fatal(err)
 	}

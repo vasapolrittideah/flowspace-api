@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -81,6 +82,10 @@ func testRequestPasswordResetCode(t *testing.T, ctx context.Context, pool *pgxpo
 		if _, err := tx.Exec(ctx, `UPDATE identity_outbox_events AS event SET next_attempt_at=statement_timestamp()+INTERVAL '1 hour'
 			FROM identity_challenges AS challenge WHERE challenge.id=event.challenge_id AND challenge.purpose<>'password-reset'`); err != nil {
 			t.Fatal(err)
+		}
+		claimed, err := identitysqlc.New(tx).ClaimOutboxEvent(ctx, pgtype.Text{String: "recovery-test", Valid: true})
+		if err != nil || uuid.UUID(claimed.ChallengeID.Bytes).String() != challengeID || claimed.Purpose != string(domain.PurposePasswordReset) {
+			t.Fatalf("relay did not claim recovery event: challenge=%v purpose=%q error=%v", claimed.ChallengeID, claimed.Purpose, err)
 		}
 		if _, err := identitysqlc.New(tx).ClaimOutboxEvent(ctx, pgtype.Text{String: "recovery-test", Valid: true}); !errors.Is(err, pgx.ErrNoRows) {
 			t.Fatalf("relay claimed recovery event: %v", err)

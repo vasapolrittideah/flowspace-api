@@ -16,8 +16,7 @@ WITH next_event AS (
     SELECT event.id
     FROM identity_outbox_events AS event
     JOIN identity_challenges AS challenge ON challenge.id = event.challenge_id
-    WHERE challenge.purpose <> 'password-reset'
-      AND event.published_at IS NULL
+    WHERE event.published_at IS NULL
       AND event.next_attempt_at <= statement_timestamp()
       AND (event.claimed_until IS NULL OR event.claimed_until <= statement_timestamp())
     ORDER BY event.next_attempt_at, event.created_at

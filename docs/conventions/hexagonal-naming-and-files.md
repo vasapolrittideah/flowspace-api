@@ -12,8 +12,10 @@ This convention names and groups handwritten Go components and SQL files inside 
 - Name other outbound adapters and ports for the capability they provide.
 - Name handwritten Go files in snake_case after their main component or capability.
 - Use a noun phrase for each component and file name. Examples are `PasswordLoginService` in `password_login_service.go` and `ClaimCodeService` in `claim_code_service.go`. Name methods for their actions.
-- Define at most one exported `New<Capability>` constructor in a component file. Its name must match the file name, such as `NewWorkspaceService` in `workspace_service.go`.
+- Define at most one exported `New<Capability>` constructor in a hexagonal component file. Its name must match the file name, such as `NewWorkspaceService` in `workspace_service.go`.
+- Keep bootstrap file names based on their server or worker role. Their constructor names do not have to match the file names.
 - Keep related actions in one capability file, such as `email_verification_handler.go` or `workspace_service.go`. If no existing capability owns the work, add a file. Do not create a file for each method or action.
+- Name test files after the production file that owns the behavior. Use `<name>_test.go`, or `<name>_integration_test.go` when the integration build tag needs a separate file.
 - Keep generated Protobuf names and generated database code as produced by their tools.
 - Apply this convention to new code and code changed for another task. Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 
@@ -29,7 +31,7 @@ A capability is a task that the service performs. A transaction groups database 
 - Reuse a concrete repository when it owns the same data and transaction mechanism. Keep its type, constructor, shared transaction code, and methods in one file. Add a repository component when a distinct capability needs different data or a different transaction mechanism.
 - When one handler type serves several capabilities, keep its type, constructor, and shared transport helpers in the main handler file. Put related RPC methods and error mapping in `<capability>_handler.go`. Do not add a handler type or interface only to split files.
 - Keep bootstrap wiring in the existing composition root.
-- Group test files by the behavior and transaction they verify. Name each file for the behavior it tests. Keep shared test setup together, and do not require one test file per production file.
+- Keep tests for one production file in its matching test file. Keep shared test setup with the component that owns the behavior.
 
 ### SQL queries
 

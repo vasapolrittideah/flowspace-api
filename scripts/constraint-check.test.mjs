@@ -47,6 +47,35 @@ test('floor guard allows moved assertions but catches missing duplicates', () =>
   assert.deepEqual(floorFindings(parseDiff(diff)), [{ rule: 'assertion-removed', file: 'new_test.go' }]);
 });
 
+test('floor guard accepts merged test files only when functions and assertions remain', () => {
+  const moved = [
+    'diff --git a/first_test.go b/first_test.go',
+    '--- a/first_test.go',
+    '+++ /dev/null',
+    '@@ -1,2 +0,0 @@',
+    '-func TestFirst(t *testing.T) {',
+    '-t.Fatal("first failed")',
+    'diff --git a/second_test.go b/second_test.go',
+    '--- a/second_test.go',
+    '+++ /dev/null',
+    '@@ -1,2 +0,0 @@',
+    '-func TestSecond(t *testing.T) {',
+    '-t.Fatal("second failed")',
+    'diff --git a/combined_test.go b/combined_test.go',
+    '--- /dev/null',
+    '+++ b/combined_test.go',
+    '@@ -0,0 +1,4 @@',
+    '+func TestFirst(t *testing.T) {',
+    '+t.Fatal("first failed")',
+    '+func TestSecond(t *testing.T) {',
+    '+t.Fatal("second failed")',
+  ].join('\n');
+
+  assert.deepEqual(floorFindings(parseDiff(moved)), []);
+  assert.deepEqual(floorFindings(parseDiff(moved.replace('+func TestSecond(t *testing.T) {', '+func TestOther(t *testing.T) {'))), [{ rule: 'test-deleted', file: 'second_test.go' }]);
+  assert.deepEqual(floorFindings(parseDiff(moved.replace('+t.Fatal("second failed")', '+t.Fatal("other failed")'))), [{ rule: 'assertion-removed', file: 'second_test.go' }]);
+});
+
 test('changed-line coverage counts instrumented added Go lines', () => {
   const diff = [
     'diff --git a/service.go b/service.go',

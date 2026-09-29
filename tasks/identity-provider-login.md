@@ -2,7 +2,7 @@
 
 Module id: `identity-provider-login`
 
-Status: Draft.
+Status: Approved.
 
 ## Overview
 
@@ -31,13 +31,13 @@ flowchart TD
 
 ## Task list
 
-Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under a new Identity provider login milestone after plan approval. The Issue drafts are in `tasks/.todo.md`; this section becomes an ordered index of Issue links when those Issues exist.
+Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [Identity provider login milestone](https://github.com/vasapolrittideah/flowspace-api/milestone/5).
 
 ### Phase 1: Contract and browser handoff
 
-- Task 1: Define the public provider-login contract.
-- Task 2: Start a bound provider attempt with shared limits.
-- Task 3: Validate a Google callback and issue a one-time handoff code.
+- Task 1: [Define the public provider-login contract](https://github.com/vasapolrittideah/flowspace-api/issues/215).
+- Task 2: [Start a bound provider attempt with shared limits](https://github.com/vasapolrittideah/flowspace-api/issues/216).
+- Task 3: [Validate a Google callback and issue a one-time handoff code](https://github.com/vasapolrittideah/flowspace-api/issues/217).
 
 ### Checkpoint: Handoff
 
@@ -47,8 +47,8 @@ Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/u
 
 ### Phase 2: Provider sessions and accounts
 
-- Task 4: Create a session for an existing provider link.
-- Task 5: Create a provider-only account and session from an unused Google email.
+- Task 4: [Create a session for an existing provider link](https://github.com/vasapolrittideah/flowspace-api/issues/218).
+- Task 5: [Create a provider-only account and session from an unused Google email](https://github.com/vasapolrittideah/flowspace-api/issues/219).
 
 ### Checkpoint: Google login
 
@@ -59,8 +59,8 @@ Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/u
 
 ### Phase 3: GitHub login and completion checks
 
-- Task 6: Complete provider login with GitHub identity and email proof.
-- Task 7: Prove Identity provider login against its specification.
+- Task 6: [Complete provider login with GitHub identity and email proof](https://github.com/vasapolrittideah/flowspace-api/issues/220).
+- Task 7: [Prove Identity provider login against its specification](https://github.com/vasapolrittideah/flowspace-api/issues/221).
 
 ### Checkpoint: Complete
 

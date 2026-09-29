@@ -104,6 +104,11 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 			return limits.PasswordRecoveryEmail(ctx, email, verifierKey)
 		}, verifierKey)).
 		WithVerifyEmail(app.NewVerifyEmailService(accountRepo, limits.WrongCode, limits.AccountWrongCode, verifierKey)).
+		WithPasswordReset(app.NewPasswordResetService(accountRepo, limits.WrongCode,
+			func(ctx context.Context, email string) error {
+				return limits.PasswordRecoveryGuessEmail(ctx, email, verifierKey)
+			},
+			limits.AccountWrongCode, checkPassword, verifierKey)).
 		WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
 		WithRefreshSession(app.NewRefreshSessionService(postgres.NewRefreshSessionRepository(pool), signer)).
 		WithCurrentSessionLogout(app.NewLogoutCurrentSessionService(postgres.NewSessionRepository(pool))).
@@ -343,7 +348,7 @@ func traceID(ctx context.Context) string {
 func safeOperation(r *http.Request) string {
 	for _, path := range []string{
 		"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
-		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-reset-codes", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts", "/v1/account-session-logouts",
+		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-reset-codes", "/v1/password-resets", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts", "/v1/account-session-logouts",
 	} {
 		if r.URL.Path == path {
 			return r.Method + " " + path

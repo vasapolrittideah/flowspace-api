@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
@@ -33,6 +34,9 @@ func (r *RefreshSessionRepository) Rotate(ctx context.Context, oldHash, newHash 
 		return false, outbound.ErrUnauthenticated
 	}
 	if err != nil {
+		return false, err
+	}
+	if err := lockRefreshAccount(ctx, queries, id); err != nil {
 		return false, err
 	}
 	session, err := queries.GetRefreshSessionForUpdate(ctx, id)
@@ -70,4 +74,20 @@ func (r *RefreshSessionRepository) Rotate(ctx context.Context, oldHash, newHash 
 		return false, err
 	}
 	return false, tx.Commit(ctx)
+}
+
+func lockRefreshAccount(ctx context.Context, queries *sqlc.Queries, id pgtype.UUID) error {
+	subject, err := queries.GetRefreshSessionSubject(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.ErrUnauthenticated
+	}
+	if err != nil {
+		return err
+	}
+	if _, err := queries.GetPasswordAccountForUpdate(ctx, subject); errors.Is(err, pgx.ErrNoRows) {
+		return outbound.ErrUnauthenticated
+	} else if err != nil {
+		return err
+	}
+	return nil
 }

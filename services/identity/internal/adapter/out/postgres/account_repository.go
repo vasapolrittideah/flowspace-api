@@ -26,6 +26,7 @@ var (
 	_ outbound.ClaimCodeRepository                    = (*AccountRepository)(nil)
 	_ outbound.AccountClaimRepository                 = (*AccountRepository)(nil)
 	_ outbound.RequestPasswordResetCodeRepository     = (*AccountRepository)(nil)
+	_ outbound.PasswordResetRepository                = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
@@ -57,6 +58,7 @@ var (
 	_ outbound.AccountClaimTransaction             = (*accountTransaction)(nil)
 	_ outbound.PasswordSessionTransaction          = (*accountTransaction)(nil)
 	_ outbound.RequestPasswordResetCodeTransaction = (*accountTransaction)(nil)
+	_ outbound.PasswordResetTransaction            = (*accountTransaction)(nil)
 )
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {

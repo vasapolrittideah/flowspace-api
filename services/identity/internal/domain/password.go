@@ -18,7 +18,7 @@ var commonPasswordsV1 = map[string]struct{}{
 }
 
 func HashPassword(ctx context.Context, password string, compromised func(context.Context, string) (bool, error)) (string, error) {
-	password, err := validatePassword(password)
+	password, err := ValidatePassword(password)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +80,7 @@ func NormalizeLoginPassword(password string) (string, error) {
 	return password, nil
 }
 
-func validatePassword(password string) (string, error) {
+func ValidatePassword(password string) (string, error) {
 	if !utf8.ValidString(password) {
 		return "", ErrInvalidPassword
 	}

@@ -33,6 +33,14 @@ func (l *LimitService) CodeRequest(ctx context.Context, source string) error {
 }
 
 func (l *LimitService) PasswordRecoveryEmail(ctx context.Context, email string, key []byte) error {
+	return l.passwordRecoveryEmail(ctx, email, key, "code-request", 60, 0)
+}
+
+func (l *LimitService) PasswordRecoveryGuessEmail(ctx context.Context, email string, key []byte) error {
+	return l.passwordRecoveryEmail(ctx, email, key, "code-guess", 10, 20)
+}
+
+func (l *LimitService) passwordRecoveryEmail(ctx context.Context, email string, key []byte, action string, maximum, dailyMaximum int) error {
 	if len(key) != 32 {
 		return ErrInvalidLimitKey
 	}
@@ -42,7 +50,7 @@ func (l *LimitService) PasswordRecoveryEmail(ctx context.Context, email string, 
 	}
 	mac := hmac.New(sha256.New, key)
 	_, _ = mac.Write([]byte("password-reset-email:" + normalized))
-	return l.record(ctx, "email", hex.EncodeToString(mac.Sum(nil)), "code-request", 60, 0, 0)
+	return l.record(ctx, "email", hex.EncodeToString(mac.Sum(nil)), action, maximum, dailyMaximum, 0)
 }
 
 func (l *LimitService) WrongCode(ctx context.Context, source string) error {

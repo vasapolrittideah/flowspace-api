@@ -80,6 +80,23 @@ func (q *Queries) MarkOutboxPublished(ctx context.Context, arg MarkOutboxPublish
 	return result.RowsAffected(), nil
 }
 
+const queuePasswordChangeNotice = `-- name: QueuePasswordChangeNotice :one
+INSERT INTO identity_password_change_notices (account_subject, email_local, email_domain)
+SELECT subject, email_local, email_domain
+FROM identity_accounts
+WHERE subject = $1
+  AND email_verified_at IS NOT NULL
+  AND retired_at IS NULL
+RETURNING id
+`
+
+func (q *Queries) QueuePasswordChangeNotice(ctx context.Context, subject string) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, queuePasswordChangeNotice, subject)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const releaseOutboxClaim = `-- name: ReleaseOutboxClaim :execrows
 UPDATE identity_outbox_events
 SET attempt_count = attempt_count + 1,

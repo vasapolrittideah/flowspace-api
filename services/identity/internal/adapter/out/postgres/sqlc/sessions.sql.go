@@ -119,7 +119,7 @@ SELECT session.account_subject, session.refresh_token_hash,
 FROM identity_sessions AS session
 JOIN identity_accounts AS account ON account.subject = session.account_subject
 WHERE session.id = $1
-FOR UPDATE OF account, session
+FOR UPDATE OF session
 `
 
 type GetRefreshSessionForUpdateRow struct {
@@ -133,6 +133,17 @@ func (q *Queries) GetRefreshSessionForUpdate(ctx context.Context, sessionID pgty
 	var i GetRefreshSessionForUpdateRow
 	err := row.Scan(&i.AccountSubject, &i.RefreshTokenHash, &i.Active)
 	return i, err
+}
+
+const getRefreshSessionSubject = `-- name: GetRefreshSessionSubject :one
+SELECT account_subject FROM identity_sessions WHERE id = $1
+`
+
+func (q *Queries) GetRefreshSessionSubject(ctx context.Context, sessionID pgtype.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getRefreshSessionSubject, sessionID)
+	var account_subject string
+	err := row.Scan(&account_subject)
+	return account_subject, err
 }
 
 const recordRotatedRefreshToken = `-- name: RecordRotatedRefreshToken :exec

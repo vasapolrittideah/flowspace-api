@@ -2,7 +2,7 @@
 
 Module id: `identity-password-recovery`
 
-Status: Draft.
+Status: Approved.
 
 ## Overview
 
@@ -32,13 +32,13 @@ flowchart TD
 
 ## Task list
 
-Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under a new Identity password recovery milestone after plan approval. The Issue drafts are in `tasks/.todo.md`; this section becomes an ordered index of Issue links when those Issues exist.
+Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [Identity password recovery milestone](https://github.com/vasapolrittideah/flowspace-api/milestone/4).
 
 ### Phase 1: Contract and code request
 
-- Task 1: Define the public password recovery contract.
-- Task 2: Request a recovery code with a generic response and durable challenge.
-- Task 3: Deliver only the current recovery code through Mailpit.
+- Task 1: [Define the public password recovery contract](https://github.com/vasapolrittideah/flowspace-api/issues/208).
+- Task 2: [Request a recovery code with a generic response and durable challenge](https://github.com/vasapolrittideah/flowspace-api/issues/209).
+- Task 3: [Deliver only the current recovery code through Mailpit](https://github.com/vasapolrittideah/flowspace-api/issues/210).
 
 ### Checkpoint: Recovery code
 
@@ -48,8 +48,8 @@ Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/u
 
 ### Phase 2: Password change
 
-- Task 4: Reset the password and revoke every existing session atomically.
-- Task 5: Deliver a durable password-change notice.
+- Task 4: [Reset the password and revoke every existing session atomically](https://github.com/vasapolrittideah/flowspace-api/issues/211).
+- Task 5: [Deliver a durable password-change notice](https://github.com/vasapolrittideah/flowspace-api/issues/212).
 
 ### Checkpoint: Reset
 
@@ -58,7 +58,7 @@ Tasks will be tracked in the [flowspace-api GitHub Project](https://github.com/u
 
 ### Phase 3: Completion checks
 
-- Task 6: Prove Identity password recovery against its specification.
+- Task 6: [Prove Identity password recovery against its specification](https://github.com/vasapolrittideah/flowspace-api/issues/213).
 
 ### Checkpoint: Complete
 

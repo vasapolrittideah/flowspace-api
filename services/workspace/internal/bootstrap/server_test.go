@@ -171,7 +171,7 @@ func TestIncomingHeaderForwardsRequiredHeaders(t *testing.T) {
 }
 
 func TestHandlerMapsAuthenticationFailureToHTTP(t *testing.T) {
-	handler, err := newHandler(context.Background(), httptransport.NewWorkspaceHandler(nil, nil, zap.NewNop()))
+	handler, err := newHandler(context.Background(), httptransport.NewWorkspaceHandler(nil, nil, nil, zap.NewNop()))
 	if err != nil {
 		t.Fatalf("newHandler() error = %v", err)
 	}

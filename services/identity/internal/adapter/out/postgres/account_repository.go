@@ -18,43 +18,17 @@ import (
 type AccountRepository struct{ pool *pgxpool.Pool }
 
 var (
-	_ outbound.AccountRepository          = (*AccountRepository)(nil)
-	_ outbound.PasswordLoginRepository    = (*AccountRepository)(nil)
-	_ outbound.AllSessionLogoutRepository = (*AccountRepository)(nil)
+	_ outbound.AccountRepository                      = (*AccountRepository)(nil)
+	_ outbound.PasswordLoginRepository                = (*AccountRepository)(nil)
+	_ outbound.AllSessionLogoutRepository             = (*AccountRepository)(nil)
+	_ outbound.RequestEmailVerificationCodeRepository = (*AccountRepository)(nil)
+	_ outbound.VerifyEmailRepository                  = (*AccountRepository)(nil)
+	_ outbound.ClaimCodeRepository                    = (*AccountRepository)(nil)
+	_ outbound.AccountClaimRepository                 = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
 	return &AccountRepository{pool: pool}
-}
-
-func (r *AccountRepository) WithinTransaction(ctx context.Context, fn func(outbound.AccountTransaction) error) error {
-	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
-}
-
-func (r *AccountRepository) WithinVerificationTransaction(ctx context.Context, fn func(outbound.VerificationTransaction) error) error {
-	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
-}
-
-func (r *AccountRepository) WithinClaimCodeTransaction(ctx context.Context, fn func(outbound.ClaimCodeTransaction) error) error {
-	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
-}
-
-func (r *AccountRepository) WithinAccountClaimTransaction(ctx context.Context, fn func(outbound.AccountClaimTransaction) error) error {
-	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
-}
-
-func (r *AccountRepository) WithinPasswordSessionTransaction(ctx context.Context, fn func(outbound.PasswordSessionTransaction) error) error {
-	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
-}
-
-func (r *AccountRepository) RevokeAll(ctx context.Context, subject, sessionID string) error {
-	return r.withinTransaction(ctx, func(tx *accountTransaction) error {
-		if _, err := tx.GetActiveAccountForSession(ctx, subject, sessionID); err != nil {
-			return err
-		}
-		_, err := tx.queries.RevokeAccountSessions(ctx, subject)
-		return err
-	})
 }
 
 func (r *AccountRepository) withinTransaction(ctx context.Context, fn func(*accountTransaction) error) error {
@@ -75,38 +49,13 @@ type accountTransaction struct {
 }
 
 var (
-	_ outbound.AccountTransaction         = (*accountTransaction)(nil)
-	_ outbound.VerificationTransaction    = (*accountTransaction)(nil)
-	_ outbound.ClaimCodeTransaction       = (*accountTransaction)(nil)
-	_ outbound.AccountClaimTransaction    = (*accountTransaction)(nil)
-	_ outbound.PasswordSessionTransaction = (*accountTransaction)(nil)
+	_ outbound.AccountTransaction               = (*accountTransaction)(nil)
+	_ outbound.VerificationCodeIssueTransaction = (*accountTransaction)(nil)
+	_ outbound.VerificationTransaction          = (*accountTransaction)(nil)
+	_ outbound.ClaimCodeTransaction             = (*accountTransaction)(nil)
+	_ outbound.AccountClaimTransaction          = (*accountTransaction)(nil)
+	_ outbound.PasswordSessionTransaction       = (*accountTransaction)(nil)
 )
-
-func (r *AccountRepository) FindPasswordAccount(ctx context.Context, email string) (outbound.PasswordAccount, bool, error) {
-	local, domain, ok := strings.Cut(email, "@")
-	if !ok {
-		return outbound.PasswordAccount{}, false, errors.New("invalid normalized email")
-	}
-	account, err := sqlc.New(r.pool).GetPasswordAccountByEmail(ctx, sqlc.GetPasswordAccountByEmailParams{EmailLocal: local, EmailDomain: domain})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return outbound.PasswordAccount{}, false, nil
-	}
-	if err != nil {
-		return outbound.PasswordAccount{}, false, err
-	}
-	return outbound.PasswordAccount{Subject: account.Subject, PasswordHash: account.PasswordHash, EmailVerified: account.EmailVerifiedAt.Valid}, true, nil
-}
-
-func (t *accountTransaction) LockPasswordAccount(ctx context.Context, subject string) (outbound.PasswordAccount, error) {
-	account, err := t.queries.GetPasswordAccountForUpdate(ctx, subject)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return outbound.PasswordAccount{}, outbound.ErrUnauthenticated
-	}
-	if err != nil {
-		return outbound.PasswordAccount{}, err
-	}
-	return outbound.PasswordAccount{Subject: account.Subject, PasswordHash: account.PasswordHash, EmailVerified: account.EmailVerifiedAt.Valid}, nil
-}
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {
 	local, domain, ok := strings.Cut(email, "@")
@@ -152,31 +101,6 @@ func (t *accountTransaction) CanIssueCode(ctx context.Context, subject string) (
 	return allowed.Valid && allowed.Bool, nil
 }
 
-func (t *accountTransaction) GetAccountForClaim(ctx context.Context, email string) (outbound.ClaimAccount, bool, error) {
-	local, domain, ok := strings.Cut(email, "@")
-	if !ok {
-		return outbound.ClaimAccount{}, false, errors.New("invalid normalized email")
-	}
-	account, err := t.queries.GetActiveAccountByEmailForUpdate(ctx, sqlc.GetActiveAccountByEmailForUpdateParams{
-		EmailLocal: local, EmailDomain: domain,
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return outbound.ClaimAccount{}, false, nil
-	}
-	if err != nil {
-		return outbound.ClaimAccount{}, false, err
-	}
-	return outbound.ClaimAccount{Subject: account.Subject, EmailVerified: account.EmailVerifiedAt.Valid}, true, nil
-}
-
-func (t *accountTransaction) ReplaceVerificationChallenge(ctx context.Context, subject string) error {
-	return t.replaceChallenge(ctx, subject, "verify-email")
-}
-
-func (t *accountTransaction) ReplaceClaimChallenge(ctx context.Context, subject string) error {
-	return t.replaceChallenge(ctx, subject, "claim-account")
-}
-
 func (t *accountTransaction) replaceChallenge(ctx context.Context, subject, purpose string) error {
 	_, err := t.queries.ReplaceCurrentChallenge(ctx, sqlc.ReplaceCurrentChallengeParams{
 		AccountSubject: subject, Purpose: purpose,
@@ -186,10 +110,6 @@ func (t *accountTransaction) replaceChallenge(ctx context.Context, subject, purp
 
 func (t *accountTransaction) CreateChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error) {
 	return t.createChallenge(ctx, subject, email, "verify-email", verifier)
-}
-
-func (t *accountTransaction) CreateClaimChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error) {
-	return t.createChallenge(ctx, subject, email, "claim-account", verifier)
 }
 
 func (t *accountTransaction) createChallenge(ctx context.Context, subject, email, purpose string, verifier [32]byte) (string, error) {
@@ -224,10 +144,6 @@ func (t *accountTransaction) CreateOutboxEvent(ctx context.Context, challengeID 
 	}
 	_, err = t.queries.CreateOutboxEvent(ctx, id)
 	return err
-}
-
-func (t *accountTransaction) GetCurrentVerificationChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
-	return t.getCurrentChallenge(ctx, subject, "verify-email")
 }
 
 func (t *accountTransaction) IncrementChallengeWrongGuess(ctx context.Context, challengeID string) error {

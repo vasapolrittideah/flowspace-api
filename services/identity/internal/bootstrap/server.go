@@ -95,11 +95,12 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	checkPassword := hibp.NewPasswordChecker(&http.Client{Timeout: 4 * time.Second}).Compromised
 	handler := httptransport.NewIdentityHandler(
 		app.NewSignupService(accountRepo, signer, protector, limits.Signup, checkPassword, verifierKey),
-		app.NewVerificationCodeService(accountRepo, protector, limits.CodeRequest, limits.WrongCode, limits.AccountWrongCode, verifierKey),
+		app.NewRequestEmailVerificationCodeService(accountRepo, protector, limits.CodeRequest, verifierKey),
 		app.NewClaimCodeService(accountRepo, protector, limits.CodeRequest, verifierKey),
 		app.NewAccountClaimService(accountRepo, signer, limits.WrongCode, limits.AccountWrongCode, checkPassword, verifierKey),
 		verifier, trusted,
-	).WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
+	).WithVerifyEmail(app.NewVerifyEmailService(accountRepo, limits.WrongCode, limits.AccountWrongCode, verifierKey)).
+		WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
 		WithRefreshSession(app.NewRefreshSessionService(postgres.NewRefreshSessionRepository(pool), signer)).
 		WithCurrentSessionLogout(app.NewLogoutCurrentSessionService(postgres.NewSessionRepository(pool))).
 		WithAllSessionLogout(app.NewLogoutAllSessionsService(accountRepo))

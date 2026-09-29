@@ -59,16 +59,22 @@ export function parseDiff(diff) {
 export function floorFindings({ added, removed, deletedTests }) {
   const findings = [];
   const flag = (rule, file) => findings.push({ rule, file });
+  const addedAssertions = new Map();
 
   for (const { file, text } of added) {
     if (sourceFile.test(file) && suppressionPattern.test(text)) flag('silenced-checker', file);
     if (sourceFile.test(file) && stubPattern.test(text)) flag('unfinished-work', file);
     if (isTestFile(file) && skipPattern.test(text)) flag('test-made-easier', file);
+    if (isTestFile(file) && assertionPattern.test(text)) addedAssertions.set(text, (addedAssertions.get(text) ?? 0) + 1);
     if (file === 'CONSTRAINTS.md' && /^\|\s*E\d+\s*\|/.test(text)) flag('new-exception', file);
   }
 
   for (const { file, text } of removed) {
-    if (isTestFile(file) && !deletedTests.includes(file) && assertionPattern.test(text)) flag('assertion-removed', file);
+    if (isTestFile(file) && !deletedTests.includes(file) && assertionPattern.test(text)) {
+      const movedCount = addedAssertions.get(text) ?? 0;
+      if (movedCount > 0) addedAssertions.set(text, movedCount - 1);
+      else flag('assertion-removed', file);
+    }
   }
   for (const file of deletedTests) flag('test-deleted', file);
 

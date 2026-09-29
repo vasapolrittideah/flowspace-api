@@ -292,3 +292,38 @@ func testAccountClaimRepository(t *testing.T, pool *pgxpool.Pool) {
 		}
 	})
 }
+
+func testClaimRetirement(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Run("typed claim retirement succeeds once", func(t *testing.T) {
+		queries := identitysqlc.New(pool)
+		if _, err := queries.CreateAccount(ctx, identitysqlc.CreateAccountParams{
+			Subject: "claim-old", EmailLocal: "claim", EmailDomain: "example.com", PasswordHash: "$argon2id$test",
+		}); err != nil {
+			t.Fatal(err)
+		}
+		account, err := queries.GetActiveAccountByEmailForUpdate(ctx, identitysqlc.GetActiveAccountByEmailForUpdateParams{
+			EmailLocal: "claim", EmailDomain: "example.com",
+		})
+		if err != nil || account.Subject != "claim-old" {
+			t.Fatalf("account locked by email = %+v, %v", account, err)
+		}
+		for attempt, want := range []int64{1, 0} {
+			count, err := queries.RetireUnverifiedAccount(ctx, "claim-old")
+			if err != nil || count != want {
+				t.Fatalf("retirement %d changed %d rows, %v", attempt+1, count, err)
+			}
+		}
+		if _, err := queries.CreateAccount(ctx, identitysqlc.CreateAccountParams{
+			Subject: "claim-new", EmailLocal: "claim", EmailDomain: "example.com", PasswordHash: "$argon2id$test",
+		}); err != nil {
+			t.Fatal(err)
+		}
+		changed, err := queries.MarkEmailVerified(ctx, "claim-new")
+		if err != nil || changed != 1 {
+			t.Fatalf("verified %d accounts, %v", changed, err)
+		}
+		if changed, err := queries.RetireUnverifiedAccount(ctx, "claim-new"); err != nil || changed != 0 {
+			t.Fatalf("verified account retired %d times, %v", changed, err)
+		}
+	})
+}

@@ -4,7 +4,7 @@ This convention names and groups handwritten Go components inside each service. 
 
 ## Rules
 
-### Do
+### File naming
 
 - Name inbound adapters `<Capability>Handler`.
 - Name components in `app/` `<Capability>Service`. Use the same suffix for their inbound ports.
@@ -13,15 +13,12 @@ This convention names and groups handwritten Go components inside each service. 
 - Name handwritten Go files in snake_case after their main component or capability.
 - Keep generated Protobuf names and generated database code as produced by their tools.
 - Apply this convention to new code and code changed for another task.
-
-### Don't
-
 - Do not name an inbound adapter `<Capability>Controller`.
 - Do not name a database component `<Capability>Store` or `<Capability>Storage`.
 - Do not name a concrete application service or new inbound port `<Capability>UseCase` or `<Capability>Usecase`.
 - Do not rename untouched code only to satisfy this convention. A naming cleanup needs its own reviewable change.
 
-## File boundaries
+### File boundaries
 
 A capability is a task that the service performs. A transaction groups database changes that must commit or roll back together. Group files by the capability and its transaction boundary. Do not split files only by line count, RPC method, or SQL query.
 

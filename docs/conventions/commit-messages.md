@@ -42,7 +42,7 @@ Co-authored-by: <agent-name> <agent-email>
 
 - Include one co-author trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
 - Preserve existing attribution when you amend or squash commits.
-- Use the identity of the agent that contributes. If the agent's harness gives an attribution trailer, use that trailer. Otherwise, use the identity in this table:
+- Use the identity of the agent that contributes. If the agent's harness gives an attribution trailer, use the name and email in that trailer. Otherwise, use the identity in this table. Always spell the trailer key as `Co-authored-by`:
 
   | Agent | Trailer |
   | --- | --- |

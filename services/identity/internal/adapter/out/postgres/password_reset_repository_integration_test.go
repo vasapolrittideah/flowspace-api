@@ -45,6 +45,10 @@ func testPasswordResetRepository(t *testing.T, pool *pgxpool.Pool) {
 	if _, err := queries.MarkEmailVerified(ctx, subject); err != nil {
 		t.Fatal(err)
 	}
+	var verifiedAt time.Time
+	if err := pool.QueryRow(ctx, `SELECT email_verified_at FROM identity_accounts WHERE subject=$1`, subject).Scan(&verifiedAt); err != nil {
+		t.Fatal(err)
+	}
 	oldRefresh := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))
 	oldSessionID := ""
 	for _, seed := range []byte{7, 8} {
@@ -161,6 +165,12 @@ func testPasswordResetRepository(t *testing.T, pool *pgxpool.Pool) {
 	var notices int
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_password_change_notices WHERE account_subject=$1 AND email_local='Reset'`, subject).Scan(&notices); err != nil || notices != 1 {
 		t.Fatalf("queued notices=%d error=%v", notices, err)
+	}
+	var verifiedAfter time.Time
+	var accountEmail string
+	if err := pool.QueryRow(ctx, `SELECT email_verified_at, email_local || '@' || email_domain FROM identity_accounts WHERE subject=$1 AND retired_at IS NULL`,
+		subject).Scan(&verifiedAfter, &accountEmail); err != nil || !verifiedAfter.Equal(verifiedAt) || accountEmail != email {
+		t.Fatalf("reset changed the account identity: verified=%v email=%v error=%v", verifiedAfter.Equal(verifiedAt), accountEmail == email, err)
 	}
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_sessions WHERE account_subject=$1 AND revoked_at IS NULL`, subject).Scan(&activeSessions); err != nil || activeSessions != 0 {
 		t.Fatalf("active old sessions=%d error=%v", activeSessions, err)

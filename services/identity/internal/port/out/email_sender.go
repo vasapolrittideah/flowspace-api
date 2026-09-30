@@ -4,4 +4,5 @@ import "context"
 
 type EmailSender interface {
 	Send(ctx context.Context, email, code, purpose string) error
+	SendPasswordChangeNotice(ctx context.Context, email string) error
 }

@@ -50,3 +50,25 @@ WHERE subject = sqlc.arg(subject)
   AND email_verified_at IS NOT NULL
   AND retired_at IS NULL
 RETURNING id;
+
+-- name: LockNextPasswordChangeNotice :one
+SELECT id, email_local, email_domain
+FROM identity_password_change_notices
+WHERE delivered_at IS NULL
+  AND next_attempt_at <= statement_timestamp()
+ORDER BY next_attempt_at, created_at
+LIMIT 1
+FOR UPDATE SKIP LOCKED;
+
+-- name: MarkPasswordChangeNoticeDelivered :execrows
+UPDATE identity_password_change_notices
+SET delivered_at = statement_timestamp()
+WHERE id = sqlc.arg(id)
+  AND delivered_at IS NULL;
+
+-- name: DeferPasswordChangeNotice :execrows
+UPDATE identity_password_change_notices
+SET attempt_count = attempt_count + 1,
+    next_attempt_at = statement_timestamp() + INTERVAL '30 seconds'
+WHERE id = sqlc.arg(id)
+  AND delivered_at IS NULL;

@@ -13,7 +13,7 @@ A message has a subject, an optional body, and optional footers. The scope and `
 
 Refs: #<issue-number>
 
-Co-authored-by: Codex <noreply@openai.com>
+Co-authored-by: <agent-name> <agent-email>
 ```
 
 | Part | Content and format |
@@ -42,7 +42,14 @@ Co-authored-by: Codex <noreply@openai.com>
 
 - Include one co-author trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
 - Preserve existing attribution when you amend or squash commits.
-- Use `Co-authored-by: Codex <noreply@openai.com>` for Codex. Use each other agent's identity for its trailer.
+- Use the identity of the agent that contributes. If the agent's harness gives an attribution trailer, use that trailer. Otherwise, use the identity in this table:
+
+  | Agent | Trailer |
+  | --- | --- |
+  | Codex | `Co-authored-by: Codex <noreply@openai.com>` |
+  | Claude Code | `Co-authored-by: Claude <noreply@anthropic.com>` |
+
+- Do not add a trailer for an agent that did not contribute.
 - Put trailers after a blank line at the end of the message.
 
 ### Types
@@ -113,7 +120,7 @@ ci: add pull request title validation
 feat(workspace)!: require a role when inviting members
 ```
 
-A documentation checkpoint with Codex attribution uses the full message:
+A documentation checkpoint with Codex attribution uses the full message. Other agents use their own trailer:
 
 ```text
 docs(agents): clarify convention headings

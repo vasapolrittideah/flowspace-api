@@ -4,13 +4,14 @@ This convention defines the format for checkpoint and squash commit messages.
 
 ## Template
 
-A message has a subject, an optional body, and optional footers. The scope and `Refs` footer are optional.
+A message has a subject, an optional body, and optional footers. The scope and Issue footers are optional.
 
 ```text
 <type>(<scope>): <description>
 
 <body>
 
+Closes: #<issue-number>
 Refs: #<issue-number>
 
 Co-authored-by: <agent-name> <agent-email>
@@ -20,7 +21,8 @@ Co-authored-by: <agent-name> <agent-email>
 | --- | --- |
 | Subject | A type, optional scope, and short description on the first line. The `!` marker denotes a breaking contract change. |
 | Body | The reason or trade-off when it is not clear from the subject. For a breaking contract change, the incompatibility and required caller changes. |
-| `Refs` footer | The related Issue number. This footer links the commit to the Issue without closing it. |
+| `Closes` footer | An Issue that the pull request completes. Use it only in a squash commit. GitHub closes the Issue when the commit reaches `main`. |
+| `Refs` footer | A related Issue that stays open. This footer links the commit to the Issue without closing it. |
 | Co-author trailer | The identity of each contributing agent. |
 
 ## Rules
@@ -31,8 +33,10 @@ Co-authored-by: <agent-name> <agent-email>
 - If a contract change breaks callers, put `!` before the colon and explain the incompatibility and required caller changes in the body.
 - Write a short, specific subject. Do not use vague text such as `update`, `misc`, or `fix things`.
 - If the reason or trade-off is unclear, explain it in the body. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.
-- If a commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers.
-- Omit the scope, body, and `Refs` footer when they do not apply.
+- If a checkpoint commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers.
+- In a squash commit, copy the pull request's `Related issues` as footers: `Closes: #<issue-number>` for each Issue it completes and `Refs: #<issue-number>` for each Issue that stays open. Do not add Issues from `Follow-up tasks`.
+- Write one footer per Issue, and repeat the key on each line. Put `Closes` footers before `Refs` footers, and order each group by ascending Issue number. Do not leave blank lines between Issue footers or add a period at the end.
+- Omit the scope, body, and Issue footers when they do not apply.
 - For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
 - Limit prose lines in the body to 72 characters.
 - Preserve paragraphs and lists.

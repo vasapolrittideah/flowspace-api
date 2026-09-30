@@ -20,7 +20,7 @@ The [PR template](../../.github/pull_request_template.md) contains `What changed
 - Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
 - Keep the title, description, and [labels](github-labels.md) consistent with the final work.
 - Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
-- In `Related issues`, write one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when an Issue remains open, such as when a PR updates a spec before implementation. Do not leave blank lines between references. `Refs` does not close the Issue. `Closes` closes it after the PR merges into `main`. GitHub also accepts `Fixes`, but use `Closes` for consistency.
+- In `Related issues`, write one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when an Issue remains open, such as when a PR updates a spec before implementation. Write one line per Issue, and repeat the keyword on each line, because GitHub ignores an Issue that follows a comma. Put `Closes` lines before `Refs` lines, and order each group by ascending Issue number. Do not leave blank lines between references. `Refs` does not close the Issue. `Closes` closes it after the PR merges into `main`. GitHub also accepts `Fixes`, but use `Closes` for consistency.
 - Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete every section. Write `n/a` in `Related issues`, `Risks or limitations`, or `Follow-up tasks` when there is nothing to report.
 - Before creating or updating a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review every prose section after editing. Keep new text in an existing paragraph or bullet only when it develops the same point. Start a new paragraph for a separate explanation, or use separate bullets for independent points. Do not use a bullet when a section has only one point, except in `Follow-up tasks`.
 
@@ -53,6 +53,7 @@ In `Risks or limitations`, state the cause of each unresolved failure and the re
 - Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
 - Use the reviewed PR title as the subject. Follow the [commit message rules](commit-messages.md#rules), including formatting and AI co-authorship.
 - If a body is needed, explain important effects and compatibility or migration information. Do not copy detailed verification from the PR.
+- Copy `Related issues` into the [Issue footers](commit-messages.md#message-format) in the same order.
 - Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
 
 ## Examples

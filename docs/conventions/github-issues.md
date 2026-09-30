@@ -1,6 +1,6 @@
 # GitHub Issue conventions
 
-This convention defines the Issue body and result comment for one task.
+This convention defines the Issue body for one task, the gap comment for an ordinary task, and the result comment for a final Prove task.
 
 ## Template
 
@@ -51,56 +51,74 @@ Estimated scope: <expected size>.
 - Add one native GitHub `Blocked by` relationship for each blocking Issue. Use these relationships as the dependency list.
 - For generated output, list only its folder. Do not list generated file names.
 
-## Task result comment
+## Gap comment
 
-After verification, check each completed item in the Issue body. Leave failed and unrun items unchecked. Post the run result as a comment. Keep measurements and run details out of the Issue body.
+After verification, check each completed item in the Issue body. Leave failed and unrun items unchecked. The pull request (PR) that closes the Issue records the changes and the CI result, so an ordinary Issue has no comment by default.
+
+Post a comment only when the PR does not show something that a reader of the Issue needs: an unchecked item or a gap that needs a follow-up Issue.
 
 ```markdown
-## Result
-
-Date: YYYY-MM-DD
-Status: Complete | Blocked
-Outcome: <State the result in one sentence.>
-Environment: <State where the local checks ran and name any test services, or write CI only.>
-CI: <Passed | Failed | Not run>. [Run <run-id>](https://github.com/vasapolrittideah/flowspace-api/actions/runs/<run-id>).
-
-## Measurements
-
-| Measure | Result | Required |
-| --- | --- | --- |
-| Project coverage | <actual>% | <C5 threshold> |
-| Changed-line coverage | <actual>% or n/a | <C4 threshold> when applicable |
-| Reachable vulnerabilities | <actual> | 0 |
-| Bruno requests | <passed>/<total> | all pass |
-| Bruno tests | <passed>/<total> | all pass |
-| Bruno assertions | <passed>/<total> | all pass |
-
 ## Gaps
 
-None
+- <Unchecked item>: <cause>. <Next action.>
 
-## References
+## Follow-up tasks
 
-PR: #<number>
-Follow-up: #<number> or None
+- #<issue-number>: <remaining work in one sentence>.
 ```
 
-- Set `Status` to `Complete` only when all required checks pass.
-- Do not repeat the completed Verification checklist in the comment. Keep `None` under `Gaps` when every required check passes. For each failed or unrun item, leave its checkbox clear. Replace `None` with a bullet that names the item, cause, and next action.
-- Copy the Required values for coverage from C4 and C5 in [`CONSTRAINTS.md`](../../CONSTRAINTS.md) when you write the comment. Prefer CI measurements. Use local output if CI did not produce a measurement. Write values in the Result column as plain text. Include Bruno rows only when Bruno applies. Use n/a for changed-line coverage when the task adds no executable Go lines. If a command stops before it reports a measurement, omit that row and explain the failure under `Gaps`.
-- Keep the CI run link in every report. If CI did not run, replace the link with the reason. Link a follow-up Issue when work remains. Do not include secrets or test account data.
+- Omit a section that has nothing to report. Do not write `n/a`.
+- Write each follow-up Issue in the [Follow-up tasks format](pull-requests.md#follow-up-tasks).
+- Do not add the PR, CI results, or measurements. Do not include secrets or test account data.
 
 ## Final Prove task
 
 The final task in each module plan checks the approved specification through tests and review. Use the Issue template above.
 
+### Result comment
+
+After verification, check each completed item in the Issue body and post a result comment. The comment records the evidence that CI does not keep: local checks, gaps, the module closure decision, and follow-up work.
+
+```markdown
+## Result
+
+Status: Complete | Blocked
+
+Outcome: <State the result in one sentence.>
+
+Local checks: <State each command that CI does not run, its passed and total counts, and the local stack it ran against.>
+
+PR: #<number>. CI <passed | failed> in [run <run-id>](https://github.com/vasapolrittideah/flowspace-api/actions/runs/<run-id>).
+
+## Gaps
+
+n/a
+
+## Module closure
+
+<State the specification and plan statuses. If a success criterion has only partial proof, state why the module can still close.>
+
+## Follow-up tasks
+
+n/a
+```
+
+- Separate the lines under `Result` with blank lines. Do not add a date because GitHub shows when the comment was posted.
+- Complete every section. Write `n/a` under `Gaps` or `Follow-up tasks` when there is nothing to report.
+- Set `Status` to `Complete` only when all required checks pass. If a gap prevents closure, set `Status` to `Blocked` and keep the specification and plan statuses unchanged.
+- For each failed or unrun item, leave its checkbox clear and add a bullet under `Gaps` that names the item, cause, and next action.
+- In `Local checks`, include only checks that CI does not run, such as `task smoke:bruno` passed 36/36 requests against k3d flowspace-local with Mailpit. Separate several checks with semicolons. Write `Local checks: n/a` when no local check applies.
+- Do not repeat the Verification checklist or CI measurements. Write each follow-up Issue in the [Follow-up tasks format](pull-requests.md#follow-up-tasks). Do not include secrets or test account data.
+
+### Issue rules
+
 - Title the Issue `Prove <capability> against its specification`. Name the capability so readers can distinguish it from other modules.
 - In Description, name the final test scope and any cross-service checks owned by another Issue. Link to that Issue instead of repeating its work.
 - In Acceptance criteria, require tests for every success criterion and applicable threat.
 - Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
-- For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Run `task smoke:bruno` and record the result in the task result comment.
-- If a check fails or is missing, record the gap and its follow-up Issue in the task result comment. Keep the task and final plan checkpoint open until the gap is resolved.
-- Add separate Verification items for the module's applicable integration, smoke, contract, and generation checks. Check completed items in the Issue body and report only gaps in the task result comment.
+- For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Run `task smoke:bruno` and record the result in the result comment.
+- If a check fails or is missing, record the gap and its follow-up Issue in the result comment. Keep the task and final plan checkpoint open until the gap is resolved.
+- Add separate Verification items for the module's applicable integration, smoke, contract, and generation checks. Check completed items in the Issue body.
 - Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
 - When every criterion passes, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
 

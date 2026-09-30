@@ -1,4 +1,4 @@
-<!-- Use a paragraph for one connected point and bullets for multiple independent points in What changed, Why, Related issues, and Risks or limitations. -->
+<!-- Use a paragraph for one connected point and bullets for multiple independent points in What changed, Why, and Risks or limitations. Always use bullets in Follow-up tasks. -->
 
 ## What changed
 
@@ -16,6 +16,12 @@ n/a
 
 ## Risks or limitations
 
-<!-- Include material compatibility effects, unresolved failures, checks that did not run, remaining limitations, or follow-up work when present. -->
+<!-- Include material compatibility effects, unresolved failures, checks that did not run, or remaining limitations when present. -->
+
+n/a
+
+## Follow-up tasks
+
+<!-- Add one bullet per open Issue for later work, even when there is only one: `- #<issue-number>: <remaining work in one sentence>.` -->
 
 n/a

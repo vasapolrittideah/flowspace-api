@@ -17,13 +17,11 @@ Refs: #<issue-number>
 Co-authored-by: <agent-name> <agent-email>
 ```
 
-| Part | Content and format |
-| --- | --- |
-| Subject | A type, optional scope, and short description on the first line. The `!` marker denotes a breaking contract change. |
-| Body | The reason or trade-off when it is not clear from the subject. For a breaking contract change, the incompatibility and required caller changes. |
-| `Closes` footer | An Issue that the pull request completes. Use it only in a squash commit. GitHub closes the Issue when the commit reaches `main`. |
-| `Refs` footer | A related Issue that stays open. This footer links the commit to the Issue without closing it. |
-| Co-author trailer | The identity of each contributing agent. |
+- Subject: A type, optional scope, and short description on the first line. The `!` marker denotes a breaking contract change.
+- Body: The reason or trade-off when it is not clear from the subject. For a breaking contract change, the incompatibility and required caller changes.
+- `Closes` footer: An Issue that the pull request completes. Use it only in a squash commit. GitHub closes the Issue when the commit reaches `main`.
+- `Refs` footer: A related Issue that stays open. This footer links the commit to the Issue without closing it.
+- Co-author trailer: The identity of each contributing agent.
 
 ## Rules
 

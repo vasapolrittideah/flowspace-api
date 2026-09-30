@@ -28,15 +28,13 @@ Estimated scope: <expected size>.
 - `<source, test, contract, or configuration path>`
 ```
 
-| Field | Content and format |
-| --- | --- |
-| Title | The task outcome. |
-| Module | Use the module ID from the approved specification. |
-| Estimated scope | State the expected size of the task. |
-| Description | State the task outcome and scope. Put prerequisites without an Issue number in a separate paragraph. |
-| Acceptance criteria | Independently checkable outcomes, each as a `- [ ]` item. |
-| Verification | Commands and the behavior each command checks, each as a `- [ ]` item. |
-| Files likely touched | Source, test, contract, and configuration paths. Generated output appears as a folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). |
+- Title: The task outcome.
+- Module: Use the module ID from the approved specification.
+- Estimated scope: State the expected size of the task.
+- Description: State the task outcome and scope. Put prerequisites without an Issue number in a separate paragraph.
+- Acceptance criteria: Independently checkable outcomes, each as a `- [ ]` item.
+- Verification: Commands and the behavior each command checks, each as a `- [ ]` item.
+- Files likely touched: Source, test, contract, and configuration paths. Generated output appears as a folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output).
 
 ## Rules
 

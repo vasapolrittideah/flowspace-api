@@ -54,19 +54,17 @@ Status: Draft.
 <readiness checks, if any>
 ```
 
-| Part | Content and format |
-| --- | --- |
-| Header | The capability name in the title and the module ID from the file name. The status is `Draft`, `Approved`, or `Implemented`. |
-| Objective | State the capability, its users, its purpose, and the intended result. |
-| Scope and decision sources | Included and excluded work, module dependencies, and relevant accepted decisions. |
-| Contract | Define consumer-visible interfaces, inputs, outputs, data, and errors. |
-| Required behavior | Business rules, invariants, security, consistency, and operational behavior. |
-| Commands | List commands that build, test, lint, or generate artifacts for the capability. |
-| Testing strategy | Feature-specific tests and the boundary that owns them. |
-| Boundaries | Name capability-specific actions to always do, ask about, or never do. |
-| Success criteria | A numbered list of observable Given, When, Then outcomes required for completion. |
-| Open questions and approval | Unresolved decisions and required approval, when applicable. |
-| Before real users join | Readiness checks, when applicable. |
+- Header: The capability name in the title and the module ID from the file name. The status is `Draft`, `Approved`, or `Implemented`.
+- Objective: State the capability, its users, its purpose, and the intended result.
+- Scope and decision sources: Included and excluded work, module dependencies, and relevant accepted decisions.
+- Contract: Define consumer-visible interfaces, inputs, outputs, data, and errors.
+- Required behavior: Business rules, invariants, security, consistency, and operational behavior.
+- Commands: List commands that build, test, lint, or generate artifacts for the capability.
+- Testing strategy: Feature-specific tests and the boundary that owns them.
+- Boundaries: Name capability-specific actions to always do, ask about, or never do.
+- Success criteria: A numbered list of observable Given, When, Then outcomes required for completion.
+- Open questions and approval: Unresolved decisions and required approval, when applicable.
+- Before real users join: Readiness checks, when applicable.
 
 ## Rules
 

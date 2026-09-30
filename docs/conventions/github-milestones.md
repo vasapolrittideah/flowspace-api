@@ -4,11 +4,9 @@ This convention links one repository milestone to one approved module plan.
 
 ## Template
 
-| Part | Content and format |
-| --- | --- |
-| Title | The capability name in the plan's `# Implementation plan: <capability name>` heading, without the fixed prefix. |
-| Description | `Plan: https://github.com/vasapolrittideah/flowspace-api/blob/main/tasks/<module-id>.md` |
-| Due date | The plan's due date, if it has one. |
+- Title: The capability name in the plan's `# Implementation plan: <capability name>` heading, without the fixed prefix.
+- Description: `Plan: https://github.com/vasapolrittideah/flowspace-api/blob/main/tasks/<module-id>.md`
+- Due date: The plan's due date, if it has one.
 
 ## Rules
 

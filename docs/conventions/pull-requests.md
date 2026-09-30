@@ -6,14 +6,12 @@ This convention defines how to write and review a pull request (PR) and its sugg
 
 The [PR template](../../.github/pull_request_template.md) contains `What changed`, `Why`, `Related issues`, `Risks or limitations`, and `Follow-up tasks` sections.
 
-| Part | Content and format |
-| --- | --- |
-| Title | A [commit subject](commit-messages.md#template) that describes the result. |
-| What changed | State what changed and the result. |
-| Why | State the problem and why the change is needed. |
-| Related issues | Add one reference per related Issue, or `n/a` when there is none. |
-| Risks or limitations | Material compatibility effects, unresolved failures, checks that did not run, or remaining limits. |
-| Follow-up tasks | One bullet per open Issue for later work, or `n/a` when there is none. |
+- Title: A [commit subject](commit-messages.md#template) that describes the result.
+- What changed: State what changed and the result.
+- Why: State the problem and why the change is needed.
+- Related issues: Add one reference per related Issue, or `n/a` when there is none.
+- Risks or limitations: Material compatibility effects, unresolved failures, checks that did not run, or remaining limits.
+- Follow-up tasks: One bullet per open Issue for later work, or `n/a` when there is none.
 
 ## Rules
 

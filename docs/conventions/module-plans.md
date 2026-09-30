@@ -36,14 +36,12 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 <table of material risks, impacts, and controls>
 ```
 
-| Part | Content and format |
-| --- | --- |
-| Header | The capability name and module ID from the approved specification. The status is `Draft`, `Approved`, or `Complete`. |
-| Overview | State the capability and link the approved specification. |
-| Architecture decisions | The decisions that set task boundaries. |
-| Dependency graph | Show the order between major pieces of work in a Mermaid diagram. |
-| Task list | Link the GitHub Project and the plan's milestone, then number tasks by phase with checkable checkpoints and an ordered index of Issue links. |
-| Risks and controls | Name each material risk, its impact, and its control in a table. |
+- Header: The capability name and module ID from the approved specification. The status is `Draft`, `Approved`, or `Complete`.
+- Overview: State the capability and link the approved specification.
+- Architecture decisions: The decisions that set task boundaries.
+- Dependency graph: Show the order between major pieces of work in a Mermaid diagram.
+- Task list: Link the GitHub Project and the plan's milestone, then number tasks by phase with checkable checkpoints and an ordered index of Issue links.
+- Risks and controls: Name each material risk, its impact, and its control in a table.
 
 ## Rules
 

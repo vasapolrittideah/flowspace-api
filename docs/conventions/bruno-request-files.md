@@ -8,10 +8,8 @@ This convention names Bruno request files in `tests/smoke/bruno/`. A request fil
 <NN>-<verb-phrase>.bru
 ```
 
-| Part | Content and format |
-| --- | --- |
-| `NN` | The `seq` value in the `meta` block, written with two digits. |
-| Verb phrase | The `name` value in the `meta` block, in lowercase words separated by hyphens. |
+- `NN`: The `seq` value in the `meta` block, written with two digits.
+- Verb phrase: The `name` value in the `meta` block, in lowercase words separated by hyphens.
 
 ## Rules
 

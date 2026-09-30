@@ -29,6 +29,8 @@ The [PR template](../../.github/pull_request_template.md) contains `What changed
 - Do not put `Closes`, `Fixes`, or `Resolves` before a follow-up Issue number. GitHub would close the Issue when the PR merges.
 - Do not repeat a follow-up Issue in `Related issues`. When a limitation has follow-up work, describe the limitation in `Risks or limitations` and refer to `Follow-up tasks` instead of repeating the Issue.
 
+## Review readiness
+
 ### Before requesting review
 
 - Preserve work from other tasks.

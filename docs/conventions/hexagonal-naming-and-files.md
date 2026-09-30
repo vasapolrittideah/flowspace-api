@@ -23,7 +23,7 @@ This convention names and groups handwritten Go components and SQL files inside 
 
 A capability is a task that the service performs. A transaction groups database changes that must commit or roll back together.
 
-- Group files by the capability and its transaction boundary. Do not split files only by line count, RPC method, or SQL query.
+- Set file boundaries separately for each layer. Group handlers by related RPCs, services by workflows and transaction boundaries, and data access by concrete repository and shared transaction mechanism. Do not create matching files in all three layers for every capability. Do not split files only by line count, RPC method, or SQL query.
 - Keep domain rules with the concept whose invariants they protect. Add a rule to an existing concept file when it belongs there.
 - Keep related application workflows in one `<capability>_service.go`. Separate them only when their outcomes or transaction boundaries define distinct capabilities. Keep the steps of each workflow together.
 - Keep an inbound port's interface, input, and result in the file for its capability.
@@ -50,5 +50,7 @@ A capability is a task that the service performs. A transaction groups database 
 - `WorkspaceHandler` in `adapter/in/http/workspace_handler.go` names an inbound adapter.
 - `WorkspaceService` in `app/workspace_service.go` names an application component and its inbound port.
 - `WorkspaceRepository` in `adapter/out/postgres/workspace_repository.go` names a database adapter and its outbound port.
+- Workspace's handler, service, and repository share the `workspace` name because their boundaries align. Other capabilities do not need matching names across layers.
 - `TokenVerifier` in `adapter/out/keycloak/token_verifier.go` names an outbound adapter by its capability.
 - `IdentityHandler` can keep shared code in `identity_handler.go` while related password recovery RPC methods live in `password_recovery_handler.go`.
+- Identity's `SignupService` and `PasswordLoginService` share one `AccountRepository` in `adapter/out/postgres/account_repository.go`. They use the same concrete repository and transaction code, so neither service needs its own repository file.

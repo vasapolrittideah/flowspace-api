@@ -66,6 +66,12 @@ const (
 	// IdentityServiceLogoutAllSessionsProcedure is the fully-qualified name of the IdentityService's
 	// LogoutAllSessions RPC.
 	IdentityServiceLogoutAllSessionsProcedure = "/flowspace.identity.v1.IdentityService/LogoutAllSessions"
+	// IdentityServiceStartProviderLoginProcedure is the fully-qualified name of the IdentityService's
+	// StartProviderLogin RPC.
+	IdentityServiceStartProviderLoginProcedure = "/flowspace.identity.v1.IdentityService/StartProviderLogin"
+	// IdentityServiceCreateProviderSessionProcedure is the fully-qualified name of the
+	// IdentityService's CreateProviderSession RPC.
+	IdentityServiceCreateProviderSessionProcedure = "/flowspace.identity.v1.IdentityService/CreateProviderSession"
 	// IdentityServiceCheckSessionProcedure is the fully-qualified name of the IdentityService's
 	// CheckSession RPC.
 	IdentityServiceCheckSessionProcedure = "/flowspace.identity.v1.IdentityService/CheckSession"
@@ -104,6 +110,14 @@ type IdentityServiceClient interface {
 	// Revokes all sessions for the subject in one validated access token.
 	// Requires exactly one Authorization bearer header.
 	LogoutAllSessions(context.Context, *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error)
+	// Starts a Google or GitHub login attempt for an API client.
+	// Returns no FlowSpace token. Rejects Idempotency-Key.
+	// Responses require Cache-Control: no-store.
+	StartProviderLogin(context.Context, *connect.Request[v1.StartProviderLoginRequest]) (*connect.Response[v1.StartProviderLoginResponse], error)
+	// Creates a device session from an attempt token and handoff code.
+	// An unusable or colliding provider email returns FailedPrecondition.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	CreateProviderSession(context.Context, *connect.Request[v1.CreateProviderSessionRequest]) (*connect.Response[v1.CreateProviderSessionResponse], error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -187,6 +201,18 @@ func NewIdentityServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(identityServiceMethods.ByName("LogoutAllSessions")),
 			connect.WithClientOptions(opts...),
 		),
+		startProviderLogin: connect.NewClient[v1.StartProviderLoginRequest, v1.StartProviderLoginResponse](
+			httpClient,
+			baseURL+IdentityServiceStartProviderLoginProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("StartProviderLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		createProviderSession: connect.NewClient[v1.CreateProviderSessionRequest, v1.CreateProviderSessionResponse](
+			httpClient,
+			baseURL+IdentityServiceCreateProviderSessionProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("CreateProviderSession")),
+			connect.WithClientOptions(opts...),
+		),
 		checkSession: connect.NewClient[v1.CheckSessionRequest, v1.CheckSessionResponse](
 			httpClient,
 			baseURL+IdentityServiceCheckSessionProcedure,
@@ -209,6 +235,8 @@ type identityServiceClient struct {
 	refreshSession                    *connect.Client[v1.RefreshSessionRequest, v1.RefreshSessionResponse]
 	logoutCurrentSession              *connect.Client[v1.LogoutCurrentSessionRequest, v1.LogoutCurrentSessionResponse]
 	logoutAllSessions                 *connect.Client[v1.LogoutAllSessionsRequest, v1.LogoutAllSessionsResponse]
+	startProviderLogin                *connect.Client[v1.StartProviderLoginRequest, v1.StartProviderLoginResponse]
+	createProviderSession             *connect.Client[v1.CreateProviderSessionRequest, v1.CreateProviderSessionResponse]
 	checkSession                      *connect.Client[v1.CheckSessionRequest, v1.CheckSessionResponse]
 }
 
@@ -269,6 +297,16 @@ func (c *identityServiceClient) LogoutAllSessions(ctx context.Context, req *conn
 	return c.logoutAllSessions.CallUnary(ctx, req)
 }
 
+// StartProviderLogin calls flowspace.identity.v1.IdentityService.StartProviderLogin.
+func (c *identityServiceClient) StartProviderLogin(ctx context.Context, req *connect.Request[v1.StartProviderLoginRequest]) (*connect.Response[v1.StartProviderLoginResponse], error) {
+	return c.startProviderLogin.CallUnary(ctx, req)
+}
+
+// CreateProviderSession calls flowspace.identity.v1.IdentityService.CreateProviderSession.
+func (c *identityServiceClient) CreateProviderSession(ctx context.Context, req *connect.Request[v1.CreateProviderSessionRequest]) (*connect.Response[v1.CreateProviderSessionResponse], error) {
+	return c.createProviderSession.CallUnary(ctx, req)
+}
+
 // CheckSession calls flowspace.identity.v1.IdentityService.CheckSession.
 func (c *identityServiceClient) CheckSession(ctx context.Context, req *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error) {
 	return c.checkSession.CallUnary(ctx, req)
@@ -307,6 +345,14 @@ type IdentityServiceHandler interface {
 	// Revokes all sessions for the subject in one validated access token.
 	// Requires exactly one Authorization bearer header.
 	LogoutAllSessions(context.Context, *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error)
+	// Starts a Google or GitHub login attempt for an API client.
+	// Returns no FlowSpace token. Rejects Idempotency-Key.
+	// Responses require Cache-Control: no-store.
+	StartProviderLogin(context.Context, *connect.Request[v1.StartProviderLoginRequest]) (*connect.Response[v1.StartProviderLoginResponse], error)
+	// Creates a device session from an attempt token and handoff code.
+	// An unusable or colliding provider email returns FailedPrecondition.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	CreateProviderSession(context.Context, *connect.Request[v1.CreateProviderSessionRequest]) (*connect.Response[v1.CreateProviderSessionResponse], error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -386,6 +432,18 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 		connect.WithSchema(identityServiceMethods.ByName("LogoutAllSessions")),
 		connect.WithHandlerOptions(opts...),
 	)
+	identityServiceStartProviderLoginHandler := connect.NewUnaryHandler(
+		IdentityServiceStartProviderLoginProcedure,
+		svc.StartProviderLogin,
+		connect.WithSchema(identityServiceMethods.ByName("StartProviderLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceCreateProviderSessionHandler := connect.NewUnaryHandler(
+		IdentityServiceCreateProviderSessionProcedure,
+		svc.CreateProviderSession,
+		connect.WithSchema(identityServiceMethods.ByName("CreateProviderSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	identityServiceCheckSessionHandler := connect.NewUnaryHandler(
 		IdentityServiceCheckSessionProcedure,
 		svc.CheckSession,
@@ -416,6 +474,10 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 			identityServiceLogoutCurrentSessionHandler.ServeHTTP(w, r)
 		case IdentityServiceLogoutAllSessionsProcedure:
 			identityServiceLogoutAllSessionsHandler.ServeHTTP(w, r)
+		case IdentityServiceStartProviderLoginProcedure:
+			identityServiceStartProviderLoginHandler.ServeHTTP(w, r)
+		case IdentityServiceCreateProviderSessionProcedure:
+			identityServiceCreateProviderSessionHandler.ServeHTTP(w, r)
 		case IdentityServiceCheckSessionProcedure:
 			identityServiceCheckSessionHandler.ServeHTTP(w, r)
 		default:
@@ -469,6 +531,14 @@ func (UnimplementedIdentityServiceHandler) LogoutCurrentSession(context.Context,
 
 func (UnimplementedIdentityServiceHandler) LogoutAllSessions(context.Context, *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.LogoutAllSessions is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) StartProviderLogin(context.Context, *connect.Request[v1.StartProviderLoginRequest]) (*connect.Response[v1.StartProviderLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.StartProviderLogin is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) CreateProviderSession(context.Context, *connect.Request[v1.CreateProviderSessionRequest]) (*connect.Response[v1.CreateProviderSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.CreateProviderSession is not implemented"))
 }
 
 func (UnimplementedIdentityServiceHandler) CheckSession(context.Context, *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error) {

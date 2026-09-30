@@ -23,6 +23,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Provider int32
+
+const (
+	Provider_PROVIDER_UNSPECIFIED Provider = 0
+	Provider_PROVIDER_GOOGLE      Provider = 1
+	Provider_PROVIDER_GITHUB      Provider = 2
+)
+
+// Enum value maps for Provider.
+var (
+	Provider_name = map[int32]string{
+		0: "PROVIDER_UNSPECIFIED",
+		1: "PROVIDER_GOOGLE",
+		2: "PROVIDER_GITHUB",
+	}
+	Provider_value = map[string]int32{
+		"PROVIDER_UNSPECIFIED": 0,
+		"PROVIDER_GOOGLE":      1,
+		"PROVIDER_GITHUB":      2,
+	}
+)
+
+func (x Provider) Enum() *Provider {
+	p := new(Provider)
+	*p = x
+	return p
+}
+
+func (x Provider) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Provider) Descriptor() protoreflect.EnumDescriptor {
+	return file_flowspace_identity_v1_identity_service_proto_enumTypes[0].Descriptor()
+}
+
+func (Provider) Type() protoreflect.EnumType {
+	return &file_flowspace_identity_v1_identity_service_proto_enumTypes[0]
+}
+
+func (x Provider) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Provider.Descriptor instead.
+func (Provider) EnumDescriptor() ([]byte, []int) {
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{0}
+}
+
 type CreateAccountRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
@@ -887,6 +936,254 @@ func (x *CreatePasswordSessionResponse) GetSessionExpiresAt() *timestamppb.Times
 	return nil
 }
 
+type StartProviderLoginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Provider      Provider               `protobuf:"varint,1,opt,name=provider,proto3,enum=flowspace.identity.v1.Provider" json:"provider,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartProviderLoginRequest) Reset() {
+	*x = StartProviderLoginRequest{}
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartProviderLoginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartProviderLoginRequest) ProtoMessage() {}
+
+func (x *StartProviderLoginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartProviderLoginRequest.ProtoReflect.Descriptor instead.
+func (*StartProviderLoginRequest) Descriptor() ([]byte, []int) {
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *StartProviderLoginRequest) GetProvider() Provider {
+	if x != nil {
+		return x.Provider
+	}
+	return Provider_PROVIDER_UNSPECIFIED
+}
+
+type StartProviderLoginResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AuthorizationUrl string                 `protobuf:"bytes,1,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty"`
+	AttemptToken     string                 `protobuf:"bytes,2,opt,name=attempt_token,json=attemptToken,proto3" json:"attempt_token,omitempty"`
+	AttemptExpiresAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=attempt_expires_at,json=attemptExpiresAt,proto3" json:"attempt_expires_at,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *StartProviderLoginResponse) Reset() {
+	*x = StartProviderLoginResponse{}
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartProviderLoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartProviderLoginResponse) ProtoMessage() {}
+
+func (x *StartProviderLoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartProviderLoginResponse.ProtoReflect.Descriptor instead.
+func (*StartProviderLoginResponse) Descriptor() ([]byte, []int) {
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *StartProviderLoginResponse) GetAuthorizationUrl() string {
+	if x != nil {
+		return x.AuthorizationUrl
+	}
+	return ""
+}
+
+func (x *StartProviderLoginResponse) GetAttemptToken() string {
+	if x != nil {
+		return x.AttemptToken
+	}
+	return ""
+}
+
+func (x *StartProviderLoginResponse) GetAttemptExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AttemptExpiresAt
+	}
+	return nil
+}
+
+type CreateProviderSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AttemptToken  string                 `protobuf:"bytes,1,opt,name=attempt_token,json=attemptToken,proto3" json:"attempt_token,omitempty"`
+	HandoffCode   string                 `protobuf:"bytes,2,opt,name=handoff_code,json=handoffCode,proto3" json:"handoff_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateProviderSessionRequest) Reset() {
+	*x = CreateProviderSessionRequest{}
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateProviderSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateProviderSessionRequest) ProtoMessage() {}
+
+func (x *CreateProviderSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateProviderSessionRequest.ProtoReflect.Descriptor instead.
+func (*CreateProviderSessionRequest) Descriptor() ([]byte, []int) {
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *CreateProviderSessionRequest) GetAttemptToken() string {
+	if x != nil {
+		return x.AttemptToken
+	}
+	return ""
+}
+
+func (x *CreateProviderSessionRequest) GetHandoffCode() string {
+	if x != nil {
+		return x.HandoffCode
+	}
+	return ""
+}
+
+type CreateProviderSessionResponse struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	Subject               string                 `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
+	EmailVerified         *bool                  `protobuf:"varint,2,opt,name=email_verified,json=emailVerified,proto3,oneof" json:"email_verified,omitempty"`
+	AccessToken           string                 `protobuf:"bytes,3,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken          string                 `protobuf:"bytes,4,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	AccessTokenExpiresAt  *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=access_token_expires_at,json=accessTokenExpiresAt,proto3" json:"access_token_expires_at,omitempty"`
+	RefreshTokenExpiresAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=refresh_token_expires_at,json=refreshTokenExpiresAt,proto3" json:"refresh_token_expires_at,omitempty"`
+	SessionExpiresAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=session_expires_at,json=sessionExpiresAt,proto3" json:"session_expires_at,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *CreateProviderSessionResponse) Reset() {
+	*x = CreateProviderSessionResponse{}
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateProviderSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateProviderSessionResponse) ProtoMessage() {}
+
+func (x *CreateProviderSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateProviderSessionResponse.ProtoReflect.Descriptor instead.
+func (*CreateProviderSessionResponse) Descriptor() ([]byte, []int) {
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *CreateProviderSessionResponse) GetSubject() string {
+	if x != nil {
+		return x.Subject
+	}
+	return ""
+}
+
+func (x *CreateProviderSessionResponse) GetEmailVerified() bool {
+	if x != nil && x.EmailVerified != nil {
+		return *x.EmailVerified
+	}
+	return false
+}
+
+func (x *CreateProviderSessionResponse) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *CreateProviderSessionResponse) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
+func (x *CreateProviderSessionResponse) GetAccessTokenExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AccessTokenExpiresAt
+	}
+	return nil
+}
+
+func (x *CreateProviderSessionResponse) GetRefreshTokenExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RefreshTokenExpiresAt
+	}
+	return nil
+}
+
+func (x *CreateProviderSessionResponse) GetSessionExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.SessionExpiresAt
+	}
+	return nil
+}
+
 type RefreshSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
@@ -896,7 +1193,7 @@ type RefreshSessionRequest struct {
 
 func (x *RefreshSessionRequest) Reset() {
 	*x = RefreshSessionRequest{}
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[16]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -908,7 +1205,7 @@ func (x *RefreshSessionRequest) String() string {
 func (*RefreshSessionRequest) ProtoMessage() {}
 
 func (x *RefreshSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[16]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -921,7 +1218,7 @@ func (x *RefreshSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshSessionRequest.ProtoReflect.Descriptor instead.
 func (*RefreshSessionRequest) Descriptor() ([]byte, []int) {
-	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{16}
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RefreshSessionRequest) GetRefreshToken() string {
@@ -944,7 +1241,7 @@ type RefreshSessionResponse struct {
 
 func (x *RefreshSessionResponse) Reset() {
 	*x = RefreshSessionResponse{}
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[17]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -956,7 +1253,7 @@ func (x *RefreshSessionResponse) String() string {
 func (*RefreshSessionResponse) ProtoMessage() {}
 
 func (x *RefreshSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[17]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -969,7 +1266,7 @@ func (x *RefreshSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshSessionResponse.ProtoReflect.Descriptor instead.
 func (*RefreshSessionResponse) Descriptor() ([]byte, []int) {
-	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{17}
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *RefreshSessionResponse) GetAccessToken() string {
@@ -1015,7 +1312,7 @@ type LogoutCurrentSessionRequest struct {
 
 func (x *LogoutCurrentSessionRequest) Reset() {
 	*x = LogoutCurrentSessionRequest{}
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[18]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1027,7 +1324,7 @@ func (x *LogoutCurrentSessionRequest) String() string {
 func (*LogoutCurrentSessionRequest) ProtoMessage() {}
 
 func (x *LogoutCurrentSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[18]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1040,7 +1337,7 @@ func (x *LogoutCurrentSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutCurrentSessionRequest.ProtoReflect.Descriptor instead.
 func (*LogoutCurrentSessionRequest) Descriptor() ([]byte, []int) {
-	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{18}
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{22}
 }
 
 type LogoutCurrentSessionResponse struct {
@@ -1052,7 +1349,7 @@ type LogoutCurrentSessionResponse struct {
 
 func (x *LogoutCurrentSessionResponse) Reset() {
 	*x = LogoutCurrentSessionResponse{}
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[19]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1064,7 +1361,7 @@ func (x *LogoutCurrentSessionResponse) String() string {
 func (*LogoutCurrentSessionResponse) ProtoMessage() {}
 
 func (x *LogoutCurrentSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[19]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1077,7 +1374,7 @@ func (x *LogoutCurrentSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutCurrentSessionResponse.ProtoReflect.Descriptor instead.
 func (*LogoutCurrentSessionResponse) Descriptor() ([]byte, []int) {
-	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{19}
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *LogoutCurrentSessionResponse) GetRevoked() bool {
@@ -1095,7 +1392,7 @@ type LogoutAllSessionsRequest struct {
 
 func (x *LogoutAllSessionsRequest) Reset() {
 	*x = LogoutAllSessionsRequest{}
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[20]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1107,7 +1404,7 @@ func (x *LogoutAllSessionsRequest) String() string {
 func (*LogoutAllSessionsRequest) ProtoMessage() {}
 
 func (x *LogoutAllSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[20]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1120,7 +1417,7 @@ func (x *LogoutAllSessionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutAllSessionsRequest.ProtoReflect.Descriptor instead.
 func (*LogoutAllSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{20}
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{24}
 }
 
 type LogoutAllSessionsResponse struct {
@@ -1132,7 +1429,7 @@ type LogoutAllSessionsResponse struct {
 
 func (x *LogoutAllSessionsResponse) Reset() {
 	*x = LogoutAllSessionsResponse{}
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[21]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1144,7 +1441,7 @@ func (x *LogoutAllSessionsResponse) String() string {
 func (*LogoutAllSessionsResponse) ProtoMessage() {}
 
 func (x *LogoutAllSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[21]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1157,7 +1454,7 @@ func (x *LogoutAllSessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutAllSessionsResponse.ProtoReflect.Descriptor instead.
 func (*LogoutAllSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{21}
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *LogoutAllSessionsResponse) GetRevoked() bool {
@@ -1177,7 +1474,7 @@ type CheckSessionRequest struct {
 
 func (x *CheckSessionRequest) Reset() {
 	*x = CheckSessionRequest{}
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[22]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1189,7 +1486,7 @@ func (x *CheckSessionRequest) String() string {
 func (*CheckSessionRequest) ProtoMessage() {}
 
 func (x *CheckSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[22]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1202,7 +1499,7 @@ func (x *CheckSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckSessionRequest.ProtoReflect.Descriptor instead.
 func (*CheckSessionRequest) Descriptor() ([]byte, []int) {
-	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{22}
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *CheckSessionRequest) GetSubject() string {
@@ -1228,7 +1525,7 @@ type CheckSessionResponse struct {
 
 func (x *CheckSessionResponse) Reset() {
 	*x = CheckSessionResponse{}
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[23]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1240,7 +1537,7 @@ func (x *CheckSessionResponse) String() string {
 func (*CheckSessionResponse) ProtoMessage() {}
 
 func (x *CheckSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[23]
+	mi := &file_flowspace_identity_v1_identity_service_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1253,7 +1550,7 @@ func (x *CheckSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckSessionResponse.ProtoReflect.Descriptor instead.
 func (*CheckSessionResponse) Descriptor() ([]byte, []int) {
-	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{23}
+	return file_flowspace_identity_v1_identity_service_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *CheckSessionResponse) GetEmailVerified() bool {
@@ -1321,6 +1618,24 @@ const file_flowspace_identity_v1_identity_service_proto_rawDesc = "" +
 	"\x17access_token_expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x14accessTokenExpiresAt\x12X\n" +
 	"\x18refresh_token_expires_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x15refreshTokenExpiresAt\x12M\n" +
 	"\x12session_expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x10sessionExpiresAtB\x11\n" +
+	"\x0f_email_verified\"]\n" +
+	"\x19StartProviderLoginRequest\x12@\n" +
+	"\bprovider\x18\x01 \x01(\x0e2\x1f.flowspace.identity.v1.ProviderB\x03\xe0A\x02R\bprovider\"\xc7\x01\n" +
+	"\x1aStartProviderLoginResponse\x120\n" +
+	"\x11authorization_url\x18\x01 \x01(\tB\x03\xe0A\x03R\x10authorizationUrl\x12(\n" +
+	"\rattempt_token\x18\x02 \x01(\tB\x03\xe0A\x03R\fattemptToken\x12M\n" +
+	"\x12attempt_expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x10attemptExpiresAt\"p\n" +
+	"\x1cCreateProviderSessionRequest\x12(\n" +
+	"\rattempt_token\x18\x01 \x01(\tB\x03\xe0A\x02R\fattemptToken\x12&\n" +
+	"\fhandoff_code\x18\x02 \x01(\tB\x03\xe0A\x02R\vhandoffCode\"\xd5\x03\n" +
+	"\x1dCreateProviderSessionResponse\x12\x1d\n" +
+	"\asubject\x18\x01 \x01(\tB\x03\xe0A\x03R\asubject\x12/\n" +
+	"\x0eemail_verified\x18\x02 \x01(\bB\x03\xe0A\x03H\x00R\remailVerified\x88\x01\x01\x12&\n" +
+	"\faccess_token\x18\x03 \x01(\tB\x03\xe0A\x03R\vaccessToken\x12(\n" +
+	"\rrefresh_token\x18\x04 \x01(\tB\x03\xe0A\x03R\frefreshToken\x12V\n" +
+	"\x17access_token_expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x14accessTokenExpiresAt\x12X\n" +
+	"\x18refresh_token_expires_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x15refreshTokenExpiresAt\x12M\n" +
+	"\x12session_expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x10sessionExpiresAtB\x11\n" +
 	"\x0f_email_verified\"A\n" +
 	"\x15RefreshSessionRequest\x12(\n" +
 	"\rrefresh_token\x18\x01 \x01(\tB\x03\xe0A\x02R\frefreshToken\"\xeb\x02\n" +
@@ -1341,7 +1656,11 @@ const file_flowspace_identity_v1_identity_service_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x02 \x01(\tB\x03\xe0A\x02R\tsessionId\"B\n" +
 	"\x14CheckSessionResponse\x12*\n" +
-	"\x0eemail_verified\x18\x01 \x01(\bB\x03\xe0A\x03R\remailVerified2\x94\x0f\n" +
+	"\x0eemail_verified\x18\x01 \x01(\bB\x03\xe0A\x03R\remailVerified*N\n" +
+	"\bProvider\x12\x18\n" +
+	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fPROVIDER_GOOGLE\x10\x01\x12\x13\n" +
+	"\x0fPROVIDER_GITHUB\x10\x022\xdf\x11\n" +
 	"\x0fIdentityService\x12\x83\x01\n" +
 	"\rCreateAccount\x12+.flowspace.identity.v1.CreateAccountRequest\x1a,.flowspace.identity.v1.CreateAccountResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/v1/accounts\x12\xc0\x01\n" +
 	"\x1cRequestEmailVerificationCode\x12:.flowspace.identity.v1.RequestEmailVerificationCodeRequest\x1a;.flowspace.identity.v1.RequestEmailVerificationCodeResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/v1/email-verification-codes\x12\x88\x01\n" +
@@ -1353,7 +1672,9 @@ const file_flowspace_identity_v1_identity_service_proto_rawDesc = "" +
 	"\x15CreatePasswordSession\x123.flowspace.identity.v1.CreatePasswordSessionRequest\x1a4.flowspace.identity.v1.CreatePasswordSessionResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/password-sessions\x12\x8f\x01\n" +
 	"\x0eRefreshSession\x12,.flowspace.identity.v1.RefreshSessionRequest\x1a-.flowspace.identity.v1.RefreshSessionResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/session-refreshes\x12\x9f\x01\n" +
 	"\x14LogoutCurrentSession\x122.flowspace.identity.v1.LogoutCurrentSessionRequest\x1a3.flowspace.identity.v1.LogoutCurrentSessionResponse\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/session-logouts\x12\x9e\x01\n" +
-	"\x11LogoutAllSessions\x12/.flowspace.identity.v1.LogoutAllSessionsRequest\x1a0.flowspace.identity.v1.LogoutAllSessionsResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/account-session-logouts\x12g\n" +
+	"\x11LogoutAllSessions\x12/.flowspace.identity.v1.LogoutAllSessionsRequest\x1a0.flowspace.identity.v1.LogoutAllSessionsResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/account-session-logouts\x12\xa1\x01\n" +
+	"\x12StartProviderLogin\x120.flowspace.identity.v1.StartProviderLoginRequest\x1a1.flowspace.identity.v1.StartProviderLoginResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/provider-login-attempts\x12\xa4\x01\n" +
+	"\x15CreateProviderSession\x123.flowspace.identity.v1.CreateProviderSessionRequest\x1a4.flowspace.identity.v1.CreateProviderSessionResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/provider-sessions\x12g\n" +
 	"\fCheckSession\x12*.flowspace.identity.v1.CheckSessionRequest\x1a+.flowspace.identity.v1.CheckSessionResponseBSZQgithub.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1;identityv1b\x06proto3"
 
 var (
@@ -1368,72 +1689,87 @@ func file_flowspace_identity_v1_identity_service_proto_rawDescGZIP() []byte {
 	return file_flowspace_identity_v1_identity_service_proto_rawDescData
 }
 
-var file_flowspace_identity_v1_identity_service_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_flowspace_identity_v1_identity_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_flowspace_identity_v1_identity_service_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_flowspace_identity_v1_identity_service_proto_goTypes = []any{
-	(*CreateAccountRequest)(nil),                      // 0: flowspace.identity.v1.CreateAccountRequest
-	(*CreateAccountResponse)(nil),                     // 1: flowspace.identity.v1.CreateAccountResponse
-	(*RequestEmailVerificationCodeRequest)(nil),       // 2: flowspace.identity.v1.RequestEmailVerificationCodeRequest
-	(*RequestEmailVerificationCodeResponse)(nil),      // 3: flowspace.identity.v1.RequestEmailVerificationCodeResponse
-	(*VerifyEmailRequest)(nil),                        // 4: flowspace.identity.v1.VerifyEmailRequest
-	(*VerifyEmailResponse)(nil),                       // 5: flowspace.identity.v1.VerifyEmailResponse
-	(*RequestUnverifiedAccountClaimCodeRequest)(nil),  // 6: flowspace.identity.v1.RequestUnverifiedAccountClaimCodeRequest
-	(*RequestUnverifiedAccountClaimCodeResponse)(nil), // 7: flowspace.identity.v1.RequestUnverifiedAccountClaimCodeResponse
-	(*ClaimUnverifiedAccountRequest)(nil),             // 8: flowspace.identity.v1.ClaimUnverifiedAccountRequest
-	(*ClaimUnverifiedAccountResponse)(nil),            // 9: flowspace.identity.v1.ClaimUnverifiedAccountResponse
-	(*RequestPasswordResetCodeRequest)(nil),           // 10: flowspace.identity.v1.RequestPasswordResetCodeRequest
-	(*RequestPasswordResetCodeResponse)(nil),          // 11: flowspace.identity.v1.RequestPasswordResetCodeResponse
-	(*ResetPasswordRequest)(nil),                      // 12: flowspace.identity.v1.ResetPasswordRequest
-	(*ResetPasswordResponse)(nil),                     // 13: flowspace.identity.v1.ResetPasswordResponse
-	(*CreatePasswordSessionRequest)(nil),              // 14: flowspace.identity.v1.CreatePasswordSessionRequest
-	(*CreatePasswordSessionResponse)(nil),             // 15: flowspace.identity.v1.CreatePasswordSessionResponse
-	(*RefreshSessionRequest)(nil),                     // 16: flowspace.identity.v1.RefreshSessionRequest
-	(*RefreshSessionResponse)(nil),                    // 17: flowspace.identity.v1.RefreshSessionResponse
-	(*LogoutCurrentSessionRequest)(nil),               // 18: flowspace.identity.v1.LogoutCurrentSessionRequest
-	(*LogoutCurrentSessionResponse)(nil),              // 19: flowspace.identity.v1.LogoutCurrentSessionResponse
-	(*LogoutAllSessionsRequest)(nil),                  // 20: flowspace.identity.v1.LogoutAllSessionsRequest
-	(*LogoutAllSessionsResponse)(nil),                 // 21: flowspace.identity.v1.LogoutAllSessionsResponse
-	(*CheckSessionRequest)(nil),                       // 22: flowspace.identity.v1.CheckSessionRequest
-	(*CheckSessionResponse)(nil),                      // 23: flowspace.identity.v1.CheckSessionResponse
-	(*timestamppb.Timestamp)(nil),                     // 24: google.protobuf.Timestamp
+	(Provider)(0),                                     // 0: flowspace.identity.v1.Provider
+	(*CreateAccountRequest)(nil),                      // 1: flowspace.identity.v1.CreateAccountRequest
+	(*CreateAccountResponse)(nil),                     // 2: flowspace.identity.v1.CreateAccountResponse
+	(*RequestEmailVerificationCodeRequest)(nil),       // 3: flowspace.identity.v1.RequestEmailVerificationCodeRequest
+	(*RequestEmailVerificationCodeResponse)(nil),      // 4: flowspace.identity.v1.RequestEmailVerificationCodeResponse
+	(*VerifyEmailRequest)(nil),                        // 5: flowspace.identity.v1.VerifyEmailRequest
+	(*VerifyEmailResponse)(nil),                       // 6: flowspace.identity.v1.VerifyEmailResponse
+	(*RequestUnverifiedAccountClaimCodeRequest)(nil),  // 7: flowspace.identity.v1.RequestUnverifiedAccountClaimCodeRequest
+	(*RequestUnverifiedAccountClaimCodeResponse)(nil), // 8: flowspace.identity.v1.RequestUnverifiedAccountClaimCodeResponse
+	(*ClaimUnverifiedAccountRequest)(nil),             // 9: flowspace.identity.v1.ClaimUnverifiedAccountRequest
+	(*ClaimUnverifiedAccountResponse)(nil),            // 10: flowspace.identity.v1.ClaimUnverifiedAccountResponse
+	(*RequestPasswordResetCodeRequest)(nil),           // 11: flowspace.identity.v1.RequestPasswordResetCodeRequest
+	(*RequestPasswordResetCodeResponse)(nil),          // 12: flowspace.identity.v1.RequestPasswordResetCodeResponse
+	(*ResetPasswordRequest)(nil),                      // 13: flowspace.identity.v1.ResetPasswordRequest
+	(*ResetPasswordResponse)(nil),                     // 14: flowspace.identity.v1.ResetPasswordResponse
+	(*CreatePasswordSessionRequest)(nil),              // 15: flowspace.identity.v1.CreatePasswordSessionRequest
+	(*CreatePasswordSessionResponse)(nil),             // 16: flowspace.identity.v1.CreatePasswordSessionResponse
+	(*StartProviderLoginRequest)(nil),                 // 17: flowspace.identity.v1.StartProviderLoginRequest
+	(*StartProviderLoginResponse)(nil),                // 18: flowspace.identity.v1.StartProviderLoginResponse
+	(*CreateProviderSessionRequest)(nil),              // 19: flowspace.identity.v1.CreateProviderSessionRequest
+	(*CreateProviderSessionResponse)(nil),             // 20: flowspace.identity.v1.CreateProviderSessionResponse
+	(*RefreshSessionRequest)(nil),                     // 21: flowspace.identity.v1.RefreshSessionRequest
+	(*RefreshSessionResponse)(nil),                    // 22: flowspace.identity.v1.RefreshSessionResponse
+	(*LogoutCurrentSessionRequest)(nil),               // 23: flowspace.identity.v1.LogoutCurrentSessionRequest
+	(*LogoutCurrentSessionResponse)(nil),              // 24: flowspace.identity.v1.LogoutCurrentSessionResponse
+	(*LogoutAllSessionsRequest)(nil),                  // 25: flowspace.identity.v1.LogoutAllSessionsRequest
+	(*LogoutAllSessionsResponse)(nil),                 // 26: flowspace.identity.v1.LogoutAllSessionsResponse
+	(*CheckSessionRequest)(nil),                       // 27: flowspace.identity.v1.CheckSessionRequest
+	(*CheckSessionResponse)(nil),                      // 28: flowspace.identity.v1.CheckSessionResponse
+	(*timestamppb.Timestamp)(nil),                     // 29: google.protobuf.Timestamp
 }
 var file_flowspace_identity_v1_identity_service_proto_depIdxs = []int32{
-	24, // 0: flowspace.identity.v1.CreateAccountResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
-	24, // 1: flowspace.identity.v1.ClaimUnverifiedAccountResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
-	24, // 2: flowspace.identity.v1.CreatePasswordSessionResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
-	24, // 3: flowspace.identity.v1.CreatePasswordSessionResponse.refresh_token_expires_at:type_name -> google.protobuf.Timestamp
-	24, // 4: flowspace.identity.v1.CreatePasswordSessionResponse.session_expires_at:type_name -> google.protobuf.Timestamp
-	24, // 5: flowspace.identity.v1.RefreshSessionResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
-	24, // 6: flowspace.identity.v1.RefreshSessionResponse.refresh_token_expires_at:type_name -> google.protobuf.Timestamp
-	24, // 7: flowspace.identity.v1.RefreshSessionResponse.session_expires_at:type_name -> google.protobuf.Timestamp
-	0,  // 8: flowspace.identity.v1.IdentityService.CreateAccount:input_type -> flowspace.identity.v1.CreateAccountRequest
-	2,  // 9: flowspace.identity.v1.IdentityService.RequestEmailVerificationCode:input_type -> flowspace.identity.v1.RequestEmailVerificationCodeRequest
-	4,  // 10: flowspace.identity.v1.IdentityService.VerifyEmail:input_type -> flowspace.identity.v1.VerifyEmailRequest
-	6,  // 11: flowspace.identity.v1.IdentityService.RequestUnverifiedAccountClaimCode:input_type -> flowspace.identity.v1.RequestUnverifiedAccountClaimCodeRequest
-	8,  // 12: flowspace.identity.v1.IdentityService.ClaimUnverifiedAccount:input_type -> flowspace.identity.v1.ClaimUnverifiedAccountRequest
-	10, // 13: flowspace.identity.v1.IdentityService.RequestPasswordResetCode:input_type -> flowspace.identity.v1.RequestPasswordResetCodeRequest
-	12, // 14: flowspace.identity.v1.IdentityService.ResetPassword:input_type -> flowspace.identity.v1.ResetPasswordRequest
-	14, // 15: flowspace.identity.v1.IdentityService.CreatePasswordSession:input_type -> flowspace.identity.v1.CreatePasswordSessionRequest
-	16, // 16: flowspace.identity.v1.IdentityService.RefreshSession:input_type -> flowspace.identity.v1.RefreshSessionRequest
-	18, // 17: flowspace.identity.v1.IdentityService.LogoutCurrentSession:input_type -> flowspace.identity.v1.LogoutCurrentSessionRequest
-	20, // 18: flowspace.identity.v1.IdentityService.LogoutAllSessions:input_type -> flowspace.identity.v1.LogoutAllSessionsRequest
-	22, // 19: flowspace.identity.v1.IdentityService.CheckSession:input_type -> flowspace.identity.v1.CheckSessionRequest
-	1,  // 20: flowspace.identity.v1.IdentityService.CreateAccount:output_type -> flowspace.identity.v1.CreateAccountResponse
-	3,  // 21: flowspace.identity.v1.IdentityService.RequestEmailVerificationCode:output_type -> flowspace.identity.v1.RequestEmailVerificationCodeResponse
-	5,  // 22: flowspace.identity.v1.IdentityService.VerifyEmail:output_type -> flowspace.identity.v1.VerifyEmailResponse
-	7,  // 23: flowspace.identity.v1.IdentityService.RequestUnverifiedAccountClaimCode:output_type -> flowspace.identity.v1.RequestUnverifiedAccountClaimCodeResponse
-	9,  // 24: flowspace.identity.v1.IdentityService.ClaimUnverifiedAccount:output_type -> flowspace.identity.v1.ClaimUnverifiedAccountResponse
-	11, // 25: flowspace.identity.v1.IdentityService.RequestPasswordResetCode:output_type -> flowspace.identity.v1.RequestPasswordResetCodeResponse
-	13, // 26: flowspace.identity.v1.IdentityService.ResetPassword:output_type -> flowspace.identity.v1.ResetPasswordResponse
-	15, // 27: flowspace.identity.v1.IdentityService.CreatePasswordSession:output_type -> flowspace.identity.v1.CreatePasswordSessionResponse
-	17, // 28: flowspace.identity.v1.IdentityService.RefreshSession:output_type -> flowspace.identity.v1.RefreshSessionResponse
-	19, // 29: flowspace.identity.v1.IdentityService.LogoutCurrentSession:output_type -> flowspace.identity.v1.LogoutCurrentSessionResponse
-	21, // 30: flowspace.identity.v1.IdentityService.LogoutAllSessions:output_type -> flowspace.identity.v1.LogoutAllSessionsResponse
-	23, // 31: flowspace.identity.v1.IdentityService.CheckSession:output_type -> flowspace.identity.v1.CheckSessionResponse
-	20, // [20:32] is the sub-list for method output_type
-	8,  // [8:20] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	29, // 0: flowspace.identity.v1.CreateAccountResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 1: flowspace.identity.v1.ClaimUnverifiedAccountResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 2: flowspace.identity.v1.CreatePasswordSessionResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 3: flowspace.identity.v1.CreatePasswordSessionResponse.refresh_token_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 4: flowspace.identity.v1.CreatePasswordSessionResponse.session_expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 5: flowspace.identity.v1.StartProviderLoginRequest.provider:type_name -> flowspace.identity.v1.Provider
+	29, // 6: flowspace.identity.v1.StartProviderLoginResponse.attempt_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 7: flowspace.identity.v1.CreateProviderSessionResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 8: flowspace.identity.v1.CreateProviderSessionResponse.refresh_token_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 9: flowspace.identity.v1.CreateProviderSessionResponse.session_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 10: flowspace.identity.v1.RefreshSessionResponse.access_token_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 11: flowspace.identity.v1.RefreshSessionResponse.refresh_token_expires_at:type_name -> google.protobuf.Timestamp
+	29, // 12: flowspace.identity.v1.RefreshSessionResponse.session_expires_at:type_name -> google.protobuf.Timestamp
+	1,  // 13: flowspace.identity.v1.IdentityService.CreateAccount:input_type -> flowspace.identity.v1.CreateAccountRequest
+	3,  // 14: flowspace.identity.v1.IdentityService.RequestEmailVerificationCode:input_type -> flowspace.identity.v1.RequestEmailVerificationCodeRequest
+	5,  // 15: flowspace.identity.v1.IdentityService.VerifyEmail:input_type -> flowspace.identity.v1.VerifyEmailRequest
+	7,  // 16: flowspace.identity.v1.IdentityService.RequestUnverifiedAccountClaimCode:input_type -> flowspace.identity.v1.RequestUnverifiedAccountClaimCodeRequest
+	9,  // 17: flowspace.identity.v1.IdentityService.ClaimUnverifiedAccount:input_type -> flowspace.identity.v1.ClaimUnverifiedAccountRequest
+	11, // 18: flowspace.identity.v1.IdentityService.RequestPasswordResetCode:input_type -> flowspace.identity.v1.RequestPasswordResetCodeRequest
+	13, // 19: flowspace.identity.v1.IdentityService.ResetPassword:input_type -> flowspace.identity.v1.ResetPasswordRequest
+	15, // 20: flowspace.identity.v1.IdentityService.CreatePasswordSession:input_type -> flowspace.identity.v1.CreatePasswordSessionRequest
+	21, // 21: flowspace.identity.v1.IdentityService.RefreshSession:input_type -> flowspace.identity.v1.RefreshSessionRequest
+	23, // 22: flowspace.identity.v1.IdentityService.LogoutCurrentSession:input_type -> flowspace.identity.v1.LogoutCurrentSessionRequest
+	25, // 23: flowspace.identity.v1.IdentityService.LogoutAllSessions:input_type -> flowspace.identity.v1.LogoutAllSessionsRequest
+	17, // 24: flowspace.identity.v1.IdentityService.StartProviderLogin:input_type -> flowspace.identity.v1.StartProviderLoginRequest
+	19, // 25: flowspace.identity.v1.IdentityService.CreateProviderSession:input_type -> flowspace.identity.v1.CreateProviderSessionRequest
+	27, // 26: flowspace.identity.v1.IdentityService.CheckSession:input_type -> flowspace.identity.v1.CheckSessionRequest
+	2,  // 27: flowspace.identity.v1.IdentityService.CreateAccount:output_type -> flowspace.identity.v1.CreateAccountResponse
+	4,  // 28: flowspace.identity.v1.IdentityService.RequestEmailVerificationCode:output_type -> flowspace.identity.v1.RequestEmailVerificationCodeResponse
+	6,  // 29: flowspace.identity.v1.IdentityService.VerifyEmail:output_type -> flowspace.identity.v1.VerifyEmailResponse
+	8,  // 30: flowspace.identity.v1.IdentityService.RequestUnverifiedAccountClaimCode:output_type -> flowspace.identity.v1.RequestUnverifiedAccountClaimCodeResponse
+	10, // 31: flowspace.identity.v1.IdentityService.ClaimUnverifiedAccount:output_type -> flowspace.identity.v1.ClaimUnverifiedAccountResponse
+	12, // 32: flowspace.identity.v1.IdentityService.RequestPasswordResetCode:output_type -> flowspace.identity.v1.RequestPasswordResetCodeResponse
+	14, // 33: flowspace.identity.v1.IdentityService.ResetPassword:output_type -> flowspace.identity.v1.ResetPasswordResponse
+	16, // 34: flowspace.identity.v1.IdentityService.CreatePasswordSession:output_type -> flowspace.identity.v1.CreatePasswordSessionResponse
+	22, // 35: flowspace.identity.v1.IdentityService.RefreshSession:output_type -> flowspace.identity.v1.RefreshSessionResponse
+	24, // 36: flowspace.identity.v1.IdentityService.LogoutCurrentSession:output_type -> flowspace.identity.v1.LogoutCurrentSessionResponse
+	26, // 37: flowspace.identity.v1.IdentityService.LogoutAllSessions:output_type -> flowspace.identity.v1.LogoutAllSessionsResponse
+	18, // 38: flowspace.identity.v1.IdentityService.StartProviderLogin:output_type -> flowspace.identity.v1.StartProviderLoginResponse
+	20, // 39: flowspace.identity.v1.IdentityService.CreateProviderSession:output_type -> flowspace.identity.v1.CreateProviderSessionResponse
+	28, // 40: flowspace.identity.v1.IdentityService.CheckSession:output_type -> flowspace.identity.v1.CheckSessionResponse
+	27, // [27:41] is the sub-list for method output_type
+	13, // [13:27] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_flowspace_identity_v1_identity_service_proto_init() }
@@ -1443,18 +1779,20 @@ func file_flowspace_identity_v1_identity_service_proto_init() {
 	}
 	file_flowspace_identity_v1_identity_service_proto_msgTypes[1].OneofWrappers = []any{}
 	file_flowspace_identity_v1_identity_service_proto_msgTypes[15].OneofWrappers = []any{}
+	file_flowspace_identity_v1_identity_service_proto_msgTypes[19].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flowspace_identity_v1_identity_service_proto_rawDesc), len(file_flowspace_identity_v1_identity_service_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   24,
+			NumEnums:      1,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_flowspace_identity_v1_identity_service_proto_goTypes,
 		DependencyIndexes: file_flowspace_identity_v1_identity_service_proto_depIdxs,
+		EnumInfos:         file_flowspace_identity_v1_identity_service_proto_enumTypes,
 		MessageInfos:      file_flowspace_identity_v1_identity_service_proto_msgTypes,
 	}.Build()
 	File_flowspace_identity_v1_identity_service_proto = out.File

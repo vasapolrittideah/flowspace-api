@@ -106,15 +106,22 @@ func TestSessionRPCContract(t *testing.T) {
 	}
 }
 
+type publicRPC struct {
+	name, route       string
+	request, response []string
+}
+
 func TestPasswordRecoveryRPCContract(t *testing.T) {
-	service := File_flowspace_identity_v1_identity_service_proto.Services().ByName("IdentityService")
-	for _, test := range []struct {
-		name, route       string
-		request, response []string
-	}{
+	checkPublicRPCs(t, []publicRPC{
 		{"RequestPasswordResetCode", "/v1/password-reset-codes", []string{"email"}, []string{"accepted"}},
 		{"ResetPassword", "/v1/password-resets", []string{"email", "code", "new_password"}, []string{"password_changed", "sessions_revoked"}},
-	} {
+	})
+}
+
+func checkPublicRPCs(t *testing.T, tests []publicRPC) {
+	t.Helper()
+	service := File_flowspace_identity_v1_identity_service_proto.Services().ByName("IdentityService")
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			method := service.Methods().ByName(protoreflect.Name(test.name))
 			if method == nil {
@@ -165,5 +172,33 @@ func TestPasswordRecoveryUsesCanonicalHTTPStatuses(t *testing.T) {
 		if got := runtime.HTTPStatusFromCode(test.code); got != test.want {
 			t.Fatalf("gRPC %s maps to HTTP %d, want %d", test.code, got, test.want)
 		}
+	}
+}
+
+func TestProviderLoginRPCContract(t *testing.T) {
+	checkPublicRPCs(t, []publicRPC{
+		{"StartProviderLogin", "/v1/provider-login-attempts", []string{"provider"}, []string{"authorization_url", "attempt_token", "attempt_expires_at"}},
+		{"CreateProviderSession", "/v1/provider-sessions", []string{"attempt_token", "handoff_code"}, messageFields((&CreatePasswordSessionResponse{}).ProtoReflect().Descriptor())},
+	})
+}
+
+func TestProviderLoginAcceptsOnlyGoogleAndGitHub(t *testing.T) {
+	values := Provider(0).Descriptor().Values()
+	names := make([]string, values.Len())
+	for i := range names {
+		names[i] = string(values.Get(i).Name())
+	}
+	if want := []string{"PROVIDER_UNSPECIFIED", "PROVIDER_GOOGLE", "PROVIDER_GITHUB"}; !slices.Equal(names, want) {
+		t.Fatalf("providers = %v, want %v", names, want)
+	}
+	var request StartProviderLoginRequest
+	if err := protojson.Unmarshal([]byte(`{"provider":"PROVIDER_OKTA"}`), &request); err == nil {
+		t.Fatal("accepted an unknown provider")
+	}
+}
+
+func TestProviderLoginFailureUsesHTTP400(t *testing.T) {
+	if got := runtime.HTTPStatusFromCode(codes.FailedPrecondition); got != http.StatusBadRequest {
+		t.Fatalf("gRPC FailedPrecondition maps to HTTP %d, want 400", got)
 	}
 }

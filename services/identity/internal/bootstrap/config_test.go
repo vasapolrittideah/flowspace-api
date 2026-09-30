@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,8 @@ import (
 	"go.uber.org/zap"
 
 	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 )
 
 func TestLoadAPIConfigRequiresKeysWithoutLeakingValues(t *testing.T) {
@@ -178,5 +181,73 @@ func TestWorkerRejectsInvalidConfiguration(t *testing.T) {
 		if _, err := NewWorker(context.Background(), candidate, zap.NewNop()); err == nil || strings.Contains(err.Error(), "invalid-dsn") {
 			t.Fatalf("worker accepted or disclosed %s configuration: %v", field, err)
 		}
+	}
+}
+
+func TestProviderClientsUseExactCallbackURLs(t *testing.T) {
+	clients, err := providerClients(APIConfig{
+		Environment: "production", GoogleClientID: "google-client", GitHubClientID: "github-client",
+		ProviderCallbackBaseURL: "https://api.example.com/",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[domain.Provider]app.ProviderClient{
+		domain.ProviderGoogle: {ClientID: "google-client", CallbackURL: "https://api.example.com/v1/provider-login-callbacks/google"},
+		domain.ProviderGitHub: {ClientID: "github-client", CallbackURL: "https://api.example.com/v1/provider-login-callbacks/github"},
+	}
+	if !maps.Equal(clients, want) {
+		t.Fatalf("clients = %v", clients)
+	}
+
+	clients, err = providerClients(APIConfig{Environment: "local", GitHubClientID: "github-client", ProviderCallbackBaseURL: "http://localhost:8080"})
+	if err != nil || len(clients) != 1 || clients[domain.ProviderGitHub].CallbackURL != "http://localhost:8080/v1/provider-login-callbacks/github" {
+		t.Fatalf("local GitHub client = %v, %v", clients, err)
+	}
+	if clients, err := providerClients(APIConfig{Environment: "local"}); err != nil || len(clients) != 0 {
+		t.Fatalf("unconfigured providers = %v, %v", clients, err)
+	}
+}
+
+func TestProviderClientsRejectUnsafeCallbackBase(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		config APIConfig
+	}{
+		{"missing base", APIConfig{Environment: "local", GoogleClientID: "google-client"}},
+		{"base without client", APIConfig{Environment: "local", ProviderCallbackBaseURL: "https://api.example.com"}},
+		{"plain HTTP outside local", APIConfig{Environment: "production", GoogleClientID: "google-client", ProviderCallbackBaseURL: "http://api.example.com"}},
+		{"relative", APIConfig{Environment: "local", GoogleClientID: "google-client", ProviderCallbackBaseURL: "/callbacks"}},
+		{"path", APIConfig{Environment: "local", GoogleClientID: "google-client", ProviderCallbackBaseURL: "https://api.example.com/identity"}},
+		{"query", APIConfig{Environment: "local", GoogleClientID: "google-client", ProviderCallbackBaseURL: "https://api.example.com?next=https://attacker.example"}},
+		{"fragment", APIConfig{Environment: "local", GoogleClientID: "google-client", ProviderCallbackBaseURL: "https://api.example.com#next"}},
+		{"user info", APIConfig{Environment: "local", GoogleClientID: "google-client", ProviderCallbackBaseURL: "https://user@api.example.com"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if clients, err := providerClients(test.config); err == nil {
+				t.Fatalf("accepted %v", clients)
+			}
+		})
+	}
+}
+
+func TestLoadAPIConfigLoadsProviderClients(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "local")
+	t.Setenv("DATABASE_URL", "postgres://identity:secret@localhost/identity")
+	t.Setenv("SIGNING_KEY_FILE", "/keys/signing.pem")
+	t.Setenv("SIGNING_KEY_ID", "local-1")
+	t.Setenv("TOKEN_ISSUER", "urn:flowspace:identity:local")
+	t.Setenv("TOKEN_AUDIENCE", "flowspace-api")
+	t.Setenv("CODE_VERIFIER_KEY_FILE", "/keys/verifier")
+	t.Setenv("DELIVERY_KEY_FILE", "/keys/delivery")
+	t.Setenv("GOOGLE_CLIENT_ID", "google-client")
+	t.Setenv("PROVIDER_CALLBACK_BASE_URL", "http://localhost:8080")
+	config, err := LoadAPIConfig()
+	if err != nil || config.providers[domain.ProviderGoogle].CallbackURL != "http://localhost:8080/v1/provider-login-callbacks/google" {
+		t.Fatalf("providers = %v, %v", config.providers, err)
+	}
+	t.Setenv("PROVIDER_CALLBACK_BASE_URL", "")
+	if _, err := LoadAPIConfig(); err == nil {
+		t.Fatal("accepted a provider without a callback base")
 	}
 }

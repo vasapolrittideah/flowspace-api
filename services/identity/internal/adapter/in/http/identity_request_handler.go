@@ -19,7 +19,8 @@ func NewIdentityRequestHandler(next http.Handler, trusted []netip.Prefix) *Ident
 func (h *IdentityRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	if _, present := r.Header[http.CanonicalHeaderKey("Idempotency-Key")]; present &&
-		(r.URL.Path == "/v1/accounts" || r.URL.Path == "/v1/unverified-account-claims" || r.URL.Path == "/v1/password-sessions" || r.URL.Path == "/v1/session-refreshes") {
+		(r.URL.Path == "/v1/accounts" || r.URL.Path == "/v1/unverified-account-claims" || r.URL.Path == "/v1/password-sessions" || r.URL.Path == "/v1/session-refreshes" ||
+			r.URL.Path == "/v1/provider-login-attempts") {
 		http.Error(w, "idempotency-key is not supported", http.StatusBadRequest)
 		return
 	}

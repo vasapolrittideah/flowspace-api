@@ -32,6 +32,10 @@ func (l *LimitService) CodeRequest(ctx context.Context, source string) error {
 	return l.record(ctx, "source", source, "code-request", 60, 0, 0)
 }
 
+func (l *LimitService) ProviderLoginStart(ctx context.Context, source string) error {
+	return l.record(ctx, "source", source, "provider-login-start", 60, 0, 0)
+}
+
 func (l *LimitService) PasswordRecoveryEmail(ctx context.Context, email string, key []byte) error {
 	return l.passwordRecoveryEmail(ctx, email, key, "code-request", 60, 0)
 }

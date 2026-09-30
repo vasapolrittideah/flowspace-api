@@ -29,6 +29,7 @@ type IdentityHandler struct {
 	passwordReset    inbound.PasswordResetService
 	claims           inbound.AccountClaimService
 	passwordLogin    inbound.PasswordLoginService
+	providerLogin    inbound.ProviderLoginService
 	refresh          inbound.SessionRefreshService
 	currentLogout    inbound.CurrentSessionLogoutService
 	allLogout        inbound.AllSessionLogoutService
@@ -38,6 +39,11 @@ type IdentityHandler struct {
 
 func (h *IdentityHandler) WithPasswordLogin(service inbound.PasswordLoginService) *IdentityHandler {
 	h.passwordLogin = service
+	return h
+}
+
+func (h *IdentityHandler) WithProviderLogin(service inbound.ProviderLoginService) *IdentityHandler {
+	h.providerLogin = service
 	return h
 }
 

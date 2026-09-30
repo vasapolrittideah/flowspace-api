@@ -5,31 +5,40 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 )
 
 type APIConfig struct {
-	Environment            string              `env:"ENVIRONMENT,required,notEmpty"`
-	HTTPAddress            string              `env:"HTTP_ADDR"                                envDefault:":8080"`
-	InternalHTTPAddress    string              `env:"INTERNAL_HTTP_ADDR"                       envDefault:":8081"`
-	SessionGRPCAddress     string              `env:"SESSION_GRPC_ADDR"`
-	SessionTLSCertFile     string              `env:"SESSION_TLS_CERT_FILE"`
-	SessionTLSKeyFile      string              `env:"SESSION_TLS_KEY_FILE"`
-	SessionClientCAFile    string              `env:"SESSION_CLIENT_CA_FILE"`
-	SessionCallerAllowlist string              `env:"SESSION_CALLER_ALLOWLIST"`
-	DatabaseURL            sharedconfig.Secret `env:"DATABASE_URL,required,notEmpty"`
-	SigningKeyFile         string              `env:"SIGNING_KEY_FILE,required,notEmpty"`
-	SigningKeyID           string              `env:"SIGNING_KEY_ID,required,notEmpty"`
-	ExtraSigningPublicKey  string              `env:"SIGNING_ADDITIONAL_PUBLIC_KEY"`
-	TokenIssuer            string              `env:"TOKEN_ISSUER,required,notEmpty"`
-	TokenAudience          string              `env:"TOKEN_AUDIENCE,required,notEmpty"`
-	CodeVerifierKeyFile    string              `env:"CODE_VERIFIER_KEY_FILE,required,notEmpty"`
-	DeliveryKeyFile        string              `env:"DELIVERY_KEY_FILE,required,notEmpty"`
-	TrustedProxyCIDRs      string              `env:"TRUSTED_PROXY_CIDRS"`
-	OutboxReadyMaxPending  int                 `env:"OUTBOX_READY_MAX_PENDING"                 envDefault:"10000"`
+	Environment             string              `env:"ENVIRONMENT,required,notEmpty"`
+	HTTPAddress             string              `env:"HTTP_ADDR"                                envDefault:":8080"`
+	InternalHTTPAddress     string              `env:"INTERNAL_HTTP_ADDR"                       envDefault:":8081"`
+	SessionGRPCAddress      string              `env:"SESSION_GRPC_ADDR"`
+	SessionTLSCertFile      string              `env:"SESSION_TLS_CERT_FILE"`
+	SessionTLSKeyFile       string              `env:"SESSION_TLS_KEY_FILE"`
+	SessionClientCAFile     string              `env:"SESSION_CLIENT_CA_FILE"`
+	SessionCallerAllowlist  string              `env:"SESSION_CALLER_ALLOWLIST"`
+	DatabaseURL             sharedconfig.Secret `env:"DATABASE_URL,required,notEmpty"`
+	SigningKeyFile          string              `env:"SIGNING_KEY_FILE,required,notEmpty"`
+	SigningKeyID            string              `env:"SIGNING_KEY_ID,required,notEmpty"`
+	ExtraSigningPublicKey   string              `env:"SIGNING_ADDITIONAL_PUBLIC_KEY"`
+	TokenIssuer             string              `env:"TOKEN_ISSUER,required,notEmpty"`
+	TokenAudience           string              `env:"TOKEN_AUDIENCE,required,notEmpty"`
+	CodeVerifierKeyFile     string              `env:"CODE_VERIFIER_KEY_FILE,required,notEmpty"`
+	DeliveryKeyFile         string              `env:"DELIVERY_KEY_FILE,required,notEmpty"`
+	TrustedProxyCIDRs       string              `env:"TRUSTED_PROXY_CIDRS"`
+	OutboxReadyMaxPending   int                 `env:"OUTBOX_READY_MAX_PENDING"                 envDefault:"10000"`
+	GoogleClientID          string              `env:"GOOGLE_CLIENT_ID"`
+	GitHubClientID          string              `env:"GITHUB_CLIENT_ID"`
+	ProviderCallbackBaseURL string              `env:"PROVIDER_CALLBACK_BASE_URL"`
+
+	providers map[domain.Provider]app.ProviderClient
 }
 
 type WorkerConfig struct {
@@ -58,6 +67,9 @@ func LoadAPIConfig() (APIConfig, error) {
 	if _, err := sessionRPCEnabled(config); err != nil {
 		return APIConfig{}, err
 	}
+	if config.providers, err = providerClients(config); err != nil {
+		return APIConfig{}, err
+	}
 	if config.Environment == "local" && (config.TokenIssuer != "urn:flowspace:identity:local" || config.TokenAudience != "flowspace-api") {
 		return APIConfig{}, errors.New("invalid local token configuration")
 	}
@@ -81,6 +93,43 @@ func sessionRPCEnabled(config APIConfig) (bool, error) {
 		return false, errors.New("invalid session listener configuration")
 	}
 	return true, nil
+}
+
+// providerClients returns the configured login providers. Each callback URL is
+// fixed by configuration so that clients cannot choose a redirect target.
+func providerClients(config APIConfig) (map[domain.Provider]app.ProviderClient, error) {
+	ids := map[domain.Provider]string{domain.ProviderGoogle: config.GoogleClientID, domain.ProviderGitHub: config.GitHubClientID}
+	clients := map[domain.Provider]app.ProviderClient{}
+	for provider, id := range ids {
+		if id != "" {
+			clients[provider] = app.ProviderClient{ClientID: id}
+		}
+	}
+	if len(clients) == 0 && config.ProviderCallbackBaseURL == "" {
+		return clients, nil
+	}
+	origin, valid := callbackOrigin(config.ProviderCallbackBaseURL, config.Environment == "local")
+	if len(clients) == 0 || !valid {
+		return nil, errors.New("invalid provider login configuration")
+	}
+	for provider, client := range clients {
+		client.CallbackURL = origin + "/v1/provider-login-callbacks/" + string(provider)
+		clients[provider] = client
+	}
+	return clients, nil
+}
+
+// callbackOrigin accepts only an absolute origin. Plain HTTP is local only.
+func callbackOrigin(raw string, local bool) (string, bool) {
+	base, err := url.Parse(raw)
+	if err != nil || base.Host == "" || base.User != nil || base.RawQuery != "" || base.ForceQuery ||
+		base.Fragment != "" || strings.Trim(base.Path, "/") != "" {
+		return "", false
+	}
+	if base.Scheme != "https" && (base.Scheme != "http" || !local) {
+		return "", false
+	}
+	return base.Scheme + "://" + base.Host, true
 }
 
 func LoadWorkerConfig() (WorkerConfig, error) {

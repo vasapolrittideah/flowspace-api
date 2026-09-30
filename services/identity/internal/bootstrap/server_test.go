@@ -278,6 +278,23 @@ func TestPasswordRecoveryTelemetryOmitsSecrets(t *testing.T) {
 	}
 }
 
+func TestProviderLoginTelemetryOmitsSecrets(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	handler := observeRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"authorizationUrl":"https://accounts.google.com/o/oauth2/v2/auth?state=secret-state","attemptToken":"secret-attempt"}`))
+	}), zap.New(core))
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost,
+		"/v1/provider-login-attempts?state=secret-state", strings.NewReader(`{"provider":"PROVIDER_GOOGLE"}`))
+	handler.ServeHTTP(httptest.NewRecorder(), request)
+	if logs.Len() != 1 {
+		t.Fatalf("provider login log count = %d", logs.Len())
+	}
+	fields := fmt.Sprint(logs.All()[0].ContextMap())
+	if strings.Contains(fields, "secret-") || logs.All()[0].ContextMap()["operation"] != "POST /v1/provider-login-attempts" {
+		t.Fatalf("provider login telemetry contains secrets or misses its operation: %s", fields)
+	}
+}
+
 func TestPublicHandlerRejectsCheckSession(t *testing.T) {
 	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, zap.NewNop(), nil)
 	if err != nil {

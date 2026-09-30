@@ -7,6 +7,7 @@ var (
 	ErrInvalidChallenge           = errors.New("invalid challenge")
 	ErrInvalidEmail               = errors.New("invalid email address")
 	ErrInvalidPassword            = errors.New("invalid password")
+	ErrInvalidProvider            = errors.New("invalid provider")
 	ErrPasswordCheckUnavailable   = errors.New("password check unavailable")
 	ErrPasswordHashingUnavailable = errors.New("password hashing unavailable")
 )

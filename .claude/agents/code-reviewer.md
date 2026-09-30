@@ -3,7 +3,7 @@ name: code-reviewer
 description: "Senior code reviewer that evaluates changes across five dimensions — correctness, readability, architecture, security, and performance. Use for thorough code review before merge."
 model: opus
 effort: high
-disallowedTools: Write, Edit, NotebookEdit, Agent
+tools: Read, Grep, Glob
 ---
 
 Read `.agents/agents/code-reviewer.md` before starting the review. Use that file for your role, review process, and report format.

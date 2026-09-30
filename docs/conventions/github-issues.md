@@ -49,6 +49,14 @@ Estimated scope: <expected size>.
 - Add one native GitHub `Blocked by` relationship for each blocking Issue. Use these relationships as the dependency list.
 - For generated output, list only its folder. Do not list generated file names.
 
+## Follow-up task format
+
+A follow-up task is an open Issue for work that a PR or an Issue leaves for later. A PR description, a gap comment, and a result comment list follow-up tasks in this format.
+
+- Write one bullet per Issue, even when there is only one: `- #<issue-number>: <remaining work in one sentence>.` GitHub shows only the number, so the sentence names the work.
+- List only open Issues. Create an Issue for later work before you list it, or leave the work out.
+- Do not put `Closes`, `Fixes`, or `Resolves` before a follow-up Issue number. GitHub would close the Issue when the PR merges.
+
 ## Gap comment
 
 After verification, check each completed item in the Issue body. Leave failed and unrun items unchecked. The pull request (PR) that closes the Issue records the changes and the CI result, so an ordinary Issue has no comment by default.
@@ -66,7 +74,7 @@ Post a comment only when the PR does not show something that a reader of the Iss
 ```
 
 - Omit a section that has nothing to report. Do not write `n/a`.
-- Write each follow-up Issue in the [Follow-up tasks format](pull-requests.md#follow-up-tasks).
+- Write each follow-up Issue in the [follow-up task format](#follow-up-task-format).
 - Do not add the PR, CI results, or measurements. Do not include secrets or test account data.
 
 ## Final Prove task
@@ -118,7 +126,7 @@ n/a
 - Set `Status` to `Complete` only when all required checks pass. If a gap prevents closure, set `Status` to `Blocked` and keep the specification and plan statuses unchanged.
 - For each failed or unrun item, leave its checkbox clear and add a bullet under `Gaps` that names the item, cause, and next action.
 - In `Local checks`, include only checks that CI does not run, such as `task smoke:bruno` passed 36/36 requests against k3d flowspace-local with Mailpit. Separate several checks with semicolons. Write `Local checks: n/a` when no local check applies.
-- Do not repeat the Verification checklist or CI measurements. Write each follow-up Issue in the [Follow-up tasks format](pull-requests.md#follow-up-tasks). Do not include secrets or test account data.
+- Do not repeat the Verification checklist or CI measurements. Write each follow-up Issue in the [follow-up task format](#follow-up-task-format). Do not include secrets or test account data.
 
 ## Examples
 

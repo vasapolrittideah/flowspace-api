@@ -18,3 +18,14 @@ This convention defines Markdown and English prose rules for repository artifact
 - First, use Simple English to make the text easy to understand with common words and short sentences. Then, use Humanizer to make it read naturally while keeping the Simple English rules. Check the final text against Simple English again and fix any conflicts. Apply both skills without exception.
 - Preserve code, identifiers, and tool directives as the skills require.
 - For Go doc comments, keep the required symbol prefix and comment syntax.
+
+### Convention files
+
+Use these sections in this order in each file under `docs/conventions/`. Omit a section that has no content, except `Rules`.
+
+1. A `# <Topic> conventions` title and an opening paragraph that states what the convention covers.
+2. `## Template`: the fixed format, then one bullet per part in the form `- <Part>: <content and format>`. Omit this section when the artifact has no fixed format.
+3. `## Rules`: the rules, grouped under `###` subsections when they cover several topics.
+4. Sections for special cases, such as the gap comment in the [Issue convention](github-issues.md).
+5. `## Reference`: tables that readers look up, such as the [commit types](commit-messages.md#types).
+6. `## Examples`.

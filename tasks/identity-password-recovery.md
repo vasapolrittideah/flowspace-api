@@ -53,8 +53,8 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Reset
 
-- [ ] One current code changes the password once and ends all prior sessions and refresh tokens without changing the subject, verified email, or provider links.
-- [ ] An old-password login cannot commit after reset, a new-password login can create a fresh session, and the notice survives a mail outage.
+- [x] One current code changes the password once and ends all prior sessions and refresh tokens without changing the subject, verified email, or provider links.
+- [x] An old-password login cannot commit after reset, a new-password login can create a fresh session, and the notice survives a mail outage.
 
 ### Phase 3: Completion checks
 

@@ -56,13 +56,14 @@ The groups below follow the order of the work, from planning to delivery.
 
 | Work | Convention |
 | --- | --- |
-| Naming and grouping hexagonal components | [Hexagonal naming and file conventions](docs/conventions/hexagonal-naming-and-files.md) |
+| Naming hexagonal components and grouping their files | [Hexagonal components and files](docs/conventions/hexagonal-files.md) |
+| Writing SQL queries or migrations | [SQL files](docs/conventions/sql-files.md) |
 | Naming Bruno request files in `tests/smoke/bruno/` | [Bruno request files](docs/conventions/bruno-request-files.md) |
 
 ### Delivery
 
 | Work | Convention |
 | --- | --- |
-| Creating a short-lived branch for a pull request | [Branches](docs/conventions/branches.md) |
+| Creating a short-lived branch for a pull request | [Branch names](docs/conventions/branch-names.md) |
 | Writing checkpoint commit messages or preparing suggested squash messages | [Commit messages](docs/conventions/commit-messages.md) |
 | Creating or updating pull requests or preparing suggested squash messages | [Pull requests](docs/conventions/pull-requests.md) |

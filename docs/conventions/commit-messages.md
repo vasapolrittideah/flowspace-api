@@ -80,6 +80,7 @@ A scope names the repository area that a change affects. Use one lowercase scope
 | `logging` | Shared structured logging under `internal/logging/` |
 | `postgrespool` | Shared PostgreSQL startup connections under `internal/postgrespool/` |
 | `requestid` | Shared request ID validation and generation under `internal/requestid/` |
+| `identity` | Accounts, authentication, email verification, and sessions |
 | `workspace` | Workspaces, memberships, invitations, roles, and authorization |
 | `work` | Projects, tasks, assignments, status transitions, comments, activity history, and the event outbox |
 | `notifications` | In-app notification inbox, read state, and event deduplication |
@@ -97,7 +98,7 @@ If generated code or OpenAPI output follows a source definition, use the type an
 1. If the main change updates a Protobuf RPC definition or public HTTP annotation, use `proto`.
 2. If the main change updates a published Protobuf event schema, use `events`.
 3. If the main change updates code-generation configuration or tooling, use `codegen`.
-4. If the change belongs to one service, use the service scope. This includes related contracts, queries, generated code, tests, configuration, and logging. Code under `services/workspace/internal/bootstrap/` uses `workspace`. For package locations, see the [project structure](../project-structure.md).
+4. If the change belongs to one service, use the service scope. This includes related contracts, queries, generated code, tests, configuration, and logging. Code under `services/<service>/internal/bootstrap/` uses the scope of that service. For package locations, see the [project structure](../project-structure.md).
 5. If the change affects one shared technical package under root `internal/`, use its directory name. If you introduce a shared package, add its directory name to the table.
 6. If one change affects several shared packages, use `shared`.
 7. If the change affects agent instructions, skills, commands, or configuration, use `agents`.

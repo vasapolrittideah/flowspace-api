@@ -38,6 +38,7 @@ Read the matching convention before writing or updating an artifact. If a skill 
 | --- | --- |
 | Writing or updating Markdown, English prose, or code comments | [Markdown and English prose](docs/conventions/markdown-and-prose.md) |
 | Naming and grouping hexagonal components | [Hexagonal naming and file conventions](docs/conventions/hexagonal-naming-and-files.md) |
+| Naming Bruno request files in `tests/smoke/bruno/` | [Bruno request files](docs/conventions/bruno-request-files.md) |
 | Creating a short-lived branch for a pull request | [Branches](docs/conventions/branches.md) |
 | Writing checkpoint commit messages or preparing suggested squash messages | [Commit messages](docs/conventions/commit-messages.md) |
 | Writing or updating module specifications in `docs/specs/<module-id>.md` | [Module specs](docs/conventions/module-specs.md) |

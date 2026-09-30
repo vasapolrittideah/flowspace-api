@@ -86,16 +86,9 @@ Status: Complete | Blocked
 
 Outcome: <State the result in one sentence.>
 
-Environment: <State the local stack and test services used for checks that CI does not run.>
+Local checks: <State each command that CI does not run, its passed and total counts, and the local stack it ran against.>
 
 PR: #<number>. CI <passed | failed> in [run <run-id>](https://github.com/vasapolrittideah/flowspace-api/actions/runs/<run-id>).
-
-## Local checks
-
-| Check | Result |
-| --- | --- |
-| Bruno requests | <passed>/<total> |
-| Bruno tests | <passed>/<total> |
 
 ## Gaps
 
@@ -111,10 +104,10 @@ n/a
 ```
 
 - Separate the lines under `Result` with blank lines. Do not add a date because GitHub shows when the comment was posted.
-- Complete every section. Write `n/a` under `Local checks`, `Gaps`, or `Follow-up tasks` when there is nothing to report.
+- Complete every section. Write `n/a` under `Gaps` or `Follow-up tasks` when there is nothing to report.
 - Set `Status` to `Complete` only when all required checks pass. If a gap prevents closure, set `Status` to `Blocked` and keep the specification and plan statuses unchanged.
 - For each failed or unrun item, leave its checkbox clear and add a bullet under `Gaps` that names the item, cause, and next action.
-- Include `Local checks` rows only for checks that CI does not run, such as Bruno. Write `n/a` when no local check applies.
+- In `Local checks`, include only checks that CI does not run, such as `task smoke:bruno` passed 36/36 requests against k3d flowspace-local with Mailpit. Separate several checks with semicolons. Write `Local checks: n/a` when no local check applies.
 - Do not repeat the Verification checklist or CI measurements. Write each follow-up Issue in the [Follow-up tasks format](pull-requests.md#follow-up-tasks). Do not include secrets or test account data.
 
 ### Issue rules

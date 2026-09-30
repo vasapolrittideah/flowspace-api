@@ -487,6 +487,10 @@ func testPasswordChangeNotice(ctx context.Context, t *testing.T, pool *pgxpool.P
 		}
 	}
 	committed()
+	var retained int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_password_change_notices WHERE account_subject=$1`, subject).Scan(&retained); err != nil || retained != 0 {
+		t.Fatalf("delivered notice kept its email address: rows=%d error=%v", retained, err)
+	}
 	if hash != resetHash {
 		t.Fatal("notice delivery changed the password hash")
 	}

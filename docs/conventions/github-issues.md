@@ -67,7 +67,7 @@ Post a comment only when the PR does not show something that a reader of the Iss
 - #<issue-number>: <remaining work in one sentence>.
 ```
 
-- Omit a section that has nothing to report. Do not write `None`.
+- Omit a section that has nothing to report. Do not write `n/a`.
 - Write each follow-up Issue in the [Follow-up tasks format](pull-requests.md#follow-up-tasks).
 - Do not add the PR, CI results, or measurements. Do not include secrets or test account data.
 
@@ -99,7 +99,7 @@ PR: #<number>. CI <passed | failed> in [run <run-id>](https://github.com/vasapol
 
 ## Gaps
 
-None
+n/a
 
 ## Module closure
 
@@ -107,11 +107,11 @@ None
 
 ## Follow-up tasks
 
-None
+n/a
 ```
 
 - Separate the lines under `Result` with blank lines. Do not add a date because GitHub shows when the comment was posted.
-- Complete every section. Write `None` under `Gaps` or `Follow-up tasks` when there is nothing to report.
+- Complete every section. Write `n/a` under `Gaps` or `Follow-up tasks` when there is nothing to report.
 - Set `Status` to `Complete` only when all required checks pass. If a gap prevents closure, set `Status` to `Blocked` and keep the specification and plan statuses unchanged.
 - For each failed or unrun item, leave its checkbox clear and add a bullet under `Gaps` that names the item, cause, and next action.
 - Include `Local checks` rows only for checks that CI does not run, such as Bruno. Omit the section when no local check applies.

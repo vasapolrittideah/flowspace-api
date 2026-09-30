@@ -141,6 +141,10 @@ loop:
 			if err != nil {
 				w.logger.Warn("outbox_publish_failed")
 			}
+			// The email worker logs a notice failure; the notice stays queued for its next attempt.
+			stepCtx, stop = context.WithTimeout(runCtx, requestTimeout)
+			_, _ = w.consumer.DeliverPasswordChangeNotice(stepCtx)
+			stop()
 			if !time.Now().Before(nextAgeLog) {
 				w.logOutboxAge(runCtx)
 				w.logBrokerLag(runCtx)

@@ -40,6 +40,10 @@ import (
 	identityemail "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/email"
 	outboxevent "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/event"
 	identitypostgres "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
+	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
+	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
@@ -49,6 +53,10 @@ type switchingSender struct{ target outbound.EmailSender }
 
 func (s *switchingSender) Send(ctx context.Context, email, code, purpose string) error {
 	return s.target.Send(ctx, email, code, purpose)
+}
+
+func (s *switchingSender) SendPasswordChangeNotice(ctx context.Context, email string) error {
+	return s.target.SendPasswordChangeNotice(ctx, email)
 }
 
 func (r crashAfterSendRepository) WithCurrentDelivery(ctx context.Context, challengeID, purpose string, send func(context.Context, outbound.CurrentDelivery) error) error {
@@ -387,5 +395,133 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 		if strings.Contains(telemetry, secret) {
 			t.Fatal("delivery telemetry contains email delivery secrets")
 		}
+	}
+	testPasswordChangeNotice(ctx, t, pool, newWorker, mailSender, sender, deadSender, mailURL, mailbox().Total)
+}
+
+func testPasswordChangeNotice(ctx context.Context, t *testing.T, pool *pgxpool.Pool,
+	newWorker func(outbound.DeliveryRepository, outbound.EmailSender) *identityevent.EmailWorker,
+	mailSender *switchingSender, sender, deadSender outbound.EmailSender, mailURL string, mailTotal int,
+) {
+	t.Helper()
+	const subject, email, newPassword = "notice-owner", "Notice-Owner@example.com", "notice password 12345"
+	compromised := func(context.Context, string) (bool, error) { return false, nil }
+	queries := identitysqlc.New(pool)
+	if _, err := queries.CreateAccount(ctx, identitysqlc.CreateAccountParams{
+		Subject: subject, EmailLocal: "Notice-Owner", EmailDomain: "example.com", PasswordHash: "$argon2id$old",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := queries.MarkEmailVerified(ctx, subject); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := queries.CreateSession(ctx, identitysqlc.CreateSessionParams{AccountSubject: subject, RefreshTokenHash: bytes.Repeat([]byte{4}, 32)}); err != nil {
+		t.Fatal(err)
+	}
+	key := bytes.Repeat([]byte{5}, 32)
+	code, verifier, _, err := domain.NewChallenge(key, subject, email, domain.PurposePasswordReset, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := queries.CreateChallenge(ctx, identitysqlc.CreateChallengeParams{
+		AccountSubject: subject, Purpose: string(domain.PurposePasswordReset), EmailLocal: "Notice-Owner",
+		EmailDomain: "example.com", CodeVerifier: verifier[:],
+	}); err != nil {
+		t.Fatal(err)
+	}
+	allow := func(context.Context, string) error { return nil }
+	reset := app.NewPasswordResetService(identitypostgres.NewAccountRepository(pool), allow, allow, allow, compromised, key)
+	input := inbound.ResetPasswordInput{Email: email, Code: code, NewPassword: newPassword, Source: "192.0.2.60"}
+	wrong := input
+	wrong.Code = "000000"
+	if code == wrong.Code {
+		wrong.Code = "000001"
+	}
+	mailSender.target = deadSender
+	worker := newWorker(identitypostgres.NewDeliveryRepository(pool), mailSender)
+	defer worker.Close()
+	if err := reset.ResetPassword(ctx, wrong); !errors.Is(err, app.ErrInvalidPasswordResetCode) {
+		t.Fatalf("failed reset = %v", err)
+	}
+	if found, err := worker.DeliverPasswordChangeNotice(ctx); found || err != nil {
+		t.Fatalf("failed reset queued a notice: found=%v error=%v", found, err)
+	}
+	if err := reset.ResetPassword(ctx, input); err != nil {
+		t.Fatalf("reset = %v", err)
+	}
+	var hash string
+	committed := func() {
+		t.Helper()
+		var activeSessions int
+		if err := pool.QueryRow(ctx, `SELECT password_hash, (SELECT count(*) FROM identity_sessions WHERE account_subject=$1 AND revoked_at IS NULL)
+			FROM identity_accounts WHERE subject=$1`, subject).Scan(&hash, &activeSessions); err != nil || hash == "$argon2id$old" || activeSessions != 0 {
+			t.Fatalf("reset state changed: new hash=%v active sessions=%d error=%v", hash != "$argon2id$old", activeSessions, err)
+		}
+	}
+	committed()
+	resetHash := hash
+	if found, err := worker.DeliverPasswordChangeNotice(ctx); !found || !errors.Is(err, identityevent.ErrEmailDelivery) {
+		t.Fatalf("notice outage: found=%v error=%v", found, err)
+	}
+	var attempts int
+	var delivered bool
+	if err := pool.QueryRow(ctx, `SELECT attempt_count, delivered_at IS NOT NULL FROM identity_password_change_notices WHERE account_subject=$1`, subject).Scan(&attempts, &delivered); err != nil || attempts != 1 || delivered {
+		t.Fatalf("notice after outage: attempts=%d delivered=%v error=%v", attempts, delivered, err)
+	}
+	committed()
+	if found, err := worker.DeliverPasswordChangeNotice(ctx); found || err != nil {
+		t.Fatalf("deferred notice retried early: found=%v error=%v", found, err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_password_change_notices SET next_attempt_at=statement_timestamp() WHERE account_subject=$1`, subject); err != nil {
+		t.Fatal(err)
+	}
+	mailSender.target = sender
+	canceled, cancel := context.WithCancel(ctx)
+	cancel()
+	if found, err := worker.DeliverPasswordChangeNotice(canceled); found || !errors.Is(err, identityevent.ErrEmailDelivery) {
+		t.Fatalf("canceled notice delivery: found=%v error=%v", found, err)
+	}
+	for range 2 {
+		if _, err := worker.DeliverPasswordChangeNotice(ctx); err != nil {
+			t.Fatalf("notice retry = %v", err)
+		}
+	}
+	committed()
+	if hash != resetHash {
+		t.Fatal("notice delivery changed the password hash")
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, mailURL+"/api/v1/message/latest/raw", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, readErr := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if readErr != nil || response.StatusCode != http.StatusOK || !bytes.Contains(raw, []byte("To: Notice-Owner@example.com")) ||
+		!bytes.Contains(raw, []byte("FlowSpace password changed")) {
+		t.Fatalf("notice Mailpit message: status=%d error=%v", response.StatusCode, readErr)
+	}
+	for _, secret := range []string{code, newPassword, resetHash, "argon2"} {
+		if bytes.Contains(raw, []byte(secret)) {
+			t.Fatal("password-change notice contains a secret")
+		}
+	}
+	var mailbox struct {
+		Total int `json:"total"`
+	}
+	request, err = http.NewRequestWithContext(ctx, http.MethodGet, mailURL+"/api/v1/messages", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err = http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = response.Body.Close() }()
+	if err := json.NewDecoder(response.Body).Decode(&mailbox); err != nil || mailbox.Total != mailTotal+1 {
+		t.Fatalf("notice count = %d, want %d once: error=%v", mailbox.Total, mailTotal+1, err)
 	}
 }

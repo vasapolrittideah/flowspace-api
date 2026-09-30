@@ -37,6 +37,19 @@ func (s *MailpitSender) Send(ctx context.Context, recipient, code, purpose strin
 	if err != nil {
 		return err
 	}
+	return s.deliver(ctx, address, subject, "Your FlowSpace code is "+code+". It expires in 10 minutes.")
+}
+
+func (s *MailpitSender) SendPasswordChangeNotice(ctx context.Context, recipient string) error {
+	address, err := domain.NormalizeEmail(recipient)
+	if err != nil {
+		return ErrMailDelivery
+	}
+	return s.deliver(ctx, address, "FlowSpace password changed",
+		"Your FlowSpace password was changed and every session was signed out. If you did not make this change, reset your password now.")
+}
+
+func (s *MailpitSender) deliver(ctx context.Context, address, subject, body string) error {
 	conn, err := (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "tcp", s.address)
 	if err != nil {
 		return fmt.Errorf("%w: dial", ErrMailDelivery)
@@ -65,7 +78,7 @@ func (s *MailpitSender) Send(ctx context.Context, recipient, code, purpose strin
 	if err != nil {
 		return fmt.Errorf("%w: data", ErrMailDelivery)
 	}
-	if _, err := fmt.Fprintf(writer, "From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nYour FlowSpace code is %s. It expires in 10 minutes.\r\n", s.from, address, subject, code); err != nil {
+	if _, err := fmt.Fprintf(writer, "From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s\r\n", s.from, address, subject, body); err != nil {
 		_ = writer.Close()
 		return fmt.Errorf("%w: write", ErrMailDelivery)
 	}

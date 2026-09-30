@@ -3,6 +3,7 @@ package email
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
@@ -27,6 +28,17 @@ func TestMailpitSenderRejectsUnsafeInputs(t *testing.T) {
 		if err := sender.Send(context.Background(), input.recipient, input.code, input.purpose); !errors.Is(err, ErrMailDelivery) {
 			t.Fatalf("unsafe mail input = %v", err)
 		}
+	}
+}
+
+func TestPasswordChangeNoticeRejectsUnsafeRecipient(t *testing.T) {
+	sender, err := NewMailpitSender("127.0.0.1:1", "no-reply@flowspace.local")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sender.SendPasswordChangeNotice(context.Background(), "Recipient@example.com\r\nBcc: attacker@example.com")
+	if !errors.Is(err, ErrMailDelivery) || strings.Contains(err.Error(), "attacker") {
+		t.Fatalf("unsafe notice recipient = %v", err)
 	}
 }
 

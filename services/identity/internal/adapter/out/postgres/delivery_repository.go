@@ -85,6 +85,33 @@ func isCurrentDelivery(account sqlc.GetDeliveryAccountForUpdateRow, challenge sq
 		challenge.EmailLocal == account.EmailLocal && challenge.EmailDomain == account.EmailDomain
 }
 
+func (r *DeliveryRepository) WithNextPasswordChangeNotice(ctx context.Context, send func(context.Context, string) error) (bool, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	queries := sqlc.New(tx)
+	notice, err := queries.LockNextPasswordChangeNotice(ctx)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if sendErr := send(ctx, notice.EmailLocal+"@"+notice.EmailDomain); sendErr != nil {
+		if _, err := queries.DeferPasswordChangeNotice(ctx, notice.ID); err != nil {
+			return true, errors.Join(sendErr, err)
+		}
+		return true, errors.Join(sendErr, tx.Commit(ctx))
+	}
+	// A crash before this commit resends the notice, which changes no account or session state.
+	if _, err := queries.MarkPasswordChangeNoticeDelivered(ctx, notice.ID); err != nil {
+		return true, err
+	}
+	return true, tx.Commit(ctx)
+}
+
 func (r *DeliveryRepository) PurgeTerminal(ctx context.Context) error {
 	_, err := sqlc.New(r.pool).PurgeTerminalDeliveries(ctx)
 	return err

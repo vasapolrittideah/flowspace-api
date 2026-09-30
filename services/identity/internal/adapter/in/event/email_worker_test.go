@@ -24,6 +24,20 @@ type deliveryRepository struct {
 	called   int
 	purged   int
 	purgeErr error
+	notices  []string
+	deferred int
+}
+
+func (r *deliveryRepository) WithNextPasswordChangeNotice(ctx context.Context, send func(context.Context, string) error) (bool, error) {
+	if len(r.notices) == 0 {
+		return false, nil
+	}
+	if err := send(ctx, r.notices[0]); err != nil {
+		r.deferred++
+		return true, err
+	}
+	r.notices = r.notices[1:]
+	return true, nil
 }
 
 func (r *deliveryRepository) WithCurrentDelivery(ctx context.Context, _, _ string, send func(context.Context, outbound.CurrentDelivery) error) error {
@@ -37,9 +51,19 @@ func (r *deliveryRepository) PurgeTerminal(context.Context) error {
 }
 
 type capturingSender struct {
-	called  int
-	code    string
-	purpose string
+	called    int
+	code      string
+	purpose   string
+	notices   []string
+	noticeErr error
+}
+
+func (s *capturingSender) SendPasswordChangeNotice(_ context.Context, email string) error {
+	if s.noticeErr != nil {
+		return s.noticeErr
+	}
+	s.notices = append(s.notices, email)
+	return nil
 }
 
 func (s *capturingSender) Send(_ context.Context, _, code, purpose string) error {
@@ -60,6 +84,26 @@ func TestEmailWorkerAcceptsPasswordResetEvent(t *testing.T) {
 		if bytes.Contains(record.Key, secret) || bytes.Contains(record.Value, secret) {
 			t.Fatal("recovery broker record contains delivery secrets")
 		}
+	}
+}
+
+func TestEmailWorkerDeliversPasswordChangeNotice(t *testing.T) {
+	worker, repository, sender, _ := newEmailWorkerFixture(t)
+	defer worker.Close()
+	repository.notices = []string{"Recipient@example.com"}
+	sender.noticeErr = errors.New("smtp refused Recipient@example.com")
+	found, err := worker.DeliverPasswordChangeNotice(context.Background())
+	if !found || !errors.Is(err, identityevent.ErrEmailDelivery) || strings.Contains(err.Error(), "Recipient@example.com") ||
+		repository.deferred != 1 || len(repository.notices) != 1 {
+		t.Fatalf("failed notice: found=%v deferred=%d error=%v", found, repository.deferred, err)
+	}
+	sender.noticeErr = nil
+	if found, err := worker.DeliverPasswordChangeNotice(context.Background()); !found || err != nil ||
+		len(sender.notices) != 1 || sender.notices[0] != "Recipient@example.com" || len(repository.notices) != 0 {
+		t.Fatalf("retried notice: found=%v sent=%v error=%v", found, sender.notices, err)
+	}
+	if found, err := worker.DeliverPasswordChangeNotice(context.Background()); found || err != nil || len(sender.notices) != 1 {
+		t.Fatalf("no due notice: found=%v sent=%d error=%v", found, len(sender.notices), err)
 	}
 }
 

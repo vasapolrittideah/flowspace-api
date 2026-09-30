@@ -86,6 +86,19 @@ func (w *EmailWorker) HandleRecord(ctx context.Context, record *kgo.Record) erro
 	return nil
 }
 
+// DeliverPasswordChangeNotice sends one due notice and reports whether it found one.
+func (w *EmailWorker) DeliverPasswordChangeNotice(ctx context.Context) (bool, error) {
+	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, "identity.password_change_notice")
+	defer span.End()
+	found, err := w.repository.WithNextPasswordChangeNotice(ctx, w.sender.SendPasswordChangeNotice)
+	if err != nil {
+		span.SetStatus(codes.Error, "notice delivery failed")
+		w.logger.Warn("password_change_notice_failed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
+		return found, ErrEmailDelivery
+	}
+	return found, nil
+}
+
 func validDeliveryPurpose(purpose string) bool {
 	switch purpose {
 	case string(domain.PurposeVerifyEmail), string(domain.PurposeClaimAccount), string(domain.PurposePasswordReset):

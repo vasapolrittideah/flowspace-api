@@ -58,6 +58,45 @@ func (q *Queries) CreateOutboxEvent(ctx context.Context, challengeID pgtype.UUID
 	return id, err
 }
 
+const deferPasswordChangeNotice = `-- name: DeferPasswordChangeNotice :execrows
+UPDATE identity_password_change_notices
+SET attempt_count = attempt_count + 1,
+    next_attempt_at = statement_timestamp() + INTERVAL '30 seconds'
+WHERE id = $1
+  AND delivered_at IS NULL
+`
+
+func (q *Queries) DeferPasswordChangeNotice(ctx context.Context, id pgtype.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deferPasswordChangeNotice, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const lockNextPasswordChangeNotice = `-- name: LockNextPasswordChangeNotice :one
+SELECT id, email_local, email_domain
+FROM identity_password_change_notices
+WHERE delivered_at IS NULL
+  AND next_attempt_at <= statement_timestamp()
+ORDER BY next_attempt_at, created_at
+LIMIT 1
+FOR UPDATE SKIP LOCKED
+`
+
+type LockNextPasswordChangeNoticeRow struct {
+	ID          pgtype.UUID
+	EmailLocal  string
+	EmailDomain string
+}
+
+func (q *Queries) LockNextPasswordChangeNotice(ctx context.Context) (LockNextPasswordChangeNoticeRow, error) {
+	row := q.db.QueryRow(ctx, lockNextPasswordChangeNotice)
+	var i LockNextPasswordChangeNoticeRow
+	err := row.Scan(&i.ID, &i.EmailLocal, &i.EmailDomain)
+	return i, err
+}
+
 const markOutboxPublished = `-- name: MarkOutboxPublished :execrows
 UPDATE identity_outbox_events
 SET published_at = statement_timestamp(), claim_owner = NULL, claimed_until = NULL
@@ -74,6 +113,21 @@ type MarkOutboxPublishedParams struct {
 
 func (q *Queries) MarkOutboxPublished(ctx context.Context, arg MarkOutboxPublishedParams) (int64, error) {
 	result, err := q.db.Exec(ctx, markOutboxPublished, arg.ID, arg.ClaimOwner)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const markPasswordChangeNoticeDelivered = `-- name: MarkPasswordChangeNoticeDelivered :execrows
+UPDATE identity_password_change_notices
+SET delivered_at = statement_timestamp()
+WHERE id = $1
+  AND delivered_at IS NULL
+`
+
+func (q *Queries) MarkPasswordChangeNoticeDelivered(ctx context.Context, id pgtype.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, markPasswordChangeNoticeDelivered, id)
 	if err != nil {
 		return 0, err
 	}

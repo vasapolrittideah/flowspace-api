@@ -2,7 +2,7 @@
 
 Module id: `identity-password-recovery`
 
-Status: Approved.
+Status: Implemented.
 
 ## Objective
 

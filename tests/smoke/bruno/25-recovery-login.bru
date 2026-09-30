@@ -1,0 +1,31 @@
+meta {
+  name: Log in before password reset
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{baseUrl}}/v1/password-sessions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+tests {
+  test("the old password creates a session before reset", function () {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    bru.setVar("recoveryAccessToken", body.accessToken);
+    bru.setVar("recoveryRefreshToken", body.refreshToken);
+  });
+}

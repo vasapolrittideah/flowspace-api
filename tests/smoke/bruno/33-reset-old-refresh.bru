@@ -1,0 +1,27 @@
+meta {
+  name: Reject old refresh token after reset
+  type: http
+  seq: 33
+}
+
+post {
+  url: {{baseUrl}}/v1/session-refreshes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refreshToken": "{{recoveryRefreshToken}}"
+  }
+}
+
+tests {
+  test("the old refresh token cannot refresh", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Reject wrong reset code
+  type: http
+  seq: 29
+}
+
+post {
+  url: {{baseUrl}}/v1/password-resets
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "code": "{{wrongResetCode}}",
+    "newPassword": "{{newPassword}}"
+  }
+}
+
+script:pre-request {
+  const code = bru.getVar("resetCode");
+  bru.setVar("wrongResetCode", code === "000000" ? "000001" : "000000");
+  bru.setVar("newPassword", `${bru.getVar("password")}-reset`);
+}
+
+tests {
+  test("a wrong code returns the safe recovery error", function () {
+    expect(res.getStatus()).to.equal(400);
+    bru.setVar("resetCodeError", JSON.stringify(res.getBody()));
+  });
+}

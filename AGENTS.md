@@ -34,16 +34,35 @@ A worktree is a separate checkout of the repository. If tasks run at the same ti
 
 Read the matching convention before writing or updating an artifact. If a skill gives a different rule, template, or file path, follow the project convention and [`CONSTRAINTS.md`](CONSTRAINTS.md). For example, keep each port that the hexagonal convention requires, even when the port has only one adapter.
 
+The groups below follow the order of the work, from planning to delivery.
+
+### All work
+
 | Work | Convention |
 | --- | --- |
 | Writing or updating Markdown, English prose, or code comments | [Markdown and English prose](docs/conventions/markdown-and-prose.md) |
-| Naming and grouping hexagonal components | [Hexagonal naming and file conventions](docs/conventions/hexagonal-naming-and-files.md) |
-| Naming Bruno request files in `tests/smoke/bruno/` | [Bruno request files](docs/conventions/bruno-request-files.md) |
-| Creating a short-lived branch for a pull request | [Branches](docs/conventions/branches.md) |
-| Writing checkpoint commit messages or preparing suggested squash messages | [Commit messages](docs/conventions/commit-messages.md) |
+
+### Planning
+
+| Work | Convention |
+| --- | --- |
 | Writing or updating module specifications in `docs/specs/<module-id>.md` | [Module specs](docs/conventions/module-specs.md) |
 | Writing or updating module plans in `tasks/<module-id>.md` and tracking tasks | [Module plans](docs/conventions/module-plans.md) |
-| Drafting Issues in `tasks/.todo.md` or creating or updating GitHub Issues | [GitHub Issues](docs/conventions/github-issues.md) |
 | Creating or updating GitHub milestones | [GitHub milestones](docs/conventions/github-milestones.md) |
+| Drafting Issues in `tasks/.todo.md` or creating or updating GitHub Issues | [GitHub Issues](docs/conventions/github-issues.md) |
 | Applying labels when creating or updating Issues or pull requests | [GitHub labels](docs/conventions/github-labels.md) |
+
+### Code and tests
+
+| Work | Convention |
+| --- | --- |
+| Naming and grouping hexagonal components | [Hexagonal naming and file conventions](docs/conventions/hexagonal-naming-and-files.md) |
+| Naming Bruno request files in `tests/smoke/bruno/` | [Bruno request files](docs/conventions/bruno-request-files.md) |
+
+### Delivery
+
+| Work | Convention |
+| --- | --- |
+| Creating a short-lived branch for a pull request | [Branches](docs/conventions/branches.md) |
+| Writing checkpoint commit messages or preparing suggested squash messages | [Commit messages](docs/conventions/commit-messages.md) |
 | Creating or updating pull requests or preparing suggested squash messages | [Pull requests](docs/conventions/pull-requests.md) |

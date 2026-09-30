@@ -23,7 +23,7 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/code-review-and-quality/SKILL.md",
-      "computedHash": "6231479cc74c7ed70a5618b81b3f94034d9806c0319a1a23d15f9b94a368c581"
+      "computedHash": "03790162b6550eddca4dc66b24ba70df417479499972abe7ccd451d191d2b0fe"
     },
     "code-simplification": {
       "source": "addyosmani/agent-skills",
@@ -35,7 +35,7 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/constraint-driven-development/SKILL.md",
-      "computedHash": "0f760f914c6321cbdee7d47773ddb5b27a809f79049010b4aeead9084f38133b"
+      "computedHash": "b4180cd9c4ed2af6c8310c4f4e9bb5003ef8eccfe65a7f288ba7f9842dbd19a5"
     },
     "context-engineering": {
       "source": "addyosmani/agent-skills",
@@ -71,7 +71,7 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/frontend-ui-engineering/SKILL.md",
-      "computedHash": "cb4e981ecb5f701b451fc4e937a38049b49fd4523f213e06cffbd00b007060dc"
+      "computedHash": "caada020b47fb51c68ba91f9bf390745e18f9d6c17e4c251b046ba74e43343d7"
     },
     "git-workflow-and-versioning": {
       "source": "addyosmani/agent-skills",
@@ -83,7 +83,7 @@
       "source": "blader/humanizer",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "0a4518725b506f6c83e65f2d6d87cb56fbc042ba92de5eecb1ef8b995ec69d70"
+      "computedHash": "fa4ffac562a8e7349282f606391ede22d23118e998dc8b5ac931662fa734c1b7"
     },
     "idea-refine": {
       "source": "addyosmani/agent-skills",
@@ -101,7 +101,7 @@
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/interview-me/SKILL.md",
-      "computedHash": "efded91ac7f7626239b338ce8622afeb557151b86532b632f3c9eb5b2ff9048f"
+      "computedHash": "4229002dd862e6e037c8a01c3e31d9af097465c58b2c3611912edb2af005f303"
     },
     "observability-and-instrumentation": {
       "source": "addyosmani/agent-skills",
@@ -121,11 +121,47 @@
       "skillPath": "skills/planning-and-task-breakdown/SKILL.md",
       "computedHash": "0dc14a1402cdabd376f2d81d2225fcb4a18ee63d58b945ff83affeb024285b8f"
     },
+    "ponytail": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail/SKILL.md",
+      "computedHash": "210fa0831f649ce9f8a305f7b7c8cf2a0dd09ac4dd53067109941b96e7811d4e"
+    },
+    "ponytail-audit": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-audit/SKILL.md",
+      "computedHash": "8b8d72e6ff70b65b6c9518d470fcf29dc696eea93d28f3efa10fdcc60cbd696d"
+    },
+    "ponytail-debt": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-debt/SKILL.md",
+      "computedHash": "0099b82174e3a4261828b4ec04d2c068b1b294fdab14f76701c2acd1f7c99539"
+    },
+    "ponytail-gain": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-gain/SKILL.md",
+      "computedHash": "c45ecba7906960eea904218b623abf097ebff84ecbacca6d68da1d0687435f75"
+    },
+    "ponytail-help": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-help/SKILL.md",
+      "computedHash": "10e8382b1033c9a0fec0073de6d3de3846b4f5dca7d78b6df2d476a1f4cd43c6"
+    },
+    "ponytail-review": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-review/SKILL.md",
+      "computedHash": "4646594fcd75455533f7ff1425f4f1c5ba0fa65f88241bf262b1c4fc275f049a"
+    },
     "security-and-hardening": {
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/security-and-hardening/SKILL.md",
-      "computedHash": "c2556c7890d2509981d6613c8f51a9371d1415b805d802912339e0b4e530fe3c"
+      "computedHash": "1e0cd727cccd3c8c0834ce7722a8a2851e2e849f1352ee972f39311437b021d3"
     },
     "shipping-and-launch": {
       "source": "addyosmani/agent-skills",
@@ -137,7 +173,7 @@
       "source": "AminBlg/SimpleEnglish",
       "sourceType": "github",
       "skillPath": "skills/simple-english/SKILL.md",
-      "computedHash": "c0edc1e9c22326d0e53cf68f3965148c0751190dc74b4aa03cd4f5229de6742c"
+      "computedHash": "27ecd9fcbf49b035da6463dc2aa3459167ae2f2536b65d17eaf52afbaac87f7c"
     },
     "source-driven-development": {
       "source": "addyosmani/agent-skills",

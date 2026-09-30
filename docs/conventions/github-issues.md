@@ -82,10 +82,12 @@ After verification, check each completed item in the Issue body and post a resul
 ```markdown
 ## Result
 
-Date: YYYY-MM-DD
 Status: Complete | Blocked
+
 Outcome: <State the result in one sentence.>
+
 Environment: <State the local stack and test services used for checks that CI does not run.>
+
 PR: #<number>. CI <passed | failed> in [run <run-id>](https://github.com/vasapolrittideah/flowspace-api/actions/runs/<run-id>).
 
 ## Local checks
@@ -108,6 +110,7 @@ None
 None
 ```
 
+- Separate the lines under `Result` with blank lines. Do not add a date because GitHub shows when the comment was posted.
 - Complete every section. Write `None` under `Gaps` or `Follow-up tasks` when there is nothing to report.
 - Set `Status` to `Complete` only when all required checks pass. If a gap prevents closure, set `Status` to `Blocked` and keep the specification and plan statuses unchanged.
 - For each failed or unrun item, leave its checkbox clear and add a bullet under `Gaps` that names the item, cause, and next action.

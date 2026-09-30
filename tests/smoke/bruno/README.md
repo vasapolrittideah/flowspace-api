@@ -1,6 +1,6 @@
 # Identity Bruno smoke tests
 
-The collection creates disposable accounts against the local Identity API. It reads verification and claim codes from local Mailpit. It then tests password login, refresh-token replay, and logout for one or all sessions.
+The collection creates disposable accounts against the local Identity API. It reads verification and claim codes from local Mailpit. It then tests password login, refresh-token replay, logout for one or all sessions, and password recovery. The recovery steps read the reset code and the password-change notice from Mailpit.
 
 Start these port forwards in separate terminals:
 

@@ -244,4 +244,42 @@ func TestDeliveryRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	countMaterial(locked, 0)
+	testPasswordChangeNoticeCleanupFailure(ctx, t, pool)
+}
+
+// testPasswordChangeNoticeCleanupFailure proves that a failed cleanup after sending keeps the notice for another attempt.
+func testPasswordChangeNoticeCleanupFailure(ctx context.Context, t *testing.T, pool *pgxpool.Pool) {
+	t.Helper()
+	if _, err := pool.Exec(ctx, `INSERT INTO identity_accounts (subject, email_local, email_domain, password_hash, email_verified_at)
+		VALUES ('notice-subject', 'Notice', 'example.com', '$argon2id$test', statement_timestamp())`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := identitysqlc.New(pool).QueuePasswordChangeNotice(ctx, "notice-subject"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `CREATE FUNCTION reject_notice_cleanup() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN RAISE EXCEPTION 'notice cleanup unavailable'; END $$`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `CREATE TRIGGER reject_notice_cleanup BEFORE DELETE ON identity_password_change_notices
+		FOR EACH ROW EXECUTE FUNCTION reject_notice_cleanup()`); err != nil {
+		t.Fatal(err)
+	}
+	repository := identitypostgres.NewDeliveryRepository(pool)
+	var sent []string
+	send := func(_ context.Context, email string) error { sent = append(sent, email); return nil }
+	if found, err := repository.WithNextPasswordChangeNotice(ctx, send); !found || err == nil {
+		t.Fatalf("failed cleanup: found=%v error=%v", found, err)
+	}
+	if _, err := pool.Exec(ctx, `DROP TRIGGER reject_notice_cleanup ON identity_password_change_notices; DROP FUNCTION reject_notice_cleanup()`); err != nil {
+		t.Fatal(err)
+	}
+	if found, err := repository.WithNextPasswordChangeNotice(ctx, send); !found || err != nil {
+		t.Fatalf("notice retry after cleanup failure: found=%v error=%v", found, err)
+	}
+	var retained int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_password_change_notices`).Scan(&retained); err != nil ||
+		retained != 0 || len(sent) != 2 || sent[0] != "Notice@example.com" || sent[1] != sent[0] {
+		t.Fatalf("notice retry: retained=%d sent=%v error=%v", retained, sent, err)
+	}
 }

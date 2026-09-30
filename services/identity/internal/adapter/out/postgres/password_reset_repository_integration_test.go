@@ -10,6 +10,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -317,5 +318,61 @@ func testPasswordResetRepository(t *testing.T, pool *pgxpool.Pool) {
 		NewPassword: "fourth password 12345", Source: input.Source,
 	}); !errors.Is(err, app.ErrInvalidPasswordResetCode) {
 		t.Fatalf("exhausted code = %v", err)
+	}
+}
+
+func testPasswordResetInvalidCodeTiming(t *testing.T, pool *pgxpool.Pool) {
+	ctx := t.Context()
+	const subject, email = "reset-timing-subject", "ResetTiming@example.com"
+	queries := identitysqlc.New(pool)
+	if _, err := queries.CreateAccount(ctx, identitysqlc.CreateAccountParams{
+		Subject: subject, EmailLocal: "ResetTiming", EmailDomain: "example.com", PasswordHash: "$argon2id$timing",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := queries.MarkEmailVerified(ctx, subject); err != nil {
+		t.Fatal(err)
+	}
+	key := bytes.Repeat([]byte{11}, 32)
+	code, verifier, _, err := domain.NewChallenge(key, subject, email, domain.PurposePasswordReset, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := queries.CreateChallenge(ctx, identitysqlc.CreateChallengeParams{
+		AccountSubject: subject, Purpose: string(domain.PurposePasswordReset), EmailLocal: "ResetTiming",
+		EmailDomain: "example.com", CodeVerifier: verifier[:],
+	}); err != nil {
+		t.Fatal(err)
+	}
+	wrongCode := "000000"
+	if code == wrongCode {
+		wrongCode = "000001"
+	}
+	allow := func(context.Context, string) error { return nil }
+	service := app.NewPasswordResetService(identitypostgres.NewAccountRepository(pool), allow, allow, allow,
+		func(context.Context, string) (bool, error) { return false, nil }, key)
+	durations := map[string][]time.Duration{}
+	// Five samples keep the eligible challenge usable, so each wrong guess records the full guess path.
+	for range 5 {
+		for state, address := range map[string]string{"eligible": email, "missing": "MissingTiming@example.com"} {
+			started := time.Now()
+			err := service.ResetPassword(ctx, inbound.ResetPasswordInput{
+				Email: address, Code: wrongCode, NewPassword: "timing password 12345", Source: "192.0.2.80",
+			})
+			durations[state] = append(durations[state], time.Since(started))
+			if !errors.Is(err, app.ErrInvalidPasswordResetCode) {
+				t.Fatalf("%s invalid code = %v", state, err)
+			}
+		}
+	}
+	eligible, missing := durations["eligible"], durations["missing"]
+	slices.Sort(eligible)
+	slices.Sort(missing)
+	if eligible[2] > 3*missing[2] || missing[2] > 3*eligible[2] {
+		t.Fatalf("invalid-code median timings differ: eligible = %s, missing = %s", eligible[2], missing[2])
+	}
+	var hash string
+	if err := pool.QueryRow(ctx, `SELECT password_hash FROM identity_accounts WHERE subject=$1`, subject).Scan(&hash); err != nil || hash != "$argon2id$timing" {
+		t.Fatalf("invalid codes changed the password: %v", err)
 	}
 }

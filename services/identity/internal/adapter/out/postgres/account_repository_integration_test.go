@@ -118,6 +118,9 @@ func TestIdentityRepository(t *testing.T) {
 	t.Run("password reset consumes proof and revokes sessions atomically", func(t *testing.T) {
 		testPasswordResetRepository(t, pool)
 	})
+	t.Run("invalid reset codes keep practical timing across account states", func(t *testing.T) {
+		testPasswordResetInvalidCodeTiming(t, pool)
+	})
 }
 
 func testActiveEmailUniqueness(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
@@ -1515,6 +1518,83 @@ func testRequestPasswordResetCode(t *testing.T, ctx context.Context, pool *pgxpo
 		}
 		if err := newService().RequestPasswordResetCode(ctx, input); !errors.Is(err, app.ErrRateLimited) {
 			t.Fatalf("61st request=%v", err)
+		}
+	})
+
+	t.Run("recovery requests keep practical timing and leave credentials unchanged", func(t *testing.T) {
+		queries := identitysqlc.New(pool)
+		protector, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{7}, 32), 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key := bytes.Repeat([]byte{8}, 32)
+		limits := app.NewLimitService(identitypostgres.NewLimitRepository(pool))
+		service := app.NewPasswordResetCodeService(identitypostgres.NewAccountRepository(pool), protector, limits.CodeRequest,
+			func(ctx context.Context, email string) error { return limits.PasswordRecoveryEmail(ctx, email, key) }, key)
+		durations := map[string][]time.Duration{"missing": {}, "unverified": {}, "eligible": {}}
+		for i := range 5 {
+			for _, state := range []string{"missing", "unverified", "eligible"} {
+				local := "RecoveryTiming" + state + strconv.Itoa(i)
+				subject := "recovery-timing-" + state + strconv.Itoa(i)
+				if state != "missing" {
+					if _, err := queries.CreateAccount(ctx, identitysqlc.CreateAccountParams{
+						Subject: subject, EmailLocal: local, EmailDomain: "example.com", PasswordHash: "$argon2id$timing",
+					}); err != nil {
+						t.Fatal(err)
+					}
+					refreshHash := sha256.Sum256([]byte(subject))
+					if _, err := queries.CreateSession(ctx, identitysqlc.CreateSessionParams{
+						AccountSubject: subject, RefreshTokenHash: refreshHash[:],
+					}); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if state == "eligible" {
+					if _, err := queries.MarkEmailVerified(ctx, subject); err != nil {
+						t.Fatal(err)
+					}
+				}
+				started := time.Now()
+				if err := service.RequestPasswordResetCode(ctx, inbound.RequestPasswordResetCodeInput{
+					Email: local + "@example.com", Source: "192.0.2.210",
+				}); err != nil {
+					t.Fatalf("timing request for %s = %v", state, err)
+				}
+				durations[state] = append(durations[state], time.Since(started))
+				if state == "missing" {
+					continue
+				}
+				var hash string
+				var verified bool
+				var activeSessions, challenges int
+				if err := pool.QueryRow(ctx, `SELECT password_hash, email_verified_at IS NOT NULL,
+					(SELECT count(*) FROM identity_sessions WHERE account_subject=$1 AND revoked_at IS NULL),
+					(SELECT count(*) FROM identity_challenges WHERE account_subject=$1 AND purpose='password-reset')
+					FROM identity_accounts WHERE subject=$1`, subject).Scan(&hash, &verified, &activeSessions, &challenges); err != nil {
+					t.Fatal(err)
+				}
+				wantChallenges := map[string]int{"unverified": 0, "eligible": 1}[state]
+				if hash != "$argon2id$timing" || verified != (state == "eligible") || activeSessions != 1 || challenges != wantChallenges {
+					t.Fatalf("%s request changed account state: verified=%v sessions=%d challenges=%d", state, verified, activeSessions, challenges)
+				}
+			}
+		}
+		var fastest, slowest time.Duration
+		for state, samples := range durations {
+			slices.Sort(samples)
+			median := samples[len(samples)/2]
+			if median < 100*time.Millisecond {
+				t.Fatalf("%s median response %s is below the timing floor", state, median)
+			}
+			if fastest == 0 || median < fastest {
+				fastest = median
+			}
+			if median > slowest {
+				slowest = median
+			}
+		}
+		if slowest-fastest > 60*time.Millisecond {
+			t.Fatalf("recovery response medians differ by %s: %v", slowest-fastest, durations)
 		}
 	})
 }

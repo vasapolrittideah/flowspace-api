@@ -30,6 +30,10 @@ import (
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
 	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
+	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
 )
 
 func testUnusedAddress(t *testing.T) string {
@@ -175,6 +179,7 @@ func TestIdentityPrivateSessionListener(t *testing.T) {
 	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET idle_expires_at = statement_timestamp() + INTERVAL '30 days' WHERE id = $1`, sessionID); err != nil {
 		t.Fatal(err)
 	}
+	testPasswordResetRevokesPrivateSessionCheck(ctx, t, pool, private)
 	if _, err := pool.Exec(ctx, `UPDATE identity_accounts SET email_verified_at = NULL, retired_at = statement_timestamp() WHERE subject = 'session-subject'`); err != nil {
 		t.Fatal(err)
 	}
@@ -204,5 +209,47 @@ func TestIdentityPrivateSessionListener(t *testing.T) {
 		if response.StatusCode != want {
 			t.Fatalf("%s = %d, want %d", path, response.StatusCode, want)
 		}
+	}
+}
+
+// testPasswordResetRevokesPrivateSessionCheck proves that the private check used by Workspace rejects a session after reset.
+func testPasswordResetRevokesPrivateSessionCheck(ctx context.Context, t *testing.T, pool *pgxpool.Pool, private identityv1.IdentityServiceClient) {
+	t.Helper()
+	const subject, email = "reset-session-subject", "reset@example.com"
+	if _, err := pool.Exec(ctx, `INSERT INTO identity_accounts (subject, email_local, email_domain, password_hash, email_verified_at)
+		VALUES ($1, 'reset', 'example.com', '$argon2id$test', statement_timestamp())`, subject); err != nil {
+		t.Fatal(err)
+	}
+	var sessionID string
+	if err := pool.QueryRow(ctx, `INSERT INTO identity_sessions (account_subject, refresh_token_hash, idle_expires_at, absolute_expires_at)
+		VALUES ($1, $2, statement_timestamp() + INTERVAL '30 days', statement_timestamp() + INTERVAL '90 days')
+		RETURNING id::text`, subject, bytes.Repeat([]byte{5}, 32)).Scan(&sessionID); err != nil {
+		t.Fatal(err)
+	}
+	key := bytes.Repeat([]byte{2}, 32)
+	code, verifier, _, err := domain.NewChallenge(key, subject, email, domain.PurposePasswordReset, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO identity_challenges (account_subject, purpose, email_local, email_domain, code_verifier, expires_at)
+		VALUES ($1, 'password-reset', 'reset', 'example.com', $2, statement_timestamp() + INTERVAL '10 minutes')`, subject, verifier[:]); err != nil {
+		t.Fatal(err)
+	}
+	request := &identityv1.CheckSessionRequest{Subject: subject, SessionId: sessionID}
+	callCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	if _, err := private.CheckSession(callCtx, request); err != nil {
+		t.Fatalf("session before reset = %v", err)
+	}
+	allow := func(context.Context, string) error { return nil }
+	reset := app.NewPasswordResetService(postgres.NewAccountRepository(pool), allow, allow, allow,
+		func(context.Context, string) (bool, error) { return false, nil }, key)
+	if err := reset.ResetPassword(ctx, inbound.ResetPasswordInput{
+		Email: email, Code: code, NewPassword: "reset session password 123", Source: "192.0.2.70",
+	}); err != nil {
+		t.Fatalf("reset = %v", err)
+	}
+	if _, err := private.CheckSession(callCtx, request); status.Code(err) != codes.Unauthenticated {
+		t.Fatalf("session after reset = %v", err)
 	}
 }

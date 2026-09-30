@@ -155,6 +155,14 @@ func (stubIdentityHandler) CreateAccount(context.Context, *identityv1.CreateAcco
 	return &identityv1.CreateAccountResponse{Subject: "subject-1"}, nil
 }
 
+func (stubIdentityHandler) RequestPasswordResetCode(context.Context, *identityv1.RequestPasswordResetCodeRequest) (*identityv1.RequestPasswordResetCodeResponse, error) {
+	return &identityv1.RequestPasswordResetCodeResponse{Accepted: true}, nil
+}
+
+func (stubIdentityHandler) ResetPassword(context.Context, *identityv1.ResetPasswordRequest) (*identityv1.ResetPasswordResponse, error) {
+	return &identityv1.ResetPasswordResponse{PasswordChanged: true, SessionsRevoked: true}, nil
+}
+
 func (stubIdentityHandler) CheckSession(context.Context, *identityv1.CheckSessionRequest) (*identityv1.CheckSessionResponse, error) {
 	return &identityv1.CheckSessionResponse{EmailVerified: true}, nil
 }
@@ -205,6 +213,68 @@ func TestPublicHandlerServesTypedRPC(t *testing.T) {
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK || response.Result().Trailer.Get("Grpc-Status") != "0" {
 		t.Fatalf("typed RPC status = %d, trailer = %v", response.Code, response.Result().Trailer)
+	}
+}
+
+func TestPublicHandlerServesPasswordRecoveryTypedRPC(t *testing.T) {
+	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, zap.NewNop(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		method  string
+		message proto.Message
+		length  byte
+	}{
+		{"RequestPasswordResetCode", &identityv1.RequestPasswordResetCodeRequest{Email: "a@example.com"}, 15},
+		{"ResetPassword", &identityv1.ResetPasswordRequest{Email: "a@example.com", Code: "012345", NewPassword: "fresh password 123"}, 43},
+	} {
+		method := test.method
+		payload, err := proto.Marshal(test.message)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(payload) != int(test.length) {
+			t.Fatalf("unexpected %s test payload size: %d", method, len(payload))
+		}
+		frame := append([]byte{0, 0, 0, 0, test.length}, payload...)
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost,
+			"/flowspace.identity.v1.IdentityService/"+method, strings.NewReader(string(frame)))
+		request.ProtoMajor = 2
+		request.Header.Set("Content-Type", "application/grpc")
+		request.Header.Set("TE", "trailers")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusOK || response.Result().Trailer.Get("Grpc-Status") != "0" {
+			t.Fatalf("%s typed RPC status = %d, trailer = %v", method, response.Code, response.Result().Trailer)
+		}
+	}
+}
+
+func TestPasswordRecoveryTelemetryOmitsSecrets(t *testing.T) {
+	for _, test := range []struct{ path, body string }{
+		{"/v1/password-reset-codes", `{"email":"User@example.com"}`},
+		{"/v1/password-resets", `{"email":"User@example.com","code":"012345","newPassword":"secret-new-password"}`},
+	} {
+		path, body := test.path, test.body
+		for _, outcome := range []int{http.StatusOK, http.StatusBadRequest, http.StatusTooManyRequests} {
+			core, logs := observer.New(zap.InfoLevel)
+			handler := observeRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(outcome)
+			}), zap.New(core))
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodPost,
+				path+"?email=User@example.com&code=012345", strings.NewReader(body))
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			if response.Code != outcome || logs.Len() != 1 {
+				t.Fatalf("%s log count = %d, status = %d", path, logs.Len(), response.Code)
+			}
+			fields := fmt.Sprint(logs.All()[0].ContextMap())
+			if strings.Contains(fields, "User@example.com") || strings.Contains(fields, "012345") ||
+				strings.Contains(fields, "secret-new-password") || logs.All()[0].ContextMap()["operation"] != "POST "+path {
+				t.Fatalf("%s telemetry contains request data or misses its operation: %s", path, fields)
+			}
+		}
 	}
 }
 

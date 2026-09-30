@@ -1,0 +1,46 @@
+meta {
+  name: Read reset code message
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{mailpitUrl}}/api/v1/message/{{resetMessageId}}
+  body: none
+  auth: none
+}
+
+script:pre-request {
+  const email = bru.getVar("email");
+  let messageId;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    let messages;
+    await bru.sendRequest({
+      method: "GET",
+      url: `${bru.getEnvVar("mailpitUrl")}/api/v1/messages`
+    }, function (error, response) {
+      if (error) throw error;
+      messages = response.data.messages;
+    });
+    const message = messages.find(item =>
+      item.Subject === "FlowSpace password reset code" &&
+      item.To.some(recipient => recipient.Address === email)
+    );
+    if (message) {
+      messageId = message.ID;
+      break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  if (!messageId) throw new Error("Password reset email did not arrive");
+  bru.setVar("resetMessageId", messageId);
+}
+
+tests {
+  test("Mailpit received one reset code for the account", function () {
+    expect(res.getStatus()).to.equal(200);
+    const code = res.getBody().Text.match(/\b\d{6}\b/);
+    expect(code).to.not.be.null;
+    bru.setVar("resetCode", code[0]);
+  });
+}

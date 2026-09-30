@@ -2,7 +2,7 @@
 
 Module id: `identity-password-recovery`
 
-Status: Approved.
+Status: Complete.
 
 ## Overview
 
@@ -58,12 +58,12 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Phase 3: Completion checks
 
-- Task 6: [Prove Identity password recovery against its specification](https://github.com/vasapolrittideah/flowspace-api/issues/213).
+- Task 6: [Prove Identity password recovery against its specification](https://github.com/vasapolrittideah/flowspace-api/issues/213). [PR #244](https://github.com/vasapolrittideah/flowspace-api/pull/244) records the final verification.
 
 ### Checkpoint: Complete
 
-- [ ] Public REST, typed RPC, PostgreSQL, Mailpit, concurrency, failure, and cross-service tests cover the specification and applicable threat IDs.
-- [ ] The final Issue result comment records results, gaps, and the review PR. Required repository checks pass without weaker settings.
+- [x] Public REST, typed RPC, PostgreSQL, Mailpit, concurrency, failure, and cross-service tests cover the specification and applicable threat IDs.
+- [x] The final Issue result comment records results, gaps, and the review PR. Required repository checks pass without weaker settings.
 
 ## Risks and controls
 

@@ -105,8 +105,9 @@ func (r *DeliveryRepository) WithNextPasswordChangeNotice(ctx context.Context, s
 		}
 		return true, errors.Join(sendErr, tx.Commit(ctx))
 	}
-	// A crash before this commit resends the notice, which changes no account or session state.
-	if _, err := queries.MarkPasswordChangeNoticeDelivered(ctx, notice.ID); err != nil {
+	// Deleting the sent notice removes its email address. A crash before this commit resends the notice,
+	// which changes no account or session state.
+	if _, err := queries.DeletePasswordChangeNotice(ctx, notice.ID); err != nil {
 		return true, err
 	}
 	return true, tx.Commit(ctx)

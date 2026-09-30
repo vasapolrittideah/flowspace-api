@@ -60,11 +60,9 @@ ORDER BY next_attempt_at, created_at
 LIMIT 1
 FOR UPDATE SKIP LOCKED;
 
--- name: MarkPasswordChangeNoticeDelivered :execrows
-UPDATE identity_password_change_notices
-SET delivered_at = statement_timestamp()
-WHERE id = sqlc.arg(id)
-  AND delivered_at IS NULL;
+-- name: DeletePasswordChangeNotice :execrows
+DELETE FROM identity_password_change_notices
+WHERE id = sqlc.arg(id);
 
 -- name: DeferPasswordChangeNotice :execrows
 UPDATE identity_password_change_notices

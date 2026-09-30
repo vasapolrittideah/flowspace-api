@@ -30,6 +30,8 @@ const (
 	IdentityService_RefreshSession_FullMethodName                    = "/flowspace.identity.v1.IdentityService/RefreshSession"
 	IdentityService_LogoutCurrentSession_FullMethodName              = "/flowspace.identity.v1.IdentityService/LogoutCurrentSession"
 	IdentityService_LogoutAllSessions_FullMethodName                 = "/flowspace.identity.v1.IdentityService/LogoutAllSessions"
+	IdentityService_StartProviderLogin_FullMethodName                = "/flowspace.identity.v1.IdentityService/StartProviderLogin"
+	IdentityService_CreateProviderSession_FullMethodName             = "/flowspace.identity.v1.IdentityService/CreateProviderSession"
 	IdentityService_CheckSession_FullMethodName                      = "/flowspace.identity.v1.IdentityService/CheckSession"
 )
 
@@ -68,6 +70,14 @@ type IdentityServiceClient interface {
 	// Revokes all sessions for the subject in one validated access token.
 	// Requires exactly one Authorization bearer header.
 	LogoutAllSessions(ctx context.Context, in *LogoutAllSessionsRequest, opts ...grpc.CallOption) (*LogoutAllSessionsResponse, error)
+	// Starts a Google or GitHub login attempt for an API client.
+	// Returns no FlowSpace token. Rejects Idempotency-Key.
+	// Responses require Cache-Control: no-store.
+	StartProviderLogin(ctx context.Context, in *StartProviderLoginRequest, opts ...grpc.CallOption) (*StartProviderLoginResponse, error)
+	// Creates a device session from an attempt token and handoff code.
+	// An unusable or colliding provider email returns FailedPrecondition.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	CreateProviderSession(ctx context.Context, in *CreateProviderSessionRequest, opts ...grpc.CallOption) (*CreateProviderSessionResponse, error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -192,6 +202,26 @@ func (c *identityServiceClient) LogoutAllSessions(ctx context.Context, in *Logou
 	return out, nil
 }
 
+func (c *identityServiceClient) StartProviderLogin(ctx context.Context, in *StartProviderLoginRequest, opts ...grpc.CallOption) (*StartProviderLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartProviderLoginResponse)
+	err := c.cc.Invoke(ctx, IdentityService_StartProviderLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) CreateProviderSession(ctx context.Context, in *CreateProviderSessionRequest, opts ...grpc.CallOption) (*CreateProviderSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateProviderSessionResponse)
+	err := c.cc.Invoke(ctx, IdentityService_CreateProviderSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *identityServiceClient) CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*CheckSessionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CheckSessionResponse)
@@ -237,6 +267,14 @@ type IdentityServiceServer interface {
 	// Revokes all sessions for the subject in one validated access token.
 	// Requires exactly one Authorization bearer header.
 	LogoutAllSessions(context.Context, *LogoutAllSessionsRequest) (*LogoutAllSessionsResponse, error)
+	// Starts a Google or GitHub login attempt for an API client.
+	// Returns no FlowSpace token. Rejects Idempotency-Key.
+	// Responses require Cache-Control: no-store.
+	StartProviderLogin(context.Context, *StartProviderLoginRequest) (*StartProviderLoginResponse, error)
+	// Creates a device session from an attempt token and handoff code.
+	// An unusable or colliding provider email returns FailedPrecondition.
+	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+	CreateProviderSession(context.Context, *CreateProviderSessionRequest) (*CreateProviderSessionResponse, error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -283,6 +321,12 @@ func (UnimplementedIdentityServiceServer) LogoutCurrentSession(context.Context, 
 }
 func (UnimplementedIdentityServiceServer) LogoutAllSessions(context.Context, *LogoutAllSessionsRequest) (*LogoutAllSessionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LogoutAllSessions not implemented")
+}
+func (UnimplementedIdentityServiceServer) StartProviderLogin(context.Context, *StartProviderLoginRequest) (*StartProviderLoginResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartProviderLogin not implemented")
+}
+func (UnimplementedIdentityServiceServer) CreateProviderSession(context.Context, *CreateProviderSessionRequest) (*CreateProviderSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateProviderSession not implemented")
 }
 func (UnimplementedIdentityServiceServer) CheckSession(context.Context, *CheckSessionRequest) (*CheckSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckSession not implemented")
@@ -506,6 +550,42 @@ func _IdentityService_LogoutAllSessions_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IdentityService_StartProviderLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartProviderLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).StartProviderLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_StartProviderLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).StartProviderLogin(ctx, req.(*StartProviderLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_CreateProviderSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateProviderSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).CreateProviderSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_CreateProviderSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).CreateProviderSession(ctx, req.(*CreateProviderSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IdentityService_CheckSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CheckSessionRequest)
 	if err := dec(in); err != nil {
@@ -574,6 +654,14 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LogoutAllSessions",
 			Handler:    _IdentityService_LogoutAllSessions_Handler,
+		},
+		{
+			MethodName: "StartProviderLogin",
+			Handler:    _IdentityService_StartProviderLogin_Handler,
+		},
+		{
+			MethodName: "CreateProviderSession",
+			Handler:    _IdentityService_CreateProviderSession_Handler,
 		},
 		{
 			MethodName: "CheckSession",

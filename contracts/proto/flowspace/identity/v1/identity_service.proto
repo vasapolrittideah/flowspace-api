@@ -106,6 +106,26 @@ service IdentityService {
     };
   }
 
+  // Starts a Google or GitHub login attempt for an API client.
+  // Returns no FlowSpace token. Rejects Idempotency-Key.
+  // Responses require Cache-Control: no-store.
+  rpc StartProviderLogin(StartProviderLoginRequest) returns (StartProviderLoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/provider-login-attempts"
+      body: "*"
+    };
+  }
+
+  // Creates a device session from an attempt token and handoff code.
+  // An unusable or colliding provider email returns FailedPrecondition.
+  // Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
+  rpc CreateProviderSession(CreateProviderSessionRequest) returns (CreateProviderSessionResponse) {
+    option (google.api.http) = {
+      post: "/v1/provider-sessions"
+      body: "*"
+    };
+  }
+
   // Returns the current email state for an active session; inactive sessions
   // return Unauthenticated.
   // Requires an authenticated service caller and has no public HTTP route.
@@ -186,6 +206,37 @@ message CreatePasswordSessionRequest {
 }
 
 message CreatePasswordSessionResponse {
+  string subject = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional bool email_verified = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string access_token = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string refresh_token = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp access_token_expires_at = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp refresh_token_expires_at = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp session_expires_at = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+enum Provider {
+  PROVIDER_UNSPECIFIED = 0;
+  PROVIDER_GOOGLE = 1;
+  PROVIDER_GITHUB = 2;
+}
+
+message StartProviderLoginRequest {
+  Provider provider = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message StartProviderLoginResponse {
+  string authorization_url = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string attempt_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp attempt_expires_at = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message CreateProviderSessionRequest {
+  string attempt_token = 1 [(google.api.field_behavior) = REQUIRED];
+  string handoff_code = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CreateProviderSessionResponse {
   string subject = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
   optional bool email_verified = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string access_token = 3 [(google.api.field_behavior) = OUTPUT_ONLY];

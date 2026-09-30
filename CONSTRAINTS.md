@@ -27,7 +27,7 @@ The floor blocks immediately. `task constraints:floor` enforces diff-visible rul
 | C7 | Dependency security | Zero known reachable Go vulnerabilities | `task vuln` | task end, CI | Govulncheck reports reachable vulnerable symbols rather than uncalled dependency noise; any such finding requires resolution or a reviewed exception. |
 | C8 | Architecture boundaries | Zero depguard findings | `task lint` | task end, CI | Cross-service and domain dependency boundaries are accepted architecture, not advisory style. |
 
-All numbered constraints pass on the 2026-09-12 baseline. C3, C4, C5, and C7 warn locally and in CI through 2026-09-25 and block beginning 2026-09-26; the floor, secret scan, and existing formatting, lint, code-security, and architecture gates block immediately.
+All numbered constraints pass on the 2026-09-12 baseline. Every numbered constraint blocks locally and in CI.
 
 ## Lifecycle
 

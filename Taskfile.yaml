@@ -254,4 +254,5 @@ tasks:
       - task: identity:session-tls:test
       - task: identity:signing-key:test
       - task: lint
-      - sh scripts/check-numbered-constraints.sh
+      - task: coverage
+      - task: vuln

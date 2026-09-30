@@ -16,17 +16,15 @@ The [PR template](../../.github/pull_request_template.md) contains `What changed
 ## Rules
 
 - Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
-- Keep the title, description, and [labels](github-labels.md) consistent with the final work.
+- Follow the [label rules](github-labels.md), which also keep the title and description consistent with the final work.
 - Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes), in the title. Do not include a body or footer. Describe the result, not the branch or changed files.
-- In `Related issues`, write one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when an Issue remains open, such as when a PR updates a spec before implementation. Write one line per Issue, and repeat the keyword on each line, because GitHub ignores an Issue that follows a comma. Put `Closes` lines before `Refs` lines, and order each group by ascending Issue number. Do not leave blank lines between references. `Refs` does not close the Issue. `Closes` closes it after the PR merges into `main`. GitHub also accepts `Fixes`, but use `Closes` for consistency.
+- In `Related issues`, write one `Closes #<issue-number>.` line for each Issue the PR completes. Use `Refs #<issue-number>.` when an Issue remains open, such as when a PR updates a spec before implementation. Write one line per Issue, and repeat the keyword on each line, because GitHub ignores an Issue that follows a comma. Use the line order and spacing of the [Issue footers](commit-messages.md#message-format), but keep the period at the end of each line. `Refs` does not close the Issue. `Closes` closes it after the PR merges into `main`. GitHub also accepts `Fixes`, but use `Closes` for consistency.
 - Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete every section. Write `n/a` in `Related issues`, `Risks or limitations`, or `Follow-up tasks` when there is nothing to report.
 - Before creating or updating a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review every prose section after editing. Keep new text in an existing paragraph or bullet only when it develops the same point. Start a new paragraph for a separate explanation, or use separate bullets for independent points. Do not use a bullet when a section has only one point, except in `Follow-up tasks`.
 
 ### Follow-up tasks
 
-- Write one bullet per Issue, even when there is only one: `- #<issue-number>: <remaining work in one sentence>.` GitHub shows only the number in the description, so the sentence names the work.
-- List only open Issues. Create an Issue for later work before you list it, or leave the work out.
-- Do not put `Closes`, `Fixes`, or `Resolves` before a follow-up Issue number. GitHub would close the Issue when the PR merges.
+- Write each follow-up Issue in the [follow-up task format](github-issues.md#follow-up-task-format).
 - Do not repeat a follow-up Issue in `Related issues`. When a limitation has follow-up work, describe the limitation in `Risks or limitations` and refer to `Follow-up tasks` instead of repeating the Issue.
 
 ## Review readiness

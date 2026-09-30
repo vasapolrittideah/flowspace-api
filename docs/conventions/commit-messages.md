@@ -44,13 +44,7 @@ Co-authored-by: <agent-name> <agent-email>
 
 - Include one co-author trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
 - Preserve existing attribution when you amend or squash commits.
-- Use the identity of the agent that contributes. If the agent's harness gives an attribution trailer, use the name and email in that trailer. Otherwise, use the identity in this table. Always spell the trailer key as `Co-authored-by`:
-
-  | Agent | Trailer |
-  | --- | --- |
-  | Codex | `Co-authored-by: Codex <noreply@openai.com>` |
-  | Claude Code | `Co-authored-by: Claude <noreply@anthropic.com>` |
-
+- Use the identity of the agent that contributes. If the agent's harness gives an attribution trailer, use the name and email in that trailer. Otherwise, use the identity in [Agent trailers](#agent-trailers). Always spell the trailer key as `Co-authored-by`.
 - Do not add a trailer for an agent that did not contribute.
 - Put trailers after a blank line at the end of the message.
 
@@ -112,6 +106,13 @@ A scope names the repository area that a change affects. Use one lowercase scope
 | `deps` | Dependency updates |
 | `adr` | Architecture decision records |
 | `agents` | Agent instructions, skills, commands, and configuration |
+
+### Agent trailers
+
+| Agent | Trailer |
+| --- | --- |
+| Codex | `Co-authored-by: Codex <noreply@openai.com>` |
+| Claude Code | `Co-authored-by: Claude <noreply@anthropic.com>` |
 
 ## Examples
 

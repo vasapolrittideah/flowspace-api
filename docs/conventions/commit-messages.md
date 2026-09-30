@@ -17,13 +17,11 @@ Refs: #<issue-number>
 Co-authored-by: <agent-name> <agent-email>
 ```
 
-| Part | Content and format |
-| --- | --- |
-| Subject | A type, optional scope, and short description on the first line. The `!` marker denotes a breaking contract change. |
-| Body | The reason or trade-off when it is not clear from the subject. For a breaking contract change, the incompatibility and required caller changes. |
-| `Closes` footer | An Issue that the pull request completes. Use it only in a squash commit. GitHub closes the Issue when the commit reaches `main`. |
-| `Refs` footer | A related Issue that stays open. This footer links the commit to the Issue without closing it. |
-| Co-author trailer | The identity of each contributing agent. |
+- Subject: A type, optional scope, and short description on the first line. The `!` marker denotes a breaking contract change.
+- Body: The reason or trade-off when it is not clear from the subject. For a breaking contract change, the incompatibility and required caller changes.
+- `Closes` footer: An Issue that the pull request completes. Use it only in a squash commit. GitHub closes the Issue when the commit reaches `main`.
+- `Refs` footer: A related Issue that stays open. This footer links the commit to the Issue without closing it.
+- Co-author trailer: The identity of each contributing agent.
 
 ## Rules
 
@@ -56,6 +54,26 @@ Co-authored-by: <agent-name> <agent-email>
 - Do not add a trailer for an agent that did not contribute.
 - Put trailers after a blank line at the end of the message.
 
+### Type and scope choice
+
+A new file alone does not make the change a `feat`.
+
+If generated code or OpenAPI output follows a source definition, use the type and scope of that source. Choose a scope with these steps and stop after the first match:
+
+1. If the main change updates a Protobuf RPC definition or public HTTP annotation, use `proto`.
+2. If the main change updates a published Protobuf event schema, use `events`.
+3. If the main change updates code-generation configuration or tooling, use `codegen`.
+4. If the change belongs to one service, use the service scope. This includes related contracts, queries, generated code, tests, configuration, and logging. Code under `services/<service>/internal/bootstrap/` uses the scope of that service. For package locations, see the [project structure](../project-structure.md).
+5. If the change affects one shared technical package under root `internal/`, use its directory name. If you introduce a shared package, add its directory name to the table.
+6. If one change affects several shared packages, use `shared`.
+7. If the change affects agent instructions, skills, commands, or configuration, use `agents`.
+8. If another area in the table fits, use that scope.
+9. If no single area fits, omit the scope.
+
+Reuse an existing scope when it fits. If a PR needs a new scope, define the scope in that PR. Do not combine scope names.
+
+## Reference
+
 ### Types
 
 | Type | Purpose |
@@ -70,8 +88,6 @@ Co-authored-by: <agent-name> <agent-email>
 | `ci` | Change CI workflows or automated checks |
 | `style` | Change formatting only |
 | `chore` | Maintain the project when no more specific type fits |
-
-A new file alone does not make the change a `feat`.
 
 ### Scopes
 
@@ -96,20 +112,6 @@ A scope names the repository area that a change affects. Use one lowercase scope
 | `deps` | Dependency updates |
 | `adr` | Architecture decision records |
 | `agents` | Agent instructions, skills, commands, and configuration |
-
-If generated code or OpenAPI output follows a source definition, use the type and scope of that source. Choose a scope with these steps and stop after the first match:
-
-1. If the main change updates a Protobuf RPC definition or public HTTP annotation, use `proto`.
-2. If the main change updates a published Protobuf event schema, use `events`.
-3. If the main change updates code-generation configuration or tooling, use `codegen`.
-4. If the change belongs to one service, use the service scope. This includes related contracts, queries, generated code, tests, configuration, and logging. Code under `services/<service>/internal/bootstrap/` uses the scope of that service. For package locations, see the [project structure](../project-structure.md).
-5. If the change affects one shared technical package under root `internal/`, use its directory name. If you introduce a shared package, add its directory name to the table.
-6. If one change affects several shared packages, use `shared`.
-7. If the change affects agent instructions, skills, commands, or configuration, use `agents`.
-8. If another area in the table fits, use that scope.
-9. If no single area fits, omit the scope.
-
-Reuse an existing scope when it fits. If a PR needs a new scope, define the scope in that PR. Do not combine scope names.
 
 ## Examples
 

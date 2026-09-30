@@ -28,15 +28,13 @@ Estimated scope: <expected size>.
 - `<source, test, contract, or configuration path>`
 ```
 
-| Field | Content and format |
-| --- | --- |
-| Title | The task outcome. |
-| Module | Use the module ID from the approved specification. |
-| Estimated scope | State the expected size of the task. |
-| Description | State the task outcome and scope. Put prerequisites without an Issue number in a separate paragraph. |
-| Acceptance criteria | Independently checkable outcomes, each as a `- [ ]` item. |
-| Verification | Commands and the behavior each command checks, each as a `- [ ]` item. |
-| Files likely touched | Source, test, contract, and configuration paths. Generated output appears as a folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output). |
+- Title: The task outcome.
+- Module: Use the module ID from the approved specification.
+- Estimated scope: State the expected size of the task.
+- Description: State the task outcome and scope. Put prerequisites without an Issue number in a separate paragraph.
+- Acceptance criteria: Independently checkable outcomes, each as a `- [ ]` item.
+- Verification: Commands and the behavior each command checks, each as a `- [ ]` item.
+- Files likely touched: Source, test, contract, and configuration paths. Generated output appears as a folder with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output).
 
 ## Rules
 
@@ -75,6 +73,18 @@ Post a comment only when the PR does not show something that a reader of the Iss
 
 The final task in each module plan checks the approved specification through tests and review. Use the Issue template above.
 
+### Issue rules
+
+- Title the Issue `Prove <capability> against its specification`. Name the capability so readers can distinguish it from other modules.
+- In Description, name the final test scope and any cross-service checks owned by another Issue. Link to that Issue instead of repeating its work.
+- In Acceptance criteria, require tests for every success criterion and applicable threat.
+- Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
+- For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Run `task smoke:bruno` and record the result in the result comment.
+- If a check fails or is missing, record the gap and its follow-up Issue in the result comment. Keep the task and final plan checkpoint open until the gap is resolved.
+- Add separate Verification items for the module's applicable integration, smoke, contract, and generation checks. Check completed items in the Issue body.
+- Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
+- When every criterion passes, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
+
 ### Result comment
 
 After verification, check each completed item in the Issue body and post a result comment. The comment records the evidence that CI does not keep: local checks, gaps, the module closure decision, and follow-up work.
@@ -109,18 +119,6 @@ n/a
 - For each failed or unrun item, leave its checkbox clear and add a bullet under `Gaps` that names the item, cause, and next action.
 - In `Local checks`, include only checks that CI does not run, such as `task smoke:bruno` passed 36/36 requests against k3d flowspace-local with Mailpit. Separate several checks with semicolons. Write `Local checks: n/a` when no local check applies.
 - Do not repeat the Verification checklist or CI measurements. Write each follow-up Issue in the [Follow-up tasks format](pull-requests.md#follow-up-tasks). Do not include secrets or test account data.
-
-### Issue rules
-
-- Title the Issue `Prove <capability> against its specification`. Name the capability so readers can distinguish it from other modules.
-- In Description, name the final test scope and any cross-service checks owned by another Issue. Link to that Issue instead of repeating its work.
-- In Acceptance criteria, require tests for every success criterion and applicable threat.
-- Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
-- For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Run `task smoke:bruno` and record the result in the result comment.
-- If a check fails or is missing, record the gap and its follow-up Issue in the result comment. Keep the task and final plan checkpoint open until the gap is resolved.
-- Add separate Verification items for the module's applicable integration, smoke, contract, and generation checks. Check completed items in the Issue body.
-- Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
-- When every criterion passes, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
 
 ## Examples
 

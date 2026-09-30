@@ -23,7 +23,7 @@ This convention names and groups handwritten Go components and SQL files inside 
 
 A capability is a task that the service performs. A transaction groups database changes that must commit or roll back together.
 
-- Group files by the capability and its transaction boundary. Do not split files only by line count, RPC method, or SQL query.
+- Set file boundaries separately for each layer. Group handlers by related RPCs, services by workflows and transaction boundaries, and data access by concrete repository and shared transaction mechanism. Do not create matching files in all three layers for every capability. Do not split files only by line count, RPC method, or SQL query.
 - Keep domain rules with the concept whose invariants they protect. Add a rule to an existing concept file when it belongs there.
 - Keep related application workflows in one `<capability>_service.go`. Separate them only when their outcomes or transaction boundaries define distinct capabilities. Keep the steps of each workflow together.
 - Keep an inbound port's interface, input, and result in the file for its capability.

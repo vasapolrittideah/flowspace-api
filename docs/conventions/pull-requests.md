@@ -51,6 +51,7 @@ In `Risks or limitations`, state the cause of each unresolved failure and the re
 - Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
 - Use the reviewed PR title as the subject. Follow the [commit message rules](commit-messages.md#rules), including formatting and AI co-authorship.
 - If a body is needed, explain important effects and compatibility or migration information. Do not copy detailed verification from the PR.
+- If the PR has one checkpoint commit and its body still describes the final change, copy that body without changes. Do not shorten or rewrite it.
 - Copy `Related issues` into the [Issue footers](commit-messages.md#message-format) in the same order.
 - Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
 

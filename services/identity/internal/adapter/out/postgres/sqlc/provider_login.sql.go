@@ -11,6 +11,40 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const consumeProviderLoginState = `-- name: ConsumeProviderLoginState :one
+UPDATE identity_provider_login_attempts
+SET state_consumed_at = statement_timestamp()
+WHERE provider = $1
+  AND state_verifier = $2
+  AND state_consumed_at IS NULL
+  AND expires_at > statement_timestamp()
+RETURNING id, code_verifier, nonce, callback_url
+`
+
+type ConsumeProviderLoginStateParams struct {
+	Provider      string
+	StateVerifier []byte
+}
+
+type ConsumeProviderLoginStateRow struct {
+	ID           pgtype.UUID
+	CodeVerifier string
+	Nonce        pgtype.Text
+	CallbackUrl  string
+}
+
+func (q *Queries) ConsumeProviderLoginState(ctx context.Context, arg ConsumeProviderLoginStateParams) (ConsumeProviderLoginStateRow, error) {
+	row := q.db.QueryRow(ctx, consumeProviderLoginState, arg.Provider, arg.StateVerifier)
+	var i ConsumeProviderLoginStateRow
+	err := row.Scan(
+		&i.ID,
+		&i.CodeVerifier,
+		&i.Nonce,
+		&i.CallbackUrl,
+	)
+	return i, err
+}
+
 const createProviderLoginAttempt = `-- name: CreateProviderLoginAttempt :one
 INSERT INTO identity_provider_login_attempts (
     provider, attempt_token_verifier, state_verifier, code_verifier, nonce, callback_url, expires_at
@@ -43,4 +77,56 @@ func (q *Queries) CreateProviderLoginAttempt(ctx context.Context, arg CreateProv
 	var expires_at pgtype.Timestamptz
 	err := row.Scan(&expires_at)
 	return expires_at, err
+}
+
+const failProviderLoginAttempt = `-- name: FailProviderLoginAttempt :exec
+UPDATE identity_provider_login_attempts
+SET failed_at = statement_timestamp()
+WHERE id = $1
+  AND state_consumed_at IS NOT NULL
+  AND failed_at IS NULL
+  AND handoff_code_verifier IS NULL
+`
+
+func (q *Queries) FailProviderLoginAttempt(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, failProviderLoginAttempt, id)
+	return err
+}
+
+const recordProviderLoginResult = `-- name: RecordProviderLoginResult :execrows
+UPDATE identity_provider_login_attempts
+SET provider_subject = $1,
+    provider_email = $2,
+    provider_email_verified = $3,
+    provider_hosted_domain = $4,
+    handoff_code_verifier = $5
+WHERE id = $6
+  AND state_consumed_at IS NOT NULL
+  AND failed_at IS NULL
+  AND handoff_code_verifier IS NULL
+  AND expires_at > statement_timestamp()
+`
+
+type RecordProviderLoginResultParams struct {
+	ProviderSubject       pgtype.Text
+	ProviderEmail         pgtype.Text
+	ProviderEmailVerified pgtype.Bool
+	ProviderHostedDomain  pgtype.Text
+	HandoffCodeVerifier   []byte
+	ID                    pgtype.UUID
+}
+
+func (q *Queries) RecordProviderLoginResult(ctx context.Context, arg RecordProviderLoginResultParams) (int64, error) {
+	result, err := q.db.Exec(ctx, recordProviderLoginResult,
+		arg.ProviderSubject,
+		arg.ProviderEmail,
+		arg.ProviderEmailVerified,
+		arg.ProviderHostedDomain,
+		arg.HandoffCodeVerifier,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

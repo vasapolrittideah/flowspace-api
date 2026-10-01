@@ -168,7 +168,7 @@ func (stubIdentityHandler) CheckSession(context.Context, *identityv1.CheckSessio
 }
 
 func TestPublicHandlerOnlyServesApprovedRoutes(t *testing.T) {
-	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, zap.NewNop(), nil)
+	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, http.NotFoundHandler(), zap.NewNop(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +189,7 @@ func TestPublicHandlerOnlyServesApprovedRoutes(t *testing.T) {
 }
 
 func TestPublicHandlerServesTypedRPC(t *testing.T) {
-	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, zap.NewNop(), nil)
+	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, http.NotFoundHandler(), zap.NewNop(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,7 @@ func TestPublicHandlerServesTypedRPC(t *testing.T) {
 }
 
 func TestPublicHandlerServesPasswordRecoveryTypedRPC(t *testing.T) {
-	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, zap.NewNop(), nil)
+	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, http.NotFoundHandler(), zap.NewNop(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -295,8 +295,46 @@ func TestProviderLoginTelemetryOmitsSecrets(t *testing.T) {
 	}
 }
 
+func TestPublicHandlerRoutesProviderCallbacks(t *testing.T) {
+	var provider string
+	callback := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		provider = r.PathValue("provider")
+		w.WriteHeader(http.StatusTeapot)
+	})
+	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, callback, zap.NewNop(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/provider-login-callbacks/google?state=s&code=c", nil))
+	if response.Code != http.StatusTeapot || provider != "google" {
+		t.Fatalf("callback route status = %d, provider = %q", response.Code, provider)
+	}
+	provider = ""
+	response = httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/v1/provider-login-callbacks/google", nil))
+	if response.Code != http.StatusNotFound || provider != "" {
+		t.Fatalf("callback POST status = %d", response.Code)
+	}
+}
+
+func TestProviderCallbackTelemetryOmitsSecrets(t *testing.T) {
+	for _, path := range []string{"/v1/provider-login-callbacks/google", "/v1/provider-login-callbacks/github"} {
+		core, logs := observer.New(zap.InfoLevel)
+		handler := observeRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write([]byte("secret-handoff"))
+		}), zap.New(core))
+		handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequestWithContext(t.Context(), http.MethodGet,
+			path+"?state=secret-state&code=secret-code", nil))
+		fields := fmt.Sprint(logs.All()[0].ContextMap())
+		if logs.Len() != 1 || strings.Contains(fields, "secret-") || logs.All()[0].ContextMap()["operation"] != "GET "+path {
+			t.Fatalf("callback telemetry contains secrets or misses its operation: %s", fields)
+		}
+	}
+}
+
 func TestPublicHandlerRejectsCheckSession(t *testing.T) {
-	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, zap.NewNop(), nil)
+	handler, err := newPublicHandler(t.Context(), stubIdentityHandler{}, http.NotFoundHandler(), zap.NewNop(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

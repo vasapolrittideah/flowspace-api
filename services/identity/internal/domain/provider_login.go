@@ -20,6 +20,7 @@ type ProviderSecret string
 const (
 	ProviderSecretAttemptToken ProviderSecret = "provider-attempt-token"
 	ProviderSecretState        ProviderSecret = "provider-state"
+	ProviderSecretHandoffCode  ProviderSecret = "provider-handoff-code"
 )
 
 // ProviderAttemptSecrets holds the fresh proofs for one provider login attempt.
@@ -41,13 +42,23 @@ func NewProviderAttempt(provider Provider) (ProviderAttemptSecrets, error) {
 		targets = append(targets, &secrets.Nonce)
 	}
 	for _, target := range targets {
-		random := make([]byte, 32)
-		if _, err := rand.Read(random); err != nil {
-			return ProviderAttemptSecrets{}, ErrCodeGenerationUnavailable
+		value, err := NewProviderHandoffCode()
+		if err != nil {
+			return ProviderAttemptSecrets{}, err
 		}
-		*target = base64.RawURLEncoding.EncodeToString(random)
+		*target = value
 	}
 	return secrets, nil
+}
+
+// NewProviderHandoffCode returns a one-time code with 256 random bits. Attempt
+// secrets use the same format.
+func NewProviderHandoffCode() (string, error) {
+	random := make([]byte, 32)
+	if _, err := rand.Read(random); err != nil {
+		return "", ErrCodeGenerationUnavailable
+	}
+	return base64.RawURLEncoding.EncodeToString(random), nil
 }
 
 // ProviderCodeChallenge returns the PKCE S256 challenge for a code verifier.

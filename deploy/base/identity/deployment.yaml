@@ -26,6 +26,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: identity-config
+            - configMapRef:
+                name: identity-provider-config
+                optional: true
             - secretRef:
                 name: identity-database
           ports:
@@ -75,6 +78,9 @@ spec:
             - name: session-tls
               mountPath: /keys/session
               readOnly: true
+            - name: google-client
+              mountPath: /keys/google
+              readOnly: true
       volumes:
         - name: signing-key
           secret:
@@ -88,6 +94,10 @@ spec:
         - name: session-tls
           secret:
             secretName: identity-session-tls
+        - name: google-client
+          secret:
+            secretName: identity-google-client
+            optional: true
             defaultMode: 0440
 ---
 apiVersion: apps/v1

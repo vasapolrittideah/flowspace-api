@@ -376,12 +376,50 @@ func TestSharedLimits(t *testing.T) {
 		}
 	})
 
+	t.Run("provider callbacks share one source limit across replicas", func(t *testing.T) {
+		var group sync.WaitGroup
+		results := make(chan error, 121)
+		for i := range 121 {
+			group.Add(1)
+			go func() {
+				defer group.Done()
+				if i%2 == 0 {
+					results <- first.ProviderCallback(ctx, "192.0.2.70")
+				} else {
+					results <- second.ProviderCallback(ctx, "192.0.2.70")
+				}
+			}()
+		}
+		group.Wait()
+		close(results)
+		allowed, limited := 0, 0
+		for err := range results {
+			switch {
+			case err == nil:
+				allowed++
+			case errors.Is(err, app.ErrRateLimited):
+				limited++
+			default:
+				t.Fatal(err)
+			}
+		}
+		if allowed != 120 || limited != 1 {
+			t.Fatalf("allowed %d and limited %d provider callbacks", allowed, limited)
+		}
+		if err := first.ProviderCallback(ctx, "192.0.2.71"); err != nil {
+			t.Fatalf("another source was limited: %v", err)
+		}
+	})
+
 	firstPool.Close()
 	if err := first.Signup(ctx, "192.0.2.4"); err == nil {
 		t.Fatal("unavailable limit repository allowed signup")
 	}
 	if err := first.PasswordLogin(ctx, "192.0.2.201", "user@example.com"); !errors.Is(err, app.ErrLimitUnavailable) {
 		t.Fatalf("unavailable limit repository allowed login: %v", err)
+	}
+	if err := first.ProviderCallback(ctx, "192.0.2.72"); !errors.Is(err, app.ErrLimitUnavailable) {
+		t.Fatalf("unavailable limit repository allowed a provider callback: %v", err)
 	}
 	if err := first.ProviderLoginStart(ctx, "192.0.2.62"); !errors.Is(err, app.ErrLimitUnavailable) {
 		t.Fatalf("unavailable limit repository allowed a provider login start: %v", err)

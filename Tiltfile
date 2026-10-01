@@ -29,6 +29,16 @@ def read_password_file(variable, default):
         fail('%s must contain one password without surrounding whitespace.' % variable)
     return path, password
 
+def read_optional_value(variable, default):
+    path = os.getenv(variable, default)
+    if not os.path.exists(path):
+        watch_file(path)
+        return None
+    value = str(read_file(read_secret_path(variable, default)))
+    if not value or value != value.strip():
+        fail('%s must contain one value without surrounding whitespace.' % variable)
+    return value
+
 def read_binary_key(variable, default):
     path = read_secret_path(variable, default)
     encoded = str(local(['base64', '-i', path], quiet=True, echo_off=True)).strip()
@@ -84,6 +94,31 @@ k8s_yaml(encode_yaml({
     'kind': 'Secret',
     'metadata': {'name': 'identity-delivery-key', 'namespace': 'flowspace-local'},
     'data': {'key': identity_delivery_key},
+}))
+
+# Provider login is optional. Without both Google files, Identity starts with Google login unavailable.
+google_client_id = read_optional_value('IDENTITY_GOOGLE_CLIENT_ID_FILE', '.secrets/identity-google-client-id')
+google_client_secret = read_optional_value('IDENTITY_GOOGLE_CLIENT_SECRET_FILE', '.secrets/identity-google-client-secret')
+if (google_client_id == None) != (google_client_secret == None):
+    fail('Set both the Google client ID file and the Google client secret file, or neither.')
+identity_provider_config = {}
+if google_client_id:
+    identity_provider_config = {
+        'GOOGLE_CLIENT_ID': google_client_id,
+        'GOOGLE_CLIENT_SECRET_FILE': '/keys/google/client-secret',
+        'PROVIDER_CALLBACK_BASE_URL': 'http://localhost:8082',
+    }
+    k8s_yaml(encode_yaml({
+        'apiVersion': 'v1',
+        'kind': 'Secret',
+        'metadata': {'name': 'identity-google-client', 'namespace': 'flowspace-local'},
+        'stringData': {'client-secret': google_client_secret},
+    }))
+k8s_yaml(encode_yaml({
+    'apiVersion': 'v1',
+    'kind': 'ConfigMap',
+    'metadata': {'name': 'identity-provider-config', 'namespace': 'flowspace-local'},
+    'data': identity_provider_config,
 }))
 k8s_yaml(encode_yaml({
     'apiVersion': 'v1',
@@ -154,7 +189,12 @@ docker_build(
     dockerfile='services/identity/Dockerfile',
     only=['go.mod', 'go.sum', 'contracts/events', 'gen', 'internal', 'services/identity'],
 )
-k8s_yaml(kustomize('deploy/overlays/local/identity'))
+identity_objects = decode_yaml_stream(kustomize('deploy/overlays/local/identity'))
+for identity_object in identity_objects:
+    if identity_object['kind'] == 'Deployment' and identity_object['metadata']['name'] == 'identity-api':
+        # Environment from a ConfigMap is read at start, so a provider change must roll the pod.
+        identity_object['spec']['template']['metadata'].setdefault('annotations', {})['flowspace.local/google-client-id'] = google_client_id or 'disabled'
+k8s_yaml(encode_yaml_stream(identity_objects))
 k8s_yaml(encode_yaml({
     'apiVersion': 'v1',
     'kind': 'ConfigMap',

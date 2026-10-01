@@ -9,3 +9,6 @@ This index lists the module specifications. Follow the [module specification con
 | `identity-password-recovery` | [Identity password recovery](identity-password-recovery.md) | `identity-signup-and-email-verification`, `identity-password-login-and-sessions` | Implemented |
 | `identity-provider-login` | [Identity provider login](identity-provider-login.md) | `identity-signup-and-email-verification`, `identity-password-login-and-sessions` | Implemented |
 | `workspace-creation-and-reading` | [Workspace creation and reading](workspace-creation-and-reading.md) | None | Implemented |
+| `observability-logs-and-traces` | Observability logs and traces | None | Planned |
+| `observability-metrics-and-dashboards` | Observability metrics and dashboards | `observability-logs-and-traces` | Planned |
+| `observability-alerts-and-runbooks` | Observability alerts and runbooks | `observability-metrics-and-dashboards` | Planned |

@@ -52,10 +52,11 @@ Co-authored-by: <agent name> <agent email>
 - If the subject has `!`, explain the incompatibility and the required caller changes.
 - In a checkpoint commit, write for a reviewer who reads the PR one commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
 - In a squash commit, write for a later reader of the `main` history. Describe only the effects that stay on `main` after the merge: changed behavior, compatibility or migration effects, and important decisions or trade-offs. If the subject states every lasting effect, such as in a PR that only adds tests, omit the body.
-- Build a squash body from the checkpoint bodies. Keep each sentence that describes a lasting effect on `main`, without rewording it, and remove the other sentences. Write a new sentence only for a lasting effect of the final change that no checkpoint body states.
+- If a squash commit needs a body, summarize the final `What changed` and `Why` sections of the pull request. Make sure that the final diff supports each sentence.
 - Do not split URLs, code, or trailers.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
 - In a squash commit, do not include verification details, lists of added tests, specification or plan status changes, or process history.
+- In a squash commit, do not copy text that only reviewers need, such as merge order, review notes, checks that did not run, or follow-up tasks.
 
 ### Issue footers
 

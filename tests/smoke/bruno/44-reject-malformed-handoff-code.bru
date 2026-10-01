@@ -1,0 +1,29 @@
+meta {
+  name: Reject malformed handoff code
+  type: http
+  seq: 44
+}
+
+post {
+  url: {{baseUrl}}/v1/provider-sessions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "attemptToken": "{{googleAttemptToken}}",
+    "handoffCode": "not-a-handoff-code"
+  }
+}
+
+tests {
+  test("a malformed handoff code is invalid input without tokens", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(JSON.stringify(res.getBody())).to.not.include("accessToken");
+  });
+}

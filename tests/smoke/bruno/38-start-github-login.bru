@@ -1,0 +1,43 @@
+meta {
+  name: Start GitHub login
+  type: http
+  seq: 38
+}
+
+post {
+  url: {{baseUrl}}/v1/provider-login-attempts
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "provider": "PROVIDER_GITHUB"
+  }
+}
+
+tests {
+  test("Identity returns a bound GitHub authorization URL and a separate attempt token", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(Object.keys(body).sort()).to.deep.equal(["attemptExpiresAt", "attemptToken", "authorizationUrl"]);
+    expect(body.attemptToken).to.match(/^[A-Za-z0-9_-]{43}$/);
+    const [endpoint, search] = body.authorizationUrl.split("?");
+    expect(endpoint).to.equal("https://github.com/login/oauth/authorize");
+    const query = new Map(search.split("&").map((pair) => pair.split("=").map((part) => decodeURIComponent(part.replace(/\+/g, " ")))));
+    expect(query.get("response_type")).to.equal("code");
+    expect(query.get("redirect_uri")).to.equal("http://localhost:8082/v1/provider-login-callbacks/github");
+    expect(query.get("scope")).to.equal("user:email");
+    expect(query.get("code_challenge_method")).to.equal("S256");
+    expect(query.get("code_challenge")).to.match(/^[A-Za-z0-9_-]{43}$/);
+    expect(query.get("state")).to.match(/^[A-Za-z0-9_-]{43}$/);
+    expect(query.has("nonce")).to.equal(false);
+    expect(body.authorizationUrl).to.not.include(body.attemptToken);
+    bru.setVar("githubAttemptToken", body.attemptToken);
+    bru.setVar("githubState", query.get("state"));
+  });
+}

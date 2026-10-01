@@ -169,11 +169,27 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("worker readiness = %d", response.Code)
 	}
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.ExecContext(ctx, `INSERT INTO identity_provider_login_attempts
+		(provider, attempt_token_verifier, state_verifier, code_verifier, callback_url, created_at, expires_at)
+		VALUES ('github', $1, $2, repeat('v', 43), 'http://localhost:8082/v1/provider-login-callbacks/github',
+			statement_timestamp() - INTERVAL '11 minutes', statement_timestamp() - INTERVAL '1 minute')`,
+		bytes.Repeat([]byte{6}, 32), bytes.Repeat([]byte{7}, 32)); err != nil {
+		t.Fatal(err)
+	}
 	runCtx, stop = context.WithCancel(ctx)
 	go func() { result <- worker.Run(runCtx) }()
 	waitForLog(t, logs, "identity_outbox_age")
 	waitForLog(t, logs, "identity_broker_lag")
 	stop()
+	var attempts int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM identity_provider_login_attempts`).Scan(&attempts); err != nil || attempts != 0 {
+		t.Fatalf("expired provider attempts after the worker purge = %d, %v", attempts, err)
+	}
 	if err := <-result; err != nil {
 		t.Fatalf("worker shutdown: %v", err)
 	}
@@ -186,6 +202,10 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	worker.logBrokerLag(ctx)
 	if logs.FilterMessage("identity_outbox_age_unavailable").Len() == 0 || logs.FilterMessage("identity_broker_lag_unavailable").Len() == 0 {
 		t.Fatal("worker did not record unavailable monitoring data")
+	}
+	worker.purgeProviderAttempts(ctx)
+	if logs.FilterMessage("provider_attempt_purge_failed").Len() == 0 {
+		t.Fatal("worker did not record a failed provider attempt purge")
 	}
 	badHealth := workerConfig
 	badHealth.HealthAddress = "127.0.0.1:-1"

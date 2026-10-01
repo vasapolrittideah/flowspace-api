@@ -146,6 +146,7 @@ loop:
 			_, _ = w.consumer.DeliverPasswordChangeNotice(stepCtx)
 			stop()
 			if !time.Now().Before(nextAgeLog) {
+				w.purgeProviderAttempts(runCtx)
 				w.logOutboxAge(runCtx)
 				w.logBrokerLag(runCtx)
 				nextAgeLog = time.Now().Add(time.Minute)
@@ -177,6 +178,16 @@ func (w *Worker) runEmail(ctx context.Context) {
 			return
 		case <-time.After(time.Second):
 		}
+	}
+}
+
+// purgeProviderAttempts removes expired provider login attempts each minute,
+// so a provider email stays at most about eleven minutes.
+func (w *Worker) purgeProviderAttempts(ctx context.Context) {
+	purgeCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+	if err := postgres.NewProviderAttemptRepository(w.pool).PurgeExpired(purgeCtx); err != nil {
+		w.logger.Warn("provider_attempt_purge_failed")
 	}
 }
 

@@ -1,0 +1,23 @@
+meta {
+  name: Reject replayed GitHub state
+  type: http
+  seq: 42
+}
+
+get {
+  url: {{baseUrl}}/v1/provider-login-callbacks/github?state={{githubState}}&code=provider-code
+  body: none
+  auth: none
+}
+
+tests {
+  test("a used state gets no handoff code", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+    expect(res.getHeader("referrer-policy")).to.equal("no-referrer");
+    const page = String(res.getBody());
+    expect(page).to.include("This sign-in link is invalid, expired, or already used.");
+    expect(page).to.not.include("<code>");
+    expect(page).to.not.include(bru.getVar("githubState"));
+  });
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Reject provider login with an idempotency key
+  type: http
+  seq: 39
+}
+
+post {
+  url: {{baseUrl}}/v1/provider-login-attempts
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: provider-login-retry
+}
+
+body:json {
+  {
+    "provider": "PROVIDER_GITHUB"
+  }
+}
+
+tests {
+  test("provider login does not replay responses", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody()).to.not.have.property("attemptToken");
+  });
+}

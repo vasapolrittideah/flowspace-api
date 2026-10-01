@@ -38,6 +38,8 @@ After Tilt finishes starting the databases, run `sh scripts/check-adminer-autolo
 
 Google login is optional. To turn it on locally, create a Google OAuth web client with the redirect URI `http://localhost:8082/v1/provider-login-callbacks/google`. Save the client ID in `.secrets/identity-google-client-id` and the client secret in `.secrets/identity-google-client-secret`, without a trailing newline. Tilt then configures Identity for Google login. If either file is missing, Google login returns an unavailable error.
 
+GitHub login is optional in the same way. Create a GitHub OAuth app with the callback URL `http://localhost:8082/v1/provider-login-callbacks/github`. Save the client ID in `.secrets/identity-github-client-id` and the client secret in `.secrets/identity-github-client-secret`, without a trailing newline. If either file is missing, GitHub login returns an unavailable error.
+
 ## Development
 
 | Command | Purpose |

@@ -37,10 +37,12 @@ type APIConfig struct {
 	GoogleClientID          string              `env:"GOOGLE_CLIENT_ID"`
 	GoogleClientSecretFile  string              `env:"GOOGLE_CLIENT_SECRET_FILE"`
 	GitHubClientID          string              `env:"GITHUB_CLIENT_ID"`
+	GitHubClientSecretFile  string              `env:"GITHUB_CLIENT_SECRET_FILE"`
 	ProviderCallbackBaseURL string              `env:"PROVIDER_CALLBACK_BASE_URL"`
 
-	// GoogleClientSecret is read from GoogleClientSecretFile, not from the environment.
+	// Each provider client secret is read from its file, not from the environment.
 	GoogleClientSecret sharedconfig.Secret `env:"-"`
+	GitHubClientSecret sharedconfig.Secret `env:"-"`
 
 	providers map[domain.Provider]app.ProviderClient
 }
@@ -74,12 +76,21 @@ func LoadAPIConfig() (APIConfig, error) {
 	if config.providers, err = providerClients(config); err != nil {
 		return APIConfig{}, err
 	}
-	if _, google := config.providers[domain.ProviderGoogle]; google {
-		secret, err := readMountedFile(config.GoogleClientSecretFile)
-		if err != nil || strings.TrimSpace(string(secret)) == "" {
-			return APIConfig{}, errors.New("invalid Google client secret file")
+	for provider, secret := range map[domain.Provider]struct {
+		path   string
+		target *sharedconfig.Secret
+	}{
+		domain.ProviderGoogle: {config.GoogleClientSecretFile, &config.GoogleClientSecret},
+		domain.ProviderGitHub: {config.GitHubClientSecretFile, &config.GitHubClientSecret},
+	} {
+		if _, configured := config.providers[provider]; !configured {
+			continue
 		}
-		config.GoogleClientSecret = sharedconfig.Secret(strings.TrimSpace(string(secret)))
+		value, err := readMountedFile(secret.path)
+		if err != nil || strings.TrimSpace(string(value)) == "" {
+			return APIConfig{}, errors.New("invalid " + string(provider) + " client secret file")
+		}
+		*secret.target = sharedconfig.Secret(strings.TrimSpace(string(value)))
 	}
 	if config.Environment == "local" && (config.TokenIssuer != "urn:flowspace:identity:local" || config.TokenAudience != "flowspace-api") {
 		return APIConfig{}, errors.New("invalid local token configuration")
@@ -121,7 +132,8 @@ func providerClients(config APIConfig) (map[domain.Provider]app.ProviderClient, 
 	}
 	origin, valid := callbackOrigin(config.ProviderCallbackBaseURL, config.Environment == "local")
 	_, google := clients[domain.ProviderGoogle]
-	if len(clients) == 0 || !valid || google && config.GoogleClientSecretFile == "" {
+	_, github := clients[domain.ProviderGitHub]
+	if len(clients) == 0 || !valid || google && config.GoogleClientSecretFile == "" || github && config.GitHubClientSecretFile == "" {
 		return nil, errors.New("invalid provider login configuration")
 	}
 	for provider, client := range clients {

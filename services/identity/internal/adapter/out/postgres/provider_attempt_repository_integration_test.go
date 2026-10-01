@@ -491,10 +491,12 @@ func testProviderSessionRepository(t *testing.T, ctx context.Context, pool *pgxp
 		}
 	})
 
+	fixture := providerOnlyFixture{key: key, signer: signer, verifier: verifier, protector: protector, service: service, seed: seed}
 	t.Run("new provider identities", func(t *testing.T) {
-		testProviderOnlyAccounts(t, ctx, pool, providerOnlyFixture{
-			key: key, signer: signer, verifier: verifier, protector: protector, service: service, seed: seed,
-		})
+		testProviderOnlyAccounts(t, ctx, pool, fixture)
+	})
+	t.Run("GitHub login", func(t *testing.T) {
+		testGitHubProviderLogin(t, ctx, pool, fixture)
 	})
 }
 

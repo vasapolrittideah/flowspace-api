@@ -80,6 +80,10 @@ A server span name is a bounded operation name, such as the HTTP method and rout
 
 A server span records `http.request.method`, `http.route`, and `http.response.status_code` for HTTP. It records `rpc.method` and `rpc.grpc.status_code` for gRPC. A span has the error status when the HTTP status is 5xx or the gRPC code is `Internal`, `Unavailable`, `DeadlineExceeded`, or `Unknown`.
 
+### Request metadata
+
+The Workspace `CheckSession` call carries `traceparent`, `tracestate` when present, and `x-request-id` as gRPC metadata. Identity reads them on its internal listener.
+
 ### Event headers
 
 Each Identity event record carries the W3C `traceparent` and, when present, `tracestate` headers of the request or relay span that produced it.

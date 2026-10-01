@@ -79,6 +79,8 @@ A server span records `http.request.method`, `http.route`, and `http.response.st
 
 The Identity outbox keeps the W3C `traceparent` and `tracestate` of the transaction that inserts each event. The relay continues that context when it publishes the event, and the publisher writes it to the record headers. An event that has no stored context starts a new root trace in the relay.
 
+A migration adds nullable `traceparent` and `tracestate` text columns to `identity_outbox_events`. The migration only adds columns, so a running older relay keeps working, and rows that existed before the migration have no stored context. Rollback drops the two columns and loses only stored trace context.
+
 ### Configuration
 
 Each process reads standard OpenTelemetry environment variables. `OTEL_EXPORTER_OTLP_ENDPOINT` names the Alloy OTLP gRPC endpoint. `OTEL_TRACES_SAMPLER` is `parentbased_traceidratio`, and `OTEL_TRACES_SAMPLER_ARG` is `1.0` in `local`. If the endpoint is not set, the process starts and exports no spans.
@@ -199,8 +201,3 @@ Do not take these actions:
 10. Given the stack runs in `local`, When a developer lists the routes of the tunnel and the Services of the cluster, Then no telemetry component has a tunnel route, and Grafana answers only through `kubectl port-forward`.
 11. Given the Loki and Tempo manifests, When a reviewer reads them, Then each store has one replica, a 5Gi node-local volume, the ADR-0037 retention, and CPU and memory limits.
 12. Given the capability is submitted for review, When the required repository checks run, Then applicable builds, tests, coverage, lint, and security checks meet the [constraints](../../CONSTRAINTS.md).
-
-## Open questions and approval
-
-- Grafana admin access needs a Sealed Secret. Approve the Sealed Secret, or allow anonymous viewer access because Grafana is reachable only through port forwarding.
-- The outbox needs new columns for `traceparent` and `tracestate`. This is a migration on the Identity schema. Approve the migration.

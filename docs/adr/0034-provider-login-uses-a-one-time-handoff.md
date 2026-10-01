@@ -1,12 +1,8 @@
 # ADR-0034: Provider login uses a one-time handoff
 
-## Status
+Date: 2026-09-24
 
-Accepted
-
-## Date
-
-2026-09-24
+Status: Accepted; scoped exceptions to [ADR-0005](0005-one-protobuf-contract-generates-rest.md) and [ADR-0011](0011-idempotency-keys-protect-non-idempotent-creates.md)
 
 ## Context
 

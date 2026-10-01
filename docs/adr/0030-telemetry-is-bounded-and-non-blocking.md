@@ -1,12 +1,8 @@
 # ADR-0030: Telemetry is bounded and non-blocking
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

@@ -1,12 +1,8 @@
 # ADR-0018: Task mutations reject stale versions
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

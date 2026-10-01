@@ -1,12 +1,8 @@
 # ADR-0014: Relational data uses explicit SQL
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

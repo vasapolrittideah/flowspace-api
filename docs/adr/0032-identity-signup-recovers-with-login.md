@@ -1,12 +1,8 @@
 # ADR-0032: Identity signup recovers with login
 
-## Status
+Date: 2026-09-23
 
-Accepted
-
-## Date
-
-2026-09-23
+Status: Accepted; scoped exception to [ADR-0011](0011-idempotency-keys-protect-non-idempotent-creates.md)
 
 ## Context
 

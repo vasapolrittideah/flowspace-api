@@ -1,12 +1,8 @@
 # ADR-0036: Authenticate internal session checks with mutual TLS
 
-## Status
+Date: 2026-09-25
 
-Accepted
-
-## Date
-
-2026-09-25
+Status: Accepted
 
 ## Context
 

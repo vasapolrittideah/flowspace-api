@@ -1,12 +1,8 @@
 # ADR-0037: Local logs and traces use disposable single-host stores
 
-## Status
+Date: 2026-10-01
 
-Accepted
-
-## Date
-
-2026-10-01
+Status: Accepted
 
 ## Context
 

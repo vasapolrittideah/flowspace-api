@@ -1,12 +1,8 @@
 # ADR-0003: Hexagonal layers inside each service
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

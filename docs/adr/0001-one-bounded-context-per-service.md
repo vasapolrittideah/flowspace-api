@@ -1,12 +1,8 @@
 # ADR-0001: One bounded context per independently deployable service
 
-## Status
+Date: 2026-09-14
 
-Accepted, except the service count and Keycloak boundary superseded by [ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md)
-
-## Date
-
-2026-09-14
+Status: Accepted, except the service count and Keycloak boundary superseded by [ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md)
 
 ## Context
 

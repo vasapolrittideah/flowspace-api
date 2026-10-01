@@ -1,12 +1,8 @@
 # ADR-0031: Flowspace owns authentication and revocable sessions
 
-## Status
+Date: 2026-09-23
 
-Accepted
-
-## Date
-
-2026-09-23
+Status: Accepted
 
 ## Context
 

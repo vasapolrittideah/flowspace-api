@@ -1,12 +1,8 @@
 # ADR-0012: Field masks and action RPCs model updates
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

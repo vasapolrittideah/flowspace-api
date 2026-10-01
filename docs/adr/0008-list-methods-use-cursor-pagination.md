@@ -1,12 +1,8 @@
 # ADR-0008: List methods use bounded cursor pagination
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

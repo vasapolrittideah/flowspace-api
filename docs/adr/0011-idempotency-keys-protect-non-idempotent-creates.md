@@ -1,12 +1,8 @@
 # ADR-0011: Idempotency keys protect non-idempotent creates
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

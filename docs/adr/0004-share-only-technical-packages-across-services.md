@@ -1,12 +1,8 @@
 # ADR-0004: Only technical packages are shared across services
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

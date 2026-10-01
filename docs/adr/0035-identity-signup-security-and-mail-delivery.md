@@ -1,12 +1,8 @@
 # ADR-0035: Identity signup security and mail delivery
 
-## Status
+Date: 2026-09-25
 
-Accepted
-
-## Date
-
-2026-09-25
+Status: Accepted
 
 ## Context
 

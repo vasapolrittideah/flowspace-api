@@ -1,12 +1,8 @@
 # ADR-0006: Event contracts are versioned separately from RPC contracts
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

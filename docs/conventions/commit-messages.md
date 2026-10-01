@@ -30,7 +30,6 @@ Co-authored-by: <agent-name> <agent-email>
 - Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the subject, body, and footers in the order shown in the template.
 - If a contract change breaks callers, put `!` before the colon and explain the incompatibility and required caller changes in the body.
 - Write a short, specific subject. Do not use vague text such as `update`, `misc`, or `fix things`.
-- If the reason or trade-off is unclear, explain it in the body. Include only information that helps the reviewer act. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.
 - If a checkpoint commit belongs to an Issue, add `Refs: #<issue-number>` before co-author trailers.
 - In a squash commit, copy the pull request's `Related issues` as footers: `Closes: #<issue-number>` for each Issue it completes and `Refs: #<issue-number>` for each Issue that stays open. Do not add Issues from `Follow-up tasks`.
 - Write one footer per Issue, and repeat the key on each line. Put `Closes` footers before `Refs` footers, and order each group by ascending Issue number. Do not leave blank lines between Issue footers or add a period at the end.
@@ -39,6 +38,13 @@ Co-authored-by: <agent-name> <agent-email>
 - Limit prose lines in the body to 72 characters.
 - Preserve paragraphs and lists.
 - Do not split URLs, code, or trailers.
+
+### Body content
+
+- Write a body only when it gives information that the subject does not. Omit repeated text, process history, abandoned methods, hypothetical objections, and unrelated files.
+- In a checkpoint commit, write for a reviewer who reads the PR one commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
+- In a squash commit, write for a later reader of the `main` history. Describe only the effects that stay on `main` after the merge: changed behavior, compatibility or migration effects, and important decisions or trade-offs. Do not include verification details, lists of added tests, specification or plan status changes, or process history. If the subject states every lasting effect, such as in a PR that only adds tests, omit the body.
+- Build a squash body from the checkpoint bodies. Keep each sentence that describes a lasting effect on `main`, without rewording it, and remove the other sentences. Write a new sentence only for a lasting effect of the final change that no checkpoint body states.
 
 ### AI co-authorship
 

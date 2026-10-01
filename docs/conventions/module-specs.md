@@ -60,7 +60,8 @@ Status: <current state of the specification>
 
 ### Status
 
-- Write `Planned`, `Draft`, `Approved`, or `Implemented`. Write the same status as the [specification index](../specs/README.md).
+- Write `Planned`, `Draft`, `Approved`, or `Implemented`.
+- Write the same status as the [specification index](../specs/README.md).
 
 ### Objective
 
@@ -69,15 +70,20 @@ Status: <current state of the specification>
 
 ### Scope and decisions
 
-- Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.` Name each module as the `Depends on` column of the index lists it.
-- Name the included work. Then write excluded work as a bullet list after "This capability excludes these items:".
+- Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.`
+- Name each module as the `Depends on` column of the index lists it.
+- Name the included work.
+- Write excluded work as a bullet list after "This capability excludes these items:".
 - Write each decision as a bullet that starts with a link to the ADR, followed by a colon and what the ADR decides for this capability.
 
 ### Contract
 
 - Include what a developer who reads logs sees, as well as what an API client sees.
-- For an API specification, start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`." List the ADRs that define Protobuf, REST, versions, and errors in `Scope and decisions`, and do not explain their mechanics again.
-- Use these tables in this order: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, and `Errors`. Omit a table that has no rows. Keep the rows of `Methods` and `Method requirements` in the same RPC order.
+- For an API specification, start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`."
+- Use these tables in this order: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, and `Errors`. Omit a table that has no rows.
+- Keep the rows of `Methods` and `Method requirements` in the same RPC order.
+- For an API specification, list the ADRs that define Protobuf, REST, versions, and errors in `Scope and decisions`.
+- Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
 
 #### Methods
@@ -103,7 +109,8 @@ Status: <current state of the specification>
 
 #### HTTP-only endpoints
 
-- Use this table only for endpoints that are not RPCs, such as a provider callback. Write one row for each endpoint.
+- Use this table only for endpoints that are not RPCs, such as a provider callback.
+- Write one row for each endpoint.
 
 | Column | How to write |
 | --- | --- |
@@ -115,7 +122,8 @@ Status: <current state of the specification>
 
 #### Resource fields
 
-- Write one table for each resource that a method returns, and put the resource name in the sentence before the table. Write one row for each field.
+- Write one table for each resource that a method returns, and put the resource name in the sentence before the table.
+- Write one row for each field.
 
 | Column | How to write |
 | --- | --- |
@@ -125,7 +133,8 @@ Status: <current state of the specification>
 
 #### Errors
 
-- Write one row for each condition that a client can tell apart. Put conditions that return the same status for a security reason in one row.
+- Write one row for each condition that a client can tell apart.
+- Put conditions that return the same status for a security reason in one row.
 
 | Column | How to write |
 | --- | --- |
@@ -135,16 +144,19 @@ Status: <current state of the specification>
 
 ### Behavior
 
-- Put subsections for the topics of the capability first. Then add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
+- Put subsections for the topics of the capability first.
+- After the topic subsections, add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
 - If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under `### Data and compatibility`.
-- Under `### Diagnostics`, name the events or fields that the capability records. Then list the values that logs, traces, metrics, and errors must never contain.
+- Under `### Diagnostics`, name the events or fields that the capability records.
+- Under `### Diagnostics`, list the values that logs, traces, metrics, and errors must never contain.
 - Do not restate the five-second request cap of [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md) unless the capability has an exception.
 - Do not repeat the contract.
 
 ### Testing strategy
 
 - Write the testing strategy as the [testing table](#testing-table).
-- Do not repeat each success criterion or list commands. Commands belong in the verification steps of each [Issue](github-issues.md#template).
+- Do not repeat each success criterion.
+- Do not list commands. Commands belong in the verification steps of each [Issue](github-issues.md#template).
 
 #### Testing table
 
@@ -159,7 +171,8 @@ Status: <current state of the specification>
 ### Implementation boundaries
 
 - Put each action under `### Always`, `### Ask first`, or `### Never`. Examples are "Ask first before you change the outbox schema" and "Never read another service's database".
-- Start each item with a verb. Start each `Never` item with "Do not".
+- Start each item with a verb.
+- Start each `Never` item with "Do not".
 - Do not repeat system rules from `Behavior`.
 
 ### Success criteria

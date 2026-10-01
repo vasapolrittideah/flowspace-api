@@ -5,11 +5,11 @@ This convention defines the file, format, and status of one architecture decisio
 ## Template
 
 ```markdown
-# ADR-<NNNN>: <decision as a sentence>
+# ADR-<NNNN>: <decision that the record accepts>
 
-Date: <YYYY-MM-DD>
+Date: <date when the record was written>
 
-Status: <status value>
+Status: <current state of the decision>
 
 ## Context
 
@@ -17,53 +17,44 @@ Status: <status value>
 
 ## Decision
 
-<the decision, then the rules that follow from it>
+<what the project chose and the rules that follow from it>
 
 ## Alternatives Considered
 
-### <rejected option>
+### <option that the project rejected>
 
-- Pros: <benefit>
-- Cons: <cost>
-- Rejected: <deciding reason>
+- Pros: <benefits of the option>
+- Cons: <costs of the option>
+- Rejected: <reason that decided against the option>
 
 ## Consequences
 
-- <one effect>
+- <effect of the decision, including a cost or open work>
 
 ## Sources
 
-- [<document title>](<url>)
+- [<external document that the decision depends on>](<url>)
 ```
 
-- Title: The record number and the decision as a sentence.
-- Date: The date when the record was written.
-- Status: The current state of the decision.
-- Context: The facts and limits that exist before the decision.
-- Decision: What the project chose and the rules that follow from it.
-- Alternatives Considered: Each rejected option and the reason that decided against it.
-- Consequences: The effects of the decision, including costs and open work.
-- Sources: External documents that the decision depends on, if any.
-
-The [section forms](#section-forms) state how to write each part.
+The [section forms](#section-forms) state how to write each section.
 
 ## Section forms
 
-Each subsection states what a part contains and the form in which to write it.
+Each subsection states how to write one section.
 
 ### Title
 
-- Write the title as `# ADR-<NNNN>: <decision>`, with the decision as a sentence in the present tense, such as "Relational data uses explicit SQL". Do not write only a topic, such as "Database choice".
+- Write the record number with four digits. Write the decision as a sentence in the present tense, such as "Relational data uses explicit SQL". Do not write only a topic, such as "Database choice".
 - Start the sentence with the thing that the decision controls, not with a verb.
 
 ### Date
 
-- Write `Date: <YYYY-MM-DD>` with the date when the record was written. Put it on the first line after the title.
+- Write the date in `YYYY-MM-DD` format. Put the line directly after the title, separated by a blank line.
 - Do not change the date when the status changes.
 
 ### Status
 
-- Write `Status: <status value>` with one [status value](#status-values). Put it on the line after `Date`, separated by a blank line.
+- Write one [status value](#status-values). Put the line after `Date`, separated by a blank line.
 - Link each `ADR-<NNNN>` in the value to the file of that record.
 - Write the same value in the `Status` column of the index. In the index, use only the record number as the link text, such as `0031` instead of `ADR-0031`.
 
@@ -82,9 +73,9 @@ Each subsection states what a part contains and the form in which to write it.
 
 ### Alternatives Considered
 
-- Write at least one alternative. Give each alternative a `###` heading that names the option as a noun phrase.
+- Write at least one alternative. Name the option in its `###` heading as a noun phrase.
 - Under each heading, write three bullets in this order: `Pros:`, `Cons:`, and `Rejected:`. Write one sentence after each label. Start it with a lowercase letter unless it starts with a name or code.
-- In `Rejected:`, state the reason that decided against the option, compared with the chosen decision. Do not repeat the `Cons:` text.
+- In `Rejected:`, compare the option with the chosen decision. Do not repeat the `Cons:` text.
 
 ### Consequences
 
@@ -94,7 +85,7 @@ Each subsection states what a part contains and the form in which to write it.
 
 ### Sources
 
-- Write one bullet for each external document. Use the document title as the link text.
+- Write one bullet for each document. Use the document title as the link text.
 - Put links to repository documents in `Context` or `Decision`.
 
 ## Rules

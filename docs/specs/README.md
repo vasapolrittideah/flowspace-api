@@ -1,6 +1,6 @@
 # Specifications
 
-This index lists the module specifications. Follow the [module specification conventions](../conventions/module-specs.md) for their format and status.
+This index lists the module specifications. Follow the [module specification conventions](../conventions/module-specs.md) for their format and status. A `Planned` row names a module that has no specification file yet, so its specification column has no link.
 
 | Module | Specification | Depends on | Status |
 | --- | --- | --- | --- |

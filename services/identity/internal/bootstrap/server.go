@@ -110,6 +110,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 			},
 			limits.AccountWrongCode, checkPassword, verifierKey)).
 		WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
+		WithProviderLogin(app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), limits.ProviderLoginStart, verifierKey, config.providers)).
 		WithRefreshSession(app.NewSessionRefreshService(postgres.NewSessionRefreshRepository(pool), signer)).
 		WithCurrentSessionLogout(app.NewCurrentSessionLogoutService(postgres.NewSessionRepository(pool))).
 		WithAllSessionLogout(app.NewAllSessionLogoutService(accountRepo))
@@ -349,6 +350,7 @@ func safeOperation(r *http.Request) string {
 	for _, path := range []string{
 		"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
 		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-reset-codes", "/v1/password-resets", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts", "/v1/account-session-logouts",
+		"/v1/provider-login-attempts",
 	} {
 		if r.URL.Path == path {
 			return r.Method + " " + path

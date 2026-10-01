@@ -71,6 +71,18 @@ type IdentityPasswordChangeNotice struct {
 	DeliveredAt    pgtype.Timestamptz
 }
 
+type IdentityProviderLoginAttempt struct {
+	ID                   pgtype.UUID
+	Provider             string
+	AttemptTokenVerifier []byte
+	StateVerifier        []byte
+	CodeVerifier         string
+	Nonce                pgtype.Text
+	CallbackUrl          string
+	CreatedAt            pgtype.Timestamptz
+	ExpiresAt            pgtype.Timestamptz
+}
+
 type IdentityRotatedRefreshToken struct {
 	TokenHash []byte
 	SessionID pgtype.UUID

@@ -23,11 +23,11 @@ Status: Draft
 
 ## Contract
 
-<consumer-visible interfaces, fields, data, and errors>
+<the shape that a consumer sees: interfaces, routes, fields, data, and errors>
 
 ## Behavior
 
-<rules, invariants, security, consistency, and operations>
+<when each effect happens and why: rules, invariants, security, consistency, and operations>
 
 ## Testing strategy
 
@@ -39,7 +39,7 @@ Status: Draft
 
 ## Success criteria
 
-<numbered Given, When, Then outcomes>
+<outcomes required for completion>
 
 ## Assumptions and open questions
 
@@ -50,26 +50,14 @@ Status: Draft
 <checks that this capability must pass before Flowspace stops using disposable data, if any>
 ```
 
-- Header: The capability name, the module ID, and the status.
-- Objective: The users, the questions or results that they need, and the purpose.
-- Scope and decisions: Included and excluded work, module dependencies, and the ADRs that apply.
-- Contract: The shape that a consumer sees.
-- Behavior: When each effect happens and why.
-- Testing strategy: The risks, the test level that proves each risk, and the environment that each level needs.
-- Implementation boundaries: Actions that limit the implementer.
-- Success criteria: Numbered Given, When, Then outcomes required for completion.
-- Assumptions and open questions: Assumptions and decisions that are not yet made.
-- Readiness for real teams: Checks that the capability must pass before Flowspace stops using disposable data.
-
 The [section forms](#section-forms) state how to write each section.
 
 ## Section forms
 
-Each subsection states what a section contains and the form in which to write it.
+Each subsection states how to write one section.
 
 ### Objective
 
-- Name the users and the questions or results that they need, and state the purpose of the capability.
 - Include one sentence about the first users and their data, such as "The first users are API clients, and all data is disposable under ADR-0022."
 - Put assumptions in `Assumptions and open questions`.
 
@@ -81,7 +69,7 @@ Each subsection states what a section contains and the form in which to write it
 
 ### Contract
 
-Define the shape that a consumer sees: interfaces, routes, fields, data, and error codes. A consumer can be a developer who reads logs, not only an API client.
+Include what a developer who reads logs sees, as well as what an API client sees.
 
 For an API specification, start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`." List the ADRs that define Protobuf, REST, versions, and errors in `Scope and decisions`, and do not explain their mechanics again.
 
@@ -144,7 +132,7 @@ Write one row for each condition that a client can tell apart. Put conditions th
 
 ### Behavior
 
-- State when each effect happens and why: business rules, invariants, security, consistency, and operations. Do not repeat the contract.
+- Do not repeat the contract.
 - Put subsections for the topics of the capability first. Then add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
 - If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under `### Data and compatibility`.
 - Under `### Diagnostics`, name the events or fields that the capability records. Then list the values that logs, traces, metrics, and errors must never contain.
@@ -166,23 +154,23 @@ Write one row for each material risk.
 
 ### Implementation boundaries
 
-- Name actions that limit the implementer under `### Always`, `### Ask first`, and `### Never`. Examples are "Ask first before you change the outbox schema" and "Never read another service's database".
+- Put each action under `### Always`, `### Ask first`, or `### Never`. Examples are "Ask first before you change the outbox schema" and "Never read another service's database".
 - Start each item with a verb. Start each `Never` item with "Do not".
 - Do not repeat system rules from `Behavior`.
 
 ### Success criteria
 
-- Write a numbered list of observable Given, When, Then outcomes required for completion.
+- Write a numbered list of observable Given, When, Then outcomes.
 - If a specification has more than about 20 success criteria, consider a split into several modules.
 - Do not add a success criterion for the repository checks. The [constraints](../../CONSTRAINTS.md) apply to every change.
 
 ### Assumptions and open questions
 
-Write the assumptions that the specification makes and the decisions that are not yet made. The [status rules](#status-and-approval) state when to resolve them.
+The [status rules](#status-and-approval) state when to resolve each item.
 
 ### Readiness for real teams
 
-Write the checks that this capability must pass before Flowspace stops using disposable data under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md) and the [architecture](../architecture.md#observability-and-recovery). List only checks that belong to this capability, and link the architecture for checks that apply to the whole system.
+List only checks that belong to this capability. For checks that apply to the whole system, link the [architecture](../architecture.md#observability-and-recovery).
 
 ## Rules
 

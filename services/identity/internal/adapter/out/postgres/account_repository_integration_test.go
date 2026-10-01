@@ -125,6 +125,9 @@ func TestIdentityRepository(t *testing.T) {
 	t.Run("invalid reset codes keep practical timing across account states", func(t *testing.T) {
 		testPasswordResetInvalidCodeTiming(t, pool)
 	})
+	t.Run("password recovery treats provider accounts by their password credential", func(t *testing.T) {
+		testPasswordRecoveryForProviderAccounts(t, pool)
+	})
 }
 
 func testActiveEmailUniqueness(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {

@@ -18,12 +18,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	deliverycrypto "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	identitypostgres "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
 	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 func testPasswordResetRepository(t *testing.T, pool *pgxpool.Pool) {
@@ -375,4 +377,125 @@ func testPasswordResetInvalidCodeTiming(t *testing.T, pool *pgxpool.Pool) {
 	if err := pool.QueryRow(ctx, `SELECT password_hash FROM identity_accounts WHERE subject=$1`, subject).Scan(&hash); err != nil || hash != "$argon2id$timing" {
 		t.Fatalf("invalid codes changed the password: %v", err)
 	}
+}
+
+// testPasswordRecoveryForProviderAccounts proves recovery eligibility for a provider-only account and for a
+// password account with a linked provider.
+func testPasswordRecoveryForProviderAccounts(t *testing.T, pool *pgxpool.Pool) {
+	ctx := t.Context()
+	const providerOnly, linked = "recovery-provider-only", "recovery-linked"
+	for _, statement := range []string{
+		`INSERT INTO identity_accounts (subject, email_local, email_domain, email_verified_at)
+			VALUES ('recovery-provider-only', 'ProviderOnly', 'example.com', statement_timestamp())`,
+		`INSERT INTO identity_accounts (subject, email_local, email_domain, password_hash, email_verified_at)
+			VALUES ('recovery-linked', 'Linked', 'example.com', '$argon2id$linked', statement_timestamp())`,
+		`INSERT INTO identity_provider_links (provider, provider_subject, account_subject)
+			VALUES ('google', 'recovery-google', 'recovery-provider-only'), ('github', '7001', 'recovery-linked')`,
+	} {
+		if _, err := pool.Exec(ctx, statement); err != nil {
+			t.Fatal(err)
+		}
+	}
+	key := bytes.Repeat([]byte{12}, 32)
+	protector, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{13}, 32), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	allow := func(context.Context, string) error { return nil }
+	accounts := identitypostgres.NewAccountRepository(pool)
+	codes := app.NewPasswordResetCodeService(accounts, protector, allow, allow, key)
+	reset := app.NewPasswordResetService(accounts, allow, allow, allow, func(context.Context, string) (bool, error) { return false, nil }, key)
+	challenges := func(t *testing.T, subject string) int {
+		t.Helper()
+		var count int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_challenges WHERE account_subject = $1 AND purpose = 'password-reset'`, subject).
+			Scan(&count); err != nil {
+			t.Fatal(err)
+		}
+		return count
+	}
+
+	t.Run("a provider-only account gets the missing-account response and timing without a code", func(t *testing.T) {
+		durations := map[string][]time.Duration{}
+		for range 5 {
+			for state, email := range map[string]string{"provider-only": "ProviderOnly@example.com", "missing": "MissingProvider@example.com"} {
+				started := time.Now()
+				err := codes.RequestPasswordResetCode(ctx, inbound.RequestPasswordResetCodeInput{Email: email, Source: "192.0.2.210"})
+				durations[state] = append(durations[state], time.Since(started))
+				if err != nil {
+					t.Fatalf("%s request = %v", state, err)
+				}
+			}
+		}
+		provider, missing := durations["provider-only"], durations["missing"]
+		slices.Sort(provider)
+		slices.Sort(missing)
+		if provider[2] > 3*missing[2] || missing[2] > 3*provider[2] {
+			t.Fatalf("code request median timings differ: provider-only = %s, missing = %s", provider[2], missing[2])
+		}
+		if count := challenges(t, providerOnly); count != 0 {
+			t.Fatalf("provider-only account received %d reset codes", count)
+		}
+	})
+
+	t.Run("a provider-only account cannot get a password from any reset code", func(t *testing.T) {
+		code, verifier, _, err := domain.NewChallenge(key, providerOnly, "ProviderOnly@example.com", domain.PurposePasswordReset, time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		// A stray reset challenge must not make the account eligible.
+		if _, err := identitysqlc.New(pool).CreateChallenge(ctx, identitysqlc.CreateChallengeParams{
+			AccountSubject: providerOnly, Purpose: string(domain.PurposePasswordReset), EmailLocal: "ProviderOnly",
+			EmailDomain: "example.com", CodeVerifier: verifier[:],
+		}); err != nil {
+			t.Fatal(err)
+		}
+		wrong := "000000"
+		if code == wrong {
+			wrong = "000001"
+		}
+		for _, attempt := range []string{wrong, code} {
+			if err := reset.ResetPassword(ctx, inbound.ResetPasswordInput{
+				Email: "ProviderOnly@example.com", Code: attempt, NewPassword: "provider reset password 123", Source: "192.0.2.211",
+			}); !errors.Is(err, app.ErrInvalidPasswordResetCode) {
+				t.Fatalf("reset with code = %v", err)
+			}
+		}
+		var passwordless bool
+		if err := pool.QueryRow(ctx, `SELECT password_hash IS NULL FROM identity_accounts WHERE subject = $1`, providerOnly).Scan(&passwordless); err != nil || !passwordless {
+			t.Fatalf("provider-only account has a password: %v", err)
+		}
+	})
+
+	t.Run("a password account with a linked provider resets and keeps its link", func(t *testing.T) {
+		if err := codes.RequestPasswordResetCode(ctx, inbound.RequestPasswordResetCodeInput{Email: "Linked@example.com", Source: "192.0.2.212"}); err != nil {
+			t.Fatal(err)
+		}
+		var challengeID string
+		var material outbound.DeliveryMaterial
+		if err := pool.QueryRow(ctx, `SELECT challenge.id::text, delivery.key_version, delivery.nonce, delivery.ciphertext
+			FROM identity_challenges AS challenge JOIN identity_challenge_deliveries AS delivery ON delivery.challenge_id = challenge.id
+			WHERE challenge.account_subject = $1 AND challenge.purpose = 'password-reset' AND challenge.replaced_at IS NULL`, linked).
+			Scan(&challengeID, &material.KeyVersion, &material.Nonce, &material.Ciphertext); err != nil {
+			t.Fatal(err)
+		}
+		_, code, err := protector.Open(challengeID, string(domain.PurposePasswordReset), linked, material)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := reset.ResetPassword(ctx, inbound.ResetPasswordInput{
+			Email: "Linked@example.com", Code: code, NewPassword: "linked reset password 123", Source: "192.0.2.212",
+		}); err != nil {
+			t.Fatalf("reset = %v", err)
+		}
+		var hash, linkedSubject string
+		if err := pool.QueryRow(ctx, `SELECT account.password_hash, link.account_subject FROM identity_accounts AS account
+			JOIN identity_provider_links AS link ON link.account_subject = account.subject
+			WHERE account.subject = $1 AND link.provider = 'github' AND link.provider_subject = '7001'`, linked).Scan(&hash, &linkedSubject); err != nil {
+			t.Fatalf("provider link after reset: %v", err)
+		}
+		if hash == "$argon2id$linked" || linkedSubject != linked {
+			t.Fatalf("reset kept the old password or moved the link to %q", linkedSubject)
+		}
+	})
 }

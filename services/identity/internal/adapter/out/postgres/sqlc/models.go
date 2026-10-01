@@ -12,7 +12,7 @@ type IdentityAccount struct {
 	Subject         string
 	EmailLocal      string
 	EmailDomain     string
-	PasswordHash    string
+	PasswordHash    pgtype.Text
 	EmailVerifiedAt pgtype.Timestamptz
 	RetiredAt       pgtype.Timestamptz
 	CreatedAt       pgtype.Timestamptz

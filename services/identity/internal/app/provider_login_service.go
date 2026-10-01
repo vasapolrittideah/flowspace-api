@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/google/uuid"
+
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
@@ -40,6 +42,7 @@ type ProviderLoginService struct {
 	clients       map[domain.Provider]ProviderClient
 	sessions      outbound.ProviderSessionRepository
 	signer        outbound.TokenSigner
+	protector     outbound.DeliveryProtector
 	failureLimit  func(context.Context, string) error
 }
 
@@ -51,12 +54,13 @@ func NewProviderLoginService(repository outbound.ProviderAttemptRepository, sour
 	return &ProviderLoginService{repository: repository, sourceLimit: sourceLimit, callbackLimit: callbackLimit, verifierKey: verifierKey, clients: clients}
 }
 
-// WithSessions enables CreateProviderSession. The failure limit counts each
-// rejected handoff from a source.
+// WithSessions enables CreateProviderSession. The protector seals the
+// verification code of a new unverified account. The failure limit counts
+// each rejected handoff from a source.
 func (s *ProviderLoginService) WithSessions(sessions outbound.ProviderSessionRepository, signer outbound.TokenSigner,
-	failureLimit func(context.Context, string) error,
+	protector outbound.DeliveryProtector, failureLimit func(context.Context, string) error,
 ) *ProviderLoginService {
-	s.sessions, s.signer, s.failureLimit = sessions, signer, failureLimit
+	s.sessions, s.signer, s.protector, s.failureLimit = sessions, signer, protector, failureLimit
 	return s
 }
 
@@ -178,7 +182,7 @@ func (s *ProviderLoginService) CreateProviderSession(ctx context.Context, input 
 	if !domain.ValidProviderSecret(input.HandoffCode) {
 		return inbound.CreateProviderSessionResult{}, domain.ErrInvalidHandoffCode
 	}
-	if s.repository == nil || s.sessions == nil || s.signer == nil || s.failureLimit == nil || len(s.verifierKey) != 32 {
+	if s.repository == nil || s.sessions == nil || s.signer == nil || s.protector == nil || s.failureLimit == nil || len(s.verifierKey) != 32 {
 		return inbound.CreateProviderSessionResult{}, ErrProviderLoginUnavailable
 	}
 	attempt := domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretAttemptToken, input.AttemptToken)
@@ -202,7 +206,9 @@ func (s *ProviderLoginService) CreateProviderSession(ctx context.Context, input 
 }
 
 // claimSession claims the provider result and issues a session for its linked
-// account. An unlinked result stays claimed, so it cannot be retried.
+// account, or for a new provider-only account. It reports false without a
+// session when a new identity has no usable email or its email is taken; the
+// result stays claimed, so it cannot be retried.
 func (s *ProviderLoginService) claimSession(ctx context.Context, tx outbound.ProviderSessionTransaction, attempt, handoff [32]byte,
 ) (inbound.CreateProviderSessionResult, bool, error) {
 	claim, claimed, err := tx.ClaimProviderResult(ctx, attempt, handoff)
@@ -213,6 +219,9 @@ func (s *ProviderLoginService) claimSession(ctx context.Context, tx outbound.Pro
 		return inbound.CreateProviderSessionResult{}, false, ErrProviderHandoffRejected
 	}
 	account, found, err := tx.LockLinkedAccount(ctx, claim.Provider, claim.Subject)
+	if err == nil && !found {
+		account, found, err = s.createAccount(ctx, tx, claim)
+	}
 	if err != nil || !found {
 		return inbound.CreateProviderSessionResult{}, false, err
 	}
@@ -226,6 +235,32 @@ func (s *ProviderLoginService) claimSession(ctx context.Context, tx outbound.Pro
 		AccessTokenExpiresAt: tokens.AccessTokenExpiresAt, RefreshTokenExpiresAt: tokens.RefreshTokenExpiresAt,
 		SessionExpiresAt: tokens.SessionExpiresAt,
 	}, true, nil
+}
+
+// createAccount creates a provider-only account and link for a new provider
+// identity. An account that starts unverified receives a verification code.
+func (s *ProviderLoginService) createAccount(ctx context.Context, tx outbound.ProviderSessionTransaction, claim outbound.ProviderResult,
+) (outbound.LinkedAccount, bool, error) {
+	email, verified, usable := domain.NewProviderAccountEmail(domain.Provider(claim.Provider), claim.Email, claim.EmailVerified, claim.HostedDomain)
+	if !usable {
+		return outbound.LinkedAccount{}, false, nil
+	}
+	subject, err := uuid.NewRandom()
+	if err != nil {
+		return outbound.LinkedAccount{}, false, err
+	}
+	created, err := tx.CreateProviderAccount(ctx, outbound.NewProviderAccount{
+		Subject: subject.String(), Email: email, EmailVerified: verified, Provider: claim.Provider, ProviderSubject: claim.Subject,
+	})
+	if err != nil || !created {
+		return outbound.LinkedAccount{}, false, err
+	}
+	if !verified {
+		if err := queueVerificationCode(ctx, tx, s.protector, s.verifierKey, subject.String(), email); err != nil {
+			return outbound.LinkedAccount{}, false, err
+		}
+	}
+	return outbound.LinkedAccount{Subject: subject.String(), EmailVerified: verified}, true, nil
 }
 
 func (s *ProviderLoginService) rejectHandoff(ctx context.Context, attempt [32]byte, source string) error {

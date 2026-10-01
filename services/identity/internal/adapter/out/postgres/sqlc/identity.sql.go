@@ -13,7 +13,7 @@ import (
 
 const createAccount = `-- name: CreateAccount :one
 INSERT INTO identity_accounts (subject, email_local, email_domain, password_hash)
-VALUES ($1, $2, $3, $4)
+VALUES ($1, $2, $3, $4::text)
 RETURNING subject, email_local, email_domain, email_verified_at, created_at
 `
 
@@ -136,10 +136,11 @@ func (q *Queries) GetActiveAccountForUpdate(ctx context.Context, subject string)
 }
 
 const getPasswordAccountByEmail = `-- name: GetPasswordAccountByEmail :one
-SELECT subject, password_hash, email_verified_at
+SELECT subject, password_hash::text AS password_hash, email_verified_at
 FROM identity_accounts
 WHERE email_local = $1
   AND email_domain = $2
+  AND password_hash IS NOT NULL
   AND retired_at IS NULL
 `
 
@@ -162,9 +163,10 @@ func (q *Queries) GetPasswordAccountByEmail(ctx context.Context, arg GetPassword
 }
 
 const getPasswordAccountForUpdate = `-- name: GetPasswordAccountForUpdate :one
-SELECT subject, password_hash, email_verified_at
+SELECT subject, password_hash::text AS password_hash, email_verified_at
 FROM identity_accounts
 WHERE subject = $1
+  AND password_hash IS NOT NULL
   AND retired_at IS NULL
 FOR UPDATE
 `
@@ -183,7 +185,7 @@ func (q *Queries) GetPasswordAccountForUpdate(ctx context.Context, subject strin
 }
 
 const getRecoveryAccountForUpdate = `-- name: GetRecoveryAccountForUpdate :one
-SELECT subject, password_hash, email_verified_at
+SELECT subject, (password_hash IS NOT NULL)::boolean AS has_password, email_verified_at
 FROM identity_accounts
 WHERE email_local = $1
   AND email_domain = $2
@@ -198,14 +200,14 @@ type GetRecoveryAccountForUpdateParams struct {
 
 type GetRecoveryAccountForUpdateRow struct {
 	Subject         string
-	PasswordHash    string
+	HasPassword     bool
 	EmailVerifiedAt pgtype.Timestamptz
 }
 
 func (q *Queries) GetRecoveryAccountForUpdate(ctx context.Context, arg GetRecoveryAccountForUpdateParams) (GetRecoveryAccountForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, getRecoveryAccountForUpdate, arg.EmailLocal, arg.EmailDomain)
 	var i GetRecoveryAccountForUpdateRow
-	err := row.Scan(&i.Subject, &i.PasswordHash, &i.EmailVerifiedAt)
+	err := row.Scan(&i.Subject, &i.HasPassword, &i.EmailVerifiedAt)
 	return i, err
 }
 
@@ -243,7 +245,7 @@ func (q *Queries) RetireUnverifiedAccount(ctx context.Context, subject string) (
 
 const updatePasswordHash = `-- name: UpdatePasswordHash :execrows
 UPDATE identity_accounts
-SET password_hash = $1
+SET password_hash = $1::text
 WHERE subject = $2
   AND email_verified_at IS NOT NULL
   AND retired_at IS NULL

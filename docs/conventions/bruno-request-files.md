@@ -5,18 +5,22 @@ This convention names Bruno request files in `tests/smoke/bruno/`. A request fil
 ## Template
 
 ```text
-<NN>-<verb-phrase>.bru
+<position in the run>-<action and expected result>.bru
 ```
 
-- `NN`: The `seq` value in the `meta` block, written with two digits.
-- Verb phrase: The `name` value in the `meta` block, in lowercase words separated by hyphens.
+### Position in the run
+
+- Write the `seq` value in the `meta` block with two digits.
+- If you insert or move a request, update the `seq` value and the file number of each request that changes position.
+
+### Action and expected result
+
+- Write the `name` value in the `meta` block in lowercase words separated by hyphens.
+- Write the `name` in the `meta` block as a verb phrase in sentence case. A request file is one step in an ordered run, so its name describes what the step does. Go component files use noun phrases because one file groups several actions of a capability.
+- If the API must refuse the request, start the `name` with `Reject`.
 
 ## Rules
 
-- Name each request with a verb phrase that states its action and the expected result. A request file is one step in an ordered run, so its name describes what the step does. Go component files use noun phrases because one file groups several actions of a capability.
-- Write the `name` in the `meta` block in sentence case, and start it with a verb. Make the verb phrase in the file name match this `name`.
-- If the API must refuse the request, start the `name` with `Reject`.
-- Make `NN` equal the `seq` value. If you insert or move a request, update the `seq` value and the file number of each request that changes position.
 - Apply this convention to new request files and request files changed for another task. Do not rename untouched files only to satisfy this convention. A naming cleanup needs its own reviewable change.
 
 ## Examples

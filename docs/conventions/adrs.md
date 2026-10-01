@@ -39,7 +39,8 @@ Status: <current state of the decision>
 ### Title
 
 - Write the record number with four digits.
-- Write the decision as a sentence in the present tense, such as "Relational data uses explicit SQL". Start the sentence with the thing that the decision controls, not with a verb.
+- Write the decision as a sentence in the present tense, such as "Relational data uses explicit SQL".
+- Start the sentence with the thing that the decision controls, not with a verb.
 - Do not write only a topic, such as "Database choice".
 
 ### Date
@@ -53,7 +54,8 @@ Status: <current state of the decision>
 - Put the line after `Date`, separated by a blank line.
 - Write one [status value](#status-values).
 - Link each `ADR-<NNNN>` in the value to the file of that record.
-- Write the same value in the `Status` column of the index. In the index, use only the record number as the link text, such as `0031` instead of `ADR-0031`.
+- Write the same value in the `Status` column of the index.
+- In the index, use only the record number as the link text, such as `0031` instead of `ADR-0031`.
 
 ### Context
 
@@ -63,16 +65,20 @@ Status: <current state of the decision>
 
 ### Decision
 
-- In the first paragraph, state the decision in one or two sentences, such as "Use PostgreSQL for primary relational data." If the decision applies only to part of the system, such as one environment, state that scope in the first sentence.
-- Write the rules that follow from the decision in paragraphs, one topic per paragraph, as the [Markdown rules](markdown-and-prose.md#markdown) require. Use a bullet list only for parallel items of the same kind, such as each service and the data that it owns.
+- In the first paragraph, state the decision in one or two sentences, such as "Use PostgreSQL for primary relational data."
+- If the decision applies only to part of the system, such as one environment, state that scope in the first sentence.
+- Write the rules that follow from the decision in paragraphs, one topic per paragraph, as the [Markdown rules](markdown-and-prose.md#markdown) require.
+- Use a bullet list only for parallel items of the same kind, such as each service and the data that it owns.
 - State exact values when the decision fixes them, such as limits, durations, and retention periods.
 - Do not add `###` subsections. If the topics of a decision need their own subsections, write a separate record for each topic.
 
 ### Alternatives Considered
 
-- Write at least one alternative. Name the option in its `###` heading as a noun phrase.
+- Write at least one alternative.
+- Name the option in its `###` heading as a noun phrase.
 - Under each heading, write three bullets in this order: `Pros:`, `Cons:`, and `Rejected:`.
-- Write one sentence after each label. Start it with a lowercase letter unless it starts with a name or code.
+- Write one sentence after each label.
+- Start the sentence with a lowercase letter unless it starts with a name or code.
 - In `Rejected:`, compare the option with the chosen decision.
 - Do not repeat the `Cons:` text in `Rejected:`.
 
@@ -84,7 +90,8 @@ Status: <current state of the decision>
 
 ### Sources
 
-- Write one bullet for each document. Use the document title as the link text.
+- Write one bullet for each document.
+- Use the document title as the link text.
 - Put links to repository documents in `Context` or `Decision`.
 
 ## Rules

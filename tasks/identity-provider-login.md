@@ -10,11 +10,11 @@ Add Google and GitHub login for API clients using the one-time browser handoff i
 
 ## Architecture decisions
 
-- Add `StartProviderLogin` and `CreateProviderSession` to `flowspace.identity.v1` with generated REST routes. Keep the provider callback as the small HTTP adapter approved by [ADR-0034](../docs/adr/0034-provider-login-uses-a-one-time-handoff.md). The callback never issues FlowSpace tokens.
+- Add `StartProviderLogin` and `CreateProviderSession` to `flowspace.identity.v1` with generated REST routes. Keep the provider callback as the small HTTP adapter approved by [ADR-0034](../docs/adr/0034-provider-login-uses-a-one-time-handoff.md). The callback never issues Flowspace tokens.
 - Store each short-lived attempt and its provider result in Identity PostgreSQL. Bind the provider, state, PKCE verifier, Google nonce, attempt token, and handoff code to one attempt. Store keyed verifiers for the two client proofs and consume each transition once.
 - Verify Google ID tokens and GitHub user identity through separate provider adapters. Use the provider name and stable provider subject as the link key. Do not identify a returning user or link a password account by email alone.
 - Extend Identity's account schema to allow a provider-only account without a password hash. Add a unique provider-link record. Reuse the existing session, email-challenge, outbox, trusted source-address, and shared limit paths.
-- Keep collision and missing-email responses alike. Issue a session to a new unverified account, but keep Workspace's verified-email gate until FlowSpace verifies that email. Apply the existing session lifetimes to provider sessions.
+- Keep collision and missing-email responses alike. Issue a session to a new unverified account, but keep Workspace's verified-email gate until Flowspace verifies that email. Apply the existing session lifetimes to provider sessions.
 
 ## Dependency graph
 
@@ -42,7 +42,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Checkpoint: Handoff
 
 - [x] Both RPC routes and the Google callback route match the approved contract, and generated output matches the source Protobuf.
-- [x] Google callback tests reject altered or replayed proof and show one handoff code without a FlowSpace token.
+- [x] Google callback tests reject altered or replayed proof and show one handoff code without a Flowspace token.
 - [x] Attempt expiry, start and callback limits, safe errors, and secret-free callback content pass focused tests.
 
 ### Phase 2: Provider sessions and accounts
@@ -53,8 +53,8 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Checkpoint: Google login
 
 - [ ] A linked Google identity returns to the same subject even when its provider email changes or is absent.
-- [ ] A new Google identity creates one account, link, and session; Gmail and Google Workspace email rules set the correct FlowSpace verification state.
-- [ ] A new account with a verified third-party Google email receives a FlowSpace verification code, and Workspace denies access until that code is used.
+- [ ] A new Google identity creates one account, link, and session; Gmail and Google Workspace email rules set the correct Flowspace verification state.
+- [ ] A new account with a verified third-party Google email receives a Flowspace verification code, and Workspace denies access until that code is used.
 - [ ] Email collisions, missing proof, concurrent claims, and lost responses leave no duplicate account or replayed token.
 
 ### Phase 3: GitHub login and completion checks
@@ -71,9 +71,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 | Risk | Impact | Control |
 | --- | --- | --- |
-| A forged, mixed, or replayed callback claims another login attempt. | An attacker gains a FlowSpace session. | Bind state, provider, PKCE, nonce, attempt token, and handoff code to one expiring attempt; test wrong and concurrent submissions. |
+| A forged, mixed, or replayed callback claims another login attempt. | An attacker gains a Flowspace session. | Bind state, provider, PKCE, nonce, attempt token, and handoff code to one expiring attempt; test wrong and concurrent submissions. |
 | An email match links a provider to a password account. | An attacker takes over another subject. | Use a unique provider subject link and reject an unlinked identity when its email belongs to an existing account. |
 | Provider claims or email responses are incomplete or forged. | Identity creates a session for the wrong person. | Verify Google signatures and claims; fetch GitHub's authenticated user ID and primary verified email for a new identity. |
-| A provider-only account bypasses email verification. | An unverified user reaches Workspace. | Apply the approved Google email rules and reuse the FlowSpace challenge and live session gate. |
+| A provider-only account bypasses email verification. | An unverified user reaches Workspace. | Apply the approved Google email rules and reuse the Flowspace challenge and live session gate. |
 | A database, provider, or email delivery failure leaves partial state. | An account, link, or session exists without the required proof or delivery record. | Commit account, link, session, and any email challenge with its outbox record together; retry delivery only after commit. |
 | Secrets appear in callbacks, redirects, or telemetry. | A token or code can be reused. | Keep provider tokens server-side, render only the handoff code on the callback page, and capture browser output and telemetry in tests. |

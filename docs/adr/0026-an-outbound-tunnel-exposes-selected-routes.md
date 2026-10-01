@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-Selected application routes must be reachable from outside the self-hosted network without publishing infrastructure administration. Staging also needs an admission gate before normal FlowSpace authentication, while the production user-facing API needs public HTTPS access.
+Selected application routes must be reachable from outside the self-hosted network without publishing infrastructure administration. Staging also needs an admission gate before normal Flowspace authentication, while the production user-facing API needs public HTTPS access.
 
 ## Decision
 

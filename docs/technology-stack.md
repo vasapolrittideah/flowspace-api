@@ -1,4 +1,4 @@
-# FlowSpace backend technology stack
+# Flowspace backend technology stack
 
 These tables are the source of truth for replaceable implementation tools and Go packages. These selections support the accepted architecture but do not each warrant an ADR. Replace one when measured limitations or maintenance cost justify it, while preserving the owning ADR's contract.
 
@@ -70,7 +70,7 @@ Each section groups the tools and Go packages for one concern. Go packages appea
 
 | Area | Selection | Role / replacement boundary | ADR |
 | --- | --- | --- | --- |
-| Image registry | GHCR | Public versioned FlowSpace service images. | [ADR-0024](adr/0024-gitops-deploys-versioned-images.md) |
+| Image registry | GHCR | Public versioned Flowspace service images. | [ADR-0024](adr/0024-gitops-deploys-versioned-images.md) |
 | GitOps reconciler | Argo CD | Pull desired Kubernetes state from Git. | [ADR-0024](adr/0024-gitops-deploys-versioned-images.md) |
 | Application manifests | Kustomize | Shared base with local, staging, and production overlays. | [ADR-0025](adr/0025-environments-overlay-shared-manifests.md) |
 | Infrastructure packaging | Helm | Reuse maintained, pinned third-party charts. | [ADR-0025](adr/0025-environments-overlay-shared-manifests.md) |

@@ -23,7 +23,7 @@ script:pre-request {
       messages = response.data.messages;
     });
     const message = messages.find(item =>
-      item.Subject === "FlowSpace email verification code" &&
+      item.Subject === "Flowspace email verification code" &&
       item.To.some(recipient => recipient.Address === email)
     );
     if (message) {

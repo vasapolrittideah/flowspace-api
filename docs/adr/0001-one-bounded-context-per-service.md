@@ -10,7 +10,7 @@ Accepted, except the service count and Keycloak boundary superseded by [ADR-0031
 
 ## Context
 
-FlowSpace is an educational distributed-systems project whose first capabilities fall into three vocabularies: workspace membership and authorization, collaborative work, and notifications. Related invariants need local transactions, while delayed notification delivery must not determine whether a task mutation succeeds. The project should expose real network and consistency behavior without creating a service for every entity.
+Flowspace is an educational distributed-systems project whose first capabilities fall into three vocabularies: workspace membership and authorization, collaborative work, and notifications. Related invariants need local transactions, while delayed notification delivery must not determine whether a task mutation succeeds. The project should expose real network and consistency behavior without creating a service for every entity.
 
 ## Decision
 
@@ -20,7 +20,7 @@ Use three independently deployable application services, introduced only when th
 - Work owns projects, tasks, assignments, comments, and local activity.
 - Notifications owns the application inbox and event-processing records.
 
-Keycloak remains a supporting identity component rather than a fourth FlowSpace service. A new service requires evidence of separate vocabulary, ownership, release cadence, or scaling needs.
+Keycloak remains a supporting identity component rather than a fourth Flowspace service. A new service requires evidence of separate vocabulary, ownership, release cadence, or scaling needs.
 
 ## Alternatives Considered
 

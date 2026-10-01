@@ -340,7 +340,7 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 	}
 	raw, readErr := io.ReadAll(response.Body)
 	_ = response.Body.Close()
-	if readErr != nil || response.StatusCode != http.StatusOK || !bytes.Contains(raw, []byte("FlowSpace password reset code")) ||
+	if readErr != nil || response.StatusCode != http.StatusOK || !bytes.Contains(raw, []byte("Flowspace password reset code")) ||
 		!bytes.Contains(raw, []byte("222222")) || !bytes.Contains(raw, []byte("expires in 10 minutes")) {
 		t.Fatalf("recovery Mailpit message: status=%d error=%v", response.StatusCode, readErr)
 	}
@@ -505,7 +505,7 @@ func testPasswordChangeNotice(ctx context.Context, t *testing.T, pool *pgxpool.P
 	raw, readErr := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if readErr != nil || response.StatusCode != http.StatusOK || !bytes.Contains(raw, []byte("To: Notice-Owner@example.com")) ||
-		!bytes.Contains(raw, []byte("FlowSpace password changed")) {
+		!bytes.Contains(raw, []byte("Flowspace password changed")) {
 		t.Fatalf("notice Mailpit message: status=%d error=%v", response.StatusCode, readErr)
 	}
 	for _, secret := range []string{code, newPassword, resetHash, "argon2"} {

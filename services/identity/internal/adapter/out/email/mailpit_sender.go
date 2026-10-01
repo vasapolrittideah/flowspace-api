@@ -37,7 +37,7 @@ func (s *MailpitSender) Send(ctx context.Context, recipient, code, purpose strin
 	if err != nil {
 		return err
 	}
-	return s.deliver(ctx, address, subject, "Your FlowSpace code is "+code+". It expires in 10 minutes.")
+	return s.deliver(ctx, address, subject, "Your Flowspace code is "+code+". It expires in 10 minutes.")
 }
 
 func (s *MailpitSender) SendPasswordChangeNotice(ctx context.Context, recipient string) error {
@@ -45,8 +45,8 @@ func (s *MailpitSender) SendPasswordChangeNotice(ctx context.Context, recipient 
 	if err != nil {
 		return ErrMailDelivery
 	}
-	return s.deliver(ctx, address, "FlowSpace password changed",
-		"Your FlowSpace password was changed and every session was signed out. If you did not make this change, reset your password now.")
+	return s.deliver(ctx, address, "Flowspace password changed",
+		"Your Flowspace password was changed and every session was signed out. If you did not make this change, reset your password now.")
 }
 
 func (s *MailpitSender) deliver(ctx context.Context, address, subject, body string) error {
@@ -101,11 +101,11 @@ func validateMessage(recipient, code, purpose string) (string, string, error) {
 	}
 	switch purpose {
 	case string(domain.PurposeVerifyEmail):
-		return address, "FlowSpace email verification code", nil
+		return address, "Flowspace email verification code", nil
 	case string(domain.PurposeClaimAccount):
-		return address, "FlowSpace account claim code", nil
+		return address, "Flowspace account claim code", nil
 	case string(domain.PurposePasswordReset):
-		return address, "FlowSpace password reset code", nil
+		return address, "Flowspace password reset code", nil
 	default:
 		return "", "", ErrMailDelivery
 	}

@@ -7,7 +7,7 @@ load('ext://helm_resource', 'helm_resource', 'helm_repo')
 
 context = k8s_context()
 if context != 'k3d-flowspace':
-    fail('FlowSpace local development requires the k3d-flowspace Kubernetes context.')
+    fail('Flowspace local development requires the k3d-flowspace Kubernetes context.')
 allow_k8s_contexts(context)
 update_settings(k8s_upsert_timeout_secs=300)
 

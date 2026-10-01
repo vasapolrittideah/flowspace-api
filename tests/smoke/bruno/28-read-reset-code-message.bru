@@ -23,7 +23,7 @@ script:pre-request {
       messages = response.data.messages;
     });
     const message = messages.find(item =>
-      item.Subject === "FlowSpace password reset code" &&
+      item.Subject === "Flowspace password reset code" &&
       item.To.some(recipient => recipient.Address === email)
     );
     if (message) {

@@ -14,11 +14,11 @@ import (
 
 var callbackPage = template.Must(template.New("callback").Parse(`<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>FlowSpace sign-in</title></head>
+<head><meta charset="utf-8"><title>Flowspace sign-in</title></head>
 <body>
 <main>
 {{if .Code}}<h1>Copy your sign-in code</h1>
-<p>Paste this code into your FlowSpace client. It works once and expires in ten minutes.</p>
+<p>Paste this code into your Flowspace client. It works once and expires in ten minutes.</p>
 <p><code>{{.Code}}</code></p>
 {{else}}<h1>Unable to complete sign-in</h1>
 <p>{{.Message}}</p>
@@ -65,7 +65,7 @@ func (h *ProviderCallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	case err == nil:
 		renderCallback(w, http.StatusOK, code, "")
 	case errors.Is(err, app.ErrInvalidProviderCallback):
-		renderCallback(w, http.StatusBadRequest, "", "This sign-in link is invalid, expired, or already used. Start a new sign-in from your FlowSpace client.")
+		renderCallback(w, http.StatusBadRequest, "", "This sign-in link is invalid, expired, or already used. Start a new sign-in from your Flowspace client.")
 	case errors.Is(err, app.ErrRateLimited):
 		renderCallback(w, http.StatusTooManyRequests, "", "Too many sign-in attempts. Try again later.")
 	default:

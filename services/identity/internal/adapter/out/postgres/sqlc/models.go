@@ -71,6 +71,13 @@ type IdentityPasswordChangeNotice struct {
 	DeliveredAt    pgtype.Timestamptz
 }
 
+type IdentityProviderLink struct {
+	Provider        string
+	ProviderSubject string
+	AccountSubject  string
+	CreatedAt       pgtype.Timestamptz
+}
+
 type IdentityProviderLoginAttempt struct {
 	ID                    pgtype.UUID
 	Provider              string
@@ -88,6 +95,8 @@ type IdentityProviderLoginAttempt struct {
 	ProviderEmailVerified pgtype.Bool
 	ProviderHostedDomain  pgtype.Text
 	HandoffCodeVerifier   []byte
+	HandoffFailures       int16
+	SessionClaimedAt      pgtype.Timestamptz
 }
 
 type IdentityRotatedRefreshToken struct {

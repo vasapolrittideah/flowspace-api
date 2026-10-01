@@ -70,3 +70,7 @@ func (r *ProviderAttemptRepository) FailProviderAttempt(ctx context.Context, att
 	}
 	return sqlc.New(r.pool).FailProviderLoginAttempt(ctx, id)
 }
+
+func (r *ProviderAttemptRepository) RecordFailedProviderHandoff(ctx context.Context, attemptVerifier [32]byte) error {
+	return sqlc.New(r.pool).RecordProviderHandoffFailure(ctx, attemptVerifier[:])
+}

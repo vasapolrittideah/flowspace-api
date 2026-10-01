@@ -8,6 +8,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
@@ -18,34 +20,55 @@ import (
 )
 
 func (h *IdentityHandler) CreatePasswordSession(ctx context.Context, request *identityv1.CreatePasswordSessionRequest) (*identityv1.CreatePasswordSessionResponse, error) {
+	return createSession(ctx, h, &identityv1.CreatePasswordSessionResponse{}, request == nil, h.passwordLogin != nil, "password login unavailable",
+		func(ctx context.Context, source string) (inbound.CreatePasswordSessionResult, error) {
+			return h.passwordLogin.CreatePasswordSession(ctx, inbound.CreatePasswordSessionInput{
+				Email: request.GetEmail(), Password: request.GetPassword(), Source: source,
+			})
+		}, passwordLoginRPCError)
+}
+
+// createSession applies the shared checks of an unauthenticated
+// session-creating RPC. It calls create with the source address under a
+// five-second deadline, maps its error with rpcError, and fills response.
+func createSession[T proto.Message](ctx context.Context, h *IdentityHandler, response T, missing, available bool, unavailable string,
+	create func(context.Context, string) (inbound.CreatePasswordSessionResult, error), rpcError func(error) error,
+) (T, error) {
+	var none T
 	if len(metadata.ValueFromIncomingContext(ctx, "idempotency-key")) != 0 {
-		return nil, invalidSignupArgument("idempotency_key", "is not supported")
+		return none, invalidSignupArgument("idempotency_key", "is not supported")
 	}
-	if request == nil {
-		return nil, invalidSignupArgument("request", "is required")
+	if missing {
+		return none, invalidSignupArgument("request", "is required")
 	}
 	source, err := h.sourceAddress(ctx)
 	if err != nil {
-		return nil, err
+		return none, err
 	}
-	if h.passwordLogin == nil {
-		return nil, status.Error(codes.Unavailable, "password login unavailable")
+	if !available {
+		return none, status.Error(codes.Unavailable, unavailable)
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	result, err := h.passwordLogin.CreatePasswordSession(ctx, inbound.CreatePasswordSessionInput{
-		Email: request.GetEmail(), Password: request.GetPassword(), Source: source,
-	})
+	result, err := create(ctx, source)
 	if err != nil {
-		return nil, passwordLoginRPCError(err)
+		return none, rpcError(err)
 	}
-	return &identityv1.CreatePasswordSessionResponse{
-		Subject: result.Subject, EmailVerified: &result.EmailVerified,
-		AccessToken: result.AccessToken, RefreshToken: result.RefreshToken,
-		AccessTokenExpiresAt:  timestamppb.New(result.AccessTokenExpiresAt),
-		RefreshTokenExpiresAt: timestamppb.New(result.RefreshTokenExpiresAt),
-		SessionExpiresAt:      timestamppb.New(result.SessionExpiresAt),
-	}, nil
+	// Password and provider session responses share these field names.
+	message := response.ProtoReflect()
+	fields := message.Descriptor().Fields()
+	for name, value := range map[protoreflect.Name]protoreflect.Value{
+		"subject":                  protoreflect.ValueOfString(result.Subject),
+		"email_verified":           protoreflect.ValueOfBool(result.EmailVerified),
+		"access_token":             protoreflect.ValueOfString(result.AccessToken),
+		"refresh_token":            protoreflect.ValueOfString(result.RefreshToken),
+		"access_token_expires_at":  protoreflect.ValueOfMessage(timestamppb.New(result.AccessTokenExpiresAt).ProtoReflect()),
+		"refresh_token_expires_at": protoreflect.ValueOfMessage(timestamppb.New(result.RefreshTokenExpiresAt).ProtoReflect()),
+		"session_expires_at":       protoreflect.ValueOfMessage(timestamppb.New(result.SessionExpiresAt).ProtoReflect()),
+	} {
+		message.Set(fields.ByName(name), value)
+	}
+	return response, nil
 }
 
 func (h *IdentityHandler) RefreshSession(ctx context.Context, request *identityv1.RefreshSessionRequest) (*identityv1.RefreshSessionResponse, error) {

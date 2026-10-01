@@ -60,3 +60,32 @@ func (h *IdentityHandler) StartProviderLogin(ctx context.Context, request *ident
 		AttemptExpiresAt: timestamppb.New(result.ExpiresAt),
 	}, nil
 }
+
+func (h *IdentityHandler) CreateProviderSession(ctx context.Context, request *identityv1.CreateProviderSessionRequest) (*identityv1.CreateProviderSessionResponse, error) {
+	return createSession(ctx, h, &identityv1.CreateProviderSessionResponse{}, request == nil, h.providerLogin != nil, "provider login unavailable",
+		func(ctx context.Context, source string) (inbound.CreateProviderSessionResult, error) {
+			return h.providerLogin.CreateProviderSession(ctx, inbound.CreateProviderSessionInput{
+				AttemptToken: request.GetAttemptToken(), HandoffCode: request.GetHandoffCode(), Source: source,
+			})
+		}, providerSessionRPCError)
+}
+
+func providerSessionRPCError(err error) error {
+	switch {
+	case errors.Is(err, domain.ErrInvalidAttemptToken):
+		return invalidSignupArgument("attempt_token", "is invalid")
+	case errors.Is(err, domain.ErrInvalidHandoffCode):
+		return invalidSignupArgument("handoff_code", "is invalid")
+	case errors.Is(err, app.ErrProviderHandoffRejected):
+		return status.Error(codes.Unauthenticated, "invalid provider handoff")
+	case errors.Is(err, app.ErrProviderAccountUnavailable):
+		return status.Error(codes.FailedPrecondition,
+			"Unable to complete provider login. Check the provider email or sign in through another method to link the provider.")
+	case errors.Is(err, app.ErrRateLimited):
+		return status.Error(codes.ResourceExhausted, "provider session limit exceeded")
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return status.FromContextError(err).Err()
+	default:
+		return status.Error(codes.Unavailable, "provider login unavailable")
+	}
+}

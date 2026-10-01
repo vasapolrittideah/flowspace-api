@@ -59,6 +59,11 @@ func TestPasswordLoginRESTAndSafeFailures(t *testing.T) {
 	if response.Code != http.StatusOK || response.Header().Get("Cache-Control") != "no-store" || service.input.Source != "192.0.2.1" || !strings.Contains(response.Body.String(), `"refreshToken":"refresh"`) {
 		t.Fatalf("REST login status = %d", response.Code)
 	}
+	for _, field := range []string{`"subject":"subject"`, `"emailVerified":true`, `"accessToken":"access"`, `"accessTokenExpiresAt"`, `"refreshTokenExpiresAt"`, `"sessionExpiresAt"`} {
+		if !strings.Contains(response.Body.String(), field) {
+			t.Fatalf("REST login response lacks %s", field)
+		}
+	}
 	service.err = app.ErrInvalidCredentials
 	response = httptest.NewRecorder()
 	rest.ServeHTTP(response, request())

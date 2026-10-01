@@ -37,3 +37,30 @@ WHERE id = sqlc.arg(id)
   AND state_consumed_at IS NOT NULL
   AND failed_at IS NULL
   AND handoff_code_verifier IS NULL;
+
+-- name: ClaimProviderLoginResult :one
+UPDATE identity_provider_login_attempts
+SET session_claimed_at = statement_timestamp()
+WHERE attempt_token_verifier = sqlc.arg(attempt_token_verifier)
+  AND handoff_code_verifier = sqlc.arg(handoff_code_verifier)
+  AND session_claimed_at IS NULL
+  AND handoff_failures < 5
+  AND expires_at > statement_timestamp()
+RETURNING provider, provider_subject;
+
+-- name: RecordProviderHandoffFailure :exec
+UPDATE identity_provider_login_attempts
+SET handoff_failures = handoff_failures + 1
+WHERE attempt_token_verifier = sqlc.arg(attempt_token_verifier)
+  AND session_claimed_at IS NULL
+  AND handoff_failures < 5
+  AND expires_at > statement_timestamp();
+
+-- name: GetLinkedAccountForUpdate :one
+SELECT account.subject, account.email_verified_at
+FROM identity_provider_links AS link
+JOIN identity_accounts AS account ON account.subject = link.account_subject
+WHERE link.provider = sqlc.arg(provider)
+  AND link.provider_subject = sqlc.arg(provider_subject)
+  AND account.retired_at IS NULL
+FOR UPDATE OF account;

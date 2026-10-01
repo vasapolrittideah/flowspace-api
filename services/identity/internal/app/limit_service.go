@@ -40,6 +40,11 @@ func (l *LimitService) ProviderCallback(ctx context.Context, source string) erro
 	return l.record(ctx, "source", source, "provider-callback", 120, 0, 0)
 }
 
+// ProviderSessionFailure counts a rejected provider handoff from a source.
+func (l *LimitService) ProviderSessionFailure(ctx context.Context, source string) error {
+	return l.record(ctx, "source", source, "provider-session-failure", 100, 0, 0)
+}
+
 func (l *LimitService) PasswordRecoveryEmail(ctx context.Context, email string, key []byte) error {
 	return l.passwordRecoveryEmail(ctx, email, key, "code-request", 60, 0)
 }

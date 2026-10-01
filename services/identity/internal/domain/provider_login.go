@@ -61,6 +61,13 @@ func NewProviderHandoffCode() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(random), nil
 }
 
+// ValidProviderSecret reports whether value has the canonical format of an
+// issued attempt token or handoff code.
+func ValidProviderSecret(value string) bool {
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	return err == nil && len(decoded) == 32
+}
+
 // ProviderCodeChallenge returns the PKCE S256 challenge for a code verifier.
 func ProviderCodeChallenge(verifier string) string {
 	digest := sha256.Sum256([]byte(verifier))

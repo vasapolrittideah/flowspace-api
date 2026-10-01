@@ -63,32 +63,6 @@ Status: Draft
 
 The [section forms](#section-forms) state how to write each section.
 
-## Rules
-
-### Modules and files
-
-- Write the capability name in the title and the module ID from the file name in the header.
-- A module is one capability that can be tested on its own. Write its ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
-- Save one specification as `docs/specs/<module-id>.md`, and add each module to the [specification index](../specs/README.md).
-- If one piece of work needs several modules, add a row for each module to the index with the `Planned` status before you write the first specification. Name the dependencies of each row. The maintainer reviews this map in its own PR.
-
-### Sections
-
-- Use the sections through `Success criteria` in the template order.
-- Add either optional final section only when the capability needs it. Add a new top-level section to this convention before you use it in a specification.
-- Put implementation locations and commands in the plan and its Issues. Repeat a project-wide rule only when it changes observable behavior or completion criteria. Put project-wide rules in their source documents.
-
-### Status and approval
-
-- The status is `Planned`, `Draft`, `Approved`, or `Implemented`, and it matches the status in the [specification index](../specs/README.md).
-- `Planned` means that the module is in the index and has no specification file yet. `Draft` means that the specification exists and is not approved. A `Draft` specification can merge into `main`, but it does not permit planning.
-- Only the maintainer approves a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope>): approve <capability> spec`. An agent changes the status to `Approved` only when the maintainer asks for it in chat or in the PR review.
-- Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.
-- An approved specification permits planning.
-- If a change to an approved or implemented specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification needs a new approval PR. A change that only corrects wording keeps the status.
-- Change the status to `Implemented` in the PR that proves the last success criterion.
-- Keep each `Implemented` specification in the format that it had when it was implemented.
-
 ## Section forms
 
 Each subsection states what a section contains and the form in which to write it.
@@ -209,6 +183,32 @@ Write the assumptions that the specification makes and the decisions that are no
 ### Readiness for real teams
 
 Write the checks that this capability must pass before Flowspace stops using disposable data under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md) and the [architecture](../architecture.md#observability-and-recovery). List only checks that belong to this capability, and link the architecture for checks that apply to the whole system.
+
+## Rules
+
+### Modules and files
+
+- Write the capability name in the title and the module ID from the file name in the header.
+- A module is one capability that can be tested on its own. Write its ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
+- Save one specification as `docs/specs/<module-id>.md`, and add each module to the [specification index](../specs/README.md).
+- If one piece of work needs several modules, add a row for each module to the index with the `Planned` status before you write the first specification. Name the dependencies of each row. The maintainer reviews this map in its own PR.
+
+### Sections
+
+- Use the sections through `Success criteria` in the template order.
+- Add either optional final section only when the capability needs it. Add a new top-level section to this convention before you use it in a specification.
+- Put implementation locations and commands in the plan and its Issues. Repeat a project-wide rule only when it changes observable behavior or completion criteria. Put project-wide rules in their source documents.
+
+### Status and approval
+
+- The status is `Planned`, `Draft`, `Approved`, or `Implemented`, and it matches the status in the [specification index](../specs/README.md).
+- `Planned` means that the module is in the index and has no specification file yet. `Draft` means that the specification exists and is not approved. A `Draft` specification can merge into `main`, but it does not permit planning.
+- Only the maintainer approves a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope>): approve <capability> spec`. An agent changes the status to `Approved` only when the maintainer asks for it in chat or in the PR review.
+- Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.
+- An approved specification permits planning.
+- If a change to an approved or implemented specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification needs a new approval PR. A change that only corrects wording keeps the status.
+- Change the status to `Implemented` in the PR that proves the last success criterion.
+- Keep each `Implemented` specification in the format that it had when it was implemented.
 
 ## Differences from the spec-driven-development skill
 

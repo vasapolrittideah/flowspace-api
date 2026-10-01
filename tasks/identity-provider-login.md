@@ -52,10 +52,10 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Google login
 
-- [ ] A linked Google identity returns to the same subject even when its provider email changes or is absent.
-- [ ] A new Google identity creates one account, link, and session; Gmail and Google Workspace email rules set the correct Flowspace verification state.
-- [ ] A new account with a verified third-party Google email receives a Flowspace verification code, and Workspace denies access until that code is used.
-- [ ] Email collisions, missing proof, concurrent claims, and lost responses leave no duplicate account or replayed token.
+- [x] A linked Google identity returns to the same subject even when its provider email changes or is absent.
+- [x] A new Google identity creates one account, link, and session; Gmail and Google Workspace email rules set the correct Flowspace verification state.
+- [x] A new account with a verified third-party Google email receives a Flowspace verification code, and Workspace denies access until that code is used.
+- [x] Email collisions, missing proof, concurrent claims, and lost responses leave no duplicate account or replayed token.
 
 ### Phase 3: GitHub login and completion checks
 

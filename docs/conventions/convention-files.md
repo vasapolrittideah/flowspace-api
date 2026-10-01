@@ -44,7 +44,7 @@ This convention defines the sections of each file in `docs/conventions/` and how
 - Start with one optional sentence that introduces the format. Then put the format in a code block with the language of the artifact, such as `markdown` or `text`.
 - In the code block, write fixed text as it appears in the artifact, such as `## Context`. Write each variable part as a placeholder in angle brackets.
 - Write each placeholder as a lowercase noun phrase without a final period. State only what the part is, such as `<facts and limits that exist before the decision>`. For an optional part, end the placeholder with `, if any`.
-- After the code block, write one `###` subsection for each part, in template order, even when the part has only one rule. Use the name of the part from the template as the heading, such as "Context" or "Title". If the name repeats another heading in the convention file, add "section" after it, such as "Rules section".
+- After the code block, write one `###` subsection for each part, in template order, even when the part has only one rule. Use the name of the part from the template as the heading, such as "Context" or "Title". If the name repeats another heading in the convention file, add a word that tells the headings apart, such as "Rules section" or "Result gaps".
 - In each subsection, write only bullets, with one rule in each bullet. Start each bullet with a verb, such as "Write", "Put", "Use", "Link", or "Omit". If a rule has a condition, state the condition first.
 - Order the bullets in each subsection: placement and format first, then the order and structure of the content, then allowed values and links, and then the rules that start with "Do not".
 - If a part contains a table, add a `####` subsection for the table under the part. Write bullets for the whole table, and then a table with the columns `Column` and `How to write` that has one row for each column of the described table.
@@ -58,6 +58,7 @@ This convention defines the sections of each file in `docs/conventions/` and how
 ### Special-case sections
 
 - Name the situation in the heading, such as the [gap comment](github-issues.md#gap-comment) in the Issue convention.
+- Describe the procedure and the rules for the whole special case in paragraphs before its format.
 - If the special case has a fixed format, write the format and its parts as the [Template section](#template-section) states.
 
 ### Reference section

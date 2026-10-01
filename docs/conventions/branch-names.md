@@ -5,11 +5,16 @@ This convention defines branch names for one reviewable change outside `main`.
 ## Template
 
 ```text
-<type>/<short-description>
+<type of change>/<short description of the change>
 ```
 
-- Type: Select a [commit type](commit-messages.md#types).
-- Short description: Lowercase words separated by hyphens.
+### Type
+
+- Use a [commit type](commit-messages.md#types).
+
+### Short description
+
+- Write lowercase words separated by hyphens.
 
 ## Rules
 

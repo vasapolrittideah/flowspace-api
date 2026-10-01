@@ -32,11 +32,14 @@ This capability excludes these items:
 
 These decisions apply:
 
+- [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md): telemetry stored on the single host is disposable.
+- [ADR-0026](../adr/0026-an-outbound-tunnel-exposes-selected-routes.md): the outbound tunnel exposes only selected routes, so telemetry components get no route.
+- [ADR-0027](../adr/0027-git-contains-only-encrypted-kubernetes-secrets.md): the Grafana admin password is an encrypted Kubernetes secret in Git.
 - [ADR-0028](../adr/0028-telemetry-is-vendor-neutral-and-correlated.md): services emit vendor-neutral telemetry and carry trace context across synchronous calls and events.
 - [ADR-0029](../adr/0029-the-observability-stack-is-self-hosted.md): the stack is self-hosted and grows one component at a time.
 - [ADR-0030](../adr/0030-telemetry-is-bounded-and-non-blocking.md): telemetry is bounded and never blocks requests.
-- [ADR-0037](../adr/0037-local-logs-and-traces-use-disposable-single-host-stores.md): collection paths, storage, retention, sampling, and Grafana access for `local`.
 - [ADR-0036](../adr/0036-authenticate-internal-session-checks-with-mutual-tls.md): the session check uses a separate mutual TLS listener.
+- [ADR-0037](../adr/0037-local-logs-and-traces-use-disposable-single-host-stores.md): collection paths, storage, retention, sampling, and Grafana access for `local`.
 
 ## Contract
 
@@ -83,7 +86,7 @@ Each Identity event record carries the W3C `traceparent` and, when present, `tra
 
 ### Configuration
 
-Each process reads standard OpenTelemetry environment variables. `OTEL_EXPORTER_OTLP_ENDPOINT` names the Alloy OTLP gRPC endpoint. `OTEL_TRACES_SAMPLER` is `parentbased_traceidratio`, and `OTEL_TRACES_SAMPLER_ARG` is `1.0` in `local`. If the endpoint is not set, the process starts and exports no spans.
+Each process reads standard OpenTelemetry environment variables. `OTEL_EXPORTER_OTLP_ENDPOINT` names the Alloy OTLP gRPC endpoint. `OTEL_TRACES_SAMPLER` is `parentbased_traceidratio`, and `OTEL_TRACES_SAMPLER_ARG` is `1.0` in `local`.
 
 ## Behavior
 
@@ -106,6 +109,7 @@ Apply ADR-0037 to each process:
 
 - Use a batch span processor with a queue of 2048 spans. When the queue is full, drop new spans.
 - Limit each export to 10 seconds. A request never waits for an export.
+- If `OTEL_EXPORTER_OTLP_ENDPOINT` is not set, the process starts and exports no spans.
 - If Alloy or Tempo is unavailable at startup or later, the process starts and serves requests. The process does not retry export without a limit.
 - On shutdown, flush spans within the existing shutdown time, then stop. A flush that does not finish in time drops the remaining spans.
 
@@ -116,12 +120,17 @@ The `local` overlay adds Alloy, Loki, Tempo, and Grafana. Apply these rules:
 - Alloy reads the logs of Flowspace application pods through the Kubernetes API, parses the JSON, sets the Loki labels, and sends the lines to Loki. Lines that are not JSON keep their text and labels.
 - Alloy receives OTLP over gRPC on a cluster-only Service and sends the spans to Tempo.
 - Loki and Tempo each run one single-binary replica on a 5Gi node-local volume. Loki keeps logs for 7 days, and Tempo keeps traces for 3 days.
-- Each telemetry component has CPU and memory requests and limits. Record the measured use after the first full run in the plan.
-- NetworkPolicy allows the Alloy OTLP port only from Flowspace application pods. Loki and Tempo accept connections only from Alloy and Grafana.
+- Each telemetry component has CPU and memory requests and limits.
 
 ### Grafana
 
-Git provisions the Loki and Tempo data sources. A log line links to its trace through `trace_id`, and a trace links back to its logs. Grafana has no persistent volume and no anonymous access. Its admin password comes from a Sealed Secret under [ADR-0027](../adr/0027-git-contains-only-encrypted-kubernetes-secrets.md). Developers open Grafana only with `kubectl port-forward`. The tunnel has no route to any telemetry component.
+Git provisions the Loki and Tempo data sources. A log line links to its trace through `trace_id`, and a trace links back to its logs. Grafana has no persistent volume.
+
+### Security and abuse
+
+- NetworkPolicy allows the Alloy OTLP port only from Flowspace application pods. Loki and Tempo accept connections only from Alloy and Grafana.
+- Grafana has no anonymous access. Its admin password comes from a Sealed Secret under ADR-0027.
+- Developers open Grafana only with `kubectl port-forward`. The tunnel has no route to any telemetry component.
 
 ### Data and compatibility
 
@@ -143,13 +152,17 @@ Subject IDs and session IDs are allowed in log fields only where a line already 
 
 | Risk | Test level | Environment |
 | --- | --- | --- |
-| A process fails to start or serve requests when Alloy is missing or unreachable | Unit, Cluster | None, Local cluster |
+| A process fails to start or serve requests when Alloy is missing or unreachable | Unit | None |
+| A process fails to start or serve requests when Alloy is stopped in the cluster | Cluster | Local cluster |
 | The sampler or resource attributes ignore the environment configuration | Unit | None |
 | A server span ignores the incoming `traceparent`, has an unbounded name, or has a different `trace_id` from its log line | Unit | None |
 | The Workspace `CheckSession` call drops `traceparent` or `x-request-id`, or Identity does not continue them | Unit | None |
 | The outbox loses trace context at commit, or the relay and email worker do not continue it | Integration | Docker |
-| A log line or span contains a token, password, code, or email address | Unit, Cluster | None, Local cluster |
+| A log line or span contains a token, password, code, or email address | Unit | None |
+| A stored log line, span, or Loki label contains a token, password, code, or email address | Cluster | Local cluster |
 | A request waits for span export | Unit | None |
+| A Loki label takes unbounded values such as request IDs, trace IDs, or paths | Cluster | Local cluster |
+| A telemetry component is reachable outside the cluster | Cluster | Local cluster |
 | Logs and traces of one request cannot be found together in Grafana | Cluster | Local cluster |
 
 ## Implementation boundaries
@@ -159,6 +172,7 @@ Subject IDs and session IDs are allowed in log fields only where a line already 
 - Add the outbox columns in a new migration file. Do not edit an existing migration.
 - Extend the shared logging and request ID packages instead of adding a second logger or request ID helper.
 - Add each telemetry component to the `local` overlay so that Tilt applies it with the services.
+- Record the measured CPU and memory use of each telemetry component in the plan after the first full run.
 
 ### Ask first
 
@@ -184,4 +198,4 @@ Subject IDs and session IDs are allowed in log fields only where a line already 
 8. Given requests carry known token, password, code, and email values, When their logs and traces are stored, Then no stored log line, span, or Loki label contains those values.
 9. Given the stack has run for a test period, When a developer lists the Loki label names and values, Then the only labels are `service`, `environment`, `namespace`, and the labels that Loki adds itself, and no label value is a request ID, trace ID, or path.
 10. Given the stack runs in `local`, When a developer lists the routes of the tunnel and the Services of the cluster, Then no telemetry component has a tunnel route, and Grafana answers only through `kubectl port-forward`.
-11. Given the Loki and Tempo manifests, When a reviewer reads them, Then each store has one replica, a 5Gi node-local volume, the ADR-0037 retention, and CPU and memory limits.
+11. Given the stack runs in `local`, When a developer lists the Loki and Tempo pods and volumes, Then each store has one running replica with a bound 5Gi volume, and its configured retention is 7 days for Loki and 3 days for Tempo.

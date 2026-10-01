@@ -59,8 +59,6 @@ Each application log line is one JSON object on standard output. The `msg` field
 
 A request line is a line that a service writes while it handles one inbound request. An event line is a line that the worker or the outbox relay writes while it handles one event.
 
-### Log labels in Loki
-
 Loki stores `service`, `environment`, and `namespace` as labels. All other fields, including `request_id` and `trace_id`, stay in the log line. A developer filters them with a LogQL JSON parser. Loki never stores a request ID, trace ID, subject, or path as a label.
 
 ### Trace resources and spans
@@ -80,11 +78,9 @@ A server span name is a bounded operation name, such as the HTTP method and rout
 
 A server span records `http.request.method`, `http.route`, and `http.response.status_code` for HTTP. It records `rpc.method` and `rpc.grpc.status_code` for gRPC. A span has the error status when the HTTP status is 5xx or the gRPC code is `Internal`, `Unavailable`, `DeadlineExceeded`, or `Unknown`.
 
-### Request metadata
+### Trace context propagation
 
 The Workspace `CheckSession` call carries `traceparent`, `tracestate` when present, and `x-request-id` as gRPC metadata. Identity reads them on its internal listener.
-
-### Event headers
 
 Each Identity event record carries the W3C `traceparent` and, when present, `tracestate` headers of the request or relay span that produced it.
 
@@ -100,7 +96,7 @@ Apply these rules in each process:
 
 - Write `trace_id` on every request and event line when the context has a valid span. This includes `identity_rpc`, `identity_session_check`, and the Workspace `request_completed` line, which do not have it now.
 - Write the same `trace_id` in the log line and in the span of one request.
-- Forward `x-request-id` and `traceparent` on the Workspace `CheckSession` call. Identity writes the forwarded request ID on its `identity_session_check` line.
+- Write the request ID that Workspace forwards on the Identity `identity_session_check` line.
 - Keep the request ID rules of the [architecture](../architecture.md#observability-and-recovery). Do not replace a valid request ID with a trace ID.
 
 ### Context in the outbox
@@ -125,10 +121,7 @@ The `local` overlay adds Alloy, Loki, Tempo, and Grafana. Apply these rules:
 - Alloy receives OTLP over gRPC on a cluster-only Service and sends the spans to Tempo.
 - Loki and Tempo each run one single-binary replica on a 5Gi node-local volume. Loki keeps logs for 7 days, and Tempo keeps traces for 3 days.
 - Each telemetry component has CPU and memory requests and limits.
-
-### Grafana
-
-Git provisions the Loki and Tempo data sources. A log line links to its trace through `trace_id`, and a trace links back to its logs. Grafana has no persistent volume.
+- Git provisions the Loki and Tempo data sources in Grafana. A log line links to its trace through `trace_id`, and a trace links back to its logs. Grafana has no persistent volume.
 
 ### Security and abuse
 

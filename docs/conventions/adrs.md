@@ -33,28 +33,25 @@ Status: <current state of the decision>
 
 ## Sources
 
-- [<external document that the decision depends on>](<url>)
+<external documents that the decision depends on, if any>
 ```
-
-The [section forms](#section-forms) state how to write each section.
-
-## Section forms
-
-Each subsection states how to write one section.
 
 ### Title
 
-- Write the record number with four digits. Write the decision as a sentence in the present tense, such as "Relational data uses explicit SQL". Do not write only a topic, such as "Database choice".
-- Start the sentence with the thing that the decision controls, not with a verb.
+- Write the record number with four digits.
+- Write the decision as a sentence in the present tense, such as "Relational data uses explicit SQL". Start the sentence with the thing that the decision controls, not with a verb.
+- Do not write only a topic, such as "Database choice".
 
 ### Date
 
-- Write the date in `YYYY-MM-DD` format. Put the line directly after the title, separated by a blank line.
+- Put the line directly after the title, separated by a blank line.
+- Write the date in `YYYY-MM-DD` format.
 - Do not change the date when the status changes.
 
 ### Status
 
-- Write one [status value](#status-values). Put the line after `Date`, separated by a blank line.
+- Put the line after `Date`, separated by a blank line.
+- Write one [status value](#status-values).
 - Link each `ADR-<NNNN>` in the value to the file of that record.
 - Write the same value in the `Status` column of the index. In the index, use only the record number as the link text, such as `0031` instead of `ADR-0031`.
 
@@ -74,8 +71,10 @@ Each subsection states how to write one section.
 ### Alternatives Considered
 
 - Write at least one alternative. Name the option in its `###` heading as a noun phrase.
-- Under each heading, write three bullets in this order: `Pros:`, `Cons:`, and `Rejected:`. Write one sentence after each label. Start it with a lowercase letter unless it starts with a name or code.
-- In `Rejected:`, compare the option with the chosen decision. Do not repeat the `Cons:` text.
+- Under each heading, write three bullets in this order: `Pros:`, `Cons:`, and `Rejected:`.
+- Write one sentence after each label. Start it with a lowercase letter unless it starts with a name or code.
+- In `Rejected:`, compare the option with the chosen decision.
+- Do not repeat the `Cons:` text in `Rejected:`.
 
 ### Consequences
 

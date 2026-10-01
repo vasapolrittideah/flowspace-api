@@ -185,12 +185,15 @@ func TestWorkerRejectsInvalidConfiguration(t *testing.T) {
 	}
 }
 
-const mountedGoogleFile = "/keys/google/client-secret"
+const (
+	mountedGoogleFile = "/keys/google/client-secret"
+	mountedGitHubFile = "/keys/github/client-secret"
+)
 
 func TestProviderClientsUseExactCallbackURLs(t *testing.T) {
 	clients, err := providerClients(APIConfig{
 		Environment: "production", GoogleClientID: "google-client", GoogleClientSecretFile: mountedGoogleFile,
-		GitHubClientID: "github-client", ProviderCallbackBaseURL: "https://api.example.com/",
+		GitHubClientID: "github-client", GitHubClientSecretFile: mountedGitHubFile, ProviderCallbackBaseURL: "https://api.example.com/",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -203,7 +206,9 @@ func TestProviderClientsUseExactCallbackURLs(t *testing.T) {
 		t.Fatalf("clients = %v", clients)
 	}
 
-	clients, err = providerClients(APIConfig{Environment: "local", GitHubClientID: "github-client", ProviderCallbackBaseURL: "http://localhost:8080"})
+	clients, err = providerClients(APIConfig{
+		Environment: "local", GitHubClientID: "github-client", GitHubClientSecretFile: mountedGitHubFile, ProviderCallbackBaseURL: "http://localhost:8080",
+	})
 	if err != nil || len(clients) != 1 || clients[domain.ProviderGitHub].CallbackURL != "http://localhost:8080/v1/provider-login-callbacks/github" {
 		t.Fatalf("local GitHub client = %v, %v", clients, err)
 	}
@@ -219,6 +224,7 @@ func TestProviderClientsRejectUnsafeCallbackBase(t *testing.T) {
 	}{
 		{"missing base", APIConfig{Environment: "local", GoogleClientID: "google-client", GoogleClientSecretFile: mountedGoogleFile}},
 		{"Google client without secret file", APIConfig{Environment: "local", GoogleClientID: "google-client", ProviderCallbackBaseURL: "https://api.example.com"}},
+		{"GitHub client without secret file", APIConfig{Environment: "local", GitHubClientID: "github-client", ProviderCallbackBaseURL: "https://api.example.com"}},
 		{"base without client", APIConfig{Environment: "local", ProviderCallbackBaseURL: "https://api.example.com"}},
 		{"plain HTTP outside local", APIConfig{Environment: "production", GoogleClientID: "google-client", GoogleClientSecretFile: mountedGoogleFile, ProviderCallbackBaseURL: "http://api.example.com"}},
 		{"relative", APIConfig{Environment: "local", GoogleClientID: "google-client", GoogleClientSecretFile: mountedGoogleFile, ProviderCallbackBaseURL: "/callbacks"}},
@@ -250,14 +256,20 @@ func TestLoadAPIConfigLoadsProviderClients(t *testing.T) {
 	}
 	t.Setenv("GOOGLE_CLIENT_ID", "google-client")
 	t.Setenv("GOOGLE_CLIENT_SECRET_FILE", secretFile)
+	t.Setenv("GITHUB_CLIENT_ID", "github-client")
+	t.Setenv("GITHUB_CLIENT_SECRET_FILE", writeFile(t, "github-secret-value\n"))
 	t.Setenv("PROVIDER_CALLBACK_BASE_URL", "http://localhost:8080")
 	config, err := LoadAPIConfig()
 	if err != nil || config.providers[domain.ProviderGoogle].CallbackURL != "http://localhost:8080/v1/provider-login-callbacks/google" ||
-		config.GoogleClientSecret != "google-secret-value" {
+		config.providers[domain.ProviderGitHub].CallbackURL != "http://localhost:8080/v1/provider-login-callbacks/github" ||
+		config.GoogleClientSecret != "google-secret-value" || config.GitHubClientSecret != "github-secret-value" {
 		t.Fatalf("providers = %v, %v", config.providers, err)
 	}
 	if formatted := fmt.Sprintf("%v %+v", config, config); strings.Contains(formatted, "google-secret-value") {
 		t.Fatal("formatted configuration contains the Google client secret")
+	}
+	if formatted := fmt.Sprintf("%v %+v", config, config); strings.Contains(formatted, "github-secret-value") {
+		t.Fatal("formatted configuration contains the GitHub client secret")
 	}
 	t.Setenv("PROVIDER_CALLBACK_BASE_URL", "")
 	if _, err := LoadAPIConfig(); err == nil {
@@ -268,6 +280,13 @@ func TestLoadAPIConfigLoadsProviderClients(t *testing.T) {
 		t.Setenv("GOOGLE_CLIENT_SECRET_FILE", invalid)
 		if _, err := LoadAPIConfig(); err == nil {
 			t.Fatalf("accepted Google client secret file %q", invalid)
+		}
+	}
+	t.Setenv("GOOGLE_CLIENT_SECRET_FILE", secretFile)
+	for _, invalid := range []string{"", filepath.Join(t.TempDir(), "missing"), writeFile(t, "  \n")} {
+		t.Setenv("GITHUB_CLIENT_SECRET_FILE", invalid)
+		if _, err := LoadAPIConfig(); err == nil {
+			t.Fatalf("accepted GitHub client secret file %q", invalid)
 		}
 	}
 }

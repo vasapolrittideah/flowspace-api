@@ -30,6 +30,7 @@ import (
 	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/github"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/google"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/hibp"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
@@ -197,6 +198,11 @@ func providerLoginClients(ctx context.Context, config APIConfig) map[domain.Prov
 		client.Identity = google.NewProviderIdentity(ctx, client.ClientID, string(config.GoogleClientSecret), google.DefaultEndpoints,
 			&http.Client{Timeout: 4 * time.Second})
 		clients[domain.ProviderGoogle] = client
+	}
+	if client, configured := clients[domain.ProviderGitHub]; configured {
+		client.Identity = github.NewProviderIdentity(client.ClientID, string(config.GitHubClientSecret), github.DefaultEndpoints,
+			&http.Client{Timeout: 4 * time.Second})
+		clients[domain.ProviderGitHub] = client
 	}
 	return clients
 }

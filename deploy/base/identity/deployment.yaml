@@ -81,6 +81,9 @@ spec:
             - name: google-client
               mountPath: /keys/google
               readOnly: true
+            - name: github-client
+              mountPath: /keys/github
+              readOnly: true
       volumes:
         - name: signing-key
           secret:
@@ -97,6 +100,11 @@ spec:
         - name: google-client
           secret:
             secretName: identity-google-client
+            optional: true
+            defaultMode: 0440
+        - name: github-client
+          secret:
+            secretName: identity-github-client
             optional: true
             defaultMode: 0440
 ---

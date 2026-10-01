@@ -11,7 +11,7 @@ A specification has the following fields and sections:
 
 Module id: `<module-id>`
 
-Status: Draft.
+Status: Draft
 
 ## Objective
 

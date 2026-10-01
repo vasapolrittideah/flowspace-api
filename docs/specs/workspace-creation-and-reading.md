@@ -2,7 +2,7 @@
 
 Module id: `workspace-creation-and-reading`
 
-Status: Approved.
+Status: Implemented.
 
 ## Objective
 

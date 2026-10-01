@@ -100,24 +100,79 @@ Use these forms for information that each specification or each API specificatio
 - Scope and decisions: Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.` Then write excluded work as a bullet list after "This capability excludes these items:". Write each decision as a bullet that starts with a link to the ADR, followed by a colon and what the ADR decides for this capability.
 - Behavior: Put the subsections of the capability first. Then add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
 - Diagnostics: Name the events or fields that the capability records. Then list the values that logs, traces, metrics, and errors must never contain.
-- Testing strategy: Use a table with the columns `Risk`, `Test level`, and `Environment`. In Identity specifications, put the threat IDs in the `Risk` column.
+- Testing strategy: Use the [testing table](#testing-table).
 - Implementation boundaries: Start each item with a verb. Start each `Never` item with "Do not".
+
+#### Testing table
+
+Write one row for each material risk.
+
+| Column | How to write |
+| --- | --- |
+| `Risk` | The failure that the tests must prevent, in one short phrase, such as "A wrong-purpose code verifies an email". In Identity specifications, add the threat IDs in parentheses, such as "(ID-T03, ID-T19)". |
+| `Test level` | One of `Unit`, `Integration`, `Cross-service`, or `Cluster`. If two levels prove the risk, write both, separated by a comma. |
+| `Environment` | What the test level needs to run, such as `None`, `Docker`, or `Local cluster`. Do not write commands. |
 
 ### API contract forms
 
 Start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`." List the ADRs that define Protobuf, REST, versions, and errors in `Scope and decisions`, and do not explain their mechanics again.
 
-Use these tables in this order. Keep the rows of `Methods` and `Method requirements` in the same RPC order.
+Use these tables in this order: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, and `Errors`. Omit a table that has no rows. Keep the rows of `Methods` and `Method requirements` in the same RPC order.
 
-| Table | Columns | Rules |
-| --- | --- | --- |
-| Methods | `RPC`, `Public HTTP route`, `Request fields`, `Response fields` | Write the route as `METHOD /v1/<path>`, or `None (internal)` for an internal RPC. Write Protobuf field names in backticks, separated by commas, or `None`. Mark a required request field with `(required)`. |
-| Method requirements | `RPC`, `Authentication`, `Retry` | Use only the [method requirement values](#method-requirement-values). Link an ADR in a cell only when the value comes from an exception or a capability-specific decision. |
-| HTTP-only endpoints | `Endpoint`, `Public HTTP route`, `Authentication`, `Request`, `Response` | Use this table only for endpoints that are not RPCs, such as a provider callback. |
-| Resource fields | `Protobuf field`, `JSON field`, `Meaning` | Use this table for each resource that a method returns. Define each response field here, not in `Methods`. |
-| Errors | `Condition`, `gRPC status`, `HTTP status` | Write one row for each condition that a client can tell apart. |
+Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
 
-Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`. If a retry value depends on a condition, state the condition in `Behavior`.
+#### Methods
+
+Write one row for each RPC.
+
+| Column | How to write |
+| --- | --- |
+| `RPC` | The RPC name in backticks, such as `` `CreateWorkspace` ``. |
+| `Public HTTP route` | The HTTP method and path in backticks, such as `` `POST /v1/workspaces` ``. Write path parameters in braces. Write `None (internal)` for an RPC that has no public route. |
+| `Request fields` | The Protobuf field names in backticks, separated by commas. Add `(required)` after each required field. Write `None` when the request has no fields. Do not name the request message or describe credentials. |
+| `Response fields` | The Protobuf field names in backticks, separated by commas. Write `None` when the response has no fields. Do not name the response message or the HTTP status. Define the fields in `Resource fields` or `Behavior`. |
+
+#### Method requirements
+
+Write one row for each RPC, in the order of `Methods`.
+
+| Column | How to write |
+| --- | --- |
+| `RPC` | The RPC name in backticks, as in `Methods`. |
+| `Authentication` | One [authentication value](#method-requirement-values). Add an ADR link only when the value comes from an exception or a capability-specific decision, such as `Service mTLS` under ADR-0036. |
+| `Retry` | One [retry value](#method-requirement-values). Add the ADR link for `Rejects Idempotency-Key`. If the value depends on a condition, state the condition in `Behavior`. |
+
+#### HTTP-only endpoints
+
+Use this table only for endpoints that are not RPCs, such as a provider callback. Write one row for each endpoint.
+
+| Column | How to write |
+| --- | --- |
+| `Endpoint` | A short name, such as "Provider callback". |
+| `Public HTTP route` | The HTTP method and path in backticks, as in `Methods`. |
+| `Authentication` | One [authentication value](#method-requirement-values). |
+| `Request` | The query parameters, headers, or body fields that the endpoint reads, in backticks. |
+| `Response` | What the endpoint returns, such as a redirect or a page, and the values that it contains. |
+
+#### Resource fields
+
+Write one table for each resource that a method returns, and put the resource name in the sentence before the table. Write one row for each field.
+
+| Column | How to write |
+| --- | --- |
+| `Protobuf field` | The Protobuf field name in backticks, such as `` `created_at` ``. |
+| `JSON field` | The JSON name in backticks, such as `` `createdAt` ``. |
+| `Meaning` | What the value is, its format or limits, and `output only` when the server sets it. |
+
+#### Errors
+
+Write one row for each condition that a client can tell apart. Put conditions that return the same status for a security reason in one row.
+
+| Column | How to write |
+| --- | --- |
+| `Condition` | The cause as the client sees it, such as "Missing or invalid authentication". Do not name internal causes. |
+| `gRPC status` | The canonical code in backticks, such as `` `InvalidArgument` ``. Write `Not applicable` when only the REST gateway returns the error. |
+| `HTTP status` | The HTTP status number, such as `400`. |
 
 ## Reference
 

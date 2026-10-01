@@ -12,6 +12,7 @@ import (
 	"encoding/pem"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,10 +31,13 @@ import (
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
 	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
+	deliverycrypto "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
 func testUnusedAddress(t *testing.T) string {
@@ -180,6 +184,7 @@ func TestIdentityPrivateSessionListener(t *testing.T) {
 		t.Fatal(err)
 	}
 	testPasswordResetRevokesPrivateSessionCheck(ctx, t, pool, private)
+	testProviderAccountPrivateSessionCheck(ctx, t, pool, private, signingKey)
 	if _, err := pool.Exec(ctx, `UPDATE identity_accounts SET email_verified_at = NULL, retired_at = statement_timestamp() WHERE subject = 'session-subject'`); err != nil {
 		t.Fatal(err)
 	}
@@ -251,5 +256,86 @@ func testPasswordResetRevokesPrivateSessionCheck(ctx context.Context, t *testing
 	}
 	if _, err := private.CheckSession(callCtx, request); status.Code(err) != codes.Unauthenticated {
 		t.Fatalf("session after reset = %v", err)
+	}
+}
+
+type fixedProviderIdentity outbound.ProviderIdentity
+
+func (f fixedProviderIdentity) VerifyProviderIdentity(context.Context, outbound.ProviderCodeExchange) (outbound.ProviderIdentity, error) {
+	return outbound.ProviderIdentity(f), nil
+}
+
+// testProviderAccountPrivateSessionCheck proves that the private check used by Workspace reports a new GitHub
+// account as unverified until it uses its Flowspace code, and then reports the same subject as verified.
+func testProviderAccountPrivateSessionCheck(ctx context.Context, t *testing.T, pool *pgxpool.Pool, private identityv1.IdentityServiceClient,
+	signingKey ed25519.PrivateKey,
+) {
+	t.Helper()
+	key := bytes.Repeat([]byte{2}, 32)
+	signer, err := token.NewSigner(signingKey, "local-1", "urn:flowspace:identity:local", "flowspace-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	protector, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{3}, 32), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	allow := func(context.Context, string) error { return nil }
+	service := app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), allow, allow, key, map[domain.Provider]app.ProviderClient{
+		domain.ProviderGitHub: {
+			ClientID: "github-client", CallbackURL: "http://localhost:8082/v1/provider-login-callbacks/github",
+			Identity: fixedProviderIdentity{Subject: "9001", Email: "provider-session@example.com", EmailVerified: true},
+		},
+	}).WithSessions(postgres.NewAccountRepository(pool), signer, protector, allow)
+	started, err := service.StartProviderLogin(ctx, inbound.StartProviderLoginInput{Provider: "github", Source: "192.0.2.71"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	authorization, err := url.Parse(started.AuthorizationURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handoff, err := service.CompleteProviderCallback(ctx, inbound.CompleteProviderCallbackInput{
+		Provider: "github", State: authorization.Query().Get("state"), Code: "provider-code", Source: "192.0.2.71",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	session, err := service.CreateProviderSession(ctx, inbound.CreateProviderSessionInput{AttemptToken: started.AttemptToken, HandoffCode: handoff, Source: "192.0.2.71"})
+	if err != nil || session.EmailVerified {
+		t.Fatalf("provider session = %q verified %t, %v", session.Subject, session.EmailVerified, err)
+	}
+	var sessionID, challengeID string
+	var material outbound.DeliveryMaterial
+	if err := pool.QueryRow(ctx, `SELECT session.id::text, challenge.id::text, delivery.key_version, delivery.nonce, delivery.ciphertext
+		FROM identity_sessions AS session
+		JOIN identity_challenges AS challenge ON challenge.account_subject = session.account_subject
+		JOIN identity_challenge_deliveries AS delivery ON delivery.challenge_id = challenge.id
+		WHERE session.account_subject = $1 AND challenge.purpose = 'verify-email'`, session.Subject).
+		Scan(&sessionID, &challengeID, &material.KeyVersion, &material.Nonce, &material.Ciphertext); err != nil {
+		t.Fatal(err)
+	}
+	request := &identityv1.CheckSessionRequest{Subject: session.Subject, SessionId: sessionID}
+	callCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	if response, err := private.CheckSession(callCtx, request); err != nil || response.GetEmailVerified() {
+		t.Fatalf("session check before verification = %+v, %v", response, err)
+	}
+	_, code, err := protector.Open(challengeID, "verify-email", session.Subject, material)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := app.NewEmailVerificationService(postgres.NewAccountRepository(pool), allow, allow, key).VerifyEmail(ctx, inbound.VerifyEmailInput{
+		Subject: session.Subject, SessionID: sessionID, Source: "192.0.2.71", Code: code,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if response, err := private.CheckSession(callCtx, request); err != nil || !response.GetEmailVerified() {
+		t.Fatalf("session check after verification = %+v, %v", response, err)
+	}
+	var linked string
+	if err := pool.QueryRow(ctx, `SELECT account_subject FROM identity_provider_links WHERE provider = 'github' AND provider_subject = '9001'`).
+		Scan(&linked); err != nil || linked != session.Subject {
+		t.Fatalf("linked subject = %q, want %q: %v", linked, session.Subject, err)
 	}
 }

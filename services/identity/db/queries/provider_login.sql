@@ -56,6 +56,10 @@ WHERE attempt_token_verifier = sqlc.arg(attempt_token_verifier)
   AND handoff_failures < 5
   AND expires_at > statement_timestamp();
 
+-- name: DeleteExpiredProviderLoginAttempts :execrows
+DELETE FROM identity_provider_login_attempts
+WHERE expires_at <= statement_timestamp();
+
 -- name: GetLinkedAccountForUpdate :one
 SELECT account.subject, account.email_verified_at
 FROM identity_provider_links AS link

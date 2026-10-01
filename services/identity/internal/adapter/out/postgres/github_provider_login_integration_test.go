@@ -128,6 +128,7 @@ func testGitHubProviderLogin(t *testing.T, ctx context.Context, pool *pgxpool.Po
 			t.Fatalf("verification challenges = %d", n)
 		}
 
+		refreshTokens := map[string]bool{result.RefreshToken: true}
 		for name, emails := range map[string]struct {
 			body   string
 			status int
@@ -140,11 +141,16 @@ func testGitHubProviderLogin(t *testing.T, ctx context.Context, pool *pgxpool.Po
 			if err != nil || again.Subject != result.Subject || again.EmailVerified {
 				t.Fatalf("%s returning login = %q, %v", name, again.Subject, err)
 			}
+			// A new login after a lost response issues a new token pair instead of replaying the old one.
+			if refreshTokens[again.RefreshToken] {
+				t.Fatalf("%s returning login replayed a refresh token", name)
+			}
+			refreshTokens[again.RefreshToken] = true
 		}
 		if n := count(t, `SELECT count(*) FROM identity_accounts WHERE subject = $1 AND email_local = 'GitHub.User' AND email_verified_at IS NULL`, result.Subject); n != 1 {
 			t.Fatal("a returning GitHub login changed the stored email or its state")
 		}
-		if n := count(t, `SELECT count(*) FROM identity_sessions WHERE account_subject = $1`, result.Subject); n != 4 {
+		if n := count(t, `SELECT count(*) FROM identity_sessions WHERE account_subject = $1 AND revoked_at IS NULL`, result.Subject); n != 4 {
 			t.Fatalf("sessions = %d", n)
 		}
 	})

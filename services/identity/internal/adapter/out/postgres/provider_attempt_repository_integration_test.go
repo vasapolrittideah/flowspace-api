@@ -196,6 +196,51 @@ func testProviderAttemptRepository(t *testing.T, ctx context.Context, pool *pgxp
 		}
 	})
 
+	t.Run("expired attempts are deleted with their provider email", func(t *testing.T) {
+		expired := outbound.ProviderAttempt{
+			Provider: "github", AttemptTokenVerifier: [32]byte{32}, StateVerifier: [32]byte{33},
+			CodeVerifier: string(bytes.Repeat([]byte{'d'}, 43)), CallbackURL: "https://api.example.com/v1/provider-login-callbacks/github",
+		}
+		live := expired
+		live.AttemptTokenVerifier, live.StateVerifier = [32]byte{34}, [32]byte{35}
+		for _, attempt := range []outbound.ProviderAttempt{expired, live} {
+			if _, err := repository.CreateProviderAttempt(ctx, attempt); err != nil {
+				t.Fatal(err)
+			}
+			proof, _, err := repository.ConsumeProviderState(ctx, "github", attempt.StateVerifier)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := repository.RecordProviderResult(ctx, proof.ID,
+				outbound.ProviderIdentity{Subject: "github-retention", Email: "retention@example.com", EmailVerified: true}, attempt.StateVerifier); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if _, err := pool.Exec(ctx, `UPDATE identity_provider_login_attempts
+			SET created_at = created_at - INTERVAL '10 minutes', expires_at = expires_at - INTERVAL '10 minutes'
+			WHERE state_verifier = $1`, expired.StateVerifier[:]); err != nil {
+			t.Fatal(err)
+		}
+		if err := repository.PurgeExpired(ctx); err != nil {
+			t.Fatal(err)
+		}
+		var remaining [][]byte
+		rows, err := pool.Query(ctx, `SELECT state_verifier FROM identity_provider_login_attempts WHERE provider_email = 'retention@example.com'`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for rows.Next() {
+			var verifier []byte
+			if err := rows.Scan(&verifier); err != nil {
+				t.Fatal(err)
+			}
+			remaining = append(remaining, verifier)
+		}
+		if rows.Err() != nil || len(remaining) != 1 || !bytes.Equal(remaining[0], live.StateVerifier[:]) {
+			t.Fatalf("remaining attempts = %x, %v", remaining, rows.Err())
+		}
+	})
+
 	t.Run("concurrent callbacks consume one state once", func(t *testing.T) {
 		attempt := outbound.ProviderAttempt{
 			Provider: "google", AttemptTokenVerifier: [32]byte{40}, StateVerifier: [32]byte{41},

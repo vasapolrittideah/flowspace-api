@@ -1,0 +1,36 @@
+meta {
+  name: Reject provider session for a failed attempt
+  type: http
+  seq: 43
+}
+
+post {
+  url: {{baseUrl}}/v1/provider-sessions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "attemptToken": "{{githubAttemptToken}}",
+    "handoffCode": "{{guessedHandoffCode}}"
+  }
+}
+
+script:pre-request {
+  bru.setVar("guessedHandoffCode", "A".repeat(43));
+}
+
+tests {
+  test("a failed attempt issues no session and returns no secret", function () {
+    expect(res.getStatus()).to.equal(401);
+    const body = JSON.stringify(res.getBody());
+    expect(body).to.not.include("accessToken");
+    expect(body).to.not.include(bru.getVar("githubAttemptToken"));
+    expect(body).to.not.include(bru.getVar("guessedHandoffCode"));
+  });
+}

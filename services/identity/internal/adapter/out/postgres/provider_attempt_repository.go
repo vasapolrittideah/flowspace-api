@@ -74,3 +74,10 @@ func (r *ProviderAttemptRepository) FailProviderAttempt(ctx context.Context, att
 func (r *ProviderAttemptRepository) RecordFailedProviderHandoff(ctx context.Context, attemptVerifier [32]byte) error {
 	return sqlc.New(r.pool).RecordProviderHandoffFailure(ctx, attemptVerifier[:])
 }
+
+// PurgeExpired deletes expired attempts. An expired attempt can no longer
+// complete, so deleting it removes its provider email and proofs.
+func (r *ProviderAttemptRepository) PurgeExpired(ctx context.Context) error {
+	_, err := sqlc.New(r.pool).DeleteExpiredProviderLoginAttempts(ctx)
+	return err
+}

@@ -2,7 +2,7 @@
 
 Module id: `identity-provider-login`
 
-Status: Approved.
+Status: Complete.
 
 ## Overview
 
@@ -60,12 +60,12 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Phase 3: GitHub login and completion checks
 
 - Task 6: [Complete provider login with GitHub identity and email proof](https://github.com/vasapolrittideah/flowspace-api/issues/220).
-- Task 7: [Prove Identity provider login against its specification](https://github.com/vasapolrittideah/flowspace-api/issues/221).
+- Task 7: [Prove Identity provider login against its specification](https://github.com/vasapolrittideah/flowspace-api/issues/221). [PR #266](https://github.com/vasapolrittideah/flowspace-api/pull/266) records the final verification.
 
 ### Checkpoint: Complete
 
-- [ ] Google and GitHub REST, callback, PostgreSQL, Mailpit, concurrency, failure, limit, telemetry, and cross-service tests cover the specification and applicable threat IDs.
-- [ ] The final Issue result comment records results, gaps, and the review PR. Required repository checks pass without weaker settings.
+- [x] Google and GitHub REST, callback, PostgreSQL, Mailpit, concurrency, failure, limit, telemetry, and cross-service tests cover the specification and applicable threat IDs.
+- [x] The final Issue result comment records results, gaps, and the review PR. Required repository checks pass without weaker settings.
 
 ## Risks and controls
 

@@ -161,6 +161,19 @@ func (q *Queries) CreateProviderLoginAttempt(ctx context.Context, arg CreateProv
 	return expires_at, err
 }
 
+const deleteExpiredProviderLoginAttempts = `-- name: DeleteExpiredProviderLoginAttempts :execrows
+DELETE FROM identity_provider_login_attempts
+WHERE expires_at <= statement_timestamp()
+`
+
+func (q *Queries) DeleteExpiredProviderLoginAttempts(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredProviderLoginAttempts)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const failProviderLoginAttempt = `-- name: FailProviderLoginAttempt :exec
 UPDATE identity_provider_login_attempts
 SET failed_at = statement_timestamp()

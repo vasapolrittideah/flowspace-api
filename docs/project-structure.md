@@ -6,7 +6,7 @@ Updated: 2026-09-23.
 
 This document defines where backend code belongs and which dependency directions are allowed. It applies the service boundaries from the [architecture](architecture.md), the repository layout from [ADR-0002](adr/0002-one-repository-and-one-go-module.md), and the tools in the [technology stack](technology-stack.md).
 
-## 1. Principles
+## Principles
 
 - Keep all application services in one repository and one root Go module.
 - Organize service code around the Identity, Workspace, Work, and Notifications ownership boundaries.
@@ -18,7 +18,7 @@ This document defines where backend code belongs and which dependency directions
 - Never edit generated code by hand.
 - Create directories only when their first real file is added; the trees below are targets, not empty scaffolding.
 
-## 2. Target tree
+## Target tree
 
 ```text
 .
@@ -62,7 +62,7 @@ This document defines where backend code belongs and which dependency directions
 
 Tool configuration stays where the owning tool expects it. Optional output such as `contracts/http/`, event schemas, service directories, deployment overlays, and test suites appears only when the corresponding capability is implemented.
 
-## 3. Directory ownership
+## Directory ownership
 
 | Path | Owner and contents |
 | --- | --- |
@@ -84,7 +84,7 @@ Tool configuration stays where the owning tool expects it. Optional output such 
 
 Root `internal/` is not a default home for helpers. Code with one service owner stays under that service, even when another service might need something similar later.
 
-## 4. Structure inside a service
+## Structure inside a service
 
 Each service follows the hexagonal architecture established in [ADR-0003](adr/0003-hexagonal-layers-inside-each-service.md): business rules stay at the center and infrastructure stays at the edges.
 
@@ -136,7 +136,7 @@ Not every service needs every directory:
 
 Start each layer flat. Add a named integration directory only when the integration has a real implementation; a service that consumes no events does not need `adapter/in/event/`.
 
-## 5. Dependency direction
+## Dependency direction
 
 Production dependencies point inward:
 
@@ -165,7 +165,7 @@ Rules:
 
 Generated types may appear at a transport boundary, but domain and application behavior must not depend on generated request or response messages.
 
-## 6. Domain, application, and ports
+## Domain, application, and ports
 
 - Put entity invariants and domain errors in `domain/` when they remain meaningful without a transport or database.
 - Put use-case inputs and interfaces in `port/in/`; keep HTTP headers, Protobuf messages, SQL rows, and broker records out of them.
@@ -175,7 +175,7 @@ Generated types may appear at a transport boundary, but domain and application b
 
 Transaction boundaries belong to the application use case. A database adapter may provide the mechanism, but it must not silently decide a business transaction.
 
-## 7. Adapters and bootstrap
+## Adapters and bootstrap
 
 - HTTP and RPC handlers authenticate, enforce transport limits and deadlines, validate external input, translate generated messages, and map errors to canonical statuses.
 - Event consumers validate envelopes, preserve event ordering and idempotency requirements, invoke an inbound use case, and commit offsets only according to the accepted delivery contract.
@@ -185,7 +185,7 @@ Transaction boundaries belong to the application use case. A database adapter ma
 
 Adapters contain protocol and infrastructure behavior, not product rules. Bootstrap connects implementations; it does not become a service locator or a second application layer.
 
-## 8. Contracts and generated code
+## Contracts and generated code
 
 - `contracts/proto/flowspace/<service>/v1/` is the source of truth for synchronous APIs in the `flowspace.<service>.v1` Protobuf package.
 - Public methods carry `google.api.http` annotations; internal-only methods remain unannotated.
@@ -196,7 +196,7 @@ Adapters contain protocol and infrastructure behavior, not product rules. Bootst
 
 Contract changes keep source and generated output in the same change and must preserve the compatibility rules in [ADR-0007](adr/0007-version-apis-by-compatibility-boundary.md). Transport-specific translation stays in an adapter instead of leaking into domain types.
 
-## 9. Persistence ownership
+## Persistence ownership
 
 - Each service owns its PostgreSQL instance, credentials, migrations, connection pool, storage, and recovery lifecycle.
 - Schema changes live in `services/<service>/db/migrations/`; SQL queries live in the sibling `db/queries/` directory.
@@ -207,7 +207,7 @@ Contract changes keep source and generated output in the same change and must pr
 
 Keep migrations, queries, generated query code, and affected adapter behavior consistent. Migration execution remains a controlled step separate from code generation.
 
-## 10. Tests
+## Tests
 
 - Colocate Go tests as `*_test.go` beside the package they verify.
 - Test domain invariants and application use cases without transport or infrastructure when possible.
@@ -216,7 +216,7 @@ Keep migrations, queries, generated query code, and affected adapter behavior co
 - Test generated behavior through source contracts and adapters; do not hand-maintain tests for mechanical generated code.
 - Keep test helpers with their only consumer. Promote one to a narrowly named shared package only after multiple tests need the same behavior.
 
-## 11. Deployment and repository tooling
+## Deployment and repository tooling
 
 - Keep each service's `Dockerfile` with the service so its build context and binary ownership remain visible.
 - Put shared application manifests in `deploy/base/` and environment-specific changes in `deploy/overlays/<environment>/`.
@@ -226,7 +226,7 @@ Keep migrations, queries, generated query code, and affected adapter behavior co
 
 Third-party infrastructure uses maintained, pinned packages as accepted in [ADR-0025](adr/0025-environments-overlay-shared-manifests.md). Its exact deployment layout is added when that infrastructure is configured rather than reserved in advance.
 
-## 12. Placement checklist
+## Placement checklist
 
 Place a new backend file by asking these questions in order:
 
@@ -241,7 +241,7 @@ Place a new backend file by asking these questions in order:
 9. Does it verify a deployed workflow or cross-service load? Put it in `tests/smoke/` or `tests/load/`.
 10. Otherwise, keep it beside its only owner until another concrete need establishes a boundary.
 
-## 13. Prohibited coupling and generic layers
+## Prohibited coupling and generic layers
 
 Do not create these as default shared layers:
 
@@ -267,7 +267,7 @@ Also avoid:
 - per-service `go.mod` files or a root `go.work` file; and
 - empty standard layer directories created only to match the target tree.
 
-## 14. Growth rule
+## Growth rule
 
 This structure grows by evidence:
 

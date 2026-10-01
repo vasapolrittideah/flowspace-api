@@ -6,7 +6,7 @@ Updated: 2026-09-23.
 
 This document defines product rules, service boundaries, cross-service behavior, and learning evidence. Accepted rationale lives in the [ADR index](adr/README.md); replaceable tools live in the [technology stack](technology-stack.md).
 
-## 1. Goal and constraints
+## Goal and constraints
 
 Build a work-management platform to learn production-grade distributed-system design and failure handling.
 
@@ -20,7 +20,7 @@ Build a work-management platform to learn production-grade distributed-system de
 
 The single host is an accepted constraint, not high availability. “Production” is an environment name, not a production-readiness claim.
 
-## 2. Product rules
+## Product rules
 
 ### Workspaces and access
 
@@ -55,7 +55,7 @@ Only owners may grant or modify administrator access.
 - Mailpit captures verification and password-reset email in learning environments.
 - API clients come first. Browser authentication and token storage remain open for the later web release.
 
-## 3. Service boundaries
+## Service boundaries
 
 | Component | Owns | Depends on |
 | --- | --- | --- |
@@ -94,7 +94,7 @@ flowchart TD
 
 Each database box is a dedicated PostgreSQL instance per environment. All instances still share the physical host.
 
-## 4. Data and consistency
+## Data and consistency
 
 ### Ownership
 
@@ -144,7 +144,7 @@ A successful assignment means Work committed the assignment and pending event; n
 
 Event, outbox, deduplication, schema, and backup retention must cover the supported replay window. Version gaps, poison records, backlog, lag, and replay require metrics and tests.
 
-## 5. Interfaces and security
+## Interfaces and security
 
 - The [Identity threat model](security/identity-threat-model.md) defines trust boundaries, abuse cases, required controls, and test evidence for authentication.
 - Protobuf service definitions are the source of truth for synchronous APIs.
@@ -161,7 +161,7 @@ Event, outbox, deduplication, schema, and backup retention must cover the suppor
 - Staging adds an edge access gate; production's user-facing API remains public with normal application authentication.
 - Git contains encrypted secret manifests only. Plaintext and decryption keys stay outside Git and the host.
 
-## 6. Environments and delivery
+## Environments and delivery
 
 | Environment | Runtime | Data |
 | --- | --- | --- |
@@ -176,7 +176,7 @@ Event, outbox, deduplication, schema, and backup retention must cover the suppor
 - Node-local volumes survive pod replacement but not disk or host loss.
 - Namespaces, extra replicas, and separate database processes do not create independent host failure domains.
 
-## 7. Observability and recovery
+## Observability and recovery
 
 - Emit structured logs with service, environment, request ID, operation, outcome, and duration.
 - API services accept `X-Request-ID` values containing 1–128 ASCII letters, digits, periods, underscores, or hyphens; missing or invalid values are replaced and the effective ID is returned in the response header.
@@ -194,7 +194,7 @@ Before real teams:
 - Align event retention, offsets, deduplication history, and restored database state.
 - Prove restoration and application invariants from the independent destination.
 
-## 8. Learning evidence
+## Learning evidence
 
 | Increment | Working capability | Required evidence |
 | --- | --- | --- |
@@ -213,7 +213,7 @@ Required failure experiments:
 - database unavailable: writes fail clearly and ambiguous retries are controlled;
 - host restart and restore: measure outage, recovery time, and data loss.
 
-## 9. Open proposals
+## Open proposals
 
 Keep these here until accepted; then update the owning ADR.
 
@@ -227,7 +227,7 @@ Keep these here until accepted; then update the owning ADR.
 - Product specifications: invitation lifecycle and assignment/notification triggers.
 - Readiness: close or accept the Identity threat model risks, pin versions, and set the implementation time budget.
 
-## 10. Deferred
+## Deferred
 
 Not in the initial scope:
 

@@ -53,7 +53,7 @@ Status: Draft
 - Header: The capability name in the title and the module ID from the file name. The status is `Planned`, `Draft`, `Approved`, or `Implemented`, and it matches the status in the [specification index](../specs/README.md).
 - Objective: Name the users and the questions or results they need, and state the purpose of the capability. Put assumptions in `Assumptions and open questions`.
 - Scope and decisions: Name included and excluded work. Name each module dependency by its module ID, as the `Depends on` column of the index lists it. Link each ADR that the capability applies.
-- Contract: Define the shape that a consumer sees: interfaces, routes, fields, data, and error codes. A consumer can be a developer who reads logs, not only an API client. Put the table of error codes here.
+- Contract: Define the shape that a consumer sees: interfaces, routes, fields, data, and error codes. A consumer can be a developer who reads logs, not only an API client. An API specification uses the [API contract forms](#api-contract-forms).
 - Behavior: State when each effect happens and why: business rules, invariants, security, consistency, and operations. Do not repeat the contract.
 - Testing strategy: Name each material risk, the test level that proves it, and the environment that the level needs. Test levels include unit, integration, cross-service, and cluster tests. Do not repeat each success criterion or list commands. Commands belong in the verification steps of each [Issue](github-issues.md#template).
 - Implementation boundaries: Name actions that limit the implementer under `### Always`, `### Ask first`, and `### Never`. Examples are "Ask first before you change the outbox schema" and "Never read another service's database". Do not repeat system rules from `Behavior`.
@@ -74,9 +74,10 @@ Status: Draft
 
 - Use the sections through `Success criteria` in the template order.
 - Add either optional final section only when the capability needs it. Add a new top-level section to this convention before you use it in a specification.
-- Use subsections under `Behavior` for topics of the capability. Consider security, data and compatibility, and diagnostics. If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under data and compatibility.
+- Use subsections under `Behavior` for topics of the capability, then the shared subsections in the [standard forms](#forms-for-every-specification) when they apply. If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under `### Data and compatibility`.
 - In Identity specifications, map abuse tests in the Testing strategy to applicable [threat IDs](../security/identity-threat-model.md).
 - Put implementation locations and commands in the plan and its Issues. Repeat a project-wide rule only when it changes observable behavior or completion criteria. Put project-wide rules in their source documents.
+- Do not restate the five-second request cap of [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md) unless the capability has an exception.
 - Do not add a success criterion for the repository checks. The [constraints](../../CONSTRAINTS.md) apply to every change.
 
 ### Status and approval
@@ -88,6 +89,49 @@ Status: Draft
 - If a change to an approved or implemented specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification needs a new approval PR. A change that only corrects wording keeps the status.
 - Change the status to `Implemented` in the PR that proves the last success criterion.
 - Keep each `Implemented` specification in the format that it had when it was implemented.
+
+## Standard forms
+
+Use these forms for information that each specification or each API specification contains, so that readers find the same information in the same shape.
+
+### Forms for every specification
+
+- Objective: Include one sentence about the first users and their data, such as "The first users are API clients, and all data is disposable under ADR-0022."
+- Scope and decisions: Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.` Then write excluded work as a bullet list after "This capability excludes these items:". Write each decision as a bullet that starts with a link to the ADR, followed by a colon and what the ADR decides for this capability.
+- Behavior: Put the subsections of the capability first. Then add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
+- Diagnostics: Name the events or fields that the capability records. Then list the values that logs, traces, metrics, and errors must never contain.
+- Testing strategy: Use a table with the columns `Risk`, `Test level`, and `Environment`. In Identity specifications, put the threat IDs in the `Risk` column.
+- Implementation boundaries: Start each item with a verb. Start each `Never` item with "Do not".
+
+### API contract forms
+
+Start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`." List the ADRs that define Protobuf, REST, versions, and errors in `Scope and decisions`, and do not explain their mechanics again.
+
+Use these tables in this order. Keep the rows of `Methods` and `Method requirements` in the same RPC order.
+
+| Table | Columns | Rules |
+| --- | --- | --- |
+| Methods | `RPC`, `Public HTTP route`, `Request fields`, `Response fields` | Write the route as `METHOD /v1/<path>`, or `None (internal)` for an internal RPC. Write Protobuf field names in backticks, separated by commas, or `None`. Mark a required request field with `(required)`. |
+| Method requirements | `RPC`, `Authentication`, `Retry` | Use only the [method requirement values](#method-requirement-values). Link an ADR in a cell only when the value comes from an exception or a capability-specific decision. |
+| HTTP-only endpoints | `Endpoint`, `Public HTTP route`, `Authentication`, `Request`, `Response` | Use this table only for endpoints that are not RPCs, such as a provider callback. |
+| Resource fields | `Protobuf field`, `JSON field`, `Meaning` | Use this table for each resource that a method returns. Define each response field here, not in `Methods`. |
+| Errors | `Condition`, `gRPC status`, `HTTP status` | Write one row for each condition that a client can tell apart. |
+
+Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`. If a retry value depends on a condition, state the condition in `Behavior`.
+
+## Reference
+
+### Method requirement values
+
+| Column | Value | Meaning |
+| --- | --- | --- |
+| `Authentication` | `None` | The method takes no credential. Use it only for a public method. |
+| `Authentication` | `Bearer access token` | The request needs exactly one `Authorization: Bearer` header, and the subject comes from the token. |
+| `Authentication` | `Service mTLS` | The caller is a service that proves its identity with a client certificate. |
+| `Retry` | `Safe to retry` | A retry with the same request has no additional effect. |
+| `Retry` | `Requires Idempotency-Key` | The request needs a key, and a retry with the same key returns the original result. |
+| `Retry` | `Rejects Idempotency-Key` | The method rejects a key. Link the ADR that makes this exception. |
+| `Retry` | `Do not retry` | A retry causes a harmful effect. Explain the effect in `Behavior`. |
 
 ## Differences from the spec-driven-development skill
 

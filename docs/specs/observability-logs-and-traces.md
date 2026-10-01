@@ -2,7 +2,7 @@
 
 Module id: `observability-logs-and-traces`
 
-Status: Draft.
+Status: Draft
 
 ## Objective
 
@@ -16,13 +16,13 @@ The capability must answer these questions from telemetry alone:
 
 Services already write JSON logs and create some spans, but no collector stores the logs and no exporter sends the spans. This capability makes those signals reach storage and fills the gaps in trace context that stop the three questions above.
 
-## Scope and decision sources
+## Scope and decisions
 
 The scope covers the `identity-api`, `identity-worker`, and `workspace-api` processes. It also covers Alloy, Loki, Tempo, and Grafana in the `local` overlay, which Tilt applies. Migration jobs are in scope for logs only. Their logs reach Loki through the same pod log path, and they create no spans.
 
 This capability excludes these items:
 
-- Metrics, dashboards, and alerts. Later specifications cover them.
+- Metrics and dashboards, which `observability-metrics-and-dashboards` covers, and alerts, which `observability-alerts-and-runbooks` covers.
 - The `staging` and `production` environments. They have no overlay yet.
 - Database client spans and spans inside use cases.
 - Logs and traces from platform workloads such as PostgreSQL, Redpanda, Keycloak, and Mailpit.
@@ -75,17 +75,15 @@ A server span name is a bounded operation name, such as the HTTP method and rout
 
 A server span records `http.request.method`, `http.route`, and `http.response.status_code` for HTTP. It records `rpc.method` and `rpc.grpc.status_code` for gRPC. A span has the error status when the HTTP status is 5xx or the gRPC code is `Internal`, `Unavailable`, `DeadlineExceeded`, or `Unknown`.
 
-### Context in the outbox
+### Event headers
 
-The Identity outbox keeps the W3C `traceparent` and `tracestate` of the transaction that inserts each event. The relay continues that context when it publishes the event, and the publisher writes it to the record headers. An event that has no stored context starts a new root trace in the relay.
-
-A migration adds nullable `traceparent` and `tracestate` text columns to `identity_outbox_events`. The migration only adds columns, so a running older relay keeps working, and rows that existed before the migration have no stored context. Rollback drops the two columns and loses only stored trace context.
+Each Identity event record carries the W3C `traceparent` and, when present, `tracestate` headers of the request or relay span that produced it.
 
 ### Configuration
 
 Each process reads standard OpenTelemetry environment variables. `OTEL_EXPORTER_OTLP_ENDPOINT` names the Alloy OTLP gRPC endpoint. `OTEL_TRACES_SAMPLER` is `parentbased_traceidratio`, and `OTEL_TRACES_SAMPLER_ARG` is `1.0` in `local`. If the endpoint is not set, the process starts and exports no spans.
 
-## Required behavior
+## Behavior
 
 ### Correlation
 
@@ -95,6 +93,14 @@ Apply these rules in each process:
 - Write the same `trace_id` in the log line and in the span of one request.
 - Forward `x-request-id` and `traceparent` on the Workspace `CheckSession` call. Identity writes the forwarded request ID on its `identity_session_check` line.
 - Keep the request ID rules of the [architecture](../architecture.md#observability-and-recovery). Do not replace a valid request ID with a trace ID.
+
+### Context in the outbox
+
+The Identity outbox keeps the `traceparent` and `tracestate` of the transaction that inserts each event. The relay continues that context when it publishes the event, and the publisher writes it to the record headers. An event that has no stored context starts a new root trace in the relay.
+
+### Data and compatibility
+
+A migration adds nullable `traceparent` and `tracestate` text columns to `identity_outbox_events`. The migration only adds columns, so a running older relay keeps working, and rows that existed before the migration have no stored context. Rollback drops the two columns and loses only stored trace context.
 
 ### Sensitive data
 
@@ -131,25 +137,9 @@ The `local` overlay adds Alloy, Loki, Tempo, and Grafana. Apply these rules:
 
 Git provisions the Loki and Tempo data sources. A log line links to its trace through `trace_id`, and a trace links back to its logs. Grafana has no persistent volume and no anonymous access. Its admin password comes from a Sealed Secret under [ADR-0027](../adr/0027-git-contains-only-encrypted-kubernetes-secrets.md). Developers open Grafana only with `kubectl port-forward`. The tunnel has no route to any telemetry component.
 
-## Commands
-
-Run commands from the repository root. The cluster tasks need Docker and k3d. Tilt applies the `local` overlay.
-
-| Purpose | Command |
-| --- | --- |
-| Create the local cluster | `task cluster:create` |
-| Apply the local overlay and build images | `tilt up` |
-| Open Grafana | `kubectl port-forward service/grafana 3000:80` |
-| Compile all Go packages | `task go:build` |
-| Run all Go tests | `task go:test` |
-| Run smoke tests against the local API | `task smoke:bruno` |
-| Run the task-end checks | `task check:task` |
-
-The plan names the namespace of the Grafana Service and the exact port-forward target.
-
 ## Testing strategy
 
-Test the application code with the OpenTelemetry in-memory span exporter and the zap test observer. Test the deployment in the local cluster.
+Unit and adapter tests use the OpenTelemetry in-memory span exporter and the zap test observer and need no external services. Outbox integration tests need Docker for PostgreSQL. Cluster checks need the local k3d cluster with the `local` overlay that Tilt applies.
 
 Cover these concerns at their owning boundary:
 
@@ -161,31 +151,25 @@ Cover these concerns at their owning boundary:
 - A non-blocking test sends requests while the exporter cannot connect, and makes sure that each request finishes within its normal deadline.
 - A cluster check sends a request with a known request ID, finds its logs in Loki, and opens its trace in Tempo through Grafana.
 
-## Boundaries
+## Implementation boundaries
 
 ### Always
 
-Follow these rules for every implementation change:
-
-- Keep telemetry export off the request path.
-- Keep Loki labels and span names bounded.
-- Keep the field names in this contract stable.
+- Add the outbox columns in a new migration file. Do not edit an existing migration.
+- Extend the shared logging and request ID packages instead of adding a second logger or request ID helper.
+- Add each telemetry component to the `local` overlay so that Tilt applies it with the services.
 
 ### Ask first
 
-Obtain approval for these changes:
-
 - Changing a retention, volume, sampling, or queue value from ADR-0037.
-- Adding a Loki label, a new telemetry component, or a route to Grafana.
+- Adding a Loki label, a telemetry component that this specification does not name, or a route to Grafana.
 - Changing the outbox schema beyond the stored trace context.
+- Adding a Go dependency other than OpenTelemetry exporters and instrumentation.
 
 ### Never
 
-Do not take these actions:
-
-- Do not log or record the sensitive values in this specification.
-- Do not fail a request, a startup, or an event because telemetry export failed.
-- Do not deploy this stack to `staging` or `production` under this specification.
+- Do not change the public Identity or Workspace API contracts.
+- Do not add telemetry components to `staging` or `production` overlays or to the tunnel configuration.
 
 ## Success criteria
 
@@ -200,4 +184,3 @@ Do not take these actions:
 9. Given the stack has run for a test period, When a developer lists the Loki label names and values, Then the only labels are `service`, `environment`, `namespace`, and the labels that Loki adds itself, and no label value is a request ID, trace ID, or path.
 10. Given the stack runs in `local`, When a developer lists the routes of the tunnel and the Services of the cluster, Then no telemetry component has a tunnel route, and Grafana answers only through `kubectl port-forward`.
 11. Given the Loki and Tempo manifests, When a reviewer reads them, Then each store has one replica, a 5Gi node-local volume, the ADR-0037 retention, and CPU and memory limits.
-12. Given the capability is submitted for review, When the required repository checks run, Then applicable builds, tests, coverage, lint, and security checks meet the [constraints](../../CONSTRAINTS.md).

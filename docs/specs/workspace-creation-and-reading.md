@@ -2,17 +2,15 @@
 
 Module id: `workspace-creation-and-reading`
 
-Status: Approved.
+Status: Approved
 
 ## Objective
 
 Build the first Workspace capability for signed-in users of Flowspace. A user can create a workspace and read a workspace where that user is a member. Safe retries must prevent duplicate creation after a lost response.
 
-This spec assumes that workspace creation and reading do not exist yet. It defines required behavior and completion criteria. It does not report implementation progress or establish deployment readiness.
-
 Create and read belong to one capability because they share workspace data, ownership, and access rules. The first implementation uses Keycloak for authenticated identity. Work and Notifications are not dependencies of this capability.
 
-## Scope and decision sources
+## Scope and decisions
 
 The scope covers `CreateWorkspace` and `GetWorkspace`, owner membership at creation, token admission, durable retry protection, and service-owned persistence.
 
@@ -62,7 +60,21 @@ Content-Type: application/json
 
 The same resource wrapper applies to a successful read. Clients do not supply the acting subject, owner role, resource ID, or creation time in the create request.
 
-## Required behavior
+Use canonical gRPC errors and the gateway's default HTTP mapping under [ADR-0009](../adr/0009-canonical-grpc-errors-map-to-http.md). Invalid fields use standard `google.rpc.BadRequest` details. Responses must not expose SQL, credentials, tokens, or internal diagnostics.
+
+| Condition | gRPC status | HTTP status |
+| --- | --- | --- |
+| Missing or invalid authentication | `Unauthenticated` | 401 |
+| Invalid request field or missing, blank, duplicate, or oversized idempotency key | `InvalidArgument` | 400 |
+| Malformed REST JSON | Not applicable | 400 |
+| REST request body above 1 MiB | Not applicable | 413 |
+| Malformed workspace UUID, missing workspace, or no membership | `NotFound` | 404 |
+| Key reused with a different normalized request | `AlreadyExists` | 409 |
+| Duplicate creation still in progress | `Aborted` | 409 |
+| Effective deadline expires | `DeadlineExceeded` | 504 |
+| Unexpected internal failure | `Internal` | 500 |
+
+## Behavior
 
 ### Identity and access
 
@@ -106,23 +118,9 @@ Idempotency means that retries preserve one operation's result. Follow [ADR-0011
 - Set the logical expiry of a completed record to 24 hours after its successful commit. Persist the record and original result across process restarts until that expiry.
 - At or after logical expiry, the same subject and key can identify a new operation. Physical cleanup can occur later, but an expired record must not replay or conflict.
 
-### Reading and errors
+### Reading and deadlines
 
 Require a nonempty `workspace_id`. For a malformed UUID, a missing workspace, or a subject without membership, return the same `NotFound` result. Do not reveal whether an inaccessible workspace exists.
-
-Use canonical gRPC errors and the gateway's default HTTP mapping under [ADR-0009](../adr/0009-canonical-grpc-errors-map-to-http.md). Invalid fields use standard `google.rpc.BadRequest` details. Responses must not expose SQL, credentials, tokens, or internal diagnostics.
-
-| Condition | gRPC status | HTTP status |
-| --- | --- | --- |
-| Missing or invalid authentication | `Unauthenticated` | 401 |
-| Invalid request field or missing, blank, duplicate, or oversized idempotency key | `InvalidArgument` | 400 |
-| Malformed REST JSON | Not applicable | 400 |
-| REST request body above 1 MiB | Not applicable | 413 |
-| Malformed workspace UUID, missing workspace, or no membership | `NotFound` | 404 |
-| Key reused with a different normalized request | `AlreadyExists` | 409 |
-| Duplicate creation still in progress | `Aborted` | 409 |
-| Effective deadline expires | `DeadlineExceeded` | 504 |
-| Unexpected internal failure | `Internal` | 500 |
 
 Honor shorter caller deadlines and cap ordinary requests at five seconds under [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md). Propagate cancellation and the effective deadline to token verification and database work. A timeout does not prove that a create failed to commit, so clients retry with the same key.
 
@@ -131,22 +129,6 @@ Honor shorter caller deadlines and cap ordinary requests at five seconds under [
 Emit structured request logs with service, environment, request ID, operation, outcome, status, and duration. Follow the architecture's `X-Request-ID` rule for accepted characters and the limit of 1 to 128 characters. Replace missing or invalid values, forward the effective ID, and return it in the response header.
 
 Propagate trace context through the REST proxy and synchronous calls under [ADR-0028](../adr/0028-telemetry-is-vendor-neutral-and-correlated.md). Keep telemetry bounded and prevent export failures from blocking requests under [ADR-0030](../adr/0030-telemetry-is-bounded-and-non-blocking.md). Collector deployment and storage configuration remain outside this capability.
-
-## Commands
-
-Run commands from the repository root. Go tools need the repository's pinned toolchain. Integration tests need a running Docker runtime, and generation can need network access.
-
-| Purpose | Command |
-| --- | --- |
-| Compile Workspace binaries without writing output binaries | `go build ./services/workspace/cmd/...` |
-| Run Workspace tests | `go test ./services/workspace/...` |
-| Run real PostgreSQL integration tests | `go test -tags=integration ./services/workspace/internal/adapter/out/postgres` |
-| Lint source contracts | `task buf -- lint` |
-| Generate API code | `task buf -- generate` |
-| Make sure that API compatibility holds against main | `task buf -- breaking --against '.git#branch=main'` |
-| Generate query code | `task sqlc -- generate` |
-
-These commands define future implementation checks. Approval does not mean that the capability passes them.
 
 ## Testing strategy
 
@@ -160,32 +142,21 @@ Cover these concerns at their owning test boundary:
 - Transport tests cover malformed JSON, oversized bodies, required headers, field error details, status mapping, and header forwarding. Make sure that rejected input never reaches creation. Exercise request IDs, deadlines, and cancellation through the public gateway.
 - Database tests prove atomic owner creation, rollback, durable replay, logical expiry, claim release after connection loss, conflicts, concurrent duplicates, and membership-based reads. Create memberships directly in test setup for each role. This test setup does not introduce membership-management endpoints.
 
-## Boundaries
+## Implementation boundaries
 
 ### Always
 
-Follow these rules for every implementation change:
-
-- Derive actors from validated tokens.
-- Enforce membership on reads.
-- Preserve atomic creation.
-- Protect retries.
-- Honor deadlines.
+- Keep schema changes inside Workspace-owned migrations for workspaces, memberships, and retry records.
 
 ### Ask first
 
-Obtain approval for these decisions:
-
 - Obtain approval before changing the approved scope, contract, retry window, or accepted decisions.
+- Obtain approval for schema changes beyond workspaces, memberships, and retry records, and for deployment decisions outside this scope.
 
 ### Never
 
-Do not take these actions:
-
-- Do not trust client actor or role claims.
 - Do not access another service's database.
-
-The approved scope includes the service-owned schema and migrations needed for creation, memberships, and replay records. Broader schema changes and deployment decisions outside this scope require review. Do not build unrelated capabilities to complete this one.
+- Do not build unrelated capabilities, such as listing, invitations, or membership management, to complete this one.
 
 ## Success criteria
 
@@ -209,4 +180,3 @@ The approved scope includes the service-owned schema and migrations needed for c
 18. Given a request crosses the generated REST boundary, When the caller cancels it, Then cancellation propagates to token verification and database work.
 19. Given a request has a valid, missing, or invalid request ID, When it crosses the generated REST boundary, Then the service preserves a valid ID or replaces a missing or invalid ID. It forwards and returns the effective ID.
 20. Given a request crosses the generated REST boundary, When it fails, Then the response uses the specified status and safe error details without exposing internal diagnostics.
-21. Given the capability is submitted for review, When the required repository checks run, Then applicable builds, tests, coverage, lint, security, contract generation, and compatibility checks meet the contribution policy and constraints.

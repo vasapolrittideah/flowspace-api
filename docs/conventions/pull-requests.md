@@ -94,7 +94,7 @@ Review the [CI checks](../../.github/workflows/ci.yml) on the PR. CI reports the
 
 - Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
 - Use the reviewed PR title as the subject. Follow the [commit message convention](commit-messages.md), including formatting and co-author trailers.
-- Write the body by the [body rules](commit-messages.md#body) for a squash commit.
+- Write the body as a summary of the final description, by the [body rules](commit-messages.md#body) for a squash commit.
 - Copy `Related issues` into the [Issue footers](commit-messages.md#issue-footers) in the same order.
 - Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
 

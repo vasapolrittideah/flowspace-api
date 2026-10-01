@@ -1,12 +1,8 @@
 # ADR-0022: Single-host storage holds disposable learning data
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

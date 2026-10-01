@@ -1,12 +1,8 @@
 # ADR-0005: One Protobuf contract generates the REST surface
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

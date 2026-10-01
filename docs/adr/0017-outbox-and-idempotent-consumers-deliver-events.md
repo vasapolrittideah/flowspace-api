@@ -1,12 +1,8 @@
 # ADR-0017: An outbox and idempotent consumers deliver events
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

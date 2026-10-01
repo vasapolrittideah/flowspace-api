@@ -1,12 +1,8 @@
 # ADR-0007: APIs are versioned by compatibility boundary
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

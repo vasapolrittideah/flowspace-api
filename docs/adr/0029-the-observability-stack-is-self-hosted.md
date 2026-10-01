@@ -1,12 +1,8 @@
 # ADR-0029: The observability stack is self-hosted
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

@@ -1,12 +1,8 @@
 # ADR-0026: An outbound tunnel exposes selected routes
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

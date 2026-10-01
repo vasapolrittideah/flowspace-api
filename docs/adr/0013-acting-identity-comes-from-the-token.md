@@ -1,12 +1,8 @@
 # ADR-0013: Acting identity comes from the validated token
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

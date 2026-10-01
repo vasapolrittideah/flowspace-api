@@ -1,12 +1,8 @@
 # ADR-0023: Hosted CI stays within the zero-spend limit
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

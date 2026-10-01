@@ -1,12 +1,8 @@
 # ADR-0015: Each service owns a PostgreSQL instance
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

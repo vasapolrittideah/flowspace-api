@@ -1,12 +1,8 @@
 # ADR-0002: One repository and one root Go module
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

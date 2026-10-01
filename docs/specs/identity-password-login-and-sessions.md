@@ -2,7 +2,7 @@
 
 Module id: `identity-password-login-and-sessions`
 
-Status: Approved.
+Status: Implemented.
 
 ## Objective
 

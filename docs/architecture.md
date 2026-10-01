@@ -220,7 +220,7 @@ Keep these here until accepted; then update the owning ADR.
 - Edge details: hostnames, access allowlists, proxy headers, origin TLS, and administrative access.
 - Runtime topology: exact namespace, replica, resource, and retention settings.
 - Delivery gates: CI stages, image promotion, smoke-test location, and migration ordering.
-- Observability: collection paths, storage modes, alert routing, retention, and sampling.
+- Observability: metric collection, alert routing, and telemetry settings for staging and production. [ADR-0037](adr/0037-local-logs-and-traces-use-disposable-single-host-stores.md) decides local logs and traces.
 - Recovery: backup destination and tooling, schedule, and recovery objectives.
 - Capacity: workload model and pass/fail thresholds.
 - Frontend: technology, browser-session handling, and token storage.

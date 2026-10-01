@@ -11,7 +11,7 @@ A plan has the following fields and sections:
 
 Module id: `<module-id>`
 
-Status: Draft.
+Status: <state of the plan>.
 
 ## Overview
 
@@ -23,32 +23,59 @@ Status: Draft.
 
 ## Dependency graph
 
-<Mermaid diagram of major work>
+<order between major pieces of work>
 
 ## Task list
 
-Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [<capability name> milestone](<milestone-url>).
+Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) under the [<capability name> milestone](<milestone URL>).
 
-<numbered tasks, phases, checkpoints, and Issue links>
+<tasks by phase, their checkpoints, and their Issues>
 
 ## Risks and controls
 
-<table of material risks, impacts, and controls>
+<material risks, their impacts, and their controls>
 ```
 
-- Header: The capability name and module ID from the approved specification. The status is `Draft`, `Approved`, or `Complete`.
-- Overview: State the capability and link the approved specification.
-- Architecture decisions: The decisions that set task boundaries.
-- Dependency graph: Show the order between major pieces of work in a Mermaid diagram.
-- Task list: Link the GitHub Project and the plan's milestone, then number tasks by phase with checkable checkpoints and an ordered index of Issue links.
-- Risks and controls: Name each material risk, its impact, and its control in a table.
+### Title
+
+- Copy the capability name from the approved specification.
+
+### Module id
+
+- Copy the module ID from the approved specification, in backticks.
+
+### Status
+
+- Write `Draft` before plan approval, `Approved` after approval, and `Complete` after final verification.
+
+### Overview
+
+- Link the approved specification.
+
+### Architecture decisions
+
+- Treat open architecture proposals as undecided.
+
+### Dependency graph
+
+- Draw the graph as a Mermaid diagram.
+
+### Task list
+
+- Keep the fixed sentence that links the GitHub Project and the plan's milestone.
+- Number the tasks by phase. Add a checkpoint with checkable outcomes after each phase.
+- Track tasks in GitHub Issues and their status in the repository GitHub Project.
+- Keep an ordered index of Issue links and completed checkpoints as the completion record.
+- When the module is complete, record the PR with the final verification.
+- Do not keep a duplicate task checklist.
+
+### Risks and controls
+
+- Write a table with one row for each material risk.
 
 ## Rules
 
-- Treat open architecture proposals as undecided.
-- Use `Draft` before plan approval, `Approved` after approval, and `Complete` after final verification. When the module is complete, record the PR with the final verification.
 - Save one plan as `tasks/<module-id>.md`. Use the same module ID as its specification in `docs/specs/` and the section order shown in the template.
-- Add a checkpoint with checkable outcomes after each phase. Track tasks in GitHub Issues and their status in the repository GitHub Project. Keep an ordered index of Issue links and completed checkpoints as the completion record. Do not keep a duplicate task checklist.
 - Use `tasks/.todo.md` only while preparing Issues. Write each draft with the [Issue template](github-issues.md#template).
 - When creating Issues from the drafts, create or reuse the approved plan's [GitHub milestone](github-milestones.md).
 - After every Issue appears in the Project with `Todo` status and in the milestone, replace the drafts with an ordered index of Issue links and delete `tasks/.todo.md`.

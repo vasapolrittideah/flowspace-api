@@ -41,6 +41,7 @@ The groups below follow the order of the work, from planning to delivery.
 | Work | Convention |
 | --- | --- |
 | Writing or updating Markdown, English prose, or code comments | [Markdown and English prose](docs/conventions/markdown-and-prose.md) |
+| Writing or updating convention files in `docs/conventions/` | [Convention files](docs/conventions/convention-files.md) |
 
 ### Planning
 

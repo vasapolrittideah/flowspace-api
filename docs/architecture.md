@@ -1,4 +1,4 @@
-# FlowSpace backend architecture
+# Flowspace backend architecture
 
 Status: accepted direction with implementation proposals still open.
 
@@ -48,7 +48,7 @@ Only owners may grant or modify administrator access.
 
 ### Identity
 
-- FlowSpace Identity owns authentication; Workspace owns workspace authorization.
+- Flowspace Identity owns authentication; Workspace owns workspace authorization.
 - Initial login methods are email/password, Google, and GitHub. Users link a provider only after signing in.
 - Email verification and password reset use six-digit codes. An identity needs a verified email before it can use Workspace.
 - Identity issues signed access tokens and rotating refresh tokens. Protected services verify access tokens and check live session state with Identity on every request.
@@ -59,7 +59,7 @@ Only owners may grant or modify administrator access.
 
 | Component | Owns | Depends on |
 | --- | --- | --- |
-| Identity | Credentials, login, tokens, account identity | No FlowSpace service |
+| Identity | Credentials, login, tokens, account identity | No Flowspace service |
 | Workspace | Workspaces, memberships, invitations, roles, authorization events | Identity access tokens and session checks |
 | Work | Projects, tasks, assignments, comments, activity, outbox, authorization projection | Identity access tokens, session checks, and Workspace events |
 | Notifications | Inbox, read state, deduplication, authorization projection | Identity access tokens, session checks, Workspace events, and Work events |
@@ -71,7 +71,7 @@ Projects, tasks, assignments, and comments stay in Work so related rules share l
 ```mermaid
 flowchart TD
     Client[Browser or API client] --> Edge[Public edge and ingress]
-    Edge --> Identity[FlowSpace Identity]
+    Edge --> Identity[Flowspace Identity]
     Edge --> Workspace[Workspace]
     Edge --> Work[Work]
     Edge --> Notifications[Notifications]

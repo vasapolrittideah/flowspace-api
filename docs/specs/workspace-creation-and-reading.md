@@ -6,7 +6,7 @@ Status: Approved.
 
 ## Objective
 
-Build the first Workspace capability for signed-in users of FlowSpace. A user can create a workspace and read a workspace where that user is a member. Safe retries must prevent duplicate creation after a lost response.
+Build the first Workspace capability for signed-in users of Flowspace. A user can create a workspace and read a workspace where that user is a member. Safe retries must prevent duplicate creation after a lost response.
 
 This spec assumes that workspace creation and reading do not exist yet. It defines required behavior and completion criteria. It does not report implementation progress or establish deployment readiness.
 

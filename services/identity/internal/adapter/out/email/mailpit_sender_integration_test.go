@@ -77,7 +77,7 @@ func TestMailpitSender(t *testing.T) {
 	}
 	claimRaw, readErr := io.ReadAll(claimResponse.Body)
 	_ = claimResponse.Body.Close()
-	if readErr != nil || claimResponse.StatusCode != http.StatusOK || !strings.Contains(string(claimRaw), "FlowSpace account claim code") || !strings.Contains(string(claimRaw), "654321") {
+	if readErr != nil || claimResponse.StatusCode != http.StatusOK || !strings.Contains(string(claimRaw), "Flowspace account claim code") || !strings.Contains(string(claimRaw), "654321") {
 		t.Fatalf("Mailpit did not capture the claim message: status %d, error %v", claimResponse.StatusCode, readErr)
 	}
 	deadSender, err := identityemail.NewMailpitSender("127.0.0.1:1", "no-reply@flowspace.local")

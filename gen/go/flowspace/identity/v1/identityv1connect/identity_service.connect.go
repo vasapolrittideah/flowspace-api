@@ -111,7 +111,7 @@ type IdentityServiceClient interface {
 	// Requires exactly one Authorization bearer header.
 	LogoutAllSessions(context.Context, *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error)
 	// Starts a Google or GitHub login attempt for an API client.
-	// Returns no FlowSpace token. Rejects Idempotency-Key.
+	// Returns no Flowspace token. Rejects Idempotency-Key.
 	// Responses require Cache-Control: no-store.
 	StartProviderLogin(context.Context, *connect.Request[v1.StartProviderLoginRequest]) (*connect.Response[v1.StartProviderLoginResponse], error)
 	// Creates a device session from an attempt token and handoff code.
@@ -346,7 +346,7 @@ type IdentityServiceHandler interface {
 	// Requires exactly one Authorization bearer header.
 	LogoutAllSessions(context.Context, *connect.Request[v1.LogoutAllSessionsRequest]) (*connect.Response[v1.LogoutAllSessionsResponse], error)
 	// Starts a Google or GitHub login attempt for an API client.
-	// Returns no FlowSpace token. Rejects Idempotency-Key.
+	// Returns no Flowspace token. Rejects Idempotency-Key.
 	// Responses require Cache-Control: no-store.
 	StartProviderLogin(context.Context, *connect.Request[v1.StartProviderLoginRequest]) (*connect.Response[v1.StartProviderLoginResponse], error)
 	// Creates a device session from an attempt token and handoff code.

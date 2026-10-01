@@ -18,7 +18,7 @@ helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets --version 2.
 kubeseal --controller-name sealed-secrets-controller --controller-namespace kube-system --fetch-cert > "$certs/sealing.crt"
 
 openssl genpkey -algorithm ED25519 -out "$certs/ca.key"
-openssl req -new -x509 -key "$certs/ca.key" -out "$certs/ca.crt" -days 365 -subj '/CN=FlowSpace local session CA' -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' -addext 'keyUsage=critical,keyCertSign,cRLSign'
+openssl req -new -x509 -key "$certs/ca.key" -out "$certs/ca.crt" -days 365 -subj '/CN=Flowspace local session CA' -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' -addext 'keyUsage=critical,keyCertSign,cRLSign'
 
 issue_leaf() {
   name=$1

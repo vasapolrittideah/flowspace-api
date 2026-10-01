@@ -6,7 +6,7 @@ Status: Implemented.
 
 ## Objective
 
-Allow a FlowSpace account holder who has a verified email address and a password to replace a forgotten password with a six-digit code sent to that address. A successful reset ends every existing session and requires a new password login. The first clients are API clients using disposable data.
+Allow a Flowspace account holder who has a verified email address and a password to replace a forgotten password with a six-digit code sent to that address. A successful reset ends every existing session and requires a new password login. The first clients are API clients using disposable data.
 
 This spec defines recovery for an existing password account. It does not report implementation progress or readiness to serve real users.
 
@@ -59,7 +59,7 @@ Both methods use the email comparison rules from the signup spec. The code is ex
 - Public request and guess limits apply by trusted source address and an account-independent keyed email identifier. The shared limits in the signup spec allow at most 60 code-request attempts and 100 wrong code guesses per source IP per hour across verification, claim, and reset. Missing accounts consume limit state too. Hard limits return `ResourceExhausted` (HTTP 429); a repeat request within the 60-second interval returns `accepted=true` while limits permit it. Only configured edge proxies can supply the source address. If shared limit state is unavailable, Identity returns a temporary error rather than bypassing the limit. An unknown or ineligible account follows comparable code-verifier work so invalid-code timing does not reveal eligibility.
 - Errors, logs, traces, and metrics never contain full email addresses, passwords, codes, access tokens, refresh tokens, or email bodies. Security events record code-request, invalid-code, reset, session-revocation, and delivery outcomes without reusable secrets.
 - Identity applies the ordinary five-second request cap and shorter caller deadlines under [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md). Cancellation or a lost response does not undo a committed reset. If the durable delivery request cannot commit, the password and sessions remain unchanged.
-- Mailpit captures recovery email in learning environments. Real email delivery, MFA, independent backups, and tested restoration remain required before real users join FlowSpace.
+- Mailpit captures recovery email in learning environments. Real email delivery, MFA, independent backups, and tested restoration remain required before real users join Flowspace.
 
 ## Commands
 

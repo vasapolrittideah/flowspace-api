@@ -35,4 +35,4 @@ Return canonical gRPC status codes with standard structured error details and us
 - RPC and REST callers observe consistent failure categories.
 - Validation errors can name fields without revealing service internals.
 - Unclassified failures become internal errors and require diagnostic logs or traces.
-- Clients depend on standard status semantics instead of a FlowSpace-specific envelope.
+- Clients depend on standard status semantics instead of a Flowspace-specific envelope.

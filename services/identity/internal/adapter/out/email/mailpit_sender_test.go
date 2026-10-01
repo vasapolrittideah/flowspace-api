@@ -44,7 +44,7 @@ func TestPasswordChangeNoticeRejectsUnsafeRecipient(t *testing.T) {
 
 func TestPasswordResetMessage(t *testing.T) {
 	address, subject, err := validateMessage("Recipient@example.com", "123456", string(domain.PurposePasswordReset))
-	if err != nil || address != "Recipient@example.com" || subject != "FlowSpace password reset code" {
+	if err != nil || address != "Recipient@example.com" || subject != "Flowspace password reset code" {
 		t.Fatalf("recovery message: address=%q subject=%q error=%v", address, subject, err)
 	}
 }

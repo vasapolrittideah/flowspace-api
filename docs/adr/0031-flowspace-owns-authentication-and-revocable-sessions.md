@@ -1,4 +1,4 @@
-# ADR-0031: FlowSpace owns authentication and revocable sessions
+# ADR-0031: Flowspace owns authentication and revocable sessions
 
 ## Status
 
@@ -10,11 +10,11 @@ Accepted
 
 ## Context
 
-[ADR-0019](0019-keycloak-owns-authentication-flows.md) assigns authentication to Keycloak. [ADR-0001](0001-one-bounded-context-per-service.md) treats Keycloak as a supporting component rather than a FlowSpace service. The project now aims to learn how to build and operate authentication for FlowSpace itself.
+[ADR-0019](0019-keycloak-owns-authentication-flows.md) assigns authentication to Keycloak. [ADR-0001](0001-one-bounded-context-per-service.md) treats Keycloak as a supporting component rather than a Flowspace service. The project now aims to learn how to build and operate authentication for Flowspace itself.
 
-The first release uses API clients and disposable data. Later releases may serve real users, but only after the project meets its recovery and security requirements. FlowSpace needs email and password login, Google and GitHub login, email verification, password reset, and logout from one or all devices. Logout must stop new requests from those devices as soon as it succeeds. No external application needs to use FlowSpace as an identity provider.
+The first release uses API clients and disposable data. Later releases may serve real users, but only after the project meets its recovery and security requirements. Flowspace needs email and password login, Google and GitHub login, email verification, password reset, and logout from one or all devices. Logout must stop new requests from those devices as soon as it succeeds. No external application needs to use Flowspace as an identity provider.
 
-The current Workspace adapter validates a Keycloak token without checking session state. The new design needs access and refresh tokens issued by FlowSpace. Signature and expiry checks alone cannot enforce immediate logout. Workspace must continue to own memberships, roles, and authorization.
+The current Workspace adapter validates a Keycloak token without checking session state. The new design needs access and refresh tokens issued by Flowspace. Signature and expiry checks alone cannot enforce immediate logout. Workspace must continue to own memberships, roles, and authorization.
 
 ## Decision
 
@@ -37,14 +37,14 @@ Email verification and password reset use six-digit codes sent by email. An acco
 ### Keep Keycloak
 
 - Pros: Keycloak already owns credential storage, recovery, and provider integration.
-- Cons: FlowSpace would not implement the authentication behavior that this learning goal targets.
+- Cons: Flowspace would not implement the authentication behavior that this learning goal targets.
 - Rejected: The project now explicitly includes building and operating its own authentication service.
 
 ### Use one opaque session token
 
 - Pros: One token and a session lookup need fewer moving parts.
 - Cons: The design does not provide separate access and refresh tokens or use public-key verification.
-- Rejected: FlowSpace will use separate tokens and an asymmetric signing key pair.
+- Rejected: Flowspace will use separate tokens and an asymmetric signing key pair.
 
 ### Verify signed access tokens without a session check
 
@@ -54,9 +54,9 @@ Email verification and password reset use six-digit codes sent by email. An acco
 
 ## Consequences
 
-- Identity becomes a fourth FlowSpace service and a dependency for each protected request, even though services verify access-token signatures locally. An Identity or database outage denies new protected requests.
-- Protected services must replace Keycloak token validation with FlowSpace access-token verification and authenticated internal session checks. They must still authorize workspace access from Workspace-owned data.
+- Identity becomes a fourth Flowspace service and a dependency for each protected request, even though services verify access-token signatures locally. An Identity or database outage denies new protected requests.
+- Protected services must replace Keycloak token validation with Flowspace access-token verification and authenticated internal session checks. They must still authorize workspace access from Workspace-owned data.
 - Identity must protect and rotate private signing keys, publish matching public keys, and keep old public keys available while valid access tokens use them.
-- This record supersedes ADR-0019 and the Keycloak and three-service parts of ADR-0001. The current Keycloak implementation remains until FlowSpace replaces it.
+- This record supersedes ADR-0019 and the Keycloak and three-service parts of ADR-0001. The current Keycloak implementation remains until Flowspace replaces it.
 - API contracts, a threat model, signing algorithm and key rotation rules, token lifetimes, refresh retry rules, six-digit code limits, provider failure cases, and tests must be specified before implementation.
 - The initial release uses Mailpit and disposable data. Real email delivery, MFA, independent backups, and tested restoration are required before serving real users.

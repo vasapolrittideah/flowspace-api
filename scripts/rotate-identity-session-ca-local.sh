@@ -31,7 +31,7 @@ for name in identity workspace; do
 done
 
 openssl genpkey -algorithm ED25519 -out "$rotation/new/ca.key"
-openssl req -new -x509 -key "$rotation/new/ca.key" -out "$rotation/new/ca.crt" -days 365 -subj '/CN=FlowSpace local session CA' -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' -addext 'keyUsage=critical,keyCertSign,cRLSign'
+openssl req -new -x509 -key "$rotation/new/ca.key" -out "$rotation/new/ca.crt" -days 365 -subj '/CN=Flowspace local session CA' -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' -addext 'keyUsage=critical,keyCertSign,cRLSign'
 issue_leaf() {
   name=$1
   openssl genpkey -algorithm ED25519 -out "$rotation/new/$name.key"

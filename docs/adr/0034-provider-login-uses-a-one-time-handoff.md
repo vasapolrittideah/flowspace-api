@@ -10,13 +10,13 @@ Accepted
 
 ## Context
 
-The first FlowSpace clients are API clients. Google and GitHub return authorization results to a browser callback, while the API client needs a FlowSpace access token and refresh token. Browser token storage belongs to a later web design. [ADR-0005](0005-one-protobuf-contract-generates-rest.md) makes Protobuf the source of truth for public synchronous APIs.
+The first Flowspace clients are API clients. Google and GitHub return authorization results to a browser callback, while the API client needs a Flowspace access token and refresh token. Browser token storage belongs to a later web design. [ADR-0005](0005-one-protobuf-contract-generates-rest.md) makes Protobuf the source of truth for public synchronous APIs.
 
 [ADR-0011](0011-idempotency-keys-protect-non-idempotent-creates.md) requires response replay for non-idempotent creates. [ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) requires Identity to store only refresh-token hashes. Identity cannot replay a lost token response without retaining a reusable refresh token.
 
 ## Decision
 
-`StartProviderLogin` returns a provider authorization URL and a secret attempt token to the API client. Identity validates the provider callback result and displays a separate one-time handoff code in a browser page. The client copies that code and submits it with the attempt token to `CreateProviderSession`. The callback page and redirects contain no FlowSpace access or refresh token.
+`StartProviderLogin` returns a provider authorization URL and a secret attempt token to the API client. Identity validates the provider callback result and displays a separate one-time handoff code in a browser page. The client copies that code and submits it with the attempt token to `CreateProviderSession`. The callback page and redirects contain no Flowspace access or refresh token.
 
 The provider callback is a small HTTP adapter. It accepts the provider response, delegates validation and state changes to Identity, and renders the handoff page. It does not define another client-facing account or session API. `StartProviderLogin` and `CreateProviderSession` remain Protobuf RPCs with generated REST/JSON routes. This callback adapter is a scoped exception to ADR-0005.
 
@@ -24,7 +24,7 @@ The provider callback is a small HTTP adapter. It accepts the provider response,
 
 ## Alternatives Considered
 
-### Return FlowSpace tokens through the callback
+### Return Flowspace tokens through the callback
 
 - Pros: The user does not copy a code between the browser and API client.
 - Cons: A browser page or redirect would carry a reusable access or refresh token.

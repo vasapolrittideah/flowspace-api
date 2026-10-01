@@ -23,7 +23,7 @@ script:pre-request {
       messages = response.data.messages;
     });
     const message = messages.find(item =>
-      item.Subject === "FlowSpace account claim code" &&
+      item.Subject === "Flowspace account claim code" &&
       item.To.some(recipient => recipient.Address === email)
     );
     if (message) {

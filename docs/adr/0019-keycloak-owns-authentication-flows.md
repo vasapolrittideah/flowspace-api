@@ -10,7 +10,7 @@ Superseded by [ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessio
 
 ## Context
 
-FlowSpace needs local login, social login, recovery, and room for later federation without owning password storage or identity-provider protocol details. Email addresses can change, so established membership cannot use email as the durable identity key.
+Flowspace needs local login, social login, recovery, and room for later federation without owning password storage or identity-provider protocol details. Email addresses can change, so established membership cannot use email as the durable identity key.
 
 ## Decision
 
@@ -18,7 +18,7 @@ Delegate identity and authentication flows to self-hosted Keycloak. Begin with l
 
 ## Alternatives Considered
 
-### Build a FlowSpace authentication service
+### Build a Flowspace authentication service
 
 - Pros: complete control over screens, credentials, and recovery behavior.
 - Cons: the project would own password security, account recovery, provider linking, and federation protocols.
@@ -33,6 +33,6 @@ Delegate identity and authentication flows to self-hosted Keycloak. Begin with l
 ## Consequences
 
 - Keycloak state, upgrades, themes, provider linking, email trust, and token validation require operation and testing.
-- FlowSpace stores stable subjects for established memberships.
+- Flowspace stores stable subjects for established memberships.
 - Adding an identity provider is a Keycloak integration rather than a new application credential flow.
 - Authentication alone grants no workspace access.

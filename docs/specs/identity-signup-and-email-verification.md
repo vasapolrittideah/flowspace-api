@@ -6,7 +6,7 @@ Status: Implemented.
 
 ## Objective
 
-Allow a new FlowSpace user to create an account with an email address and password, receive an email code, and prove control of that address. The first clients are API clients using disposable data. A successful signup returns an access token and a refresh token immediately, but the unverified account cannot use Workspace.
+Allow a new Flowspace user to create an account with an email address and password, receive an email code, and prove control of that address. The first clients are API clients using disposable data. A successful signup returns an access token and a refresh token immediately, but the unverified account cannot use Workspace.
 
 This spec defines the account creation and email verification flow. It does not report implementation progress or readiness to serve real users.
 
@@ -76,7 +76,7 @@ If the email address already belongs to an account, `CreateAccount` returns `Alr
 - Identity allows at most ten signup requests per source IP per hour. Across the verification, claim, and reset code-request methods, Identity allows at most 60 requests per source IP per hour. It allows at most 100 wrong code guesses per source IP per hour across the three code-submission methods. These limits count retries and requests for missing or ineligible accounts and use shared state across service replicas. The threat model must cover account enumeration, automated signup, email flooding, and online guessing of a six-digit code.
 - Error responses and logs never contain passwords, refresh tokens, verification codes, or full verification messages. Code request and email verification responses never contain refresh tokens. Only successful signup and claim responses in this capability contain a refresh token. Security events record outcomes without storing those values.
 - Identity commits the account and a durable first-email delivery request together. A delivery failure after the account commit does not change the successful signup response. Identity retries delivery, and the signed-in user can request another code after delivery recovers, subject to request limits. The threat model must cover the confidentiality and removal of queued code material.
-- Mailpit captures email in learning environments. Password login, real delivery, optional MFA, independent backups, and tested restoration remain required before real users join FlowSpace.
+- Mailpit captures email in learning environments. Password login, real delivery, optional MFA, independent backups, and tested restoration remain required before real users join Flowspace.
 
 ## Commands
 

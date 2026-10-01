@@ -6,7 +6,7 @@ Status: Approved.
 
 ## Objective
 
-Allow a FlowSpace account holder to sign in with an email address and password, use a separate access and refresh token, and end one or all sessions. Protected services must reject new requests from a revoked or expired session. The first clients are API clients using disposable data.
+Allow a Flowspace account holder to sign in with an email address and password, use a separate access and refresh token, and end one or all sessions. Protected services must reject new requests from a revoked or expired session. The first clients are API clients using disposable data.
 
 This spec defines the shared session lifecycle for password login and for sessions created by signup or account claim. It does not report implementation progress or readiness for real users.
 

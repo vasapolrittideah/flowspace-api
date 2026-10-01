@@ -1,4 +1,4 @@
-# FlowSpace backend project structure
+# Flowspace backend project structure
 
 Status: accepted direction with implementation details still open.
 

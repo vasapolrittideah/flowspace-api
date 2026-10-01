@@ -107,7 +107,7 @@ service IdentityService {
   }
 
   // Starts a Google or GitHub login attempt for an API client.
-  // Returns no FlowSpace token. Rejects Idempotency-Key.
+  // Returns no Flowspace token. Rejects Idempotency-Key.
   // Responses require Cache-Control: no-store.
   rpc StartProviderLogin(StartProviderLoginRequest) returns (StartProviderLoginResponse) {
     option (google.api.http) = {

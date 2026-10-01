@@ -71,7 +71,7 @@ type IdentityServiceClient interface {
 	// Requires exactly one Authorization bearer header.
 	LogoutAllSessions(ctx context.Context, in *LogoutAllSessionsRequest, opts ...grpc.CallOption) (*LogoutAllSessionsResponse, error)
 	// Starts a Google or GitHub login attempt for an API client.
-	// Returns no FlowSpace token. Rejects Idempotency-Key.
+	// Returns no Flowspace token. Rejects Idempotency-Key.
 	// Responses require Cache-Control: no-store.
 	StartProviderLogin(ctx context.Context, in *StartProviderLoginRequest, opts ...grpc.CallOption) (*StartProviderLoginResponse, error)
 	// Creates a device session from an attempt token and handoff code.
@@ -268,7 +268,7 @@ type IdentityServiceServer interface {
 	// Requires exactly one Authorization bearer header.
 	LogoutAllSessions(context.Context, *LogoutAllSessionsRequest) (*LogoutAllSessionsResponse, error)
 	// Starts a Google or GitHub login attempt for an API client.
-	// Returns no FlowSpace token. Rejects Idempotency-Key.
+	// Returns no Flowspace token. Rejects Idempotency-Key.
 	// Responses require Cache-Control: no-store.
 	StartProviderLogin(context.Context, *StartProviderLoginRequest) (*StartProviderLoginResponse, error)
 	// Creates a device session from an attempt token and handoff code.

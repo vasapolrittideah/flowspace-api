@@ -6,7 +6,7 @@ Last reviewed: 2026-09-23.
 
 ## Purpose
 
-This document models threats to the FlowSpace Identity service defined by [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md). It turns security risks into controls and test evidence. Each Identity feature specification must reference the applicable threat IDs.
+This document models threats to the Flowspace Identity service defined by [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md). It turns security risks into controls and test evidence. Each Identity feature specification must reference the applicable threat IDs.
 
 The model covers email and password accounts, six-digit email codes, Google and GitHub login, provider linking, access tokens, refresh tokens, logout, and internal session checks. It covers API clients first. A later browser release needs a separate review of token storage, cookies, cross-site request forgery, and browser code.
 
@@ -14,9 +14,9 @@ Workspace roles and resource authorization remain outside this model. Identity p
 
 ## Deployment stages
 
-The first release uses Mailpit and disposable data. It is a learning environment and must not hold data that users expect FlowSpace to preserve.
+The first release uses Mailpit and disposable data. It is a learning environment and must not hold data that users expect Flowspace to preserve.
 
-Before real users join, FlowSpace must use real email delivery, MFA, independent encrypted backups, and tested restoration. The unresolved risks and release gates in this document must also be closed or explicitly accepted.
+Before real users join, Flowspace must use real email delivery, MFA, independent encrypted backups, and tested restoration. The unresolved risks and release gates in this document must also be closed or explicitly accepted.
 
 ## Security objectives
 
@@ -24,7 +24,7 @@ Identity must meet these objectives:
 
 - Prevent one person from acting as another account.
 - Keep passwords, email codes, provider credentials, refresh tokens, and private signing keys secret.
-- Preserve the correct link between a stable FlowSpace subject, an email address, and each provider identity.
+- Preserve the correct link between a stable Flowspace subject, an email address, and each provider identity.
 - Reject every new request from a session after logout commits.
 - Prevent account discovery through response content, status, timing, or rate-limit behavior where the public contract does not require disclosure.
 - Limit automated guessing, credential stuffing, email flooding, and resource exhaustion.
@@ -72,7 +72,7 @@ flowchart LR
 | Refresh tokens and token hashes | Confidentiality, integrity, and single-use rotation | Theft or a race keeps an unauthorized session alive. |
 | Session records | Integrity and availability | Revoked sessions appear active, or valid users lose access. |
 | Email and provider links | Integrity | A provider identity or email address links to the wrong subject. |
-| Provider client secrets and temporary tokens | Confidentiality | An attacker impersonates FlowSpace or a user at the provider. |
+| Provider client secrets and temporary tokens | Confidentiality | An attacker impersonates Flowspace or a user at the provider. |
 | Personal data | Confidentiality and controlled retention | Data leaks, remains longer than required, or cannot be deleted. |
 | Security audit records | Integrity and controlled disclosure | Attack evidence disappears or logs expose credentials. |
 
@@ -97,7 +97,7 @@ STRIDE classifies threats as spoofing, tampering, repudiation, information discl
 | ID-T05 | Account takeover through password recovery. Spoofing and elevation of privilege. | Return a generic recovery result. Bind recovery to the intended account. Invalidate all recovery challenges after success. Revoke existing sessions under the policy approved by the recovery specification. | Tests cover missing accounts, stale challenges, concurrent reset, session policy, and a lost response after commit. |
 | ID-T06 | Provider callback CSRF, authorization-code injection, mix-up, or open redirect. Spoofing and tampering. | Use the authorization code flow with PKCE `S256` and a one-time `state` value for Google and GitHub. Bind both values to the client and provider. Use and validate a one-time `nonce` for Google. Match redirect URIs exactly, except for an approved loopback port. Disable wildcard callbacks and reject unapproved return locations. | Provider-adapter tests cover wrong provider, state, nonce, PKCE verifier, redirect URI, issuer, and reused transaction. |
 | ID-T07 | A forged or incomplete provider response creates a session. Spoofing. | For Google, validate the ID token signature, issuer, audience, nonce, expiry, and subject. For GitHub, exchange the code on the server and fetch the stable user ID from the authenticated API. Validate verified-email evidence through the documented provider interface. | Contract tests use recorded safe fixtures for each provider and reject every missing or altered security field. Live smoke tests run only with disposable provider accounts. |
-| ID-T08 | Email matching links a provider to another person's account. Elevation of privilege. | Never link accounts by matching email addresses. Use the provider name and stable provider subject as the unique external identity. Require an authenticated FlowSpace session and provider proof for linking. Handle link conflicts without moving ownership. | Tests prove that matching emails stay separate, one provider identity cannot link twice, and a conflict changes no link or session. |
+| ID-T08 | Email matching links a provider to another person's account. Elevation of privilege. | Never link accounts by matching email addresses. Use the provider name and stable provider subject as the unique external identity. Require an authenticated Flowspace session and provider proof for linking. Handle link conflicts without moving ownership. | Tests prove that matching emails stay separate, one provider identity cannot link twice, and a conflict changes no link or session. |
 | ID-T09 | A stolen access token is replayed. Spoofing. | Use short-lived signed access tokens over HTTPS. Never accept tokens in URLs. Validate token type, algorithm, signature, issuer, audience, expiry, subject, and session ID. Check live session state before every protected request. | Token tests change one header or claim at a time. Integration tests reject a valid token after logout commits. |
 | ID-T10 | Algorithm confusion, key substitution, or stale key use makes a forged JWT valid. Spoofing and tampering. | Allow only the configured signing algorithm. Bind keys to the configured issuer. Do not load a key from a token-controlled URL. Select a known key ID and reject unknown keys. Keep old public keys only while accepted tokens can use them. | Tests cover `none`, another algorithm, an unknown key ID, a wrong issuer, a substituted JWKS, and key rotation across the maximum token lifetime. |
 | ID-T11 | A stolen refresh token creates new access tokens. Spoofing. | Generate refresh tokens with a cryptographically secure source. Store only hashes. Rotate on each successful use. Treat reuse of an invalidated token as theft and revoke the affected session. | Database tests cover token secrecy, rotation, replay, two concurrent refreshes, transaction rollback, and reuse detection. |
@@ -132,7 +132,7 @@ Each feature specification must map its abuse tests to the relevant threat IDs. 
 
 Before an Identity capability is complete, its tests must cover valid use, malformed input, replay, concurrency, dependency failure, and cancellation. Security tests must run through the public transport when response status, headers, timing, or request limits are part of the control.
 
-Before real users join, FlowSpace must complete these exercises:
+Before real users join, Flowspace must complete these exercises:
 
 1. Rotate a signing key while old access tokens remain valid, then retire the old public key safely.
 2. Steal a test refresh token, reuse it after rotation, and prove that Identity revokes the affected session.
@@ -166,7 +166,7 @@ Bearer access tokens work for any party that steals them until expiry or session
 
 The initial single-host environment has one administrative and physical failure domain. Backups improve recovery but do not prevent an active host compromise from stealing runtime secrets. The project must review this residual risk and the signing-key design before it preserves real-user data.
 
-MFA is deferred from the first disposable-data release. The architecture requires MFA before real teams use FlowSpace. The MFA design needs a new threat-model review because enrollment and recovery add account-takeover paths.
+MFA is deferred from the first disposable-data release. The architecture requires MFA before real teams use Flowspace. The MFA design needs a new threat-model review because enrollment and recovery add account-takeover paths.
 
 ## Sources
 

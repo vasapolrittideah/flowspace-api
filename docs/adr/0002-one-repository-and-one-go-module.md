@@ -14,7 +14,7 @@ One developer and AI agents maintain related services, contracts, deployment def
 
 ## Decision
 
-Keep FlowSpace in one repository with one `go.mod` at the root. Each application service has its own binaries, container image, database assets, and private packages while repository-wide generation and checks run from the root. Do not add per-service modules or a `go.work` file until independent dependency management becomes a concrete need.
+Keep Flowspace in one repository with one `go.mod` at the root. Each application service has its own binaries, container image, database assets, and private packages while repository-wide generation and checks run from the root. Do not add per-service modules or a `go.work` file until independent dependency management becomes a concrete need.
 
 ## Alternatives Considered
 

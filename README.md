@@ -1,10 +1,10 @@
-# FlowSpace API
+# Flowspace API
 
-FlowSpace is a work-management backend for learning how to build and operate distributed systems. The project uses Go services in one repository and one Go module.
+Flowspace is a work-management backend for learning how to build and operate distributed systems. The project uses Go services in one repository and one Go module.
 
 ## Current status
 
-The Workspace service can create a workspace and read a workspace that the caller belongs to. The local setup uses Keycloak for authentication while the planned FlowSpace Identity service is built. Work and Notifications are also planned; their APIs are not available yet. See the [Workspace specification](docs/specs/workspace-creation-and-reading.md) for the available routes and request details.
+The Workspace service can create a workspace and read a workspace that the caller belongs to. The local setup uses Keycloak for authentication while the planned Flowspace Identity service is built. Work and Notifications are also planned; their APIs are not available yet. See the [Workspace specification](docs/specs/workspace-creation-and-reading.md) for the available routes and request details.
 
 Local data is disposable, and the project is not ready for real user data.
 
@@ -65,4 +65,4 @@ Read [AGENTS.md](AGENTS.md) and [CONSTRAINTS.md](CONSTRAINTS.md) before making c
 
 ## License
 
-FlowSpace is available under the [MIT License](LICENSE).
+Flowspace is available under the [MIT License](LICENSE).

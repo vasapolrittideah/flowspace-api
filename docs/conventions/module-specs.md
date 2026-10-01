@@ -53,7 +53,7 @@ Status: Draft
 - Header: The capability name in the title and the module ID from the file name. The status is `Planned`, `Draft`, `Approved`, or `Implemented`, and it matches the status in the [specification index](../specs/README.md).
 - Objective: Name the users and the questions or results they need, and state the purpose of the capability. Put assumptions in `Assumptions and open questions`.
 - Scope and decisions: Name included and excluded work. Name each module dependency by its module ID, as the `Depends on` column of the index lists it. Link each ADR that the capability applies.
-- Contract: Define the shape that a consumer sees: interfaces, routes, fields, data, and error codes. A consumer can be a developer who reads logs, not only an API client. An API specification uses the [API contract forms](#api-contract-forms).
+- Contract: Define the shape that a consumer sees: interfaces, routes, fields, data, and error codes. A consumer can be a developer who reads logs, not only an API client. An API specification uses the [contract forms](#contract).
 - Behavior: State when each effect happens and why: business rules, invariants, security, consistency, and operations. Do not repeat the contract.
 - Testing strategy: Name each material risk, the test level that proves it, and the environment that the level needs. Test levels include unit, integration, cross-service, and cluster tests. Do not repeat each success criterion or list commands. Commands belong in the verification steps of each [Issue](github-issues.md#template).
 - Implementation boundaries: Name actions that limit the implementer under `### Always`, `### Ask first`, and `### Never`. Examples are "Ask first before you change the outbox schema" and "Never read another service's database". Do not repeat system rules from `Behavior`.
@@ -68,17 +68,12 @@ Status: Draft
 - A module is one capability that can be tested on its own. Write its ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
 - Save one specification as `docs/specs/<module-id>.md`, and add each module to the [specification index](../specs/README.md).
 - If one piece of work needs several modules, add a row for each module to the index with the `Planned` status before you write the first specification. Name the dependencies of each row. The maintainer reviews this map in its own PR.
-- If a specification has more than about 20 success criteria, consider a split into several modules.
 
 ### Sections
 
 - Use the sections through `Success criteria` in the template order.
 - Add either optional final section only when the capability needs it. Add a new top-level section to this convention before you use it in a specification.
-- Use subsections under `Behavior` for topics of the capability, then the shared subsections in the [standard forms](#forms-for-every-specification) when they apply. If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under `### Data and compatibility`.
-- In Identity specifications, map abuse tests in the Testing strategy to applicable [threat IDs](../security/identity-threat-model.md).
 - Put implementation locations and commands in the plan and its Issues. Repeat a project-wide rule only when it changes observable behavior or completion criteria. Put project-wide rules in their source documents.
-- Do not restate the five-second request cap of [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md) unless the capability has an exception.
-- Do not add a success criterion for the repository checks. The [constraints](../../CONSTRAINTS.md) apply to every change.
 
 ### Status and approval
 
@@ -90,30 +85,19 @@ Status: Draft
 - Change the status to `Implemented` in the PR that proves the last success criterion.
 - Keep each `Implemented` specification in the format that it had when it was implemented.
 
-## Standard forms
+## Section forms
 
 Use these forms for information that each specification or each API specification contains, so that readers find the same information in the same shape.
 
-### Forms for every specification
+### Objective
 
-- Objective: Include one sentence about the first users and their data, such as "The first users are API clients, and all data is disposable under ADR-0022."
-- Scope and decisions: Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.` Then write excluded work as a bullet list after "This capability excludes these items:". Write each decision as a bullet that starts with a link to the ADR, followed by a colon and what the ADR decides for this capability.
-- Behavior: Put the subsections of the capability first. Then add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
-- Diagnostics: Name the events or fields that the capability records. Then list the values that logs, traces, metrics, and errors must never contain.
-- Testing strategy: Use the [testing table](#testing-table).
-- Implementation boundaries: Start each item with a verb. Start each `Never` item with "Do not".
+Include one sentence about the first users and their data, such as "The first users are API clients, and all data is disposable under ADR-0022."
 
-#### Testing table
+### Scope and decisions
 
-Write one row for each material risk.
+Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.` Then write excluded work as a bullet list after "This capability excludes these items:". Write each decision as a bullet that starts with a link to the ADR, followed by a colon and what the ADR decides for this capability.
 
-| Column | How to write |
-| --- | --- |
-| `Risk` | The failure that the tests must prevent, in one short phrase, such as "A wrong-purpose code verifies an email". In Identity specifications, add the threat IDs in parentheses, such as "(ID-T03, ID-T19)". |
-| `Test level` | One of `Unit`, `Integration`, `Cross-service`, or `Cluster`. If two levels prove the risk, write both, separated by a comma. |
-| `Environment` | What the test level needs to run, such as `None`, `Docker`, or `Local cluster`. Do not write commands. |
-
-### API contract forms
+### Contract
 
 Start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`." List the ADRs that define Protobuf, REST, versions, and errors in `Scope and decisions`, and do not explain their mechanics again.
 
@@ -174,6 +158,44 @@ Write one row for each condition that a client can tell apart. Put conditions th
 | `gRPC status` | The canonical code in backticks, such as `` `InvalidArgument` ``. Write `Not applicable` when only the REST gateway returns the error. |
 | `HTTP status` | The HTTP status number, such as `400`. |
 
+### Behavior
+
+- Put the subsections of the capability first. Then add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
+- Use subsections under `Behavior` for topics of the capability. If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under `### Data and compatibility`.
+- Diagnostics: Name the events or fields that the capability records. Then list the values that logs, traces, metrics, and errors must never contain.
+- Do not restate the five-second request cap of [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md) unless the capability has an exception.
+
+### Testing strategy
+
+- Use the [testing table](#testing-table).
+- In Identity specifications, map abuse tests in the Testing strategy to applicable [threat IDs](../security/identity-threat-model.md).
+
+#### Testing table
+
+Write one row for each material risk.
+
+| Column | How to write |
+| --- | --- |
+| `Risk` | The failure that the tests must prevent, in one short phrase, such as "A wrong-purpose code verifies an email". In Identity specifications, add the threat IDs in parentheses, such as "(ID-T03, ID-T19)". |
+| `Test level` | One of `Unit`, `Integration`, `Cross-service`, or `Cluster`. If two levels prove the risk, write both, separated by a comma. |
+| `Environment` | What the test level needs to run, such as `None`, `Docker`, or `Local cluster`. Do not write commands. |
+
+### Implementation boundaries
+
+Start each item with a verb. Start each `Never` item with "Do not".
+
+### Success criteria
+
+- If a specification has more than about 20 success criteria, consider a split into several modules.
+- Do not add a success criterion for the repository checks. The [constraints](../../CONSTRAINTS.md) apply to every change.
+
+## Differences from the spec-driven-development skill
+
+The [`spec-driven-development` skill](../../.agents/skills/spec-driven-development/SKILL.md) lists commands, tech stack, project structure, and code style in each specification. This project keeps them in their source documents instead:
+
+- The [technology stack](../technology-stack.md), [project structure](../project-structure.md), and code conventions apply to all modules.
+- The [constraints](../../CONSTRAINTS.md) define the standard checks. Issue verification steps name the commands for each task.
+
 ## Reference
 
 ### Method requirement values
@@ -187,10 +209,3 @@ Write one row for each condition that a client can tell apart. Put conditions th
 | `Retry` | `Requires Idempotency-Key` | The request needs a key, and a retry with the same key returns the original result. |
 | `Retry` | `Rejects Idempotency-Key` | The method rejects a key. Link the ADR that makes this exception. |
 | `Retry` | `Do not retry` | A retry causes a harmful effect. Explain the effect in `Behavior`. |
-
-## Differences from the spec-driven-development skill
-
-The [`spec-driven-development` skill](../../.agents/skills/spec-driven-development/SKILL.md) lists commands, tech stack, project structure, and code style in each specification. This project keeps them in their source documents instead:
-
-- The [technology stack](../technology-stack.md), [project structure](../project-structure.md), and code conventions apply to all modules.
-- The [constraints](../../CONSTRAINTS.md) define the standard checks. Issue verification steps name the commands for each task.

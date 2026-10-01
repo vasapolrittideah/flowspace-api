@@ -4,7 +4,7 @@ One record documents one architectural decision that would be expensive to rever
 
 These records were written on 2026-09-14 from the accepted rationale in the [architecture](../architecture.md). The date on each record is the recording date, not an implementation or production-readiness date.
 
-An accepted record is never edited or deleted. When a decision changes, add a new record that identifies the record it supersedes and update the old record's status.
+The [ADR convention](../conventions/adrs.md) defines the format of a record and its status values. An accepted record is never deleted, and its decision never changes. When a decision changes, add a new record that identifies the record it supersedes and update the old record's status.
 
 | # | Decision | Status |
 | --- | --- | --- |

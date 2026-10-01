@@ -1,6 +1,6 @@
 # Convention file conventions
 
-This convention defines the sections of each file in `docs/conventions/` and the form of each section.
+This convention defines the sections of each file in `docs/conventions/` and how to write each section.
 
 ## Template
 
@@ -11,11 +11,7 @@ This convention defines the sections of each file in `docs/conventions/` and the
 
 ## Template
 
-<the fixed format of the artifact>
-
-## Section forms
-
-<how to write each section of the artifact>
+<the fixed format of the artifact and how to write each part, if any>
 
 ## Rules
 
@@ -23,56 +19,51 @@ This convention defines the sections of each file in `docs/conventions/` and the
 
 ## <special case>
 
-<a format or procedure for one situation>
+<a format or procedure for one situation, if any>
 
 ## Reference
 
-<tables that readers look up while they write>
+<tables that readers look up while they write, if any>
 
 ## Examples
 
-<artifacts that follow the convention>
+<artifacts that follow the convention, if any>
 ```
 
-The [section forms](#section-forms) state how to write each section.
+### Title
 
-## Section forms
+- Write `# <Topic> conventions` in sentence case, such as "Commit message conventions".
 
-Each subsection states how to write one section.
+### Opening paragraph
 
-### Title and opening paragraph
-
-- Write the title as `# <Topic> conventions` in sentence case, such as "Commit message conventions".
-- Write one opening paragraph that starts with "This convention".
+- Write one paragraph that starts with "This convention".
 
 ### Template section
 
 - Omit this section when the artifact has no fixed format.
-- Put the format in a code block with the language of the artifact, such as `markdown` or `text`. Write each variable part as a placeholder in angle brackets.
-- If the convention has `Section forms`, write in each placeholder only what the part means, such as `<facts and limits that exist before the decision>`. Do not add bullets after the code block. End the section with "The [section forms](#section-forms) state how to write each section."
-- If the convention has no `Section forms`, write short placeholders, such as `<type>`. After the code block, write one bullet for each part in template order, in the form `- <Part>: <meaning and form>`.
-
-### Section forms section
-
-- Add this section when a section of the artifact needs more than one rule, a table, or a set of allowed values. Omit it when one bullet after the template can state each part.
-- Start the section with "Each subsection states how to write one section."
-- Write one `###` subsection for each section of the artifact, in template order. Add a subsection for a header field, such as a status line, when it needs a form. Use the name from the template as the heading. If the name repeats a heading of the convention file, add "section" after it, such as "Rules section".
-- State only how to write the section, such as its order, format, allowed values, links, and what to leave out. Do not repeat the meaning from the template placeholder.
-- If a section contains a table, describe the table under a `####` heading in the subsection of that section. Use a table with the columns `Column` and `How to write`, and write one row for each column of the described table.
+- Start with one optional sentence that introduces the format. Then put the format in a code block with the language of the artifact, such as `markdown` or `text`.
+- In the code block, write fixed text as it appears in the artifact, such as `## Context`. Write each variable part as a placeholder in angle brackets.
+- Write each placeholder as a lowercase noun phrase without a final period. State only what the part is, such as `<facts and limits that exist before the decision>`. For an optional part, end the placeholder with `, if any`.
+- After the code block, write one `###` subsection for each part, in template order, even when the part has only one rule. Use the name of the part from the template as the heading, such as "Context" or "Title". If the name repeats another heading in the convention file, add "section" after it, such as "Rules section".
+- In each subsection, write only bullets, with one rule in each bullet. Start each bullet with a verb, such as "Write", "Put", "Use", "Link", or "Omit". If a rule has a condition, state the condition first.
+- Order the bullets in each subsection: placement and format first, then the order and structure of the content, then allowed values and links, and then the rules that start with "Do not".
+- If a part contains a table, add a `####` subsection for the table under the part. Write bullets for the whole table, and then a table with the columns `Column` and `How to write` that has one row for each column of the described table.
+- Do not repeat the meaning from the placeholder in the subsection.
 
 ### Rules section
 
-- Put a rule about one section of the artifact in `Section forms`.
+- Put a rule about one part of the artifact in the subsection of that part under `Template`.
 - Group the rules under `###` subsections when they cover several topics.
 
 ### Special-case sections
 
 - Name the situation in the heading, such as the [gap comment](github-issues.md#gap-comment) in the Issue convention.
+- If the special case has a fixed format, write the format and its parts as the [Template section](#template-section) states.
 
 ### Reference section
 
 - Give each table a `###` heading, such as the [commit types](commit-messages.md#types).
-- Link to the table from each rule or form that uses it.
+- Link to the table from each rule that uses it.
 
 ### Examples section
 

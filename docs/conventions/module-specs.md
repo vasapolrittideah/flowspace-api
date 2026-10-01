@@ -11,7 +11,7 @@ A specification has the following fields and sections:
 
 Module id: `<module-id>`
 
-Status: Draft
+Status: <current state of the specification>
 
 ## Objective
 
@@ -50,11 +50,17 @@ Status: Draft
 <checks that this capability must pass before Flowspace stops using disposable data, if any>
 ```
 
-The [section forms](#section-forms) state how to write each section.
+### Title
 
-## Section forms
+- Write the capability name after the `Spec:` prefix.
 
-Each subsection states how to write one section.
+### Module id
+
+- Copy the module ID from the file name, in backticks.
+
+### Status
+
+- Write `Planned`, `Draft`, `Approved`, or `Implemented`. Write the same status as the [specification index](../specs/README.md).
 
 ### Objective
 
@@ -69,17 +75,14 @@ Each subsection states how to write one section.
 
 ### Contract
 
-Include what a developer who reads logs sees, as well as what an API client sees.
-
-For an API specification, start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`." List the ADRs that define Protobuf, REST, versions, and errors in `Scope and decisions`, and do not explain their mechanics again.
-
-Use these tables in this order: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, and `Errors`. Omit a table that has no rows. Keep the rows of `Methods` and `Method requirements` in the same RPC order.
-
-Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
+- Include what a developer who reads logs sees, as well as what an API client sees.
+- For an API specification, start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`." List the ADRs that define Protobuf, REST, versions, and errors in `Scope and decisions`, and do not explain their mechanics again.
+- Use these tables in this order: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, and `Errors`. Omit a table that has no rows. Keep the rows of `Methods` and `Method requirements` in the same RPC order.
+- Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
 
 #### Methods
 
-Write one row for each RPC.
+- Write one row for each RPC.
 
 | Column | How to write |
 | --- | --- |
@@ -90,7 +93,7 @@ Write one row for each RPC.
 
 #### Method requirements
 
-Write one row for each RPC, in the order of `Methods`.
+- Write one row for each RPC, in the order of `Methods`.
 
 | Column | How to write |
 | --- | --- |
@@ -100,7 +103,7 @@ Write one row for each RPC, in the order of `Methods`.
 
 #### HTTP-only endpoints
 
-Use this table only for endpoints that are not RPCs, such as a provider callback. Write one row for each endpoint.
+- Use this table only for endpoints that are not RPCs, such as a provider callback. Write one row for each endpoint.
 
 | Column | How to write |
 | --- | --- |
@@ -112,7 +115,7 @@ Use this table only for endpoints that are not RPCs, such as a provider callback
 
 #### Resource fields
 
-Write one table for each resource that a method returns, and put the resource name in the sentence before the table. Write one row for each field.
+- Write one table for each resource that a method returns, and put the resource name in the sentence before the table. Write one row for each field.
 
 | Column | How to write |
 | --- | --- |
@@ -122,7 +125,7 @@ Write one table for each resource that a method returns, and put the resource na
 
 #### Errors
 
-Write one row for each condition that a client can tell apart. Put conditions that return the same status for a security reason in one row.
+- Write one row for each condition that a client can tell apart. Put conditions that return the same status for a security reason in one row.
 
 | Column | How to write |
 | --- | --- |
@@ -132,19 +135,20 @@ Write one row for each condition that a client can tell apart. Put conditions th
 
 ### Behavior
 
-- Do not repeat the contract.
 - Put subsections for the topics of the capability first. Then add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
 - If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under `### Data and compatibility`.
 - Under `### Diagnostics`, name the events or fields that the capability records. Then list the values that logs, traces, metrics, and errors must never contain.
 - Do not restate the five-second request cap of [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md) unless the capability has an exception.
+- Do not repeat the contract.
 
 ### Testing strategy
 
-Write the testing strategy as the [testing table](#testing-table). Do not repeat each success criterion or list commands. Commands belong in the verification steps of each [Issue](github-issues.md#template).
+- Write the testing strategy as the [testing table](#testing-table).
+- Do not repeat each success criterion or list commands. Commands belong in the verification steps of each [Issue](github-issues.md#template).
 
 #### Testing table
 
-Write one row for each material risk.
+- Write one row for each material risk.
 
 | Column | How to write |
 | --- | --- |
@@ -166,17 +170,17 @@ Write one row for each material risk.
 
 ### Assumptions and open questions
 
-The [status rules](#status-and-approval) state when to resolve each item.
+- Resolve or remove each item before approval, as the [status rules](#status-and-approval) state.
 
 ### Readiness for real teams
 
-List only checks that belong to this capability. For checks that apply to the whole system, link the [architecture](../architecture.md#observability-and-recovery).
+- List only checks that belong to this capability.
+- For checks that apply to the whole system, link the [architecture](../architecture.md#observability-and-recovery).
 
 ## Rules
 
 ### Modules and files
 
-- Write the capability name in the title and the module ID from the file name in the header.
 - A module is one capability that can be tested on its own. Write its ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
 - Save one specification as `docs/specs/<module-id>.md`, and add each module to the [specification index](../specs/README.md).
 - If one piece of work needs several modules, add a row for each module to the index with the `Planned` status before you write the first specification. Name the dependencies of each row. The maintainer reviews this map in its own PR.
@@ -189,7 +193,6 @@ List only checks that belong to this capability. For checks that apply to the wh
 
 ### Status and approval
 
-- The status is `Planned`, `Draft`, `Approved`, or `Implemented`, and it matches the status in the [specification index](../specs/README.md).
 - `Planned` means that the module is in the index and has no specification file yet. `Draft` means that the specification exists and is not approved. A `Draft` specification can merge into `main`, but it does not permit planning.
 - Only the maintainer approves a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope>): approve <capability> spec`. An agent changes the status to `Approved` only when the maintainer asks for it in chat or in the PR review.
 - Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.

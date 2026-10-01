@@ -13,6 +13,10 @@ import (
 var (
 	ErrProviderLoginUnavailable = errors.New("provider login unavailable")
 	ErrInvalidProviderCallback  = errors.New("invalid provider callback")
+	// ErrProviderHandoffRejected covers an unknown, pending, expired,
+	// exhausted, failed, or claimed attempt alike.
+	ErrProviderHandoffRejected    = errors.New("provider handoff rejected")
+	ErrProviderAccountUnavailable = errors.New("provider account unavailable")
 )
 
 // ProviderClient is the registered OAuth client for one provider. Identity
@@ -34,6 +38,9 @@ type ProviderLoginService struct {
 	callbackLimit func(context.Context, string) error
 	verifierKey   []byte
 	clients       map[domain.Provider]ProviderClient
+	sessions      outbound.ProviderSessionRepository
+	signer        outbound.TokenSigner
+	failureLimit  func(context.Context, string) error
 }
 
 var _ inbound.ProviderLoginService = (*ProviderLoginService)(nil)
@@ -42,6 +49,15 @@ func NewProviderLoginService(repository outbound.ProviderAttemptRepository, sour
 	verifierKey []byte, clients map[domain.Provider]ProviderClient,
 ) *ProviderLoginService {
 	return &ProviderLoginService{repository: repository, sourceLimit: sourceLimit, callbackLimit: callbackLimit, verifierKey: verifierKey, clients: clients}
+}
+
+// WithSessions enables CreateProviderSession. The failure limit counts each
+// rejected handoff from a source.
+func (s *ProviderLoginService) WithSessions(sessions outbound.ProviderSessionRepository, signer outbound.TokenSigner,
+	failureLimit func(context.Context, string) error,
+) *ProviderLoginService {
+	s.sessions, s.signer, s.failureLimit = sessions, signer, failureLimit
+	return s
 }
 
 func (s *ProviderLoginService) StartProviderLogin(ctx context.Context, input inbound.StartProviderLoginInput) (inbound.StartProviderLoginResult, error) {
@@ -153,6 +169,73 @@ func (s *ProviderLoginService) verify(ctx context.Context, identity outbound.Pro
 	default:
 		return outbound.ProviderIdentity{}, unavailable(err)
 	}
+}
+
+func (s *ProviderLoginService) CreateProviderSession(ctx context.Context, input inbound.CreateProviderSessionInput) (inbound.CreateProviderSessionResult, error) {
+	if !domain.ValidProviderSecret(input.AttemptToken) {
+		return inbound.CreateProviderSessionResult{}, domain.ErrInvalidAttemptToken
+	}
+	if !domain.ValidProviderSecret(input.HandoffCode) {
+		return inbound.CreateProviderSessionResult{}, domain.ErrInvalidHandoffCode
+	}
+	if s.repository == nil || s.sessions == nil || s.signer == nil || s.failureLimit == nil || len(s.verifierKey) != 32 {
+		return inbound.CreateProviderSessionResult{}, ErrProviderLoginUnavailable
+	}
+	attempt := domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretAttemptToken, input.AttemptToken)
+	handoff := domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretHandoffCode, input.HandoffCode)
+	var result inbound.CreateProviderSessionResult
+	linked := false
+	err := s.sessions.WithinProviderSessionTransaction(ctx, func(tx outbound.ProviderSessionTransaction) error {
+		var err error
+		result, linked, err = s.claimSession(ctx, tx, attempt, handoff)
+		return err
+	})
+	switch {
+	case errors.Is(err, ErrProviderHandoffRejected):
+		return inbound.CreateProviderSessionResult{}, s.rejectHandoff(ctx, attempt, input.Source)
+	case err != nil:
+		return inbound.CreateProviderSessionResult{}, unavailable(err)
+	case !linked:
+		return inbound.CreateProviderSessionResult{}, ErrProviderAccountUnavailable
+	}
+	return result, nil
+}
+
+// claimSession claims the provider result and issues a session for its linked
+// account. An unlinked result stays claimed, so it cannot be retried.
+func (s *ProviderLoginService) claimSession(ctx context.Context, tx outbound.ProviderSessionTransaction, attempt, handoff [32]byte,
+) (inbound.CreateProviderSessionResult, bool, error) {
+	claim, claimed, err := tx.ClaimProviderResult(ctx, attempt, handoff)
+	if err != nil {
+		return inbound.CreateProviderSessionResult{}, false, err
+	}
+	if !claimed {
+		return inbound.CreateProviderSessionResult{}, false, ErrProviderHandoffRejected
+	}
+	account, found, err := tx.LockLinkedAccount(ctx, claim.Provider, claim.Subject)
+	if err != nil || !found {
+		return inbound.CreateProviderSessionResult{}, false, err
+	}
+	tokens, err := NewSessionService(tx, s.signer).Issue(ctx, account.Subject)
+	if err != nil {
+		return inbound.CreateProviderSessionResult{}, false, err
+	}
+	return inbound.CreateProviderSessionResult{
+		Subject: account.Subject, EmailVerified: account.EmailVerified,
+		AccessToken: tokens.AccessToken, RefreshToken: tokens.RefreshToken,
+		AccessTokenExpiresAt: tokens.AccessTokenExpiresAt, RefreshTokenExpiresAt: tokens.RefreshTokenExpiresAt,
+		SessionExpiresAt: tokens.SessionExpiresAt,
+	}, true, nil
+}
+
+func (s *ProviderLoginService) rejectHandoff(ctx context.Context, attempt [32]byte, source string) error {
+	if err := s.repository.RecordFailedProviderHandoff(ctx, attempt); err != nil {
+		return unavailable(err)
+	}
+	if err := s.failureLimit(ctx, source); err != nil {
+		return err
+	}
+	return ErrProviderHandoffRejected
 }
 
 func unavailable(err error) error {

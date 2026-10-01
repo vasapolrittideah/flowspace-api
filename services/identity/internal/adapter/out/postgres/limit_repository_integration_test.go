@@ -424,6 +424,9 @@ func TestSharedLimits(t *testing.T) {
 	if err := first.ProviderLoginStart(ctx, "192.0.2.62"); !errors.Is(err, app.ErrLimitUnavailable) {
 		t.Fatalf("unavailable limit repository allowed a provider login start: %v", err)
 	}
+	if err := first.ProviderSessionFailure(ctx, "192.0.2.86"); !errors.Is(err, app.ErrLimitUnavailable) {
+		t.Fatalf("unavailable limit repository allowed a failed provider session claim: %v", err)
+	}
 	if err := goose.DownContext(ctx, db, "."); err != nil {
 		t.Fatalf("roll back login limit migration: %v", err)
 	}

@@ -27,6 +27,7 @@ var (
 	_ outbound.AccountClaimRepository          = (*AccountRepository)(nil)
 	_ outbound.PasswordResetCodeRepository     = (*AccountRepository)(nil)
 	_ outbound.PasswordResetRepository         = (*AccountRepository)(nil)
+	_ outbound.ProviderSessionRepository       = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
@@ -59,6 +60,7 @@ var (
 	_ outbound.PasswordSessionTransaction       = (*accountTransaction)(nil)
 	_ outbound.PasswordResetCodeTransaction     = (*accountTransaction)(nil)
 	_ outbound.PasswordResetTransaction         = (*accountTransaction)(nil)
+	_ outbound.ProviderSessionTransaction       = (*accountTransaction)(nil)
 )
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {
@@ -216,6 +218,34 @@ func (t *accountTransaction) LockPasswordAccount(ctx context.Context, subject st
 		return outbound.PasswordAccount{}, err
 	}
 	return outbound.PasswordAccount{Subject: account.Subject, PasswordHash: account.PasswordHash, EmailVerified: account.EmailVerifiedAt.Valid}, nil
+}
+
+func (r *AccountRepository) WithinProviderSessionTransaction(ctx context.Context, fn func(outbound.ProviderSessionTransaction) error) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (t *accountTransaction) ClaimProviderResult(ctx context.Context, attemptVerifier, handoffVerifier [32]byte) (outbound.ProviderResult, bool, error) {
+	row, err := t.queries.ClaimProviderLoginResult(ctx, sqlc.ClaimProviderLoginResultParams{
+		AttemptTokenVerifier: attemptVerifier[:], HandoffCodeVerifier: handoffVerifier[:],
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.ProviderResult{}, false, nil
+	}
+	if err != nil {
+		return outbound.ProviderResult{}, false, err
+	}
+	return outbound.ProviderResult{Provider: row.Provider, Subject: row.ProviderSubject.String}, true, nil
+}
+
+func (t *accountTransaction) LockLinkedAccount(ctx context.Context, provider, providerSubject string) (outbound.LinkedAccount, bool, error) {
+	account, err := t.queries.GetLinkedAccountForUpdate(ctx, sqlc.GetLinkedAccountForUpdateParams{Provider: provider, ProviderSubject: providerSubject})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.LinkedAccount{}, false, nil
+	}
+	if err != nil {
+		return outbound.LinkedAccount{}, false, err
+	}
+	return outbound.LinkedAccount{Subject: account.Subject, EmailVerified: account.EmailVerifiedAt.Valid}, true, nil
 }
 
 func (r *AccountRepository) WithinClaimCodeTransaction(ctx context.Context, fn func(outbound.ClaimCodeTransaction) error) error {

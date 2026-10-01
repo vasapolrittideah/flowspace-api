@@ -295,6 +295,25 @@ func TestProviderLoginTelemetryOmitsSecrets(t *testing.T) {
 	}
 }
 
+func TestProviderSessionTelemetryOmitsSecrets(t *testing.T) {
+	for _, outcome := range []int{http.StatusOK, http.StatusUnauthorized, http.StatusTooManyRequests} {
+		core, logs := observer.New(zap.InfoLevel)
+		handler := observeRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(outcome)
+			_, _ = w.Write([]byte(`{"accessToken":"secret-access","refreshToken":"secret-refresh"}`))
+		}), zap.New(core))
+		handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequestWithContext(t.Context(), http.MethodPost,
+			"/v1/provider-sessions?handoffCode=secret-code", strings.NewReader(`{"attemptToken":"secret-attempt","handoffCode":"secret-code"}`)))
+		if logs.Len() != 1 {
+			t.Fatalf("status %d log count = %d", outcome, logs.Len())
+		}
+		entry := logs.All()[0].ContextMap()
+		if fields := fmt.Sprint(entry); strings.Contains(fields, "secret-") || entry["operation"] != "POST /v1/provider-sessions" {
+			t.Fatalf("status %d telemetry contains secrets or misses its operation: %s", outcome, fields)
+		}
+	}
+}
+
 func TestPublicHandlerRoutesProviderCallbacks(t *testing.T) {
 	var provider string
 	callback := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

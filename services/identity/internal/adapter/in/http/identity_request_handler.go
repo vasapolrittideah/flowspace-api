@@ -20,7 +20,7 @@ func (h *IdentityRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Cache-Control", "no-store")
 	if _, present := r.Header[http.CanonicalHeaderKey("Idempotency-Key")]; present &&
 		(r.URL.Path == "/v1/accounts" || r.URL.Path == "/v1/unverified-account-claims" || r.URL.Path == "/v1/password-sessions" || r.URL.Path == "/v1/session-refreshes" ||
-			r.URL.Path == "/v1/provider-login-attempts") {
+			r.URL.Path == "/v1/provider-login-attempts" || r.URL.Path == "/v1/provider-sessions") {
 		http.Error(w, "idempotency-key is not supported", http.StatusBadRequest)
 		return
 	}

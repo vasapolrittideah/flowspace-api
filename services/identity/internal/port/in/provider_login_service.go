@@ -26,9 +26,21 @@ type CompleteProviderCallbackInput struct {
 	Source   string
 }
 
+type CreateProviderSessionInput struct {
+	AttemptToken string
+	HandoffCode  string
+	Source       string
+}
+
+// CreateProviderSessionResult has the same fields as a password session.
+type CreateProviderSessionResult = CreatePasswordSessionResult
+
 type ProviderLoginService interface {
 	StartProviderLogin(ctx context.Context, input StartProviderLoginInput) (StartProviderLoginResult, error)
 	// CompleteProviderCallback validates a provider callback and returns a
 	// one-time handoff code.
 	CompleteProviderCallback(ctx context.Context, input CompleteProviderCallbackInput) (string, error)
+	// CreateProviderSession claims a provider result with both handoff proofs
+	// and creates one session for the linked account.
+	CreateProviderSession(ctx context.Context, input CreateProviderSessionInput) (CreateProviderSessionResult, error)
 }

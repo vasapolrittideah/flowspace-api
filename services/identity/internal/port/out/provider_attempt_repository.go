@@ -37,4 +37,7 @@ type ProviderAttemptRepository interface {
 	RecordProviderResult(ctx context.Context, attemptID string, identity ProviderIdentity, handoffVerifier [32]byte) (bool, error)
 	// FailProviderAttempt records a failed callback for an attempt without a result.
 	FailProviderAttempt(ctx context.Context, attemptID string) error
+	// RecordFailedProviderHandoff counts a failed session claim against a live,
+	// unclaimed attempt. The fifth failure exhausts the attempt.
+	RecordFailedProviderHandoff(ctx context.Context, attemptVerifier [32]byte) error
 }

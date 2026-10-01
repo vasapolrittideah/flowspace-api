@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,6 +27,12 @@ type providerAttemptRepository struct {
 	recordAllowed bool
 	recordErr     error
 	failed        []string
+	handoffFails  [][32]byte
+}
+
+func (r *providerAttemptRepository) RecordFailedProviderHandoff(_ context.Context, attempt [32]byte) error {
+	r.handoffFails = append(r.handoffFails, attempt)
+	return nil
 }
 
 func (r *providerAttemptRepository) ConsumeProviderState(_ context.Context, provider string, state [32]byte) (outbound.ProviderAttemptProof, bool, error) {
@@ -307,5 +314,209 @@ func TestCompleteProviderCallbackAppliesSourceLimitFirst(t *testing.T) {
 		if !errors.Is(err, limit) || code != "" || len(f.repository.consumed) != 0 || len(f.identity.exchanges) != 0 {
 			t.Fatalf("limit %v: code %q, error %v", limit, code, err)
 		}
+	}
+}
+
+type providerSessionRepository struct {
+	result    outbound.ProviderResult
+	claimed   bool
+	account   outbound.LinkedAccount
+	linked    bool
+	err       error
+	commitErr error
+	claims    [][2][32]byte
+	lookups   []string
+	sessions  []string
+	commits   int
+}
+
+func (r *providerSessionRepository) WithinProviderSessionTransaction(_ context.Context, fn func(outbound.ProviderSessionTransaction) error) error {
+	if err := fn(r); err != nil {
+		return err
+	}
+	if r.commitErr != nil {
+		return r.commitErr
+	}
+	r.commits++
+	return nil
+}
+
+func (r *providerSessionRepository) ClaimProviderResult(_ context.Context, attempt, handoff [32]byte) (outbound.ProviderResult, bool, error) {
+	r.claims = append(r.claims, [2][32]byte{attempt, handoff})
+	return r.result, r.claimed, r.err
+}
+
+func (r *providerSessionRepository) LockLinkedAccount(_ context.Context, provider, subject string) (outbound.LinkedAccount, bool, error) {
+	r.lookups = append(r.lookups, provider+":"+subject)
+	return r.account, r.linked, nil
+}
+
+func (r *providerSessionRepository) Create(_ context.Context, subject string, _ []byte) (outbound.SessionRecord, error) {
+	r.sessions = append(r.sessions, subject)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	return outbound.SessionRecord{ID: "session", CreatedAt: now, IdleExpiresAt: now.Add(30 * 24 * time.Hour), AbsoluteExpiresAt: now.Add(90 * 24 * time.Hour)}, nil
+}
+
+type providerSessionSigner struct{}
+
+func (providerSessionSigner) Sign(outbound.AccessTokenClaims) (string, error) { return "access", nil }
+
+type providerSessionFixture struct {
+	attempts *providerAttemptRepository
+	sessions *providerSessionRepository
+	limited  []string
+	limitErr error
+	service  *app.ProviderLoginService
+	key      []byte
+	token    string
+	code     string
+}
+
+func newProviderSessionFixture(t *testing.T) *providerSessionFixture {
+	t.Helper()
+	f := &providerSessionFixture{
+		attempts: &providerAttemptRepository{},
+		sessions: &providerSessionRepository{
+			result: outbound.ProviderResult{Provider: "google", Subject: "google-subject"}, claimed: true,
+			account: outbound.LinkedAccount{Subject: "subject-1", EmailVerified: true}, linked: true,
+		},
+		key: make([]byte, 32), token: strings.Repeat("A", 43), code: strings.Repeat("B", 42) + "A",
+	}
+	f.service = app.NewProviderLoginService(f.attempts, allowLimit, allowLimit, f.key, providerClients).
+		WithSessions(f.sessions, providerSessionSigner{}, func(_ context.Context, source string) error {
+			f.limited = append(f.limited, source)
+			return f.limitErr
+		})
+	return f
+}
+
+func (f *providerSessionFixture) create(t *testing.T) (inbound.CreateProviderSessionResult, error) {
+	t.Helper()
+	return f.service.CreateProviderSession(t.Context(), inbound.CreateProviderSessionInput{AttemptToken: f.token, HandoffCode: f.code, Source: "192.0.2.1"})
+}
+
+func TestCreateProviderSessionIssuesSessionForLinkedAccount(t *testing.T) {
+	f := newProviderSessionFixture(t)
+
+	result, err := f.create(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	proofs := [2][32]byte{
+		domain.ProviderSecretVerifier(f.key, domain.ProviderSecretAttemptToken, f.token),
+		domain.ProviderSecretVerifier(f.key, domain.ProviderSecretHandoffCode, f.code),
+	}
+	if len(f.sessions.claims) != 1 || f.sessions.claims[0] != proofs {
+		t.Fatalf("claims = %x", f.sessions.claims)
+	}
+	if strings.Join(f.sessions.lookups, ",") != "google:google-subject" || strings.Join(f.sessions.sessions, ",") != "subject-1" || f.sessions.commits != 1 {
+		t.Fatalf("lookups = %v, sessions = %v, commits = %d", f.sessions.lookups, f.sessions.sessions, f.sessions.commits)
+	}
+	want := inbound.CreateProviderSessionResult{
+		Subject: "subject-1", EmailVerified: true, AccessToken: "access", RefreshToken: result.RefreshToken,
+		AccessTokenExpiresAt:  time.Date(2026, 10, 1, 12, 10, 0, 0, time.UTC),
+		RefreshTokenExpiresAt: time.Date(2026, 10, 31, 12, 0, 0, 0, time.UTC),
+		SessionExpiresAt:      time.Date(2026, 12, 30, 12, 0, 0, 0, time.UTC),
+	}
+	if result != want || result.RefreshToken == "" {
+		t.Fatalf("result = %+v", result)
+	}
+	if len(f.attempts.handoffFails) != 0 || len(f.limited) != 0 {
+		t.Fatalf("success counted as failure: %d, %v", len(f.attempts.handoffFails), f.limited)
+	}
+}
+
+func TestCreateProviderSessionCountsRejectedHandoff(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		limitErr error
+		want     error
+	}{
+		{"within limit", nil, app.ErrProviderHandoffRejected},
+		{"source limit", app.ErrRateLimited, app.ErrRateLimited},
+		{"limit unavailable", app.ErrLimitUnavailable, app.ErrLimitUnavailable},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f := newProviderSessionFixture(t)
+			f.sessions.claimed, f.limitErr = false, test.limitErr
+
+			result, err := f.create(t)
+			if !errors.Is(err, test.want) || result != (inbound.CreateProviderSessionResult{}) {
+				t.Fatalf("result = %+v, err = %v", result, err)
+			}
+			attempt := domain.ProviderSecretVerifier(f.key, domain.ProviderSecretAttemptToken, f.token)
+			if len(f.attempts.handoffFails) != 1 || f.attempts.handoffFails[0] != attempt || strings.Join(f.limited, ",") != "192.0.2.1" {
+				t.Fatalf("failures = %x, limited = %v", f.attempts.handoffFails, f.limited)
+			}
+			if len(f.sessions.lookups) != 0 || len(f.sessions.sessions) != 0 {
+				t.Fatalf("lookups = %v, sessions = %v", f.sessions.lookups, f.sessions.sessions)
+			}
+		})
+	}
+}
+
+func TestCreateProviderSessionConsumesUnlinkedResultWithoutSession(t *testing.T) {
+	f := newProviderSessionFixture(t)
+	f.sessions.linked = false
+
+	_, err := f.create(t)
+	if !errors.Is(err, app.ErrProviderAccountUnavailable) {
+		t.Fatalf("err = %v", err)
+	}
+	if f.sessions.commits != 1 || len(f.sessions.sessions) != 0 || len(f.attempts.handoffFails) != 0 || len(f.limited) != 0 {
+		t.Fatalf("commits = %d, sessions = %v, failures = %d, limited = %v", f.sessions.commits, f.sessions.sessions, len(f.attempts.handoffFails), f.limited)
+	}
+}
+
+func TestCreateProviderSessionRejectsMalformedProofsBeforeClaim(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		token, code string
+		want        error
+	}{
+		{"missing attempt token", "", strings.Repeat("A", 43), domain.ErrInvalidAttemptToken},
+		{"long attempt token", strings.Repeat("A", 44), strings.Repeat("A", 43), domain.ErrInvalidAttemptToken},
+		{"missing handoff code", strings.Repeat("A", 43), "", domain.ErrInvalidHandoffCode},
+		{"invalid handoff code", strings.Repeat("A", 43), strings.Repeat("A", 42) + "+", domain.ErrInvalidHandoffCode},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f := newProviderSessionFixture(t)
+			f.token, f.code = test.token, test.code
+
+			if _, err := f.create(t); !errors.Is(err, test.want) {
+				t.Fatalf("err = %v", err)
+			}
+			if len(f.sessions.claims) != 0 || len(f.limited) != 0 {
+				t.Fatalf("claims = %d, limited = %v", len(f.sessions.claims), f.limited)
+			}
+		})
+	}
+}
+
+func TestCreateProviderSessionFailsClosedWithoutTokens(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		mutate func(*providerSessionFixture)
+		want   error
+	}{
+		{"claim failure", func(f *providerSessionFixture) { f.sessions.err = errors.New("database down") }, app.ErrProviderLoginUnavailable},
+		{"commit failure", func(f *providerSessionFixture) { f.sessions.commitErr = errors.New("commit failed") }, app.ErrProviderLoginUnavailable},
+		{"canceled", func(f *providerSessionFixture) { f.sessions.err = context.Canceled }, context.Canceled},
+		{"not configured", func(f *providerSessionFixture) {
+			f.service = app.NewProviderLoginService(f.attempts, allowLimit, allowLimit, f.key, providerClients)
+		}, app.ErrProviderLoginUnavailable},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f := newProviderSessionFixture(t)
+			test.mutate(f)
+
+			result, err := f.create(t)
+			if !errors.Is(err, test.want) || result != (inbound.CreateProviderSessionResult{}) {
+				t.Fatalf("result = %+v, err = %v", result, err)
+			}
+			if len(f.attempts.handoffFails) != 0 {
+				t.Fatal("dependency failure counted as rejected handoff")
+			}
+		})
 	}
 }

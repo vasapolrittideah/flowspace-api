@@ -11,6 +11,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const claimProviderLoginResult = `-- name: ClaimProviderLoginResult :one
+UPDATE identity_provider_login_attempts
+SET session_claimed_at = statement_timestamp()
+WHERE attempt_token_verifier = $1
+  AND handoff_code_verifier = $2
+  AND session_claimed_at IS NULL
+  AND handoff_failures < 5
+  AND expires_at > statement_timestamp()
+RETURNING provider, provider_subject
+`
+
+type ClaimProviderLoginResultParams struct {
+	AttemptTokenVerifier []byte
+	HandoffCodeVerifier  []byte
+}
+
+type ClaimProviderLoginResultRow struct {
+	Provider        string
+	ProviderSubject pgtype.Text
+}
+
+func (q *Queries) ClaimProviderLoginResult(ctx context.Context, arg ClaimProviderLoginResultParams) (ClaimProviderLoginResultRow, error) {
+	row := q.db.QueryRow(ctx, claimProviderLoginResult, arg.AttemptTokenVerifier, arg.HandoffCodeVerifier)
+	var i ClaimProviderLoginResultRow
+	err := row.Scan(&i.Provider, &i.ProviderSubject)
+	return i, err
+}
+
 const consumeProviderLoginState = `-- name: ConsumeProviderLoginState :one
 UPDATE identity_provider_login_attempts
 SET state_consumed_at = statement_timestamp()
@@ -90,6 +118,47 @@ WHERE id = $1
 
 func (q *Queries) FailProviderLoginAttempt(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, failProviderLoginAttempt, id)
+	return err
+}
+
+const getLinkedAccountForUpdate = `-- name: GetLinkedAccountForUpdate :one
+SELECT account.subject, account.email_verified_at
+FROM identity_provider_links AS link
+JOIN identity_accounts AS account ON account.subject = link.account_subject
+WHERE link.provider = $1
+  AND link.provider_subject = $2
+  AND account.retired_at IS NULL
+FOR UPDATE OF account
+`
+
+type GetLinkedAccountForUpdateParams struct {
+	Provider        string
+	ProviderSubject string
+}
+
+type GetLinkedAccountForUpdateRow struct {
+	Subject         string
+	EmailVerifiedAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetLinkedAccountForUpdate(ctx context.Context, arg GetLinkedAccountForUpdateParams) (GetLinkedAccountForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getLinkedAccountForUpdate, arg.Provider, arg.ProviderSubject)
+	var i GetLinkedAccountForUpdateRow
+	err := row.Scan(&i.Subject, &i.EmailVerifiedAt)
+	return i, err
+}
+
+const recordProviderHandoffFailure = `-- name: RecordProviderHandoffFailure :exec
+UPDATE identity_provider_login_attempts
+SET handoff_failures = handoff_failures + 1
+WHERE attempt_token_verifier = $1
+  AND session_claimed_at IS NULL
+  AND handoff_failures < 5
+  AND expires_at > statement_timestamp()
+`
+
+func (q *Queries) RecordProviderHandoffFailure(ctx context.Context, attemptTokenVerifier []byte) error {
+	_, err := q.db.Exec(ctx, recordProviderHandoffFailure, attemptTokenVerifier)
 	return err
 }
 

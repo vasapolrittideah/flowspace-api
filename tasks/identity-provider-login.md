@@ -41,9 +41,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Handoff
 
-- [ ] Both RPC routes and the Google callback route match the approved contract, and generated output matches the source Protobuf.
-- [ ] Google callback tests reject altered or replayed proof and show one handoff code without a FlowSpace token.
-- [ ] Attempt expiry, start and callback limits, safe errors, and secret-free callback content pass focused tests.
+- [x] Both RPC routes and the Google callback route match the approved contract, and generated output matches the source Protobuf.
+- [x] Google callback tests reject altered or replayed proof and show one handoff code without a FlowSpace token.
+- [x] Attempt expiry, start and callback limits, safe errors, and secret-free callback content pass focused tests.
 
 ### Phase 2: Provider sessions and accounts
 

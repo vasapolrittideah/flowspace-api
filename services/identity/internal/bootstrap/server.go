@@ -96,7 +96,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	accountRepo := postgres.NewAccountRepository(pool)
 	limits := app.NewLimitService(postgres.NewLimitRepository(pool))
 	providerLogin := app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), limits.ProviderLoginStart, limits.ProviderCallback,
-		verifierKey, providerLoginClients(ctx, config))
+		verifierKey, providerLoginClients(ctx, config)).WithSessions(accountRepo, signer, limits.ProviderSessionFailure)
 	checkPassword := hibp.NewPasswordChecker(&http.Client{Timeout: 4 * time.Second}).Compromised
 	handler := httptransport.NewIdentityHandler(
 		app.NewSignupService(accountRepo, signer, protector, limits.Signup, checkPassword, verifierKey),
@@ -371,7 +371,7 @@ func safeOperation(r *http.Request) string {
 	for _, path := range []string{
 		"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
 		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-reset-codes", "/v1/password-resets", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts", "/v1/account-session-logouts",
-		"/v1/provider-login-attempts", "/v1/provider-login-callbacks/google", "/v1/provider-login-callbacks/github",
+		"/v1/provider-login-attempts", "/v1/provider-sessions", "/v1/provider-login-callbacks/google", "/v1/provider-login-callbacks/github",
 	} {
 		if r.URL.Path == path {
 			return r.Method + " " + path

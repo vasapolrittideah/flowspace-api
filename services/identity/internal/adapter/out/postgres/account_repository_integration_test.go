@@ -109,6 +109,9 @@ func TestIdentityRepository(t *testing.T) {
 	testClaimCode(t, ctx, pool)
 	testRequestPasswordResetCode(t, ctx, pool)
 	testProviderAttemptRepository(t, ctx, pool)
+	t.Run("provider sessions claim one handoff for a linked account", func(t *testing.T) {
+		testProviderSessionRepository(t, ctx, pool, dsn)
+	})
 
 	t.Run("account claims replace one unverified identity", func(t *testing.T) {
 		testAccountClaimRepository(t, pool)

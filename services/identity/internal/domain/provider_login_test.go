@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -64,5 +65,21 @@ func TestNewProviderHandoffCodeHas256RandomBits(t *testing.T) {
 	decoded, err := base64.RawURLEncoding.DecodeString(first)
 	if err != nil || len(decoded) != 32 || first == second {
 		t.Fatalf("handoff code has %d bytes: %v", len(decoded), err)
+	}
+}
+
+func TestValidProviderSecretAcceptsOnlyIssuedFormat(t *testing.T) {
+	issued, err := NewProviderHandoffCode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ValidProviderSecret(issued) || !ValidProviderSecret(strings.Repeat("A", 43)) {
+		t.Fatal("issued secret rejected")
+	}
+	// A final "B" sets padding bits, so it is not a canonical 32-byte value.
+	for _, value := range []string{"", issued[:42], issued + "A", strings.Repeat("A", 42) + "=", strings.Repeat("A", 42) + "+", strings.Repeat("A", 42) + "B"} {
+		if ValidProviderSecret(value) {
+			t.Fatalf("accepted %q", value)
+		}
 	}
 }

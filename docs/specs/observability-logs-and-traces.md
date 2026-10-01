@@ -6,7 +6,7 @@ Status: Draft
 
 ## Objective
 
-Give developers who run Flowspace in the `local` cluster one place to find the logs and traces of a request. A developer starts from a request ID or a trace ID and follows the request through each service and event that it touches.
+Give developers who run Flowspace in the `local` cluster one place to find the logs and traces of a request. The first users are these developers, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md). A developer starts from a request ID or a trace ID and follows the request through each service and event that it touches.
 
 The capability must answer these questions from telemetry alone:
 
@@ -17,6 +17,8 @@ The capability must answer these questions from telemetry alone:
 Services already write JSON logs and create some spans, but no collector stores the logs and no exporter sends the spans. This capability makes those signals reach storage and fills the gaps in trace context that stop the three questions above.
 
 ## Scope and decisions
+
+Depends on: none.
 
 The scope covers the `identity-api`, `identity-worker`, and `workspace-api` processes. It also covers Alloy, Loki, Tempo, and Grafana in the `local` overlay, which Tilt applies. Migration jobs are in scope for logs only. Their logs reach Loki through the same pod log path, and they create no spans.
 
@@ -98,22 +100,6 @@ Apply these rules in each process:
 
 The Identity outbox keeps the `traceparent` and `tracestate` of the transaction that inserts each event. The relay continues that context when it publishes the event, and the publisher writes it to the record headers. An event that has no stored context starts a new root trace in the relay.
 
-### Data and compatibility
-
-A migration adds nullable `traceparent` and `tracestate` text columns to `identity_outbox_events`. The migration only adds columns, so a running older relay keeps working, and rows that existed before the migration have no stored context. Rollback drops the two columns and loses only stored trace context.
-
-### Sensitive data
-
-Do not write these values to a log field, span name, span attribute, span event, or Loki label:
-
-- Access tokens, refresh tokens, provider tokens, and handoff values.
-- Passwords, verification codes, reset codes, and claim codes.
-- Email addresses and provider account names.
-- `Authorization`, `Cookie`, and `Set-Cookie` headers.
-- Request and response bodies, query strings, and client certificate data.
-
-Subject IDs and session IDs are allowed in log fields only where a line already has them. They are not allowed as span attributes.
-
 ### Bounded and non-blocking export
 
 Apply ADR-0037 to each process:
@@ -137,19 +123,34 @@ The `local` overlay adds Alloy, Loki, Tempo, and Grafana. Apply these rules:
 
 Git provisions the Loki and Tempo data sources. A log line links to its trace through `trace_id`, and a trace links back to its logs. Grafana has no persistent volume and no anonymous access. Its admin password comes from a Sealed Secret under [ADR-0027](../adr/0027-git-contains-only-encrypted-kubernetes-secrets.md). Developers open Grafana only with `kubectl port-forward`. The tunnel has no route to any telemetry component.
 
+### Data and compatibility
+
+A migration adds nullable `traceparent` and `tracestate` text columns to `identity_outbox_events`. The migration only adds columns, so a running older relay keeps working, and rows that existed before the migration have no stored context. Rollback drops the two columns and loses only stored trace context.
+
+### Diagnostics
+
+The capability records the log fields, Loki labels, and spans in the contract. Logs, span names, span attributes, span events, and Loki labels must never contain these values:
+
+- Access tokens, refresh tokens, provider tokens, and handoff values.
+- Passwords, verification codes, reset codes, and claim codes.
+- Email addresses and provider account names.
+- `Authorization`, `Cookie`, and `Set-Cookie` headers.
+- Request and response bodies, query strings, and client certificate data.
+
+Subject IDs and session IDs are allowed in log fields only where a line already has them. They are not allowed as span attributes.
+
 ## Testing strategy
 
-Unit and adapter tests use the OpenTelemetry in-memory span exporter and the zap test observer and need no external services. Outbox integration tests need Docker for PostgreSQL. Cluster checks need the local k3d cluster with the `local` overlay that Tilt applies.
-
-Cover these concerns at their owning boundary:
-
-- Bootstrap tests make sure that each process starts without an OTLP endpoint and with an unreachable endpoint. They also make sure that the sampler and resource attributes come from the environment.
-- Transport tests make sure that each server span uses the incoming `traceparent`, that the span name is bounded, and that the request line has the same `trace_id` as the span.
-- Workspace adapter tests make sure that `CheckSession` sends `traceparent` and `x-request-id`. Identity tests make sure that the internal listener continues that context.
-- Outbox integration tests with PostgreSQL make sure that the stored context survives commit and that the relay and the email worker continue it.
-- Log tests make sure that request lines do not contain the sensitive values listed above. The tests use known token, password, code, and email values as input.
-- A non-blocking test sends requests while the exporter cannot connect, and makes sure that each request finishes within its normal deadline.
-- A cluster check sends a request with a known request ID, finds its logs in Loki, and opens its trace in Tempo through Grafana.
+| Risk | Test level | Environment |
+| --- | --- | --- |
+| A process fails to start or serve requests when Alloy is missing or unreachable | Unit, Cluster | None, Local cluster |
+| The sampler or resource attributes ignore the environment configuration | Unit | None |
+| A server span ignores the incoming `traceparent`, has an unbounded name, or has a different `trace_id` from its log line | Unit | None |
+| The Workspace `CheckSession` call drops `traceparent` or `x-request-id`, or Identity does not continue them | Unit | None |
+| The outbox loses trace context at commit, or the relay and email worker do not continue it | Integration | Docker |
+| A log line or span contains a token, password, code, or email address | Unit, Cluster | None, Local cluster |
+| A request waits for span export | Unit | None |
+| Logs and traces of one request cannot be found together in Grafana | Cluster | Local cluster |
 
 ## Implementation boundaries
 
@@ -161,10 +162,10 @@ Cover these concerns at their owning boundary:
 
 ### Ask first
 
-- Changing a retention, volume, sampling, or queue value from ADR-0037.
-- Adding a Loki label, a telemetry component that this specification does not name, or a route to Grafana.
-- Changing the outbox schema beyond the stored trace context.
-- Adding a Go dependency other than OpenTelemetry exporters and instrumentation.
+- Change a retention, volume, sampling, or queue value from ADR-0037.
+- Add a Loki label, a telemetry component that this specification does not name, or a route to Grafana.
+- Change the outbox schema beyond the stored trace context.
+- Add a Go dependency other than OpenTelemetry exporters and instrumentation.
 
 ### Never
 

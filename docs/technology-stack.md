@@ -36,6 +36,15 @@ Each section groups the tools and Go packages for one concern. Go packages appea
 | Event schemas | Protobuf + Redpanda Schema Registry | Version and register event payloads separately from RPC contracts. | [ADR-0006](adr/0006-version-events-separately-from-rpc.md), [ADR-0016](adr/0016-cross-service-side-effects-use-domain-events.md) |
 | Event client | `github.com/twmb/franz-go` | Publish and consume Redpanda events. | [ADR-0016](adr/0016-cross-service-side-effects-use-domain-events.md), [ADR-0017](adr/0017-outbox-and-idempotent-consumers-deliver-events.md) |
 
+## Authentication
+
+| Area | Selection | Role / replacement boundary | ADR |
+| --- | --- | --- | --- |
+| Password hashing | `golang.org/x/crypto/argon2` | Hash and verify Argon2id passwords; replacement must still verify stored hashes. | [ADR-0031](adr/0031-flowspace-owns-authentication-and-revocable-sessions.md) |
+| Access tokens | `github.com/go-jose/go-jose/v4` | Sign and verify Ed25519 access JWTs and publish the JWKS; replacement must preserve the algorithm, `kid`, and claim checks. | [ADR-0031](adr/0031-flowspace-owns-authentication-and-revocable-sessions.md), [ADR-0035](adr/0035-identity-signup-security-and-mail-delivery.md) |
+| Provider code exchange | `golang.org/x/oauth2` | Exchange provider authorization codes with PKCE. | [ADR-0034](adr/0034-provider-login-uses-a-one-time-handoff.md) |
+| Provider ID tokens | `github.com/coreos/go-oidc/v3` | Verify OpenID Connect ID tokens from login providers. | [ADR-0034](adr/0034-provider-login-uses-a-one-time-handoff.md) |
+
 ## Local development
 
 | Area | Selection | Role / replacement boundary | ADR |

@@ -47,26 +47,6 @@ Status: <status value>
 
 The [section forms](#section-forms) state how to write each part.
 
-## Rules
-
-### Files and numbering
-
-- Write a record for one decision that is expensive to reverse. Put replaceable tools and libraries in the [technology stack](../technology-stack.md).
-- Give each record the next four-digit number. Do not reuse or skip a number.
-- Save the record as `docs/adr/<NNNN>-<slug>.md`. The slug is a short form of the title in lowercase words separated by hyphens.
-- Add a row for each record to the [ADR index](../adr/README.md). Copy the title sentence to the `Decision` column and the [status value](#status) to the `Status` column.
-
-### Sections
-
-- Use the sections through `Consequences` in the template order. Add `Sources` only when the decision depends on external documents.
-- Do not add other top-level sections. Add a new section to this convention before you use it in a record.
-
-### Status and changes
-
-- A record merges only with an `Accepted` status. The maintainer accepts a record by merging its PR. Keep an undecided proposal in the [open proposals](../architecture.md#open-proposals) of the architecture until a record accepts it.
-- Do not change the title, date, or sections of an accepted record. When a decision changes, write a new record. In the same PR, change the `Status` line of the earlier record and its row in the index.
-- Records accepted before this convention keep their titles and sections. A PR that applies this format to them can change only the `Date` and `Status` lines.
-
 ## Section forms
 
 Each subsection states what a part contains and the form in which to write it.
@@ -116,6 +96,26 @@ Each subsection states what a part contains and the form in which to write it.
 
 - Write one bullet for each external document. Use the document title as the link text.
 - Put links to repository documents in `Context` or `Decision`.
+
+## Rules
+
+### Files and numbering
+
+- Write a record for one decision that is expensive to reverse. Put replaceable tools and libraries in the [technology stack](../technology-stack.md).
+- Give each record the next four-digit number. Do not reuse or skip a number.
+- Save the record as `docs/adr/<NNNN>-<slug>.md`. The slug is a short form of the title in lowercase words separated by hyphens.
+- Add a row for each record to the [ADR index](../adr/README.md). Copy the title sentence to the `Decision` column and the [status value](#status) to the `Status` column.
+
+### Sections
+
+- Use the sections through `Consequences` in the template order. Add `Sources` only when the decision depends on external documents.
+- Do not add other top-level sections. Add a new section to this convention before you use it in a record.
+
+### Status and changes
+
+- A record merges only with an `Accepted` status. The maintainer accepts a record by merging its PR. Keep an undecided proposal in the [open proposals](../architecture.md#open-proposals) of the architecture until a record accepts it.
+- Do not change the title, date, or sections of an accepted record. When a decision changes, write a new record. In the same PR, change the `Status` line of the earlier record and its row in the index.
+- Records accepted before this convention keep their titles and sections. A PR that applies this format to them can change only the `Date` and `Status` lines.
 
 ## Reference
 

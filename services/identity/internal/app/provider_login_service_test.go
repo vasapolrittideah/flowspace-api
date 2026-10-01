@@ -16,6 +16,34 @@ import (
 type providerAttemptRepository struct {
 	attempts []outbound.ProviderAttempt
 	err      error
+
+	consumed      []string
+	proof         outbound.ProviderAttemptProof
+	found         bool
+	consumeErr    error
+	recorded      []outbound.ProviderIdentity
+	handoff       [32]byte
+	recordAllowed bool
+	recordErr     error
+	failed        []string
+}
+
+func (r *providerAttemptRepository) ConsumeProviderState(_ context.Context, provider string, state [32]byte) (outbound.ProviderAttemptProof, bool, error) {
+	r.consumed = append(r.consumed, provider+":"+string(state[:4]))
+	return r.proof, r.found, r.consumeErr
+}
+
+func (r *providerAttemptRepository) RecordProviderResult(_ context.Context, id string, identity outbound.ProviderIdentity, handoff [32]byte) (bool, error) {
+	if id != r.proof.ID {
+		return false, errors.New("wrong attempt")
+	}
+	r.recorded, r.handoff = append(r.recorded, identity), handoff
+	return r.recordAllowed, r.recordErr
+}
+
+func (r *providerAttemptRepository) FailProviderAttempt(_ context.Context, id string) error {
+	r.failed = append(r.failed, id)
+	return nil
 }
 
 func (r *providerAttemptRepository) CreateProviderAttempt(_ context.Context, attempt outbound.ProviderAttempt) (time.Time, error) {
@@ -46,7 +74,7 @@ func TestStartProviderLoginBindsProofsToOneAttempt(t *testing.T) {
 			service := app.NewProviderLoginService(repository, func(_ context.Context, source string) error {
 				limited = source
 				return nil
-			}, key, providerClients)
+			}, allowLimit, key, providerClients)
 
 			result, err := service.StartProviderLogin(t.Context(), inbound.StartProviderLoginInput{Provider: test.provider, Source: "192.0.2.1"})
 			if err != nil {
@@ -99,7 +127,7 @@ func checkProviderProofs(t *testing.T, result inbound.StartProviderLoginResult, 
 
 func TestStartProviderLoginRetryCreatesNewAttempt(t *testing.T) {
 	repository := &providerAttemptRepository{}
-	service := app.NewProviderLoginService(repository, func(context.Context, string) error { return nil }, make([]byte, 32), providerClients)
+	service := app.NewProviderLoginService(repository, allowLimit, allowLimit, make([]byte, 32), providerClients)
 	first, err := service.StartProviderLogin(t.Context(), inbound.StartProviderLoginInput{Provider: "google", Source: "192.0.2.1"})
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +142,7 @@ func TestStartProviderLoginRetryCreatesNewAttempt(t *testing.T) {
 }
 
 func TestStartProviderLoginFailures(t *testing.T) {
-	allow := func(context.Context, string) error { return nil }
+	allow := allowLimit
 	for _, test := range []struct {
 		name     string
 		provider string
@@ -131,11 +159,153 @@ func TestStartProviderLoginFailures(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repository := &providerAttemptRepository{err: test.storeErr}
-			service := app.NewProviderLoginService(repository, test.limit, make([]byte, 32), test.clients)
+			service := app.NewProviderLoginService(repository, test.limit, allowLimit, make([]byte, 32), test.clients)
 			result, err := service.StartProviderLogin(t.Context(), inbound.StartProviderLoginInput{Provider: test.provider, Source: "192.0.2.1"})
 			if !errors.Is(err, test.want) || result != (inbound.StartProviderLoginResult{}) || len(repository.attempts) != 0 {
 				t.Fatalf("error = %v, result = %+v", err, result)
 			}
 		})
+	}
+}
+
+func allowLimit(context.Context, string) error { return nil }
+
+type providerIdentityStub struct {
+	exchanges []outbound.ProviderCodeExchange
+	identity  outbound.ProviderIdentity
+	err       error
+}
+
+func (s *providerIdentityStub) VerifyProviderIdentity(_ context.Context, exchange outbound.ProviderCodeExchange) (outbound.ProviderIdentity, error) {
+	s.exchanges = append(s.exchanges, exchange)
+	return s.identity, s.err
+}
+
+type providerCallbackFixture struct {
+	repository *providerAttemptRepository
+	identity   *providerIdentityStub
+	limited    []string
+	service    *app.ProviderLoginService
+	key        []byte
+}
+
+func newProviderCallbackFixture(limit error) *providerCallbackFixture {
+	f := &providerCallbackFixture{
+		repository: &providerAttemptRepository{
+			found: true, recordAllowed: true,
+			proof: outbound.ProviderAttemptProof{ID: "attempt", CodeVerifier: "verifier", Nonce: "nonce", CallbackURL: providerClients[domain.ProviderGoogle].CallbackURL},
+		},
+		identity: &providerIdentityStub{identity: outbound.ProviderIdentity{Subject: "google-subject", Email: "user@gmail.com", EmailVerified: true}},
+		key:      make([]byte, 32),
+	}
+	clients := map[domain.Provider]app.ProviderClient{domain.ProviderGoogle: providerClients[domain.ProviderGoogle], domain.ProviderGitHub: providerClients[domain.ProviderGitHub]}
+	google := clients[domain.ProviderGoogle]
+	google.Identity = f.identity
+	clients[domain.ProviderGoogle] = google
+	f.service = app.NewProviderLoginService(f.repository, allowLimit, func(_ context.Context, source string) error {
+		f.limited = append(f.limited, source)
+		return limit
+	}, f.key, clients)
+	return f
+}
+
+func (f *providerCallbackFixture) complete(t *testing.T, input inbound.CompleteProviderCallbackInput) (string, error) {
+	t.Helper()
+	if input.Source == "" {
+		input.Source = "192.0.2.1"
+	}
+	return f.service.CompleteProviderCallback(t.Context(), input)
+}
+
+func TestCompleteProviderCallbackStoresResultAndReturnsHandoffCode(t *testing.T) {
+	f := newProviderCallbackFixture(nil)
+	code, err := f.complete(t, inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "provider-code"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := domain.ProviderSecretVerifier(f.key, domain.ProviderSecretState, "state")
+	if len(f.limited) != 1 || len(f.repository.consumed) != 1 || f.repository.consumed[0] != "google:"+string(state[:4]) {
+		t.Fatalf("limits %v, consumed %v", f.limited, f.repository.consumed)
+	}
+	want := outbound.ProviderCodeExchange{Code: "provider-code", CodeVerifier: "verifier", Nonce: "nonce", CallbackURL: providerClients[domain.ProviderGoogle].CallbackURL}
+	if len(f.identity.exchanges) != 1 || f.identity.exchanges[0] != want {
+		t.Fatalf("exchange = %+v", f.identity.exchanges)
+	}
+	if len(f.repository.recorded) != 1 || f.repository.recorded[0] != f.identity.identity ||
+		f.repository.handoff != domain.ProviderSecretVerifier(f.key, domain.ProviderSecretHandoffCode, code) || len(f.repository.failed) != 0 {
+		t.Fatal("result or handoff verifier was not stored")
+	}
+	if code == "" || code == "state" || code == "provider-code" {
+		t.Fatalf("handoff code = %q", code)
+	}
+}
+
+func TestCompleteProviderCallbackRejectsInvalidCallbacks(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		input           inbound.CompleteProviderCallbackInput
+		prepare         func(*providerCallbackFixture)
+		want            error
+		consumed, fails int
+	}{
+		{"unknown provider", inbound.CompleteProviderCallbackInput{Provider: "okta", State: "state", Code: "code"}, nil, app.ErrInvalidProviderCallback, 0, 0},
+		{"missing state", inbound.CompleteProviderCallbackInput{Provider: "google", Code: "code"}, nil, app.ErrInvalidProviderCallback, 0, 0},
+		{
+			"unknown or used state",
+			inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "code"},
+			func(f *providerCallbackFixture) { f.repository.found = false }, app.ErrInvalidProviderCallback, 1, 0,
+		},
+		{"provider denial", inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Denied: true}, nil, app.ErrInvalidProviderCallback, 1, 1},
+		{"missing code", inbound.CompleteProviderCallbackInput{Provider: "google", State: "state"}, nil, app.ErrInvalidProviderCallback, 1, 1},
+		{
+			"invalid proof",
+			inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "code"},
+			func(f *providerCallbackFixture) { f.identity.err = domain.ErrInvalidProviderProof }, app.ErrInvalidProviderCallback, 1, 1,
+		},
+		{
+			"empty subject",
+			inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "code"},
+			func(f *providerCallbackFixture) { f.identity.identity.Subject = "" }, app.ErrInvalidProviderCallback, 1, 1,
+		},
+		{
+			"provider outage",
+			inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "code"},
+			func(f *providerCallbackFixture) { f.identity.err = domain.ErrProviderUnavailable }, app.ErrProviderLoginUnavailable, 1, 1,
+		},
+		{
+			"attempt expired before storing",
+			inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "code"},
+			func(f *providerCallbackFixture) { f.repository.recordAllowed = false }, app.ErrInvalidProviderCallback, 1, 0,
+		},
+		{
+			"store unavailable",
+			inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "code"},
+			func(f *providerCallbackFixture) { f.repository.consumeErr = errors.New("database down") }, app.ErrProviderLoginUnavailable, 1, 0,
+		},
+		{"provider not configured", inbound.CompleteProviderCallbackInput{Provider: "github", State: "state", Code: "code"}, nil, app.ErrProviderLoginUnavailable, 0, 0},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f := newProviderCallbackFixture(nil)
+			if test.prepare != nil {
+				test.prepare(f)
+			}
+			code, err := f.complete(t, test.input)
+			if !errors.Is(err, test.want) || code != "" {
+				t.Fatalf("code %q, error %v; want %v", code, err, test.want)
+			}
+			if len(f.limited) != 1 || len(f.repository.consumed) != test.consumed || len(f.repository.failed) != test.fails {
+				t.Fatalf("limits %d, consumed %d, failed %d", len(f.limited), len(f.repository.consumed), len(f.repository.failed))
+			}
+		})
+	}
+}
+
+func TestCompleteProviderCallbackAppliesSourceLimitFirst(t *testing.T) {
+	for _, limit := range []error{app.ErrRateLimited, app.ErrLimitUnavailable} {
+		f := newProviderCallbackFixture(limit)
+		code, err := f.complete(t, inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "code"})
+		if !errors.Is(err, limit) || code != "" || len(f.repository.consumed) != 0 || len(f.identity.exchanges) != 0 {
+			t.Fatalf("limit %v: code %q, error %v", limit, code, err)
+		}
 	}
 }

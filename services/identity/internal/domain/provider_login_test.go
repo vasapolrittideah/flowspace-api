@@ -51,3 +51,18 @@ func TestProviderSecretVerifierSeparatesPurposes(t *testing.T) {
 		t.Fatal("verifier is not stable")
 	}
 }
+
+func TestNewProviderHandoffCodeHas256RandomBits(t *testing.T) {
+	first, err := NewProviderHandoffCode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := NewProviderHandoffCode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(first)
+	if err != nil || len(decoded) != 32 || first == second {
+		t.Fatalf("handoff code has %d bytes: %v", len(decoded), err)
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ type storedProviderAttempt struct {
 func testProviderAttemptRepository(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	key := bytes.Repeat([]byte{7}, 32)
 	repository := postgres.NewProviderAttemptRepository(pool)
-	service := app.NewProviderLoginService(repository, func(context.Context, string) error { return nil }, key,
+	service := app.NewProviderLoginService(repository, func(context.Context, string) error { return nil }, func(context.Context, string) error { return nil }, key,
 		map[domain.Provider]app.ProviderClient{
 			domain.ProviderGoogle: {ClientID: "google-client", CallbackURL: "https://api.example.com/v1/provider-login-callbacks/google"},
 			domain.ProviderGitHub: {ClientID: "github-client", CallbackURL: "https://api.example.com/v1/provider-login-callbacks/github"},
@@ -108,6 +109,112 @@ func testProviderAttemptRepository(t *testing.T, ctx context.Context, pool *pgxp
 		attempt.AttemptTokenVerifier, attempt.StateVerifier = [32]byte{1}, [32]byte{4}
 		if _, err := repository.CreateProviderAttempt(ctx, attempt); err == nil {
 			t.Fatal("stored a second attempt with the same attempt token")
+		}
+	})
+
+	t.Run("a callback consumes the state once and stores one result", func(t *testing.T) {
+		attempt := outbound.ProviderAttempt{
+			Provider: "google", AttemptTokenVerifier: [32]byte{10}, StateVerifier: [32]byte{11},
+			CodeVerifier: string(bytes.Repeat([]byte{'b'}, 43)), Nonce: "nonce", CallbackURL: "https://api.example.com/v1/provider-login-callbacks/google",
+		}
+		if _, err := repository.CreateProviderAttempt(ctx, attempt); err != nil {
+			t.Fatal(err)
+		}
+		if _, found, err := repository.ConsumeProviderState(ctx, "github", attempt.StateVerifier); err != nil || found {
+			t.Fatalf("state was accepted on the wrong provider route: %t, %v", found, err)
+		}
+		proof, found, err := repository.ConsumeProviderState(ctx, "google", attempt.StateVerifier)
+		if err != nil || !found || proof.CodeVerifier != attempt.CodeVerifier || proof.Nonce != "nonce" || proof.CallbackURL != attempt.CallbackURL {
+			t.Fatalf("proof = %+v, %t, %v", proof, found, err)
+		}
+		if _, found, err := repository.ConsumeProviderState(ctx, "google", attempt.StateVerifier); err != nil || found {
+			t.Fatalf("state was consumed twice: %t, %v", found, err)
+		}
+		identity := outbound.ProviderIdentity{Subject: "google-subject", Email: "user@gmail.com", EmailVerified: true}
+		if stored, err := repository.RecordProviderResult(ctx, proof.ID, identity, [32]byte{12}); err != nil || !stored {
+			t.Fatalf("result stored = %t, %v", stored, err)
+		}
+		if stored, err := repository.RecordProviderResult(ctx, proof.ID, outbound.ProviderIdentity{Subject: "other"}, [32]byte{13}); err != nil || stored {
+			t.Fatalf("result was replaced: %t, %v", stored, err)
+		}
+		if err := repository.FailProviderAttempt(ctx, proof.ID); err != nil {
+			t.Fatal(err)
+		}
+		var subject string
+		var failed bool
+		err = pool.QueryRow(ctx, `SELECT provider_subject, failed_at IS NOT NULL FROM identity_provider_login_attempts WHERE id = $1`, proof.ID).Scan(&subject, &failed)
+		if err != nil || subject != "google-subject" || failed {
+			t.Fatalf("stored result = %q, failed %t, %v", subject, failed, err)
+		}
+	})
+
+	t.Run("a failed callback stores no result", func(t *testing.T) {
+		attempt := outbound.ProviderAttempt{
+			Provider: "google", AttemptTokenVerifier: [32]byte{20}, StateVerifier: [32]byte{21},
+			CodeVerifier: string(bytes.Repeat([]byte{'c'}, 43)), Nonce: "nonce", CallbackURL: "https://api.example.com/v1/provider-login-callbacks/google",
+		}
+		if _, err := repository.CreateProviderAttempt(ctx, attempt); err != nil {
+			t.Fatal(err)
+		}
+		proof, found, err := repository.ConsumeProviderState(ctx, "google", attempt.StateVerifier)
+		if err != nil || !found {
+			t.Fatalf("consume = %t, %v", found, err)
+		}
+		if err := repository.FailProviderAttempt(ctx, proof.ID); err != nil {
+			t.Fatal(err)
+		}
+		if stored, err := repository.RecordProviderResult(ctx, proof.ID, outbound.ProviderIdentity{Subject: "google-subject"}, [32]byte{22}); err != nil || stored {
+			t.Fatalf("failed attempt stored a result: %t, %v", stored, err)
+		}
+	})
+
+	t.Run("an expired attempt cannot be consumed", func(t *testing.T) {
+		attempt := outbound.ProviderAttempt{
+			Provider: "github", AttemptTokenVerifier: [32]byte{30}, StateVerifier: [32]byte{31},
+			CodeVerifier: string(bytes.Repeat([]byte{'d'}, 43)), CallbackURL: "https://api.example.com/v1/provider-login-callbacks/github",
+		}
+		if _, err := repository.CreateProviderAttempt(ctx, attempt); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pool.Exec(ctx, `UPDATE identity_provider_login_attempts
+			SET created_at = created_at - INTERVAL '11 minutes', expires_at = expires_at - INTERVAL '11 minutes'
+			WHERE state_verifier = $1`, attempt.StateVerifier[:]); err != nil {
+			t.Fatal(err)
+		}
+		if _, found, err := repository.ConsumeProviderState(ctx, "github", attempt.StateVerifier); err != nil || found {
+			t.Fatalf("expired state was consumed: %t, %v", found, err)
+		}
+	})
+
+	t.Run("concurrent callbacks consume one state once", func(t *testing.T) {
+		attempt := outbound.ProviderAttempt{
+			Provider: "google", AttemptTokenVerifier: [32]byte{40}, StateVerifier: [32]byte{41},
+			CodeVerifier: string(bytes.Repeat([]byte{'e'}, 43)), Nonce: "nonce", CallbackURL: "https://api.example.com/v1/provider-login-callbacks/google",
+		}
+		if _, err := repository.CreateProviderAttempt(ctx, attempt); err != nil {
+			t.Fatal(err)
+		}
+		var group sync.WaitGroup
+		results := make(chan bool, 10)
+		for range 10 {
+			group.Go(func() {
+				_, found, err := repository.ConsumeProviderState(ctx, "google", attempt.StateVerifier)
+				if err != nil {
+					t.Error(err)
+				}
+				results <- found
+			})
+		}
+		group.Wait()
+		close(results)
+		consumed := 0
+		for found := range results {
+			if found {
+				consumed++
+			}
+		}
+		if consumed != 1 {
+			t.Fatalf("state consumed %d times", consumed)
 		}
 	})
 }

@@ -35,8 +35,12 @@ type APIConfig struct {
 	TrustedProxyCIDRs       string              `env:"TRUSTED_PROXY_CIDRS"`
 	OutboxReadyMaxPending   int                 `env:"OUTBOX_READY_MAX_PENDING"                 envDefault:"10000"`
 	GoogleClientID          string              `env:"GOOGLE_CLIENT_ID"`
+	GoogleClientSecretFile  string              `env:"GOOGLE_CLIENT_SECRET_FILE"`
 	GitHubClientID          string              `env:"GITHUB_CLIENT_ID"`
 	ProviderCallbackBaseURL string              `env:"PROVIDER_CALLBACK_BASE_URL"`
+
+	// GoogleClientSecret is read from GoogleClientSecretFile, not from the environment.
+	GoogleClientSecret sharedconfig.Secret `env:"-"`
 
 	providers map[domain.Provider]app.ProviderClient
 }
@@ -69,6 +73,13 @@ func LoadAPIConfig() (APIConfig, error) {
 	}
 	if config.providers, err = providerClients(config); err != nil {
 		return APIConfig{}, err
+	}
+	if _, google := config.providers[domain.ProviderGoogle]; google {
+		secret, err := readMountedFile(config.GoogleClientSecretFile)
+		if err != nil || strings.TrimSpace(string(secret)) == "" {
+			return APIConfig{}, errors.New("invalid Google client secret file")
+		}
+		config.GoogleClientSecret = sharedconfig.Secret(strings.TrimSpace(string(secret)))
 	}
 	if config.Environment == "local" && (config.TokenIssuer != "urn:flowspace:identity:local" || config.TokenAudience != "flowspace-api") {
 		return APIConfig{}, errors.New("invalid local token configuration")
@@ -109,7 +120,8 @@ func providerClients(config APIConfig) (map[domain.Provider]app.ProviderClient, 
 		return clients, nil
 	}
 	origin, valid := callbackOrigin(config.ProviderCallbackBaseURL, config.Environment == "local")
-	if len(clients) == 0 || !valid {
+	_, google := clients[domain.ProviderGoogle]
+	if len(clients) == 0 || !valid || google && config.GoogleClientSecretFile == "" {
 		return nil, errors.New("invalid provider login configuration")
 	}
 	for provider, client := range clients {

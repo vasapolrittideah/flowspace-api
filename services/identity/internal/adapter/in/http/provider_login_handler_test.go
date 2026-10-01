@@ -42,6 +42,10 @@ func (s *fakeProviderLogin) StartProviderLogin(_ context.Context, input inbound.
 	}, nil
 }
 
+func (s *fakeProviderLogin) CompleteProviderCallback(context.Context, inbound.CompleteProviderCallbackInput) (string, error) {
+	return "", errors.New("not used")
+}
+
 func TestStartProviderLoginREST(t *testing.T) {
 	service := &fakeProviderLogin{}
 	mux := runtime.NewServeMux()

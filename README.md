@@ -36,6 +36,8 @@ Tilt also starts Adminer at `http://localhost:8083`. Opening that address connec
 
 After Tilt finishes starting the databases, run `sh scripts/check-adminer-autologin.sh` to check both connections.
 
+Google login is optional. To turn it on locally, create a Google OAuth web client with the redirect URI `http://localhost:8082/v1/provider-login-callbacks/google`. Save the client ID in `.secrets/identity-google-client-id` and the client secret in `.secrets/identity-google-client-secret`, without a trailing newline. Tilt then configures Identity for Google login. If either file is missing, Google login returns an unavailable error.
+
 ## Development
 
 | Command | Purpose |

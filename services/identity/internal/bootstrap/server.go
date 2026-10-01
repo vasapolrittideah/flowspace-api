@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"maps"
 	"net"
 	"net/http"
 	"net/netip"
@@ -29,10 +30,12 @@ import (
 	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/google"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/hibp"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 )
 
 const requestTimeout = 5 * time.Second
@@ -92,6 +95,8 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	}
 	accountRepo := postgres.NewAccountRepository(pool)
 	limits := app.NewLimitService(postgres.NewLimitRepository(pool))
+	providerLogin := app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), limits.ProviderLoginStart, limits.ProviderCallback,
+		verifierKey, providerLoginClients(ctx, config))
 	checkPassword := hibp.NewPasswordChecker(&http.Client{Timeout: 4 * time.Second}).Compromised
 	handler := httptransport.NewIdentityHandler(
 		app.NewSignupService(accountRepo, signer, protector, limits.Signup, checkPassword, verifierKey),
@@ -110,11 +115,12 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 			},
 			limits.AccountWrongCode, checkPassword, verifierKey)).
 		WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
-		WithProviderLogin(app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), limits.ProviderLoginStart, verifierKey, config.providers)).
+		WithProviderLogin(providerLogin).
 		WithRefreshSession(app.NewSessionRefreshService(postgres.NewSessionRefreshRepository(pool), signer)).
 		WithCurrentSessionLogout(app.NewCurrentSessionLogoutService(postgres.NewSessionRepository(pool))).
 		WithAllSessionLogout(app.NewAllSessionLogoutService(accountRepo))
-	public, session, err := newIdentityRPCHandlers(ctx, config, pool, handler, logger, trusted)
+	callback := httptransport.NewProviderCallbackHandler(providerLogin, trusted)
+	public, session, err := newIdentityRPCHandlers(ctx, config, pool, handler, callback, logger, trusted)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -168,9 +174,9 @@ func buildSigningKeys(privateKey ed25519.PrivateKey, activeID, additional string
 }
 
 func newIdentityRPCHandlers(ctx context.Context, config APIConfig, pool *pgxpool.Pool,
-	handler identityv1.IdentityServiceServer, logger *zap.Logger, trusted []netip.Prefix,
+	handler identityv1.IdentityServiceServer, callback http.Handler, logger *zap.Logger, trusted []netip.Prefix,
 ) (http.Handler, *grpc.Server, error) {
-	public, err := newPublicHandler(ctx, handler, logger, trusted)
+	public, err := newPublicHandler(ctx, handler, callback, logger, trusted)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -181,6 +187,18 @@ func newIdentityRPCHandlers(ctx context.Context, config APIConfig, pool *pgxpool
 	session, err := newSessionGRPCServer(sessionTLS,
 		app.NewSessionCheckService(postgres.NewSessionRepository(pool)), otel.Meter("flowspace/identity/api"), logger)
 	return public, session, err
+}
+
+// providerLoginClients adds the identity verifier to each provider that can
+// complete a callback.
+func providerLoginClients(ctx context.Context, config APIConfig) map[domain.Provider]app.ProviderClient {
+	clients := maps.Clone(config.providers)
+	if client, configured := clients[domain.ProviderGoogle]; configured {
+		client.Identity = google.NewProviderIdentity(ctx, client.ClientID, string(config.GoogleClientSecret), google.DefaultEndpoints,
+			&http.Client{Timeout: 4 * time.Second})
+		clients[domain.ProviderGoogle] = client
+	}
+	return clients
 }
 
 func loadTrustedProxies(value string) ([]netip.Prefix, error) {
@@ -259,7 +277,8 @@ func (s *APIServer) Run(ctx context.Context) error {
 	return result
 }
 
-func newPublicHandler(ctx context.Context, handler identityv1.IdentityServiceServer, logger *zap.Logger, trusted []netip.Prefix) (http.Handler, error) {
+func newPublicHandler(ctx context.Context, handler identityv1.IdentityServiceServer, callback http.Handler, logger *zap.Logger, trusted []netip.Prefix,
+) (http.Handler, error) {
 	grpcServer := grpc.NewServer(grpc.MaxRecvMsgSize(1<<20), grpc.UnaryInterceptor(func(ctx context.Context, request any,
 		info *grpc.UnaryServerInfo, next grpc.UnaryHandler,
 	) (any, error) {
@@ -294,7 +313,9 @@ func newPublicHandler(ctx context.Context, handler identityv1.IdentityServiceSer
 		return nil, err
 	}
 	rest := httptransport.NewIdentityRequestHandler(gateway, trusted)
-	public := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	public := http.NewServeMux()
+	public.Handle("GET /v1/provider-login-callbacks/{provider}", callback)
+	public.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.ProtoMajor == 2 && strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/grpc") {
 			grpcServer.ServeHTTP(w, r)
 			return
@@ -350,7 +371,7 @@ func safeOperation(r *http.Request) string {
 	for _, path := range []string{
 		"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
 		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-reset-codes", "/v1/password-resets", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts", "/v1/account-session-logouts",
-		"/v1/provider-login-attempts",
+		"/v1/provider-login-attempts", "/v1/provider-login-callbacks/google", "/v1/provider-login-callbacks/github",
 	} {
 		if r.URL.Path == path {
 			return r.Method + " " + path

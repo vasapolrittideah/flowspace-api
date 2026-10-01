@@ -48,6 +48,7 @@ func TestLimitServiceApplySharedPolicies(t *testing.T) {
 		{"code issue", func(l *LimitService) error { return l.CodeIssue(context.Background(), "subject") }, recordedLimit{"account", "subject", "code-request", 5, 0, time.Hour, time.Minute}},
 		{"account guesses", func(l *LimitService) error { return l.AccountWrongCode(context.Background(), "subject") }, recordedLimit{"account", "subject", "code-guess", 10, 20, time.Hour, 0}},
 		{"provider login start", func(l *LimitService) error { return l.ProviderLoginStart(context.Background(), "192.0.2.1") }, recordedLimit{"source", "192.0.2.1", "provider-login-start", 60, 0, time.Hour, 0}},
+		{"provider callback", func(l *LimitService) error { return l.ProviderCallback(context.Background(), "192.0.2.1") }, recordedLimit{"source", "192.0.2.1", "provider-callback", 120, 0, time.Hour, 0}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repository := &limitRepositoryStub{allowed: true}

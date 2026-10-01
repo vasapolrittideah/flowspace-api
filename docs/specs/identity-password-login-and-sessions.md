@@ -2,15 +2,15 @@
 
 Module id: `identity-password-login-and-sessions`
 
-Status: Approved.
+Status: Approved
 
 ## Objective
 
 Allow a Flowspace account holder to sign in with an email address and password, use a separate access and refresh token, and end one or all sessions. Protected services must reject new requests from a revoked or expired session. The first clients are API clients using disposable data.
 
-This spec defines the shared session lifecycle for password login and for sessions created by signup or account claim. It does not report implementation progress or readiness for real users.
+This spec defines the shared session lifecycle for password login and for sessions created by signup or account claim.
 
-## Scope and decision sources
+## Scope and decisions
 
 The scope covers password login, token issuance, refresh, one-session logout, all-session logout, public signing keys, and an internal session check. These operations share one session record and its expiry and revocation rules.
 
@@ -40,7 +40,7 @@ Identity publishes the public verification keys as a JSON Web Key Set (JWKS). On
 
 Use canonical gRPC errors and the gateway's default HTTP mapping. Malformed public input uses `InvalidArgument` (HTTP 400). An unknown email and a wrong password produce the same `Unauthenticated` (HTTP 401) response. An unknown, expired, or revoked refresh token also produces `Unauthenticated` without revealing session state. A known rotated refresh token produces the same error and revokes its session. An inactive `CheckSession` result uses `Unauthenticated`; an active result returns the current `email_verified` value. A request limit uses `ResourceExhausted` (HTTP 429). An unavailable session store or Identity service uses `Unavailable` (HTTP 503), without admitting a protected request. Safe errors never contain tokens, credentials, account state, or internal diagnostics.
 
-## Required behavior
+## Behavior
 
 ### Password login
 
@@ -85,20 +85,6 @@ Use canonical gRPC errors and the gateway's default HTTP mapping. Malformed publ
 - Identity records login, refresh, replay, and logout outcomes without passwords, tokens, full email addresses, or private keys. Metrics include failed-login and refresh-replay counts, session-check failures, and Identity unavailability without high-cardinality identifiers.
 - The ordinary five-second request cap and shorter caller deadlines apply to public and internal RPCs under [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md). Identity propagates cancellation to password hashing and database work where possible and does not report success before a required transaction commits.
 
-## Commands
-
-Run commands from the repository root during implementation. Approval does not mean that Identity code or contracts exist.
-
-| Purpose | Command |
-| --- | --- |
-| Compile Identity binaries | `go build ./services/identity/cmd/...` |
-| Run Identity tests | `go test ./services/identity/...` |
-| Run Identity integration tests | `go test -tags=integration ./services/identity/...` |
-| Lint source contracts | `task buf -- lint` |
-| Generate API code | `task buf -- generate` |
-| Check API compatibility against main | `task buf -- breaking --against '.git#branch=main'` |
-| Generate query code | `task sqlc -- generate` |
-
 ## Testing strategy
 
 Unit tests cover password normalization, public error classification, token claims, and the exact ten-minute, 30-day, and 90-day boundaries. PostgreSQL integration tests cover atomic login, token rotation, concurrent refresh, replay revocation, both logout scopes, account retirement, and session expiry. Use a controlled clock rather than sleeps for expiry tests.
@@ -109,14 +95,11 @@ Cross-service tests prove that Workspace rejects an unverified account, a revoke
 
 Enumeration and password-guessing tests cover ID-T01 and ID-T02. Token and signing-key tests cover ID-T09, ID-T10, and ID-T19. Refresh and concurrency tests cover ID-T11 and ID-T12. Logout and session-check tests cover ID-T13 and ID-T14. Input, load, and telemetry tests cover ID-T15, ID-T16, and ID-T17 in the [threat model](../security/identity-threat-model.md). The host-compromise exercise for ID-T22 remains a separate real-user gate.
 
-## Boundaries
+## Implementation boundaries
 
 ### Always
 
-- Preserve separate access and refresh tokens, single-use rotation, and live session checks for protected requests.
-- Enforce both session expiry limits on the server and keep refresh history sufficient to detect replay.
-- Make revocation durable before logout success and use shared state for login limits when replicas scale.
-- Use mutual TLS and the caller allowlist from ADR-0036 for `CheckSession`.
+- Apply a change to session lifetime or revocation to every session source, because signup, account claim, and later login methods use these rules.
 
 ### Ask first
 
@@ -127,9 +110,7 @@ Enumeration and password-guessing tests cover ID-T01 and ID-T02. Token and signi
 
 ### Never
 
-- Do not trust a client-supplied subject, session ID, email verification state, or workspace role.
-- Do not accept a refresh token as a bearer access token or place either token in a URL, log, trace, or shared cache.
-- Do not admit a protected request from a locally valid JWT without a successful live session check.
+- Do not add session listing, MFA, or browser token storage to complete this capability.
 
 ## Success criteria
 
@@ -148,4 +129,3 @@ Enumeration and password-guessing tests cover ID-T01 and ID-T02. Token and signi
 13. Given a protected service cannot confirm session state with Identity, When it handles a new request, Then it denies the new request and returns a temporary service failure without using a cached active result.
 14. Given a token was issued before the email became verified, When the next live session check runs, Then it reports the verified state without requiring new tokens.
 15. Given old access tokens remain valid, When Identity rotates its signing key, Then verifiers accept both valid key IDs until old tokens expire, then stop accepting the retired key.
-16. Given the capability is submitted for implementation review, When the required repository checks run, Then Contract, database, abuse, concurrency, key-rotation, and cross-service tests pass under repository quality checks.

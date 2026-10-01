@@ -19,7 +19,7 @@ WHERE attempt_token_verifier = $1
   AND session_claimed_at IS NULL
   AND handoff_failures < 5
   AND expires_at > statement_timestamp()
-RETURNING provider, provider_subject
+RETURNING provider, provider_subject, provider_email, provider_email_verified, provider_hosted_domain
 `
 
 type ClaimProviderLoginResultParams struct {
@@ -28,14 +28,23 @@ type ClaimProviderLoginResultParams struct {
 }
 
 type ClaimProviderLoginResultRow struct {
-	Provider        string
-	ProviderSubject pgtype.Text
+	Provider              string
+	ProviderSubject       pgtype.Text
+	ProviderEmail         pgtype.Text
+	ProviderEmailVerified pgtype.Bool
+	ProviderHostedDomain  pgtype.Text
 }
 
 func (q *Queries) ClaimProviderLoginResult(ctx context.Context, arg ClaimProviderLoginResultParams) (ClaimProviderLoginResultRow, error) {
 	row := q.db.QueryRow(ctx, claimProviderLoginResult, arg.AttemptTokenVerifier, arg.HandoffCodeVerifier)
 	var i ClaimProviderLoginResultRow
-	err := row.Scan(&i.Provider, &i.ProviderSubject)
+	err := row.Scan(
+		&i.Provider,
+		&i.ProviderSubject,
+		&i.ProviderEmail,
+		&i.ProviderEmailVerified,
+		&i.ProviderHostedDomain,
+	)
 	return i, err
 }
 
@@ -71,6 +80,51 @@ func (q *Queries) ConsumeProviderLoginState(ctx context.Context, arg ConsumeProv
 		&i.CallbackUrl,
 	)
 	return i, err
+}
+
+const createProviderAccount = `-- name: CreateProviderAccount :one
+INSERT INTO identity_accounts (subject, email_local, email_domain, email_verified_at)
+VALUES (
+    $1, $2, $3,
+    CASE WHEN $4::boolean THEN statement_timestamp() END
+)
+ON CONFLICT (email_local, email_domain) WHERE retired_at IS NULL DO NOTHING
+RETURNING subject
+`
+
+type CreateProviderAccountParams struct {
+	Subject       string
+	EmailLocal    string
+	EmailDomain   string
+	EmailVerified bool
+}
+
+func (q *Queries) CreateProviderAccount(ctx context.Context, arg CreateProviderAccountParams) (string, error) {
+	row := q.db.QueryRow(ctx, createProviderAccount,
+		arg.Subject,
+		arg.EmailLocal,
+		arg.EmailDomain,
+		arg.EmailVerified,
+	)
+	var subject string
+	err := row.Scan(&subject)
+	return subject, err
+}
+
+const createProviderLink = `-- name: CreateProviderLink :exec
+INSERT INTO identity_provider_links (provider, provider_subject, account_subject)
+VALUES ($1, $2, $3)
+`
+
+type CreateProviderLinkParams struct {
+	Provider        string
+	ProviderSubject string
+	AccountSubject  string
+}
+
+func (q *Queries) CreateProviderLink(ctx context.Context, arg CreateProviderLinkParams) error {
+	_, err := q.db.Exec(ctx, createProviderLink, arg.Provider, arg.ProviderSubject, arg.AccountSubject)
+	return err
 }
 
 const createProviderLoginAttempt = `-- name: CreateProviderLoginAttempt :one

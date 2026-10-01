@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
@@ -328,6 +331,36 @@ type providerSessionRepository struct {
 	lookups   []string
 	sessions  []string
 	commits   int
+
+	emailTaken bool
+	accounts   []outbound.NewProviderAccount
+	challenges []string
+	deliveries int
+	outbox     int
+	outboxErr  error
+}
+
+func (r *providerSessionRepository) CreateProviderAccount(_ context.Context, account outbound.NewProviderAccount) (bool, error) {
+	if r.emailTaken {
+		return false, nil
+	}
+	r.accounts = append(r.accounts, account)
+	return true, nil
+}
+
+func (r *providerSessionRepository) CreateChallenge(_ context.Context, subject, email string, _ [32]byte) (string, error) {
+	r.challenges = append(r.challenges, subject+":"+email)
+	return "challenge", nil
+}
+
+func (r *providerSessionRepository) StoreDelivery(context.Context, string, outbound.DeliveryMaterial) error {
+	r.deliveries++
+	return nil
+}
+
+func (r *providerSessionRepository) CreateOutboxEvent(context.Context, string) error {
+	r.outbox++
+	return r.outboxErr
 }
 
 func (r *providerSessionRepository) WithinProviderSessionTransaction(_ context.Context, fn func(outbound.ProviderSessionTransaction) error) error {
@@ -361,6 +394,12 @@ type providerSessionSigner struct{}
 
 func (providerSessionSigner) Sign(outbound.AccessTokenClaims) (string, error) { return "access", nil }
 
+type providerSessionProtector struct{}
+
+func (providerSessionProtector) Protect(_, _, _, _, _ string) (outbound.DeliveryMaterial, error) {
+	return outbound.DeliveryMaterial{KeyVersion: 1, Nonce: make([]byte, 12), Ciphertext: make([]byte, 17)}, nil
+}
+
 type providerSessionFixture struct {
 	attempts *providerAttemptRepository
 	sessions *providerSessionRepository
@@ -383,7 +422,7 @@ func newProviderSessionFixture(t *testing.T) *providerSessionFixture {
 		key: make([]byte, 32), token: strings.Repeat("A", 43), code: strings.Repeat("B", 42) + "A",
 	}
 	f.service = app.NewProviderLoginService(f.attempts, allowLimit, allowLimit, f.key, providerClients).
-		WithSessions(f.sessions, providerSessionSigner{}, func(_ context.Context, source string) error {
+		WithSessions(f.sessions, providerSessionSigner{}, providerSessionProtector{}, func(_ context.Context, source string) error {
 			f.limited = append(f.limited, source)
 			return f.limitErr
 		})
@@ -465,6 +504,92 @@ func TestCreateProviderSessionConsumesUnlinkedResultWithoutSession(t *testing.T)
 	}
 	if f.sessions.commits != 1 || len(f.sessions.sessions) != 0 || len(f.attempts.handoffFails) != 0 || len(f.limited) != 0 {
 		t.Fatalf("commits = %d, sessions = %v, failures = %d, limited = %v", f.sessions.commits, f.sessions.sessions, len(f.attempts.handoffFails), f.limited)
+	}
+}
+
+func TestCreateProviderSessionRejectsCollisionAndUnusableEmailAlike(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		mutate func(*providerSessionFixture)
+	}{
+		{"email collision", func(f *providerSessionFixture) { f.sessions.emailTaken = true }},
+		{"unverified email", func(f *providerSessionFixture) { f.sessions.result.EmailVerified = false }},
+		{"missing email", func(f *providerSessionFixture) { f.sessions.result.Email = "" }},
+		{"invalid email", func(f *providerSessionFixture) { f.sessions.result.Email = "User <user@gmail.com>" }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f := newProviderSessionFixture(t)
+			f.sessions.linked = false
+			f.sessions.result.Email, f.sessions.result.EmailVerified = "user@gmail.com", true
+			test.mutate(f)
+
+			result, err := f.create(t)
+			if !errors.Is(err, app.ErrProviderAccountUnavailable) || result != (inbound.CreateProviderSessionResult{}) {
+				t.Fatalf("result = %+v, err = %v", result, err)
+			}
+			if f.sessions.commits != 1 || len(f.sessions.accounts) != 0 || len(f.sessions.sessions) != 0 || len(f.sessions.challenges) != 0 ||
+				len(f.attempts.handoffFails) != 0 || len(f.limited) != 0 {
+				t.Fatalf("commits = %d, accounts = %v, sessions = %v, challenges = %v, failures = %d",
+					f.sessions.commits, f.sessions.accounts, f.sessions.sessions, f.sessions.challenges, len(f.attempts.handoffFails))
+			}
+		})
+	}
+}
+
+func TestCreateProviderSessionCreatesProviderOnlyAccount(t *testing.T) {
+	for _, test := range []struct {
+		name, email, hostedDomain string
+		verified                  bool
+	}{
+		{"Gmail", "User@GMAIL.com", "", true},
+		{"Workspace", "user@example.com", "example.com", true},
+		{"third-party Google email", "user@example.com", "", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f := newProviderSessionFixture(t)
+			f.sessions.linked = false
+			f.sessions.result = outbound.ProviderResult{
+				Provider: "google", Subject: "google-subject", Email: test.email, EmailVerified: true, HostedDomain: test.hostedDomain,
+			}
+
+			result, err := f.create(t)
+			if err != nil {
+				t.Fatal(err)
+			}
+			email, _, _ := domain.NewProviderAccountEmail(domain.ProviderGoogle, test.email, true, test.hostedDomain)
+			if len(f.sessions.accounts) != 1 {
+				t.Fatalf("accounts = %v", f.sessions.accounts)
+			}
+			account := f.sessions.accounts[0]
+			if _, err := uuid.Parse(account.Subject); err != nil || account != (outbound.NewProviderAccount{
+				Subject: account.Subject, Email: email, EmailVerified: test.verified, Provider: "google", ProviderSubject: "google-subject",
+			}) {
+				t.Fatalf("account = %+v", account)
+			}
+			if result.Subject != account.Subject || result.EmailVerified != test.verified || result.AccessToken == "" ||
+				strings.Join(f.sessions.sessions, ",") != account.Subject || f.sessions.commits != 1 {
+				t.Fatalf("result = %+v, sessions = %v", result, f.sessions.sessions)
+			}
+			var wantChallenges []string
+			if !test.verified {
+				wantChallenges = []string{account.Subject + ":" + email}
+			}
+			if !slices.Equal(f.sessions.challenges, wantChallenges) || f.sessions.deliveries != len(wantChallenges) || f.sessions.outbox != len(wantChallenges) {
+				t.Fatalf("challenges = %v, deliveries = %d, outbox = %d", f.sessions.challenges, f.sessions.deliveries, f.sessions.outbox)
+			}
+		})
+	}
+}
+
+func TestCreateProviderSessionRollsBackAccountWhenDeliveryQueueFails(t *testing.T) {
+	f := newProviderSessionFixture(t)
+	f.sessions.linked = false
+	f.sessions.result = outbound.ProviderResult{Provider: "google", Subject: "google-subject", Email: "user@example.com", EmailVerified: true}
+	f.sessions.outboxErr = errors.New("outbox down")
+
+	result, err := f.create(t)
+	if !errors.Is(err, app.ErrProviderLoginUnavailable) || result != (inbound.CreateProviderSessionResult{}) || f.sessions.commits != 0 {
+		t.Fatalf("result = %+v, err = %v, commits = %d", result, err, f.sessions.commits)
 	}
 }
 

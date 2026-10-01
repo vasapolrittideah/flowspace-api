@@ -4,13 +4,19 @@ import (
 	"context"
 )
 
-type VerificationCodeIssueTransaction interface {
-	GetActiveAccountForSession(ctx context.Context, subject, sessionID string) (AccountState, error)
-	CanIssueCode(ctx context.Context, subject string) (bool, error)
-	ReplaceVerificationChallenge(ctx context.Context, subject string) error
+// VerificationCodeDeliveryTransaction stores a verification challenge with
+// its protected delivery request.
+type VerificationCodeDeliveryTransaction interface {
 	CreateChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error)
 	StoreDelivery(ctx context.Context, challengeID string, material DeliveryMaterial) error
 	CreateOutboxEvent(ctx context.Context, challengeID string) error
+}
+
+type VerificationCodeIssueTransaction interface {
+	VerificationCodeDeliveryTransaction
+	GetActiveAccountForSession(ctx context.Context, subject, sessionID string) (AccountState, error)
+	CanIssueCode(ctx context.Context, subject string) (bool, error)
+	ReplaceVerificationChallenge(ctx context.Context, subject string) error
 }
 
 type EmailVerificationCodeRepository interface {

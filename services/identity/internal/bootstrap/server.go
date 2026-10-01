@@ -96,7 +96,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 	accountRepo := postgres.NewAccountRepository(pool)
 	limits := app.NewLimitService(postgres.NewLimitRepository(pool))
 	providerLogin := app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), limits.ProviderLoginStart, limits.ProviderCallback,
-		verifierKey, providerLoginClients(ctx, config)).WithSessions(accountRepo, signer, limits.ProviderSessionFailure)
+		verifierKey, providerLoginClients(ctx, config)).WithSessions(accountRepo, signer, protector, limits.ProviderSessionFailure)
 	checkPassword := hibp.NewPasswordChecker(&http.Client{Timeout: 4 * time.Second}).Compromised
 	handler := httptransport.NewIdentityHandler(
 		app.NewSignupService(accountRepo, signer, protector, limits.Signup, checkPassword, verifierKey),

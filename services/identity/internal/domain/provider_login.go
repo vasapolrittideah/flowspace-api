@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"strings"
 )
 
 type Provider string
@@ -66,6 +67,22 @@ func NewProviderHandoffCode() (string, error) {
 func ValidProviderSecret(value string) bool {
 	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
 	return err == nil && len(decoded) == 32
+}
+
+// NewProviderAccountEmail returns the normalized email for a new provider-only
+// account and whether that account starts verified. It reports false when the
+// provider gave no usable verified email. Only Google can prove current
+// mailbox control: for a Gmail address, or a Workspace address with an hd claim.
+func NewProviderAccountEmail(provider Provider, email string, verified bool, hostedDomain string) (string, bool, bool) {
+	if !verified {
+		return "", false, false
+	}
+	normalized, err := NormalizeEmail(email)
+	if err != nil {
+		return "", false, false
+	}
+	startsVerified := provider == ProviderGoogle && (strings.HasSuffix(normalized, "@gmail.com") || hostedDomain != "")
+	return normalized, startsVerified, true
 }
 
 // ProviderCodeChallenge returns the PKCE S256 challenge for a code verifier.

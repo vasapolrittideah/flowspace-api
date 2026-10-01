@@ -46,7 +46,7 @@ WHERE attempt_token_verifier = sqlc.arg(attempt_token_verifier)
   AND session_claimed_at IS NULL
   AND handoff_failures < 5
   AND expires_at > statement_timestamp()
-RETURNING provider, provider_subject;
+RETURNING provider, provider_subject, provider_email, provider_email_verified, provider_hosted_domain;
 
 -- name: RecordProviderHandoffFailure :exec
 UPDATE identity_provider_login_attempts
@@ -64,3 +64,16 @@ WHERE link.provider = sqlc.arg(provider)
   AND link.provider_subject = sqlc.arg(provider_subject)
   AND account.retired_at IS NULL
 FOR UPDATE OF account;
+
+-- name: CreateProviderAccount :one
+INSERT INTO identity_accounts (subject, email_local, email_domain, email_verified_at)
+VALUES (
+    sqlc.arg(subject), sqlc.arg(email_local), sqlc.arg(email_domain),
+    CASE WHEN sqlc.arg(email_verified)::boolean THEN statement_timestamp() END
+)
+ON CONFLICT (email_local, email_domain) WHERE retired_at IS NULL DO NOTHING
+RETURNING subject;
+
+-- name: CreateProviderLink :exec
+INSERT INTO identity_provider_links (provider, provider_subject, account_subject)
+VALUES (sqlc.arg(provider), sqlc.arg(provider_subject), sqlc.arg(account_subject));

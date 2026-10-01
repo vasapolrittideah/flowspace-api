@@ -396,6 +396,30 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 			t.Fatal("delivery telemetry contains email delivery secrets")
 		}
 	}
+	providerOnly, providerOnlyID := createRequest("provider-only", "444444", "verify-email")
+	if _, err := pool.Exec(ctx, `UPDATE identity_accounts SET password_hash = NULL WHERE subject = 'provider-only'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := publisher.Publish(ctx, providerOnly); err != nil {
+		t.Fatal(err)
+	}
+	delivered := mailbox().Total
+	mailSender.target = deadSender
+	providerWorker := newWorker(repository, mailSender)
+	if worked, err := providerWorker.RunOnce(ctx); !worked || !errors.Is(err, identityevent.ErrEmailDelivery) ||
+		materialCount(providerOnlyID) != 1 || mailbox().Total != delivered {
+		t.Fatalf("provider-only mail outage: worked=%v error=%v", worked, err)
+	}
+	mailSender.target = sender
+	if worked, err := providerWorker.RunOnce(ctx); !worked || err != nil || materialCount(providerOnlyID) != 0 || mailbox().Total != delivered+1 {
+		t.Fatalf("provider-only mail recovery: worked=%v error=%v", worked, err)
+	}
+	providerWorker.Close()
+	var passwordless, verified bool
+	if err := pool.QueryRow(ctx, `SELECT password_hash IS NULL, email_verified_at IS NOT NULL FROM identity_accounts WHERE subject = 'provider-only'`).
+		Scan(&passwordless, &verified); err != nil || !passwordless || verified {
+		t.Fatalf("delivery retry changed the provider-only account: passwordless=%t verified=%t error=%v", passwordless, verified, err)
+	}
 	testPasswordChangeNotice(ctx, t, pool, newWorker, mailSender, sender, deadSender, mailURL, mailbox().Total)
 }
 

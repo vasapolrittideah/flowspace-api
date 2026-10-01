@@ -83,3 +83,32 @@ func TestValidProviderSecretAcceptsOnlyIssuedFormat(t *testing.T) {
 		}
 	}
 }
+
+func TestNewProviderAccountEmailAppliesProviderRules(t *testing.T) {
+	for _, test := range []struct {
+		name                     string
+		provider                 Provider
+		email                    string
+		verified                 bool
+		hostedDomain             string
+		want                     string
+		wantVerified, wantUsable bool
+	}{
+		{"Gmail starts verified", ProviderGoogle, "User@GMAIL.com", true, "", "User@gmail.com", true, true},
+		{"Workspace starts verified", ProviderGoogle, "user@example.com", true, "example.com", "user@example.com", true, true},
+		{"third-party Google email needs a FlowSpace code", ProviderGoogle, "user@example.com", true, "", "user@example.com", false, true},
+		{"Gmail-like domain needs a FlowSpace code", ProviderGoogle, "user@notgmail.com", true, "", "user@notgmail.com", false, true},
+		{"GitHub email needs a FlowSpace code", ProviderGitHub, "user@gmail.com", true, "", "user@gmail.com", false, true},
+		{"unverified Gmail is unusable", ProviderGoogle, "user@gmail.com", false, "", "", false, false},
+		{"unverified Workspace email is unusable", ProviderGoogle, "user@example.com", false, "example.com", "", false, false},
+		{"missing email is unusable", ProviderGoogle, "", true, "", "", false, false},
+		{"invalid email is unusable", ProviderGoogle, "User <user@gmail.com>", true, "", "", false, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			email, verified, usable := NewProviderAccountEmail(test.provider, test.email, test.verified, test.hostedDomain)
+			if email != test.want || verified != test.wantVerified || usable != test.wantUsable {
+				t.Fatalf("got %q, verified %t, usable %t", email, verified, usable)
+			}
+		})
+	}
+}

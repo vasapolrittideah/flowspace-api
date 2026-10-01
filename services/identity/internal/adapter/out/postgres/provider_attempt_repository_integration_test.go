@@ -9,13 +9,17 @@ import (
 	"crypto/rand"
 	"errors"
 	"net/url"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	deliverycrypto "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
 	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
@@ -229,7 +233,7 @@ type providerHandoff struct{ token, code string }
 
 func testProviderSessionRepository(t *testing.T, ctx context.Context, pool *pgxpool.Pool, dsn string) {
 	key := bytes.Repeat([]byte{8}, 32)
-	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,11 +241,19 @@ func testProviderSessionRepository(t *testing.T, ctx context.Context, pool *pgxp
 	if err != nil {
 		t.Fatal(err)
 	}
+	verifier, err := token.NewVerifier(map[string]ed25519.PublicKey{"provider-key": publicKey}, "urn:flowspace:identity:local", "flowspace-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	protector, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{3}, 32), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
 	allow := func(context.Context, string) error { return nil }
 	newService := func(pool *pgxpool.Pool) *app.ProviderLoginService {
 		limits := app.NewLimitService(postgres.NewLimitRepository(pool))
 		return app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), allow, allow, key, nil).
-			WithSessions(postgres.NewAccountRepository(pool), signer, limits.ProviderSessionFailure)
+			WithSessions(postgres.NewAccountRepository(pool), signer, protector, limits.ProviderSessionFailure)
 	}
 	service := newService(pool)
 	attempts := postgres.NewProviderAttemptRepository(pool)
@@ -346,7 +358,7 @@ func testProviderSessionRepository(t *testing.T, ctx context.Context, pool *pgxp
 	})
 
 	t.Run("an unlinked identity is consumed without a session", func(t *testing.T) {
-		handoff := seed(t, "google-unlinked", outbound.ProviderIdentity{Email: "new@gmail.com", EmailVerified: true})
+		handoff := seed(t, "google-unlinked", outbound.ProviderIdentity{Email: "new@gmail.com"})
 		if _, err := claim(service, handoff, "192.0.2.81"); !errors.Is(err, app.ErrProviderAccountUnavailable) {
 			t.Fatalf("err = %v", err)
 		}
@@ -476,6 +488,231 @@ func testProviderSessionRepository(t *testing.T, ctx context.Context, pool *pgxp
 		}
 		if rejected != 100 || limited != 1 {
 			t.Fatalf("rejected %d and limited %d claims", rejected, limited)
+		}
+	})
+
+	t.Run("new provider identities", func(t *testing.T) {
+		testProviderOnlyAccounts(t, ctx, pool, providerOnlyFixture{
+			key: key, signer: signer, verifier: verifier, protector: protector, service: service, seed: seed,
+		})
+	})
+}
+
+type providerOnlyFixture struct {
+	key       []byte
+	signer    outbound.TokenSigner
+	verifier  *token.Verifier
+	protector *deliverycrypto.DeliveryProtector
+	service   *app.ProviderLoginService
+	seed      func(*testing.T, string, outbound.ProviderIdentity) providerHandoff
+}
+
+type storedProviderAccount struct {
+	subject, local, domain string
+	passwordless, verified bool
+	links, sessions        int
+}
+
+func testProviderOnlyAccounts(t *testing.T, ctx context.Context, pool *pgxpool.Pool, f providerOnlyFixture) {
+	claim := func(service *app.ProviderLoginService, handoff providerHandoff) (inbound.CreateProviderSessionResult, error) {
+		return service.CreateProviderSession(ctx, inbound.CreateProviderSessionInput{AttemptToken: handoff.token, HandoffCode: handoff.code, Source: "192.0.2.90"})
+	}
+	load := func(t *testing.T, local, domain string) (storedProviderAccount, bool) {
+		t.Helper()
+		account := storedProviderAccount{local: local, domain: domain}
+		err := pool.QueryRow(ctx, `SELECT account.subject, account.password_hash IS NULL, account.email_verified_at IS NOT NULL,
+			(SELECT count(*) FROM identity_provider_links WHERE account_subject = account.subject),
+			(SELECT count(*) FROM identity_sessions WHERE account_subject = account.subject)
+			FROM identity_accounts AS account WHERE email_local = $1 AND email_domain = $2 AND retired_at IS NULL`, local, domain).
+			Scan(&account.subject, &account.passwordless, &account.verified, &account.links, &account.sessions)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return storedProviderAccount{}, false
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		return account, true
+	}
+	checkSession := func(t *testing.T, result inbound.CreateProviderSessionResult) bool {
+		t.Helper()
+		identity, err := f.verifier.Verify(result.AccessToken)
+		if err != nil || identity.Subject != result.Subject {
+			t.Fatalf("access token = %+v, %v", identity, err)
+		}
+		verified, err := app.NewSessionCheckService(postgres.NewSessionRepository(pool)).CheckSession(ctx, inbound.CheckSessionInput{Subject: identity.Subject, SessionID: identity.SessionID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return verified
+	}
+
+	t.Run("Gmail and Workspace identities start verified without a password", func(t *testing.T) {
+		for _, test := range []struct{ providerSubject, email, hostedDomain, local, domain string }{
+			{"google-gmail", "New.User@GMAIL.com", "", "New.User", "gmail.com"},
+			{"google-workspace", "new@workspace.example", "workspace.example", "new", "workspace.example"},
+		} {
+			result, err := claim(f.service, f.seed(t, test.providerSubject, outbound.ProviderIdentity{
+				Email: test.email, EmailVerified: true, HostedDomain: test.hostedDomain,
+			}))
+			account, found := load(t, test.local, test.domain)
+			if err != nil || !found || result.Subject != account.subject || !result.EmailVerified ||
+				account != (storedProviderAccount{account.subject, test.local, test.domain, true, true, 1, 1}) {
+				t.Fatalf("%s result = %+v, account = %+v, %v", test.email, result.Subject, account, err)
+			}
+			if !checkSession(t, result) {
+				t.Fatalf("%s session check is unverified", test.email)
+			}
+			again, err := claim(f.service, f.seed(t, test.providerSubject, outbound.ProviderIdentity{}))
+			if err != nil || again.Subject != account.subject {
+				t.Fatalf("%s returning login = %q, %v", test.email, again.Subject, err)
+			}
+		}
+		login := app.NewPasswordLoginService(postgres.NewAccountRepository(pool), f.signer, func(context.Context, string, string) error { return nil })
+		if _, err := login.CreatePasswordSession(ctx, inbound.CreatePasswordSessionInput{
+			Email: "New.User@gmail.com", Password: "correct horse battery staple", Source: "192.0.2.90",
+		}); !errors.Is(err, app.ErrInvalidCredentials) {
+			t.Fatalf("password login for a provider-only account = %v", err)
+		}
+		allow := func(context.Context, string) error { return nil }
+		recovery := app.NewPasswordResetCodeService(postgres.NewAccountRepository(pool), f.protector, allow, allow, f.key)
+		if err := recovery.RequestPasswordResetCode(ctx, inbound.RequestPasswordResetCodeInput{Email: "New.User@gmail.com", Source: "192.0.2.90"}); err != nil {
+			t.Fatalf("password reset code for a provider-only account = %v", err)
+		}
+		var resetChallenges int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_challenges WHERE email_local = 'New.User' AND purpose = 'password-reset'`).
+			Scan(&resetChallenges); err != nil || resetChallenges != 0 {
+			t.Fatalf("provider-only account received %d password reset codes: %v", resetChallenges, err)
+		}
+	})
+
+	t.Run("a third-party Google email needs a Flowspace code before Workspace access", func(t *testing.T) {
+		result, err := claim(f.service, f.seed(t, "google-third-party", outbound.ProviderIdentity{Email: "third@party.example", EmailVerified: true}))
+		account, found := load(t, "third", "party.example")
+		if err != nil || !found || result.EmailVerified || account != (storedProviderAccount{result.Subject, "third", "party.example", true, false, 1, 1}) {
+			t.Fatalf("result = %+v, account = %+v, %v", result.Subject, account, err)
+		}
+		if checkSession(t, result) {
+			t.Fatal("unverified provider account passed the session check")
+		}
+		var challengeID, purpose string
+		var material outbound.DeliveryMaterial
+		var published bool
+		if err := pool.QueryRow(ctx, `SELECT challenge.id::text, challenge.purpose, delivery.key_version, delivery.nonce, delivery.ciphertext,
+			event.published_at IS NOT NULL
+			FROM identity_challenges AS challenge
+			JOIN identity_challenge_deliveries AS delivery ON delivery.challenge_id = challenge.id
+			JOIN identity_outbox_events AS event ON event.challenge_id = challenge.id
+			WHERE challenge.account_subject = $1`, result.Subject).
+			Scan(&challengeID, &purpose, &material.KeyVersion, &material.Nonce, &material.Ciphertext, &published); err != nil || purpose != "verify-email" || published {
+			t.Fatalf("challenge purpose = %q, published %t, %v", purpose, published, err)
+		}
+		email, code, err := f.protector.Open(challengeID, purpose, result.Subject, material)
+		if err != nil || email != "third@party.example" {
+			t.Fatalf("delivery email = %q, %v", email, err)
+		}
+		identity, err := f.verifier.Verify(result.AccessToken)
+		if err != nil {
+			t.Fatal(err)
+		}
+		allow := func(context.Context, string) error { return nil }
+		if err := app.NewEmailVerificationService(postgres.NewAccountRepository(pool), allow, allow, f.key).VerifyEmail(ctx, inbound.VerifyEmailInput{
+			Subject: identity.Subject, SessionID: identity.SessionID, Source: "192.0.2.90", Code: code,
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if !checkSession(t, result) {
+			t.Fatal("verified provider account failed the session check")
+		}
+	})
+
+	t.Run("email collisions and unusable emails fail alike without records", func(t *testing.T) {
+		if _, err := identitysqlc.New(pool).CreateAccount(ctx, identitysqlc.CreateAccountParams{
+			Subject: "collision-owner", EmailLocal: "taken", EmailDomain: "gmail.com", PasswordHash: "$argon2id$test",
+		}); err != nil {
+			t.Fatal(err)
+		}
+		identities := map[string]outbound.ProviderIdentity{
+			"collision":  {Email: "taken@gmail.com", EmailVerified: true},
+			"unverified": {Email: "unverified@gmail.com"},
+			"missing":    {},
+		}
+		durations := map[string][]time.Duration{}
+		for i := range 5 {
+			for name, identity := range identities {
+				handoff := f.seed(t, "google-"+name+"-"+strconv.Itoa(i), identity)
+				started := time.Now()
+				result, err := claim(f.service, handoff)
+				durations[name] = append(durations[name], time.Since(started))
+				if !errors.Is(err, app.ErrProviderAccountUnavailable) || result != (inbound.CreateProviderSessionResult{}) {
+					t.Fatalf("%s result = %+v, %v", name, result.Subject, err)
+				}
+			}
+		}
+		for name, samples := range durations {
+			slices.Sort(samples)
+			collision := slices.Sorted(slices.Values(durations["collision"]))
+			if samples[2] > 3*collision[2] || collision[2] > 3*samples[2] {
+				t.Fatalf("%s median timing = %s, collision = %s", name, samples[2], collision[2])
+			}
+		}
+		account, _ := load(t, "taken", "gmail.com")
+		if account != (storedProviderAccount{"collision-owner", "taken", "gmail.com", false, false, 0, 0}) {
+			t.Fatalf("collision changed the owner: %+v", account)
+		}
+		var links int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_provider_links WHERE provider_subject LIKE 'google-collision-%'
+			OR provider_subject LIKE 'google-unverified-%' OR provider_subject LIKE 'google-missing-%'`).Scan(&links); err != nil || links != 0 {
+			t.Fatalf("links = %d, %v", links, err)
+		}
+		if _, found := load(t, "unverified", "gmail.com"); found {
+			t.Fatal("unverified provider email created an account")
+		}
+	})
+
+	t.Run("concurrent new identities with one email create one account", func(t *testing.T) {
+		handoffs := make([]providerHandoff, 10)
+		for i := range handoffs {
+			handoffs[i] = f.seed(t, "google-race-new-"+strconv.Itoa(i), outbound.ProviderIdentity{Email: "race@example.org", EmailVerified: true})
+		}
+		var group sync.WaitGroup
+		results := make(chan error, len(handoffs))
+		for _, handoff := range handoffs {
+			group.Go(func() {
+				_, err := claim(f.service, handoff)
+				results <- err
+			})
+		}
+		group.Wait()
+		close(results)
+		created := 0
+		for err := range results {
+			switch {
+			case err == nil:
+				created++
+			case !errors.Is(err, app.ErrProviderAccountUnavailable):
+				t.Fatal(err)
+			}
+		}
+		account, found := load(t, "race", "example.org")
+		if created != 1 || !found || account.links != 1 || account.sessions != 1 {
+			t.Fatalf("created %d, account = %+v", created, account)
+		}
+	})
+
+	t.Run("a failed delivery write rolls back the account, link, session, and claim", func(t *testing.T) {
+		failing := app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), nil, nil, f.key, nil).
+			WithSessions(postgres.NewAccountRepository(pool), f.signer, failingDeliveryProtector{}, func(context.Context, string) error { return nil })
+		handoff := f.seed(t, "google-rollback", outbound.ProviderIdentity{Email: "rollback@example.org", EmailVerified: true})
+		if _, err := claim(failing, handoff); !errors.Is(err, app.ErrProviderLoginUnavailable) {
+			t.Fatalf("err = %v", err)
+		}
+		if _, found := load(t, "rollback", "example.org"); found {
+			t.Fatal("a failed delivery write kept the account")
+		}
+		result, err := claim(f.service, handoff)
+		account, found := load(t, "rollback", "example.org")
+		if err != nil || !found || account.subject != result.Subject || account.links != 1 || account.sessions != 1 {
+			t.Fatalf("retry after rollback = %+v, %v", account, err)
 		}
 	})
 }

@@ -234,7 +234,10 @@ func (t *accountTransaction) ClaimProviderResult(ctx context.Context, attemptVer
 	if err != nil {
 		return outbound.ProviderResult{}, false, err
 	}
-	return outbound.ProviderResult{Provider: row.Provider, Subject: row.ProviderSubject.String}, true, nil
+	return outbound.ProviderResult{
+		Provider: row.Provider, Subject: row.ProviderSubject.String, Email: row.ProviderEmail.String,
+		EmailVerified: row.ProviderEmailVerified.Bool, HostedDomain: row.ProviderHostedDomain.String,
+	}, true, nil
 }
 
 func (t *accountTransaction) LockLinkedAccount(ctx context.Context, provider, providerSubject string) (outbound.LinkedAccount, bool, error) {
@@ -246,6 +249,26 @@ func (t *accountTransaction) LockLinkedAccount(ctx context.Context, provider, pr
 		return outbound.LinkedAccount{}, false, err
 	}
 	return outbound.LinkedAccount{Subject: account.Subject, EmailVerified: account.EmailVerifiedAt.Valid}, true, nil
+}
+
+func (t *accountTransaction) CreateProviderAccount(ctx context.Context, account outbound.NewProviderAccount) (bool, error) {
+	local, domain, ok := strings.Cut(account.Email, "@")
+	if !ok {
+		return false, errors.New("invalid normalized email")
+	}
+	_, err := t.queries.CreateProviderAccount(ctx, sqlc.CreateProviderAccountParams{
+		Subject: account.Subject, EmailLocal: local, EmailDomain: domain, EmailVerified: account.EmailVerified,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	err = t.queries.CreateProviderLink(ctx, sqlc.CreateProviderLinkParams{
+		Provider: account.Provider, ProviderSubject: account.ProviderSubject, AccountSubject: account.Subject,
+	})
+	return err == nil, err
 }
 
 func (r *AccountRepository) WithinClaimCodeTransaction(ctx context.Context, fn func(outbound.ClaimCodeTransaction) error) error {
@@ -369,7 +392,7 @@ func (t *accountTransaction) GetAccountForPasswordRecovery(ctx context.Context, 
 	if err != nil {
 		return outbound.PasswordRecoveryAccount{}, false, err
 	}
-	return outbound.PasswordRecoveryAccount{Subject: account.Subject, EmailVerified: account.EmailVerifiedAt.Valid, HasPassword: account.PasswordHash != ""}, true, nil
+	return outbound.PasswordRecoveryAccount{Subject: account.Subject, EmailVerified: account.EmailVerifiedAt.Valid, HasPassword: account.HasPassword}, true, nil
 }
 
 func (t *accountTransaction) ReplacePasswordResetChallenge(ctx context.Context, subject string) error {

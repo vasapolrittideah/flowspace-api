@@ -62,18 +62,26 @@ func (s *EmailVerificationCodeService) issue(ctx context.Context, tx outbound.Ve
 	if !allowed {
 		return ErrRateLimited
 	}
-	code, verifier, _, err := domain.NewChallenge(s.verifierKey, input.Subject, account.Email, domain.PurposeVerifyEmail, time.Now())
-	if err != nil {
-		return err
-	}
 	if err := tx.ReplaceVerificationChallenge(ctx, input.Subject); err != nil {
 		return err
 	}
-	challengeID, err := tx.CreateChallenge(ctx, input.Subject, account.Email, verifier)
+	return queueVerificationCode(ctx, tx, s.protector, s.verifierKey, input.Subject, account.Email)
+}
+
+// queueVerificationCode stores a new email verification challenge with its
+// protected delivery and outbox request in the caller's transaction.
+func queueVerificationCode(ctx context.Context, tx outbound.VerificationCodeDeliveryTransaction, protector outbound.DeliveryProtector,
+	verifierKey []byte, subject, email string,
+) error {
+	code, verifier, _, err := domain.NewChallenge(verifierKey, subject, email, domain.PurposeVerifyEmail, time.Now())
 	if err != nil {
 		return err
 	}
-	material, err := s.protector.Protect(challengeID, string(domain.PurposeVerifyEmail), input.Subject, account.Email, code)
+	challengeID, err := tx.CreateChallenge(ctx, subject, email, verifier)
+	if err != nil {
+		return err
+	}
+	material, err := protector.Protect(challengeID, string(domain.PurposeVerifyEmail), subject, email, code)
 	if err != nil {
 		return err
 	}

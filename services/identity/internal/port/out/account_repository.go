@@ -37,10 +37,8 @@ type DeliveryMaterial struct {
 
 type AccountTransaction interface {
 	SessionRepository
+	VerificationCodeDeliveryTransaction
 	CreateAccount(ctx context.Context, subject, email, passwordHash string) error
-	CreateChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error)
-	StoreDelivery(ctx context.Context, challengeID string, material DeliveryMaterial) error
-	CreateOutboxEvent(ctx context.Context, challengeID string) error
 }
 
 type AccountRepository interface {

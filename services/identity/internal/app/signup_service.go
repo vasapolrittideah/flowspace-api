@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -53,14 +52,10 @@ func (s *SignupService) CreateAccount(ctx context.Context, request inbound.Creat
 	if err != nil {
 		return inbound.CreateAccountResult{}, ErrSignupUnavailable
 	}
-	code, verifier, _, err := domain.NewChallenge(s.verifierKey, subject.String(), email, domain.PurposeVerifyEmail, time.Now())
-	if err != nil {
-		return inbound.CreateAccountResult{}, ErrSignupUnavailable
-	}
 	var result inbound.CreateAccountResult
 	err = s.repository.WithinTransaction(ctx, func(tx outbound.AccountTransaction) error {
 		var recordErr error
-		result, recordErr = s.createRecords(ctx, tx, subject.String(), email, hash, code, verifier)
+		result, recordErr = s.createRecords(ctx, tx, subject.String(), email, hash)
 		return recordErr
 	})
 	if err != nil {
@@ -72,9 +67,7 @@ func (s *SignupService) CreateAccount(ctx context.Context, request inbound.Creat
 	return result, nil
 }
 
-func (s *SignupService) createRecords(ctx context.Context, tx outbound.AccountTransaction,
-	subject, email, hash, code string, verifier [32]byte,
-) (inbound.CreateAccountResult, error) {
+func (s *SignupService) createRecords(ctx context.Context, tx outbound.AccountTransaction, subject, email, hash string) (inbound.CreateAccountResult, error) {
 	if err := tx.CreateAccount(ctx, subject, email, hash); err != nil {
 		return inbound.CreateAccountResult{}, err
 	}
@@ -82,18 +75,7 @@ func (s *SignupService) createRecords(ctx context.Context, tx outbound.AccountTr
 	if err != nil {
 		return inbound.CreateAccountResult{}, err
 	}
-	challengeID, err := tx.CreateChallenge(ctx, subject, email, verifier)
-	if err != nil {
-		return inbound.CreateAccountResult{}, err
-	}
-	material, err := s.protector.Protect(challengeID, string(domain.PurposeVerifyEmail), subject, email, code)
-	if err != nil {
-		return inbound.CreateAccountResult{}, err
-	}
-	if err := tx.StoreDelivery(ctx, challengeID, material); err != nil {
-		return inbound.CreateAccountResult{}, err
-	}
-	if err := tx.CreateOutboxEvent(ctx, challengeID); err != nil {
+	if err := queueVerificationCode(ctx, tx, s.protector, s.verifierKey, subject, email); err != nil {
 		return inbound.CreateAccountResult{}, err
 	}
 	return inbound.CreateAccountResult{

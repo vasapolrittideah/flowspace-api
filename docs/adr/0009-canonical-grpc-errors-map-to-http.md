@@ -1,12 +1,8 @@
 # ADR-0009: Canonical gRPC errors map to HTTP
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

@@ -1,12 +1,8 @@
 # ADR-0028: Telemetry is vendor-neutral and correlated
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

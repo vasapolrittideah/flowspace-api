@@ -8,7 +8,7 @@ The [ADR convention](../conventions/adrs.md) defines the format of a record and 
 
 | # | Decision | Status |
 | --- | --- | --- |
-| [0001](0001-one-bounded-context-per-service.md) | One bounded context per independently deployable service | Accepted; service count and Keycloak boundary superseded by [0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) |
+| [0001](0001-one-bounded-context-per-service.md) | One bounded context per independently deployable service | Accepted, except the service count and Keycloak boundary superseded by [0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) |
 | [0002](0002-one-repository-and-one-go-module.md) | One repository and one root Go module | Accepted |
 | [0003](0003-hexagonal-layers-inside-each-service.md) | Hexagonal layers inside each service | Accepted |
 | [0004](0004-share-only-technical-packages-across-services.md) | Only technical packages are shared across services | Accepted |

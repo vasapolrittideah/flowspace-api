@@ -1,12 +1,8 @@
 # ADR-0016: Cross-service side effects use domain events
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

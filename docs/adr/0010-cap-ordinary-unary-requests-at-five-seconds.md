@@ -1,12 +1,8 @@
 # ADR-0010: Ordinary unary requests are capped at five seconds
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

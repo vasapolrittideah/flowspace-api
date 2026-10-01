@@ -1,12 +1,8 @@
 # ADR-0019: Keycloak owns authentication flows
 
-## Status
+Date: 2026-09-14
 
-Superseded by [ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md)
-
-## Date
-
-2026-09-14
+Status: Superseded by [ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md)
 
 ## Context
 

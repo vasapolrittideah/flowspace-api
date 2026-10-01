@@ -1,12 +1,8 @@
 # ADR-0021: Kubernetes runs locally and on the self-hosted server
 
-## Status
+Date: 2026-09-14
 
-Accepted
-
-## Date
-
-2026-09-14
+Status: Accepted
 
 ## Context
 

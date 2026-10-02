@@ -32,9 +32,9 @@ Co-authored-by: <agent name> <agent email>
   2. If the main change updates a published Protobuf event schema, use `events`.
   3. If the main change updates code-generation configuration or tooling, use `codegen`.
   4. If the change only adds or updates ADRs, use `adr`.
-  5. If the change affects `AGENTS.md`, `docs/conventions/`, or files under `.agents/`, use `agents`. This includes agent instructions, conventions, skills, commands, and agent configuration.
+  5. If the main change updates `AGENTS.md`, `docs/conventions/`, or files under `.agents/`, use `agents`. This includes agent instructions, conventions, skills, commands, and agent configuration.
   6. If the change belongs to one service, use the service scope. This includes related contracts, queries, generated code, tests, configuration, logging, specifications, plans, and runbooks. Code under `services/<service>/internal/bootstrap/` uses the scope of that service. For package locations, see the [project structure](../project-structure.md).
-  7. If the change affects the telemetry stack, dashboards, alert rules, or the observability specifications, plans, and runbooks, use `observability`. Instrumentation inside one service uses the service scope, and the shared logging package uses `logging`.
+  7. If the main change updates the telemetry stack, dashboards, alert rules, instrumentation that spans several services, or the observability specifications, plans, and runbooks, use `observability`. Instrumentation inside one service uses the service scope, and the shared logging package uses `logging`.
   8. If the change affects one shared technical package under root `internal/`, use its directory name. If you introduce a shared package, add its directory name to the table.
   9. If one change affects several shared packages, use `shared`.
   10. If another area in the table fits, use that scope.
@@ -46,6 +46,8 @@ Co-authored-by: <agent name> <agent email>
 ### Description
 
 - Write a short, specific description. Keep the whole subject line at most 72 characters.
+- Start the description with a lowercase verb in the imperative mood, such as `add` or `reject`.
+- Do not end the description with a period.
 - Do not use vague text such as `update`, `misc`, or `fix things`.
 
 ### Body

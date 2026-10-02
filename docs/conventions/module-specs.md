@@ -80,9 +80,9 @@ Status: <current state of the specification>
 
 - Include each shape that a consumer reads. Put each condition in `Behavior` instead.
 - For an API specification, start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`."
-- Write each shape that has fewer than two fields as a paragraph directly under `## Contract`, before the subsections.
+- If a shape has fewer than two named items, such as fields, labels, or panels, write it as a paragraph directly under `## Contract`, before the subsections.
 - For RPCs and events, write these tables in this order, each under a `###` heading with its name: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, `Published events`, and `Errors`. Omit a table that has no rows.
-- For each other shape with two or more fields, write a `###` subsection with a table, such as `### Log records` or `### Alert rules`.
+- For each other shape, write a `###` subsection with a table that has one row for each named item, such as `### Log records` or `### Alert rules`.
 - Keep the rows of `Methods` and `Method requirements` in the same RPC order.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
@@ -220,10 +220,11 @@ Status: <current state of the specification>
 ### Links and records
 
 - Add a row for each module to the specification index, and keep its `Status` column the same as the status of the specification.
+- Write the module ID in backticks in the `Module` column. In the `Specification` column, link the capability name to the file, or write the name without a link for a `Planned` module. In the `Depends on` column, write the module IDs in backticks, separated by commas, or `None`.
 
 ### Status
 
-- Let only the maintainer approve a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope, if any>): approve <capability> spec`.
+- Let only the maintainer approve a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope, if any>): approve <capability> spec`, with the capability name in lowercase except for names and abbreviations, such as `docs(observability): approve observability alerts and runbooks spec`.
 - Change the status to `Approved` only when the maintainer asks for it in the chat or in a review comment.
 - Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.
 - Start planning only from an `Approved` specification.

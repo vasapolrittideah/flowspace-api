@@ -73,7 +73,7 @@ A convention file has a title, a scope paragraph, and the sections below.
 
 - Write only bullets in this section.
 - Put the rules for the file, location, numbering, and life cycle of the artifact here. Also put the rules that cover more than one part here.
-- Include one bullet that states how existing artifacts follow a change to the convention. Choose one of these approaches: update every existing artifact in the same PR, or apply the change only to new artifacts and to artifacts that a later PR changes.
+- Include exactly one bullet that states how existing artifacts follow a change to the convention. Choose one of these approaches: update every existing artifact in the same PR, or apply the change only to new artifacts and to artifacts that a later PR changes. Put the bullet under `Changes` when the section has `###` headings. Other bullets under `Changes` can cover changes to an artifact after it exists.
 - If the section has more than five bullets, group them under `###` headings. Use only these headings, in this order, and omit a heading that has no bullets:
   1. `Files` for the location, name, and number of the artifact, and how many artifacts to write.
   2. `Sections and wording` for the sections of the artifact and the rules that cover several parts.

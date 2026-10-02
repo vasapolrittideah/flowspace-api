@@ -4,7 +4,7 @@ This convention defines the file, the format, and the status of one module speci
 
 ## Template
 
-A specification has a title, a module ID, a status line, `Objective`, `Scope, dependencies, and ADRs`, `Contract`, `Behavior`, `Testing strategy`, `Implementation boundaries`, `Success criteria`, and `Assumptions and open questions`.
+A specification has a title, a module ID, a status line, `Objective`, `Scope and ADRs`, `Contract`, `Behavior`, `Testing strategy`, `Implementation boundaries`, `Success criteria`, and `Assumptions and open questions`.
 
 ```markdown
 # Spec: <capability name>
@@ -17,9 +17,9 @@ Status: <current state of the specification>
 
 <users, the questions or results they need, and the purpose>
 
-## Scope, dependencies, and ADRs
+## Scope and ADRs
 
-<included and excluded work, module dependencies, and ADRs>
+<included and excluded work and ADRs>
 
 ## Contract
 
@@ -66,10 +66,9 @@ Status: <current state of the specification>
 - Include one sentence about the first users and their data, such as "The first users are API clients, and all data is disposable under ADR-0022."
 - Do not write assumptions here. Put them in `Assumptions and open questions`.
 
-### Scope, dependencies, and ADRs
+### Scope and ADRs
 
-- Write the parts in this order: the `Depends on` line, the included work, the excluded work, and the ADRs.
-- Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.` Name each module in backticks, as the `Depends on` column of the index lists it.
+- Write the parts in this order: the included work, the excluded work, and the ADRs.
 - Write the included work as one paragraph that starts with "The scope covers".
 - Write the excluded work as a bullet list after the sentence "This capability excludes these items:".
 - Write the ADRs as a bullet list after the sentence "These decisions apply:". Start each bullet with a link to the ADR, followed by a colon and what the ADR decides for this capability.
@@ -220,6 +219,7 @@ Status: <current state of the specification>
 ### Links and records
 
 - Add a row for each module to the specification index, and keep its `Status` column the same as the status of the specification.
+- Record the module dependencies only in the `Depends on` column of the index. Do not list them in the specification.
 - Write the module ID in backticks in the `Module` column. In the `Specification` column, link the capability name to the file, or write the name without a link for a `Planned` module. In the `Depends on` column, write the module IDs in backticks, separated by commas, or `None`.
 
 ### Status

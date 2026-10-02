@@ -169,6 +169,36 @@ docs(adr): record local alert routing
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
+A feature squash commit has no body when it builds what its Issue and specification describe and adds no migration, configuration, or decision of its own:
+
+```text
+feat(identity): validate Google callbacks and issue handoff codes
+
+Refs: #217
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+A feature squash commit has a body when it adds a migration, configuration, or decision that the subject does not state:
+
+```text
+feat(identity): create provider-only accounts from Google logins
+
+A new Google identity with an unused verified email gets a
+passwordless account, a provider link, and a session in the handoff
+transaction. Gmail and Workspace accounts start verified; other
+Google addresses queue a Flowspace verification code in the same
+transaction.
+
+Migration 00008 allows an empty password hash. Password login and
+recovery skip such accounts, and rolling back the migration fails
+while they exist.
+
+Closes: #219
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
 A squash commit that changes existing rules has a body that states the new rules:
 
 ```text

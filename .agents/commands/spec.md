@@ -2,22 +2,37 @@
 description: Start spec-driven development — write a structured specification before writing code
 ---
 
-Invoke the agent-skills:spec-driven-development skill.
+Invoke the agent-skills:spec-driven-development skill. Use the skill for its clarification and review gates. Follow the [module specification conventions](../../docs/conventions/module-specs.md) for the format, file paths, modules, status, and approval. Where the skill differs, follow the [differences that the convention lists](../../docs/conventions/module-specs.md#differences-from-the-spec-driven-development-skill).
 
-Before asking questions or writing a specification, read the [module specification conventions](../../docs/conventions/module-specs.md) and the [specification index](../../docs/specs/README.md). Follow the repository format instead of the generic skill format.
+Before you ask questions, read these documents:
 
-Begin by understanding what the user wants to build. Ask clarifying questions about:
-1. The objective and target users
-2. Core features and acceptance criteria
-3. Scope, module dependencies, and relevant accepted decisions
-4. Known boundaries (what to always do, ask first about, and never do)
+1. Read the module specification conventions and the [specification index](../../docs/specs/README.md). The index lists every module, including `Planned` modules that have no specification file yet.
+2. Read the [constraints](../../CONSTRAINTS.md), the [architecture](../../docs/architecture.md), the [technology stack](../../docs/technology-stack.md), and the [ADRs](../../docs/adr/README.md) that apply to the capability. Treat an open proposal as undecided.
+3. For an Identity capability, read the [Identity threat model](../../docs/security/identity-threat-model.md).
 
-Then generate a structured specification with the sections and order in `docs/conventions/module-specs.md`.
+Use the module rules of the convention to decide whether the request changes an existing module or adds new modules.
 
-If the request bundles several independently testable capabilities, first propose a capability map (module ids, dependency direction, build order) per the skill's Phase 0 and get it approved, then spec each module in dependency order.
+Ask clarifying questions until you can write each section of the convention template without a guess. Cover these topics:
 
-Save each spec as `docs/specs/<module-id>.md`. Use this path instead of the project-root path suggested by the skill. Add or update its row in `docs/specs/README.md`. Run `ls docs/specs/` to list the specs.
+1. The objective, the first users, and their data.
+2. The scope, the excluded work, the module dependencies, and the ADRs that apply.
+3. The contract that consumers see.
+4. The behavior, including security, data compatibility, and diagnostics.
+5. The material risks and the test level that proves each risk.
+6. The implementation boundaries and the success criteria.
 
-If a request includes several capabilities, save its capability map as `docs/specs/maps/<map-id>.md`. Use one map per request and name it after the capabilities it covers. Give each request a distinct map id to avoid overwriting an existing map.
+If the capability needs a decision that no accepted ADR makes, stop and ask the maintainer.
 
-Confirm with the user before proceeding.
+If the request bundles several independently testable capabilities, use these steps before you write a specification:
+
+1. Propose a capability map in chat. A capability map lists the module IDs, the dependencies of each module, and the build order.
+2. After the maintainer agrees, deliver the `Planned` rows of the map in their own PR, as the module rules of the convention state.
+3. Write the specifications in the build order. Start each specification only when the module rules allow it.
+
+Deliver one specification in each PR:
+
+1. Save the specification as `docs/specs/<module-id>.md` with the `Draft` status. In the same commit, add or update its row in the specification index.
+2. Before you commit, show the specification to the maintainer in chat and wait for their agreement. This agreement does not approve the specification.
+3. Create the branch, commits, and PR as the delivery conventions in the [agent instructions](../../AGENTS.md) state. Stop after you open the PR. Do not plan or implement the module.
+
+Change a status to `Approved` only when the maintainer asks for it. To change an existing specification, follow the status rules of the convention.

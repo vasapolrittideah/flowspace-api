@@ -45,7 +45,7 @@ Co-authored-by: <agent name> <agent email>
 
 ### Description
 
-- Write a short, specific description. Keep the whole subject line at most 72 characters.
+- Write a short, specific description. Keep the whole subject line at most 72 characters. Do not count the ` (#<number>)` suffix that GitHub adds to a squash commit.
 - Start the description with a lowercase verb in the imperative mood, such as `add` or `reject`.
 - Do not end the description with a period.
 - Do not use vague text such as `update`, `misc`, or `fix things`.

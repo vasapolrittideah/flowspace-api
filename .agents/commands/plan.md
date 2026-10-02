@@ -6,7 +6,7 @@ Invoke the agent-skills:planning-and-task-breakdown skill.
 
 Before planning, read the [module plan conventions](../../docs/conventions/module-plans.md), [GitHub Issue conventions](../../docs/conventions/github-issues.md), and [GitHub milestone conventions](../../docs/conventions/github-milestones.md). Use their templates and file paths instead of the generic skill defaults.
 
-Read the capability spec at `docs/specs/<module-id>.md`. If a capability map includes the module, read `docs/specs/maps/<map-id>.md` too. Read the codebase sections that the capability affects. Plan one module at a time. Plan modules in the build order from the capability map.
+Read the capability spec at `docs/specs/<module-id>.md` and its row in the [specification index](../../docs/specs/README.md). Read the codebase sections that the capability affects. Plan one module at a time. Plan modules in the dependency order that the `Depends on` column of the index shows.
 
 Use GitHub Issues as the task list. Use GitHub Projects to show task status.
 

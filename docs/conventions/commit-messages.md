@@ -230,21 +230,6 @@ Closes: #306
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
-A test squash commit has a body when the proof also changes behavior:
-
-```text
-test(identity): prove provider login against its specification
-
-The worker now deletes expired provider login attempts each minute, so
-their provider email and proofs are not kept after the attempt ends.
-Expired attempts were already rejected, so client responses do not
-change.
-
-Closes: #221
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
 ### Document squash commits
 
 A squash commit that only adds a specification has no body, because the specification on `main` holds the content:

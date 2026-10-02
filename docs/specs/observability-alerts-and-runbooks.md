@@ -29,6 +29,7 @@ This capability excludes these items:
 - Alerts on causes such as pod restarts, CPU use, or memory use. Those stay on the dashboards.
 - Service level objectives and error budgets.
 - Alerts on log or trace queries.
+- Alerts on the availability of Grafana, Prometheus, or Mailpit. No component watches the alert pipeline itself.
 
 These decisions apply:
 
@@ -45,21 +46,21 @@ Each rule reads the metrics that `observability-metrics-and-dashboards` defines.
 
 | Rule title | Severity | Condition | Pending period | Labels |
 | --- | --- | --- | --- | --- |
-| `API error rate is high` | `page` | More than 5% of the HTTP and gRPC server requests of a service end with an error status, and the service receives at least 1 request each second, over the last 5 minutes | 5 minutes | `service` |
-| `API latency is high` | `ticket` | The p99 HTTP or gRPC server duration of a service is above 2 seconds over the last 5 minutes | 10 minutes | `service` |
+| `API error rate is high` | `page` | More than 5% of the HTTP and gRPC server requests of a service end with an error status, and the service receives at least 0.1 requests each second, over the last 5 minutes | 5 minutes | `service` |
+| `API latency is high` | `ticket` | The p99 HTTP or gRPC server duration of a service is above 2 seconds, and the service receives at least 0.1 requests each second, over the last 5 minutes | 10 minutes | `service` |
 | `Outbox events are stuck` | `page` | The oldest unpublished Identity outbox event is older than 5 minutes | 5 minutes | None |
 | `Email consumer lag is not decreasing` | `ticket` | The email worker consumer lag stays above 0 for 10 minutes and is not lower than 10 minutes earlier | 0 minutes | None |
 | `Email delivery fails` | `ticket` | At least one email delivery ended with the `failed` or `commit_failed` outcome in the last 15 minutes | 0 minutes | `identity_email_kind` |
 | `Telemetry is dropped` | `ticket` | Alloy refuses or fails to send spans, metric points, or log entries in each evaluation | 10 minutes | Alloy component name |
 | `Host disk is almost full` | `ticket` | A node-local volume reports more than 90% of its capacity in use | 10 minutes | `persistentvolumeclaim` |
 
-An error status is an HTTP 5xx status or a gRPC code that `observability-logs-and-traces` treats as an error. Each volume reports the host filesystem, so the disk rule fires once for each volume when the host disk is almost full.
+An error status is an HTTP 5xx status or a gRPC code that `observability-logs-and-traces` treats as an error. Each volume reports the host filesystem, so the disk rule fires once for each volume when the host disk is almost full. The email worker retries a failed delivery without a limit, and each failed attempt counts as `failed`, so one short SMTP failure fires `Email delivery fails`.
 
 Each rule also has the labels `severity` and `environment`, and these annotations:
 
 - `summary`: one sentence with the rule title and the value that fired it, such as the error percentage.
 - `runbook_url`: the GitHub URL of the runbook on `main`.
-- `dashboard_url`: the Grafana path of the dashboard that shows the symptom.
+- `dashboard_url`: the full Grafana URL of the dashboard that shows the symptom, such as `http://localhost:3000/d/flowspace-service-health`.
 
 ### Notifications
 
@@ -81,6 +82,18 @@ Each rule has one runbook in `docs/runbooks/` that follows the [runbook conventi
 | `Telemetry is dropped` | `docs/runbooks/telemetry-is-dropped.md` |
 | `Host disk is almost full` | `docs/runbooks/host-disk-is-almost-full.md` |
 
+### Dashboard links
+
+The dashboards from `observability-metrics-and-dashboards` get these fixed UIDs, so the links in notifications stay valid when a dashboard changes:
+
+| Dashboard | UID |
+| --- | --- |
+| Service health | `flowspace-service-health` |
+| Event delivery | `flowspace-event-delivery` |
+| Telemetry stack | `flowspace-telemetry-stack` |
+
+The Grafana root URL is `http://localhost:3000`, which is the local address of the Grafana port forward.
+
 ## Behavior
 
 ### Evaluation
@@ -97,11 +110,6 @@ Each rule has one runbook in `docs/runbooks/` that follows the [runbook conventi
 - Repeat a notification for a firing `page` group every 4 hours and for a firing `ticket` group every 24 hours.
 - Send both severities to the Mailpit contact point. Keep the `severity` label on each alert so that a later environment can route by it.
 
-### Runbook links
-
-- Add each rule and its runbook in the same change.
-- Point each `runbook_url` to a runbook file that exists in the repository.
-
 ### Security and abuse
 
 - NetworkPolicy allows Mailpit port 1025 from Grafana as well as from `identity-worker`.
@@ -114,6 +122,8 @@ The capability records the rule states in Grafana and the notifications in Mailp
 - User IDs, subject IDs, session IDs, workspace IDs, request IDs, or trace IDs.
 - Email addresses other than the contact point address, provider account names, tokens, passwords, or codes.
 - Raw URL paths, query strings, or error message text.
+
+The error notification for a failed Prometheus query is an exception. It can contain the error text from Grafana about the connection to Prometheus, because that text has no user data.
 
 When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot deliver that notification or any other one. The rule state in Grafana still shows the alert.
 
@@ -135,6 +145,8 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 ### Always
 
 - Provision rules, the contact point, and the notification policy from files in the `local` overlay.
+- Add each rule and its runbook in the same change.
+- Start the `First checks` of the runbooks for `Outbox events are stuck` and `Email consumer lag is not decreasing` with a check that Alloy and Prometheus still receive metrics from `identity-worker`. Missing data fires these rules when the metric pipeline stops, even when the outbox moves.
 - Write each runbook from a real check in the local cluster, and run its first query before the change merges.
 - Record the command that induced each symptom in the plan, so that later work can repeat the test.
 - In the change that adds the first runbook, replace the `Examples` section of the [runbook conventions](../conventions/runbooks.md) with a link to that runbook.
@@ -167,3 +179,12 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 12. Given each rule file in the repository, When the runbook check runs, Then every rule has `severity`, `summary`, `runbook_url`, and `dashboard_url`, and every `runbook_url` names an existing file in `docs/runbooks/`.
 13. Given the alert emails from criteria 2 through 9, When a developer reads them, Then no email contains an ID, an email address other than the contact point, a raw path, or error text.
 14. Given a pod other than Grafana or `identity-worker`, When it connects to Mailpit port 1025, Then the connection fails.
+
+## Readiness for real teams
+
+Before Flowspace stops using disposable data, this capability must pass these checks in addition to the [system checks](../architecture.md#observability-and-recovery):
+
+- A `page` alert reaches a person who can act within minutes, through a contact point outside the cluster.
+- A watchdog alert outside Grafana reports when Grafana, Prometheus, or the contact point stops working.
+- The thresholds and pending periods come from measured traffic or agreed service level objectives instead of starting values.
+- Each alert was test-fired in the target environment, and each runbook link opened.

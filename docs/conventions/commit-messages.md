@@ -1,93 +1,95 @@
 # Commit message conventions
 
-This convention defines the format for checkpoint and squash commit messages.
+This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. The [agent instructions](../../AGENTS.md) define checkpoint commits and squash merges. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention. The main change of a commit is the change that the commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. A footer or a trailer is a `Key: value` line at the end of the message that Git and GitHub read, such as an Issue footer or a co-author trailer.
 
 ## Template
 
-A message has a subject line, a body, Issue footers, and co-author trailers.
+A message has a type, a scope, a description, a body, Issue footers, and co-author trailers. The type, the scope, and the description form the subject line.
 
 ```text
 <type of change>(<scope, if any>): <description of the change>
 
-<reason or trade-off that the subject does not state, if any>
+<information that the subject does not state, if any>
 
-Closes: #<Issue that the change completes, if any>
-Refs: #<related Issue that stays open, if any>
+Closes: #<number of an Issue that the change completes, if any>
+Refs: #<number of a related Issue that stays open, if any>
 
-Co-authored-by: <agent name> <agent email>
+Co-authored-by: <co-author name> <co-author email>
 ```
 
 ### Type
 
 - Use one of the [types](#types).
-- If generated code or OpenAPI output follows a source definition, use the type of that source.
-- If a contract change breaks callers, put `!` before the colon.
+- Use the type of the main change.
+- If the commit reverts an earlier commit, use `revert`.
 - If a change only edits Markdown agent instructions, conventions, skills, or commands, use `docs`. If it changes code or configuration for agents, such as a script or a hook, use the type of that change.
+- If a contract change breaks callers, put `!` before the colon. A change breaks callers when `buf breaking` reports it, or when it removes or changes the meaning of a field, a route, or an event that callers use. [ADR-0007](../adr/0007-version-apis-by-compatibility-boundary.md) requires a new version for such a change.
+- Do not use `!` for other incompatible changes, such as a renamed environment variable. Explain them in the body.
 - Do not use `feat` only because the change adds a file.
 
 ### Scope
 
 - Choose the scope with these steps, and stop after the first match:
-  1. If the main change updates a Protobuf RPC definition or public HTTP annotation, use `proto`.
-  2. If the main change updates a published Protobuf event schema, use `events`.
-  3. If the main change updates code-generation configuration or tooling, use `codegen`.
-  4. If the change only adds or updates ADRs, use `adr`.
-  5. If the main change updates `AGENTS.md`, `docs/conventions/`, or files under `.agents/`, use `agents`. This includes agent instructions, conventions, skills, commands, and agent configuration.
-  6. If the change belongs to one service, use the service scope. This includes related contracts, queries, generated code, tests, configuration, logging, specifications, plans, and runbooks. Code under `services/<service>/internal/bootstrap/` uses the scope of that service. For package locations, see the [project structure](../project-structure.md).
-  7. If the main change updates the telemetry stack, dashboards, alert rules, instrumentation that spans several services, or the observability specifications, plans, and runbooks, use `observability`. Instrumentation inside one service uses the service scope, and the shared logging package uses `logging`.
-  8. If the change affects one shared technical package under root `internal/`, use its directory name. If you introduce a shared package, add its directory name to the table.
-  9. If one change affects several shared packages, use `shared`.
-  10. If another area in the table fits, use that scope.
-  11. If no single area fits, omit the scope.
-- If generated code or OpenAPI output follows a source definition, use the scope of that source.
-- Reuse an existing [scope](#scopes) when it fits. If a PR needs a new scope, define the scope in that PR.
+  1. If the main change adds or changes instrumentation in more than one service, use `observability`.
+  2. If the main change affects more than one shared package under root `internal/`, use `shared`.
+  3. Use the first scope in the [scope table](#scopes) whose `Paths` column contains every file of the main change.
+  4. If no scope contains every file of the main change, omit the scope.
+- Read the service paths in the scope table as these paths, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service.
+- If a new service or shared package needs a scope, add the scope and its paths to the scope table in the same PR.
 - Do not combine scope names.
 
 ### Description
 
-- Write a short, specific description. Keep the whole subject line at most 72 characters. Do not count the `(#<number>)` suffix and its leading space, which GitHub adds to a squash commit.
+- Keep the whole subject line at most 72 characters. Do not count the `(#<number>)` suffix and its leading space, which GitHub adds to a squash commit.
 - Start the description with a lowercase verb in the imperative mood, such as `add` or `reject`.
+- Name the specific change, such as `reject task updates based on an outdated version`. If you use a general verb, such as `update`, give it a specific object, such as `update Go to 1.25`.
+- If the commit reverts an earlier commit, use the scope and the description of the reverted commit.
 - Do not end the description with a period.
-- Do not use vague text such as `update`, `misc`, or `fix things`.
+- Do not write a description that names no change, such as `misc` or `fix things`.
 
 ### Body
 
-- Limit prose lines to 72 characters. Preserve paragraphs and lists.
-- Write a body only when it gives information that the subject does not.
-- If the subject has `!`, explain the incompatibility and the required caller changes.
-- In a checkpoint commit, write for a reviewer who reads the PR one commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
-- In a squash commit, write for a later reader of the `main` history. Describe only the effects that stay on `main` after the merge: changed behavior, compatibility or migration effects, and important decisions or trade-offs. If the subject states every lasting effect, such as in a PR that only adds tests, omit the body.
-- If a squash commit needs a body, take its content from the final `What changed` and `Why` sections of the pull request. Keep only what the diff and the changed files do not state, and make sure that the final diff supports each sentence. Do not copy the whole description, because the subject links the pull request.
-- In a squash commit, if the change only adds a document or changes its status, such as a specification, plan, or ADR, omit the body. The document on `main` holds its content.
-- In a squash commit that changes an existing rule in a document, write only the reason or trade-off that the changed files do not state. If the files state the reason, omit the body. Do not list the new rules, because the files on `main` state them.
-- Do not split URLs, code, or trailers.
+- Put the body after the subject, separated by a blank line.
+- Wrap prose lines at 72 characters. Separate paragraphs with one blank line. Start each list item with a hyphen and a space, and indent its wrapped lines by two spaces.
+- If the subject has `!`, explain the incompatibility and the changes that callers must make.
+- If the commit reverts an earlier commit, start the body with `This reverts commit <full SHA>.` Then give the reason in a new paragraph.
+- In a checkpoint commit, write a body only when the subject does not explain the step. Write for a reviewer who reads the PR one commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
+- In a squash commit, write for a later reader of the `main` history. Choose the body with these steps, and stop after the first match:
+  1. If the change only adds a document or changes its status, such as a specification, plan, or ADR, omit the body. The document on `main` holds its content.
+  2. If the change edits an existing rule in a document, write only the reason or trade-off that the changed files do not state. If the files state the reason, omit the body.
+  3. Describe the lasting effects on `main` that the subject and the diff do not state: changed behavior, compatibility or migration effects, and important decisions or trade-offs. If there are none, omit the body.
+- In a squash commit, take the content of the body from the final `What changed` and `Why` sections of the PR. Make sure that the final diff supports each sentence.
+- Do not split URLs, code, or trailers. A line that holds one of them can be longer than 72 characters.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
+- In a squash commit, do not copy the whole PR description, because the subject links the PR.
 - In a squash commit, do not include verification details, lists of added tests, or specification or plan status changes.
 - In a squash commit, do not copy text that only reviewers need, such as merge order, review notes, checks that did not run, or follow-up tasks.
 
 ### Issue footers
 
+- Put the footers after the body, or after the subject when there is no body, separated by a blank line.
 - Write one footer per Issue, and repeat the key on each line.
 - Put `Closes` footers before `Refs` footers, and order each group by ascending Issue number.
 - Use `Closes` only in a squash commit. GitHub closes the Issue when the commit reaches `main`.
 - If a checkpoint commit belongs to an Issue, add a `Refs` footer for it.
-- In a squash commit, copy the pull request's `Related issues` as footers: `Closes` for each Issue it completes and `Refs` for each Issue that stays open.
+- In a squash commit, copy the PR's `Related issues` as footers: `Closes` for each Issue it completes and `Refs` for each Issue that stays open.
 - Do not leave blank lines between Issue footers or add a period at the end.
 - Do not add Issues from `Follow-up tasks`.
 
-### Co-author trailer
+### Co-author trailers
 
-- Put the trailers after a blank line at the end of the message.
-- Include one trailer for each agent that contributes to an AI-assisted checkpoint or squash commit.
-- Use the identity of the agent that contributes. If the agent's harness gives an attribution trailer, use the name and email in that trailer. Otherwise, use the identity in [Agent trailers](#agent-trailers).
-- Always spell the trailer key as `Co-authored-by`.
-- Preserve existing attribution when you amend or squash commits.
-- Do not add a trailer for an agent that did not contribute.
+- Put the trailers after a blank line at the end of the message. Order them by name in alphabetical order.
+- Add one trailer for each person or agent, other than the commit author, who contributed to the commit.
+- For a person, use the name and the email of their GitHub account. For an agent, use the name and email in the attribution trailer that its harness gives. If the harness gives none, use the identity in [Agent trailers](#agent-trailers).
+- Spell the trailer key as `Co-authored-by`.
+- Keep the existing trailers when you amend or squash commits.
+- Do not add a trailer for a person or agent who did not contribute.
 
 ## Rules
 
-- Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) and write the parts in the order shown in the template.
-- For multiline messages, write the message in a file and run `git commit --file <message-file>` separately.
+- Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/), and write the parts in the order shown in the template.
+- If a message has more than one line, write it to a file outside the working tree, and pass the file with `git commit --file <message-file>` in its own command.
+- Apply a change of this convention to new commits only. Do not rewrite commits on `main` to follow it.
 
 ## Reference
 
@@ -105,31 +107,30 @@ Co-authored-by: <agent name> <agent email>
 | `ci` | Change CI workflows or automated checks |
 | `style` | Change formatting only |
 | `chore` | Maintain the project when no more specific type fits |
+| `revert` | Revert an earlier commit |
 
 ### Scopes
 
-A scope names the repository area that a change affects. Use one lowercase scope when it makes the affected area clear:
-
-| Scope | Area |
-| --- | --- |
-| `authn` | Shared access token and live session verification under `internal/authn/` |
-| `config` | Shared environment configuration under `internal/config/` |
-| `logging` | Shared structured logging under `internal/logging/` |
-| `postgrespool` | Shared PostgreSQL startup connections under `internal/postgrespool/` |
-| `requestid` | Shared request ID validation and generation under `internal/requestid/` |
-| `identity` | Accounts, authentication, email verification, and sessions |
-| `workspace` | Workspaces, memberships, invitations, roles, and authorization |
-| `work` | Projects, tasks, assignments, status transitions, comments, activity history, and the event outbox |
-| `notifications` | In-app notification inbox, read state, and event deduplication |
-| `shared` | Changes spanning several shared Go packages under root `internal/` |
-| `proto` | Protobuf RPC definitions and public HTTP annotations |
-| `events` | Published Protobuf event schemas |
-| `codegen` | Code-generation configuration and tooling |
-| `observability` | Telemetry stack, dashboards, alert rules, and observability specifications, plans, and runbooks |
-| `infra` | Infrastructure and deployment configuration |
-| `deps` | Dependency updates |
-| `adr` | Architecture decision records |
-| `agents` | Agent instructions, conventions, skills, commands, and configuration |
+| Scope | Area | Paths |
+| --- | --- | --- |
+| `proto` | Protobuf RPC definitions and public HTTP annotations | `contracts/proto/` |
+| `events` | Published Protobuf event schemas | `contracts/events/` |
+| `codegen` | Code-generation configuration and tooling | `buf.yaml`, `buf.gen.yaml`, `buf.lock`, `sqlc.yaml`, and the `buf` and `sqlc` tasks in `Taskfile.yaml` |
+| `adr` | Architecture decision records | `docs/adr/` |
+| `agents` | Agent instructions, conventions, skills, commands, and configuration | `AGENTS.md`, `CLAUDE.md`, `docs/conventions/`, `.agents/`, `.claude/`, `skills-lock.json` |
+| `identity` | Accounts, authentication, email verification, and sessions | The service paths for `identity` |
+| `workspace` | Workspaces, memberships, invitations, roles, and authorization | The service paths for `workspace` |
+| `work` | Projects, tasks, assignments, status transitions, comments, activity history, and the event outbox | The service paths for `work` |
+| `notifications` | In-app notification inbox, read state, and event deduplication | The service paths for `notifications` |
+| `observability` | Telemetry stack, dashboards, alert rules, and observability specifications, plans, and runbooks | `docs/specs/observability-*`, `tasks/observability-*`, `docs/runbooks/`, and the configuration of the telemetry stack under `deploy/` |
+| `authn` | Shared access token and live session verification | `internal/authn/` |
+| `config` | Shared environment configuration | `internal/config/` |
+| `logging` | Shared structured logging | `internal/logging/` |
+| `postgrespool` | Shared PostgreSQL startup connections | `internal/postgrespool/` |
+| `requestid` | Shared request ID validation and generation | `internal/requestid/` |
+| `shared` | Changes spanning several shared Go packages | Several packages under `internal/` |
+| `infra` | Infrastructure and deployment configuration | `deploy/`, `Tiltfile`, and the `cluster:*` tasks in `Taskfile.yaml` |
+| `deps` | Dependency updates | `go.mod`, `go.sum`, `renovate.json` |
 
 ### Agent trailers
 
@@ -154,6 +155,7 @@ fix(agents): preserve multiline PR descriptions
 build(codegen): configure Buf to generate ConnectRPC clients
 ci: add pull request title validation
 feat(workspace)!: require a role when inviting members
+revert(agents): clarify convention headings
 ```
 
 ### Checkpoint commits
@@ -275,6 +277,20 @@ docs(agents): revise module specification sections and approval
 Specifications repeated commands that Issue verification steps and
 CONSTRAINTS.md already own. Some section names did not say what
 belongs in them.
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+### Revert commits
+
+A revert commit keeps the scope and description of the reverted commit. Its body names the reverted commit and gives the reason:
+
+```text
+revert(agents): clarify convention headings
+
+This reverts commit 2f77dde4c1b9a6e3d5f8a0b7c2e4d6f8a1b3c5e7.
+
+The new headings broke links from other convention files.
 
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```

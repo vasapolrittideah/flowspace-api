@@ -46,3 +46,4 @@ The [ADR convention](../conventions/adrs.md) defines the format of a record and 
 | [0036](0036-authenticate-internal-session-checks-with-mutual-tls.md) | Authenticate internal session checks with mutual TLS | Accepted |
 | [0037](0037-local-logs-and-traces-use-disposable-single-host-stores.md) | Local logs and traces use disposable single-host stores | Accepted |
 | [0038](0038-local-metrics-reach-a-single-host-prometheus-through-alloy.md) | Local metrics reach a single-host Prometheus through Alloy | Accepted |
+| [0039](0039-local-alerts-run-in-grafana-and-notify-through-mailpit.md) | Local alerts run in Grafana and notify through Mailpit | Accepted |

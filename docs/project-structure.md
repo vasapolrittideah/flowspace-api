@@ -36,7 +36,8 @@ This document defines where backend code belongs and which dependency directions
 │       ├── staging/
 │       └── production/
 ├── docs/
-│   └── adr/
+│   ├── adr/
+│   └── runbooks/
 ├── gen/
 │   └── go/
 │       └── flowspace/<service>/v1/
@@ -80,6 +81,7 @@ Tool configuration stays where the owning tool expects it. Optional output such 
 | `scripts/` | Small repository automation used by local tasks or CI. |
 | `docs/` | Current architecture and engineering guidance. |
 | `docs/adr/` | Accepted architectural decisions and their rationale. |
+| `docs/runbooks/` | One runbook for each alert rule. |
 | `.github/workflows/` | Repository CI workflows. |
 
 Root `internal/` is not a default home for helpers. Code with one service owner stays under that service, even when another service might need something similar later.

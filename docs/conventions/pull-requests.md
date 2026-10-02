@@ -1,6 +1,6 @@
 # Pull request conventions
 
-This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks that the Workflow rules name and CI pass, and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. Work for later is work that the PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
+This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks that the Workflow rules name and CI pass, and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. The [GitHub Issue convention](github-issues.md) defines work for later. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
 
 ## Template
 
@@ -63,10 +63,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ### Follow-up tasks
 
-- Write one bullet for each piece of work that the PR leaves for later, even when there is only one.
-- If the work has an open Issue, write the bullet in the [follow-up task format](github-issues.md#follow-up-task-format). If the work has no open Issue, write the remaining work as one sentence without a number, such as `- Rename the hexagonal convention file.` This rule replaces the rule of the follow-up task format that lists only open Issues.
-- Put the bullets with an Issue first, in ascending Issue number. Then put the bullets without an Issue.
-- Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [Issue convention](github-issues.md) states. If the maintainer does not approve it, or the session has no chat, write the work without a number.
+- Write each piece of work that the PR leaves for later in the [follow-up task format](github-issues.md#follow-up-task-format).
 - If the PR leaves no work for later, write `n/a`.
 
 ## Rules

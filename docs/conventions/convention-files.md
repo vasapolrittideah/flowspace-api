@@ -130,11 +130,11 @@ A convention file has a title, a scope paragraph, and the sections below.
 
 ### Sections and wording
 
-- Follow the [Markdown and English prose conventions](markdown-and-prose.md) in each convention file.
+- Follow the [Markdown and English prose conventions](markdown-and-english-prose.md) in each convention file.
 - Start each bullet with a verb, such as "Write", "Put", "Use", "Link", or "Omit". If the rule has a condition or applies to one place, state the condition or the place first, such as "In the index, use the record number". Apply this rule to every bullet outside code blocks. This rule does not cover the items of a numbered list inside a bullet.
 - If a rule applies steps in order or by precedence, put a numbered list inside its bullet.
 - Number the items of every numbered list with Arabic numerals that start at 1 and go up by 1, such as `1.`, `2.`, and `3.`. Do not use Roman numerals or letters, such as `i.`, `ii.`, or `a.`. Apply this rule to the Markdown source. GitHub shows a numbered list inside a bullet with Roman numerals, and that display follows this rule.
-- Give each bullet one main point, as the [Markdown rules](markdown-and-prose.md#markdown) define. Keep the condition, reason, and exception of the point in the same bullet.
+- Give each bullet one main point, as the [Markdown rules](markdown-and-english-prose.md#sections-and-wording) define. Keep the condition, reason, and exception of the point in the same bullet.
 - Order the bullets in each list: placement and format first, then the order and structure of the content, then allowed values and links, and then the rules that start with "Do not". If a bullet fits several groups, put it in the earliest group.
 - Use the sections in the template order. Omit an optional section that has no content.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a convention file.
@@ -150,4 +150,4 @@ A convention file has a title, a scope paragraph, and the sections below.
 
 ### Changes
 
-- Apply a change of this convention only to new convention files and to convention files that a later PR changes for any reason. In that PR, make the whole changed file follow this convention. This includes the file name and the row in the agent instructions. If the PR renames the file, update every link to the file in the same PR.
+- Apply a change of this convention only to new convention files and to convention files that a later PR changes for any reason. In that PR, make the whole changed file follow this convention. This includes the file name and the row in the agent instructions. If the PR renames the file, update every link to the file in the same PR. A PR that only updates the links to a renamed file or heading in another convention file does not count as a change of that file.

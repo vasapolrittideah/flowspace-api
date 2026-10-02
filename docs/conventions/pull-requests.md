@@ -71,7 +71,7 @@ A PR has a title and the description sections of the [PR template](../../.github
 - Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
 - Follow the [label rules](github-labels.md), which also keep the title and description consistent with the final work.
 - Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete every section.
-- Before creating or updating a PR description, reread the [Markdown rules](markdown-and-prose.md#markdown). Review every prose section after editing. Keep new text in an existing paragraph or bullet only when it develops the same point. Start a new paragraph for a separate explanation, or use separate bullets for independent points.
+- Before creating or updating a PR description, reread the [Markdown rules](markdown-and-english-prose.md#sections-and-wording). Review every prose section after editing. Keep new text in an existing paragraph or bullet only when it develops the same point. Start a new paragraph for a separate explanation, or use separate bullets for independent points.
 
 ## Review readiness
 

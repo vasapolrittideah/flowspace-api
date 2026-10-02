@@ -149,4 +149,4 @@ A convention file has a title, a scope paragraph, and the sections below.
 
 ### Changes
 
-- Apply a change of this convention only to new convention files and to convention files that another task changes. In the PR of that task, make the whole changed file follow this convention.
+- Apply a change of this convention only to new convention files and to convention files that another task changes. In the PR of that task, make the whole changed file follow this convention. This includes the file name and the row in the agent instructions. If the PR renames the file, update every link to the file in the same PR.

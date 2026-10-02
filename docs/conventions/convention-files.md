@@ -4,7 +4,7 @@ This convention defines the file, sections, and wording of each convention file 
 
 ## Template
 
-A convention file has a title, a scope paragraph, and the sections below.
+A convention file has a title, a scope, a template, rules, special cases, differences from the skill, a reference, and examples.
 
 ```markdown
 # <topic> conventions
@@ -53,7 +53,8 @@ A convention file has a title, a scope paragraph, and the sections below.
 ### Template section
 
 - If the artifact has no fixed format, omit this section.
-- Start with one sentence that names the parts of the artifact. If a part is outside the body, such as the title of an Issue or a pull request, name the part in this sentence.
+- Start with one sentence that names every part of the artifact in template order. If a part is outside the body, such as the title of an Issue or a pull request, name it first.
+- Name each part with a short noun phrase. If the part is a section with a fixed heading, use the heading text, such as "Context".
 - After the sentence, put the format in a code block with the language of the artifact, such as `markdown` or `text`.
 - In the code block, write fixed text as it appears in the artifact, such as `## Context`. Write each variable part as a placeholder in angle brackets.
 - If a part can repeat, show it once in the code block, such as one acceptance criterion. State how often it can repeat in the subsection of the part.
@@ -61,8 +62,8 @@ A convention file has a title, a scope paragraph, and the sections below.
 - Keep the capitals of names and abbreviations in a placeholder, such as `<module ID>` or `<Issue number>`.
 - If a placeholder shows the format of a value, write the format in uppercase letters, such as `<NNNN>` for a four-digit number.
 - For an optional part, end the placeholder with `, if any`. If the optional part has a heading, put `, if any` in the first placeholder under the heading.
-- After the code block, write one `###` subsection for each part, in template order. Put the subsections for parts outside the body first, in the order of the first sentence.
-- Name each subsection after its part. Use "Title" for the `#` heading line, the label for a labeled line such as `Date:`, and the heading text for a section such as `## Context`. For a heading that contains a placeholder and fixed words, use the fixed words, such as "Differences from the skill". For other parts, including a heading that is only a placeholder, use a short noun phrase from the placeholder, such as "Special case".
+- After the code block, write one `###` subsection for each part, in the order of the first sentence.
+- Name each subsection with the name of its part from the first sentence, and capitalize the first word, such as "Issue footers".
 - If the name of a subsection repeats another heading in the convention file, add a word that tells the headings apart, such as "Rules section" or "Result gaps".
 - Write at least one rule in each subsection, such as the format, length, source, or links of the part.
 - Write only bullets in each subsection.
@@ -86,7 +87,7 @@ A convention file has a title, a scope paragraph, and the sections below.
 - If the section has five bullets or fewer, do not add `###` headings.
 - Do not put a rule about one part in this section. Put the rule in the subsection of that part.
 
-### Special case
+### Special cases
 
 - If a procedure or format applies only to some artifacts of the kind, such as the [gap comment](github-issues.md#gap-comment) in the Issue convention, add one section for that situation. Put a procedure that applies to every artifact of the kind under `Workflow` in the Rules section.
 - Name the situation in the heading as a noun phrase.

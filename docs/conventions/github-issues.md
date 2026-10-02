@@ -1,15 +1,13 @@
 # GitHub Issue conventions
 
-This convention defines the Issue body for one task, the gap comment for an ordinary task, and the result comment for a final Prove task.
+This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes. A module is one capability that the [module specification convention](module-specs.md) defines, and a module plan lists the tasks of one module, as the [module plan convention](module-plans.md) defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in `Acceptance criteria` or `Verification` that failed or did not run.
 
 ## Template
 
-An Issue has a title that states the task outcome, and the body fields shown below.
+An Issue has a title, a module ID, Description, Acceptance criteria, Verification, and Files likely touched.
 
 ```markdown
-Module: `<module ID>`
-
-Estimated scope: <expected size of the task>.
+Module ID: `<module ID, if any>`
 
 ## Description
 
@@ -21,7 +19,7 @@ Estimated scope: <expected size of the task>.
 
 ## Verification
 
-- [ ] Run `<command>` to check <behavior that the command checks>.
+- [ ] <check and the behavior that it checks>
 
 ## Files likely touched
 
@@ -30,169 +28,94 @@ Estimated scope: <expected size of the task>.
 
 ### Title
 
-- Keep the title consistent with the approved specification, module plan, and task scope.
+- Write the title in the title field of the Issue, outside the body.
+- Write a verb phrase in the imperative mood and in sentence case, without a final period, such as "Trace the Workspace session check into Identity".
+- State the outcome of the task, not its steps.
+- Keep the title consistent with the approved specification, the module plan, and the task scope.
 
-### Module
+### Module ID
 
 - Copy the module ID from the approved specification.
-
-### Estimated scope
-
-- Write one word, such as `Small`, `Medium`, or `Large`.
+- If the Issue does not belong to a module plan, omit the line.
 
 ### Description
 
-- Put prerequisites without an Issue number in a separate paragraph.
+- Write the description as paragraphs. Start with the outcome, and then state the scope.
+- If the task has a prerequisite without an Issue, such as an approved decision, put the prerequisite in its own paragraph.
 
 ### Acceptance criteria
 
-- Write each outcome as a `- [ ]` item.
-- Use as many items as the task needs.
+- Write at least one `- [ ]` item.
+- State each outcome as a fact in the present tense, such as "The Identity `identity_session_check` line has the same request ID and trace ID as the Workspace request."
+- If the task delivers a success criterion of the specification, write an item for that criterion.
 
 ### Verification
 
 - Write each check as a `- [ ]` item.
-- Keep inspection of a command's output in the same item when they form one check. Put separate manual checks in separate items.
-- Include `task check:task`, `task git:diff:check`, and CI review in every list. If Markdown changes, include `task markdown:check`.
-- Add commands that check the task's behavior.
+- Start a command check with `Run`, the command in backticks, and `to check`, and then state the behavior that the command checks. Start a manual check with its action, such as "Stop Alloy with `kubectl scale`".
+- Keep the inspection of a command's output in the same item as the command when they form one check. Put each separate manual check in its own item.
+- Put the checks of the task first. Then end the list with these items, in this order, with this exact text:
+  1. Run `task check:task` to check formatting, lint, tests, coverage, and vulnerabilities.
+  2. Run `task git:diff:check` to check whitespace in the diff.
+  3. Run `task markdown:check` to check changed Markdown.
+  4. Review the CI results on the PR.
+- If the task changes no Markdown file, omit the `task markdown:check` item.
 
 ### Files likely touched
 
-- For generated output, list only its folder, with a trailing slash and `(generated output)`, such as `gen/go/flowspace/identity/v1/` (generated output).
+- Write one item for each path that the task likely changes.
+- For generated output, list only its folder, with a trailing slash, followed by `(generated output)`, such as `` `gen/go/flowspace/identity/v1/` (generated output) ``.
 - Do not list generated file names.
 
 ## Rules
 
-- Follow the workflow and authority in the [agent instructions](../../AGENTS.md) when creating Issues.
-- Use one Issue for each task. Use the body fields in the template order, with the same spelling and capitalization.
-- Keep the body consistent with the approved specification, module plan, and task scope.
-- Before creating an Issue, compare its title, body, acceptance criteria, verification, file list, and planned blockers with the approved specification and module plan.
-- After creating an Issue, apply the [Issue labels](github-labels.md), add it to the repository GitHub Project with `Todo` status, and record its blockers as native GitHub `Blocked by` relationships. Assign the [plan milestone](github-milestones.md) to each Issue in the plan's numbered Task list.
-- Add one native GitHub `Blocked by` relationship for each blocking Issue. Use these relationships as the dependency list.
+### Sections and wording
 
-## Follow-up task format
+- Use the body fields in the template order, with the same spelling and capitalization.
 
-A follow-up task is an open Issue for work that a PR or an Issue leaves for later. A PR description, a gap comment, and a result comment list follow-up tasks in this format.
+### Workflow
 
-```markdown
-- #<number of an open Issue>: <remaining work>.
-```
+- Write one Issue for each task.
+- Before you create an Issue for a module plan, compare its title, body, and planned blockers with the approved specification and the module plan.
+- After you create an Issue, apply the [Issue labels](github-labels.md), and add the Issue to the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) with the `Todo` status.
+- When you start a task, set the Project status of its Issue to `In Progress`. After the Issue closes, make sure that its status is `Done`.
+- Before you tell the maintainer that the PR is ready, or that it cannot become ready, check each passed item in `Acceptance criteria` and `Verification`. Leave each gap unchecked.
+- If an ordinary task has a gap, let its PR close the Issue. The PR states the gap in `Risks or limitations` and the remaining work in `Follow-up tasks`. A gap in the final Prove task keeps the Issue open, as the [Final Prove task](#final-prove-task) rules state.
+- Do not post a comment with the results of a task. The PR description records them.
 
-### Issue number
+### Links and records
 
-- Write one bullet per Issue, even when there is only one.
-- List only open Issues. Create an Issue for later work before you list it, or leave the work out.
-- Do not put `Closes`, `Fixes`, or `Resolves` before the number. GitHub would close the Issue when the PR merges.
+- Record each blocking Issue as one native GitHub `Blocked by` relationship. Use these relationships as the dependency list, and do not list blocking Issues in the body.
+- If the Issue belongs to a module plan, assign the milestone of the plan, as the [milestone rules](github-milestones.md) state.
 
-### Remaining work
+### Changes
 
-- Write one sentence. GitHub shows only the number, so the sentence names the work.
-
-## Gap comment
-
-After verification, check each completed item in the Issue body. Leave failed and unrun items unchecked. The pull request (PR) that closes the Issue records the changes and the CI result, so an ordinary Issue has no comment by default.
-
-Post a comment only when the PR does not show something that a reader of the Issue needs: an unchecked item or a gap that needs a follow-up Issue. Do not add the PR, CI results, or measurements to the comment. Do not include secrets or test account data.
-
-```markdown
-## Gaps
-
-- <unchecked item>: <cause>. <next action>
-
-## Follow-up tasks
-
-- #<number of an open Issue>: <remaining work>.
-```
-
-### Gaps
-
-- If no item is unchecked, omit the section. Do not write `n/a`.
-
-### Follow-up tasks
-
-- Write each follow-up Issue in the [follow-up task format](#follow-up-task-format).
-- If there is no follow-up Issue, omit the section. Do not write `n/a`.
+- If the approved specification or the module plan changes, update the body of each open Issue that the change affects.
+- Apply a change of this convention to new Issues, and to open Issues when you edit them. Do not edit closed Issues to follow it.
 
 ## Final Prove task
 
-The final task in each module plan checks the approved specification through tests and review. Use the Issue template above.
+The final Prove task checks the approved specification through tests and review. Its Issue uses the [Issue template](#template), and its PR records the evidence that CI does not keep, as the [Prove task PR rules](pull-requests.md#final-prove-task-pr) state.
 
-### Issue rules
+- Title the Issue `Prove <capability> against its specification`, with the capability name from the title of the specification.
+- In `Description`, name the final test scope and each cross-service check that another Issue owns. Link to that Issue instead of repeating its work.
+- In `Acceptance criteria`, require a test, or a local check that the PR description records, for each success criterion of the specification and for each threat ID in its `Testing strategy`.
+- In `Acceptance criteria`, add an item for each public, private, failure, and cross-service path that the module has.
+- If the module has public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` that run against a running service, and add a `task smoke:bruno` item to `Verification`.
+- In `Verification`, add one item for each integration, smoke, contract, and generation check that applies to the module.
+- In `Files likely touched`, include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and the likely test paths.
+- When every item passes, mark the specification `Implemented` and the plan `Complete` in the PR of the task, and record the PR in the plan.
+- If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Prove task PR rules](pull-requests.md#final-prove-task-pr) state how the PR refers to the Issue.
 
-- Title the Issue `Prove <capability> against its specification`. Name the capability so readers can distinguish it from other modules.
-- In Description, name the final test scope and any cross-service checks owned by another Issue. Link to that Issue instead of repeating its work.
-- In Acceptance criteria, require tests for every success criterion and applicable threat.
-- Add acceptance criteria for the module's public, private, failure, and cross-service paths when they apply. Name the outcomes that still need proof.
-- For a module with public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` against a running service. Run `task smoke:bruno` and record the result in the result comment.
-- If a check fails or is missing, record the gap and its follow-up Issue in the result comment. Keep the task and final plan checkpoint open until the gap is resolved.
-- Add separate Verification items for the module's applicable integration, smoke, contract, and generation checks. Check completed items in the Issue body.
-- Add `Blocked by` relationships for actual blocking Issues. Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and likely test paths in Files likely touched.
-- When every criterion passes, mark the specification `Implemented` and the plan `Complete`. Record the final PR in the plan.
+## Differences from the planning-and-task-breakdown skill
 
-### Result comment
+The [`planning-and-task-breakdown` skill](../../.agents/skills/planning-and-task-breakdown/SKILL.md) gives each task a structure for a task list or a tracker. This convention applies where the two differ:
 
-After verification, check each completed item in the Issue body and post a result comment. The comment records the evidence that CI does not keep: local checks, gaps, the module closure decision, and follow-up work.
-
-Separate the lines under `Result` with blank lines, and complete every section. Do not add a date, because GitHub shows when the comment was posted. Do not repeat the Verification checklist or CI measurements. Do not include secrets or test account data.
-
-```markdown
-## Result
-
-Status: <state of the module proof>
-
-Outcome: <result of the task>
-
-Local checks: <checks that CI does not run and their results>
-
-PR: #<PR number>. CI <CI result> in [run <run ID>](https://github.com/vasapolrittideah/flowspace-api/actions/runs/<run ID>).
-
-## Gaps
-
-<failed or unrun items, their causes, and next actions>
-
-## Module closure
-
-<specification and plan statuses>
-
-## Follow-up tasks
-
-<open Issues for later work>
-```
-
-#### Status
-
-- Write `Complete` only when all required checks pass.
-- If a gap prevents closure, write `Blocked`, and keep the specification and plan statuses unchanged.
-
-#### Outcome
-
-- Write one sentence.
-
-#### Local checks
-
-- For each check, state the command, its passed and total counts, and the local stack it ran against, such as `task smoke:bruno` passed 36/36 requests against k3d flowspace-local with Mailpit.
-- Separate several checks with semicolons.
-- If no local check applies, write `Local checks: n/a`.
-- Do not include checks that CI runs.
-
-#### PR
-
-- Write `passed` or `failed` for the CI result, and link the CI run.
-
-#### Result gaps
-
-- For each failed or unrun item, leave its checkbox clear in the Issue body, and write a bullet that names the item, cause, and next action.
-- If there is nothing to report, write `n/a`.
-
-#### Module closure
-
-- If a success criterion has only partial proof, state why the module can still close.
-
-#### Result follow-up tasks
-
-- Write each follow-up Issue in the [follow-up task format](#follow-up-task-format).
-- If there is no follow-up Issue, write `n/a`.
+- Write the task as a GitHub Issue with the [Issue template](#template). The skill writes `Description`, `Acceptance criteria`, and other fields as bold labels in a `## Task` section.
+- Record dependencies as native `Blocked by` relationships, as the [link rules](#links-and-records) state. The skill lists them in a `Dependencies` field.
+- Omit an estimated scope. The skill sizes each task by its number of files.
+- End `Verification` with the fixed items in the [Verification rules](#verification). The skill uses `Tests pass`, `Build succeeds`, and `Manual check` labels.
 
 ## Examples
 
-The [Workspace creation Issue](https://github.com/vasapolrittideah/flowspace-api/issues/48) shows a complete Issue using this template.
+[Issue #303](https://github.com/vasapolrittideah/flowspace-api/issues/303) shows an ordinary task Issue that follows this convention.

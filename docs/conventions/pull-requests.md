@@ -1,6 +1,6 @@
 # Pull request conventions
 
-This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks that the Workflow rules name and CI pass, and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. Work for later is work that the PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
+This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks that the Workflow rules name and CI pass, and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. Work for later is work that the PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. The [GitHub Issue convention](github-issues.md) defines a task, a final Prove task, and a gap. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
 
 ## Template
 
@@ -63,11 +63,13 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ### Follow-up tasks
 
-- Write one bullet for each piece of work that the PR leaves for later, even when there is only one.
-- If the work has an open Issue, write the bullet in the [follow-up task format](github-issues.md#follow-up-task-format). If the work has no open Issue, write the remaining work as one sentence without a number, such as `- Rename the hexagonal convention file.` This rule replaces the rule of the follow-up task format that lists only open Issues.
+- Write one bullet for each piece of work for later, even when there is only one.
+- If the work has an open Issue, write `- #<issue-number>: <remaining work>.` If the work has no open Issue, write `- <remaining work>.`, such as `- Rename the hexagonal convention file.`
+- Write the remaining work as one sentence that names the work. GitHub shows only the number of an Issue, so the sentence must name the work.
 - Put the bullets with an Issue first, in ascending Issue number. Then put the bullets without an Issue.
-- Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [Issue convention](github-issues.md) states. If the maintainer does not approve it, or the session has no chat, write the work without a number.
+- Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [Issue convention](github-issues.md) states. If the maintainer does not approve it, or the session has no chat, write the work without an Issue number.
 - If the PR leaves no work for later, write `n/a`.
+- Do not put `Closes`, `Fixes`, or `Resolves` before the Issue number. GitHub would close the Issue when the PR merges.
 
 ## Rules
 
@@ -107,6 +109,39 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 ### Changes
 
 - Apply a change of this convention to new PRs, and to open PRs when their description changes. Do not edit merged PRs to follow it.
+
+## Final Prove task PR
+
+A PR that completes the final Prove task of a module plan also records the evidence that CI does not keep. GitHub shows the PR on the Issue, so the Issue needs no comment.
+
+- At the end of `What changed`, write the sentence "The specification is `<status>` and the plan is `<status>`." with the statuses after the merge.
+- After that sentence, write the local checks table.
+- If a test proves a success criterion only in part, such as with a fake provider instead of a real one, state in `Risks or limitations` why the module can still close.
+- If an item of the Issue fails or does not run, state the gap in `Risks or limitations`, and use `Refs` instead of `Closes` for the Issue.
+
+The evidence has a local checks table.
+
+```markdown
+| Check | Result | Stack |
+| --- | --- | --- |
+| `<command>` | <result> | <local stack> |
+```
+
+### Local checks table
+
+- Write one row for each local check that CI does not run, such as `task smoke:bruno`.
+- If no such check applies, write "No local check applies outside CI." instead of the table.
+- Do not include the checks that the [CI checks](../../.github/workflows/ci.yml) run, such as `task check:task` or the Buf commands.
+
+#### Local checks table columns
+
+- Write the columns in this order.
+
+| Column | How to write |
+| --- | --- |
+| `Check` | The command in backticks, such as `` `task smoke:bruno` ``. |
+| `Result` | `Passed` or `Failed`, followed by the passed and total counts when the check reports them, such as "Passed 44/44 requests". |
+| `Stack` | The local cluster or environment and the services that the check ran against, such as "k3d `flowspace-local` with Mailpit". |
 
 ## Examples
 

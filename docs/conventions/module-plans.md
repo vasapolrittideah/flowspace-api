@@ -81,6 +81,15 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 - After every Issue appears in the Project with `Todo` status and in the milestone, replace the drafts with an ordered index of Issue links and delete `tasks/.todo.md`.
 - Update the plan while creating GitHub Issues and after final verification.
 
+## Differences from the planning-and-task-breakdown skill
+
+The [`planning-and-task-breakdown` skill](../../.agents/skills/planning-and-task-breakdown/SKILL.md) saves one plan as `tasks/plan.md`, keeps the task list in `tasks/todo.md`, and gives the plan an `Open Questions` section. This project uses these rules instead:
+
+- Each module has its own plan at `tasks/<module-id>.md`, so a new plan does not replace the plan of another module.
+- GitHub Issues hold the tasks, and the GitHub Project holds their status. Each Issue follows the [Issue template](github-issues.md#template), and native `Blocked by` relationships hold the task dependencies. `tasks/.todo.md` holds only Issue drafts.
+- A plan shows the order of work in its own `Dependency graph` section.
+- A plan has no `Open Questions` section, because the specification resolves its open questions before approval.
+
 ## Examples
 
 The [Identity plan](../../tasks/identity-signup-and-email-verification.md) and [Workspace plan](../../tasks/workspace-creation-and-reading.md) show this format.

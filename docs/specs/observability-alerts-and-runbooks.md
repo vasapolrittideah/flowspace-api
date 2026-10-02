@@ -1,6 +1,6 @@
 # Spec: Observability alerts and runbooks
 
-Module id: `observability-alerts-and-runbooks`
+Module ID: `observability-alerts-and-runbooks`
 
 Status: Approved
 
@@ -16,7 +16,7 @@ The capability must answer these questions without a developer watching the dash
 
 Each alert links to a runbook that names the first check and the next action. The thresholds are starting values for a learning environment without traffic history or service level objectives (SLOs). Later work adjusts them from measured data.
 
-## Scope and decisions
+## Scope, dependencies, and ADRs
 
 Depends on: `observability-metrics-and-dashboards`.
 
@@ -131,16 +131,16 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 
 ## Testing strategy
 
-| Risk | Test level | Environment |
-| --- | --- | --- |
-| A provisioned rule has no runbook, or its `runbook_url` points to a missing file | Unit | None |
-| A rule has a severity, label, or annotation outside the contract | Unit | None |
-| A rule does not fire when its symptom exists for the pending period | Cluster | Local cluster |
-| A rule fires while the cluster is idle and healthy | Cluster | Local cluster |
-| A firing or resolved alert does not reach Mailpit | Cluster | Local cluster |
-| Missing worker metrics do not fire `Worker metrics are missing`, or fire `Outbox events are stuck` | Cluster | Local cluster |
-| A notification contains an ID, email address, path, or error text that the contract forbids | Cluster | Local cluster |
-| Grafana cannot reach Mailpit, or another pod can reach Mailpit | Cluster | Local cluster |
+| Risk | Test level |
+| --- | --- |
+| A provisioned rule has no runbook, or its `runbook_url` points to a missing file | Unit |
+| A rule has a severity, label, or annotation outside the contract | Unit |
+| A rule does not fire when its symptom exists for the pending period | Cluster |
+| A rule fires while the cluster is idle and healthy | Cluster |
+| A firing or resolved alert does not reach Mailpit | Cluster |
+| Missing worker metrics do not fire `Worker metrics are missing`, or fire `Outbox events are stuck` | Cluster |
+| A notification contains an ID, email address, path, or error text that the contract forbids | Cluster |
+| Grafana cannot reach Mailpit, or another pod can reach Mailpit | Cluster |
 
 ## Implementation boundaries
 
@@ -181,12 +181,3 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 12. Given each rule file in the repository, When the runbook check runs, Then every rule has `severity`, `summary`, `runbook_url`, and `dashboard_url`, and every `runbook_url` names an existing file in `docs/runbooks/`.
 13. Given the alert emails from criteria 2 through 9, When a developer reads them, Then no email contains an ID, an email address other than the contact point, a raw path, or error text.
 14. Given a pod other than Grafana or `identity-worker`, When it connects to Mailpit port 1025, Then the connection fails.
-
-## Readiness for real teams
-
-Before Flowspace stops using disposable data, this capability must pass these checks in addition to the [system checks](../architecture.md#observability-and-recovery):
-
-- A `page` alert reaches a person who can act within minutes, through a contact point outside the cluster.
-- A watchdog alert outside Grafana reports when Grafana, Prometheus, or the contact point stops working.
-- The thresholds and pending periods come from measured traffic or agreed service level objectives instead of starting values.
-- Each alert was test-fired in the target environment, and each runbook link opened.

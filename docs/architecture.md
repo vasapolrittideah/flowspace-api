@@ -193,6 +193,10 @@ Before real teams:
 - Back up every service database, broker state, Schema Registry, identity data, configuration, and secret-controller keys.
 - Align event retention, offsets, deduplication history, and restored database state.
 - Prove restoration and application invariants from the independent destination.
+- Route `page` alerts to a contact point outside the cluster that reaches a person who can act within minutes.
+- Add a watchdog alert outside Grafana that reports when Grafana, Prometheus, or the alert contact point stops working.
+- Set alert thresholds and pending periods from measured traffic or agreed service level objectives instead of starting values.
+- Test-fire each alert in the target environment, and open each runbook link.
 
 ## Learning evidence
 

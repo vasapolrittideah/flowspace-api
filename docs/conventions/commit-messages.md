@@ -138,16 +138,37 @@ A scope names the repository area that a change affects. Use one lowercase scope
 
 ## Examples
 
+### Subjects
+
 These subjects show the type and scope choices:
 
 ```text
 feat(workspace): allow owners to invite workspace members
 fix(work): reject task updates based on an outdated version
+test(identity): prove provider login against its specification
+docs(observability): specify local logs and traces
 docs(adr): explain the choice of squash merging
 fix(agents): preserve multiline PR descriptions
 build(codegen): configure Buf to generate ConnectRPC clients
 ci: add pull request title validation
 feat(workspace)!: require a role when inviting members
+```
+
+### Checkpoint commits
+
+A code checkpoint explains the step and names the tests that it adds. It refers to its Issue with `Refs`, because the Issue stays open until the squash commit:
+
+```text
+feat(identity): store trace context with outbox events
+
+Migration 00009 adds nullable traceparent and tracestate columns to
+identity_outbox_events, and the outbox insert stores the context of
+the current span. TestOutboxStoresTraceContext checks the stored
+values in a PostgreSQL container.
+
+Refs: #304
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
 A documentation checkpoint with Codex attribution uses the full message. Other agents use their own trailer:
@@ -158,10 +179,78 @@ docs(agents): clarify convention headings
 Co-authored-by: Codex <noreply@openai.com>
 ```
 
+### Feature squash commits
+
+A feature squash commit has no body when it builds what its Issue and specification describe and adds no migration, configuration, or decision of its own:
+
+```text
+feat(identity): validate Google callbacks and issue handoff codes
+
+Closes: #217
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+A feature squash commit has a body when it adds a migration, configuration, or decision that the specification does not state:
+
+```text
+feat(identity): create provider-only accounts from Google logins
+
+Migration 00008 allows an empty password hash. Password login and
+recovery skip such accounts, and rolling back the migration fails
+while they exist.
+
+Closes: #219
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+### Breaking squash commits
+
+A breaking squash commit has `!` in the subject. Its body explains the incompatibility and the changes that callers must make:
+
+```text
+feat(workspace)!: require a role when inviting members
+
+InviteMember rejects a request without a role with InvalidArgument.
+Callers must send the role field, which was optional before.
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+### Test squash commits
+
+A squash commit that only adds tests has no body, because the subject states every lasting effect:
+
+```text
+test(observability): prove logs and traces against the specification
+
+Closes: #306
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+A test squash commit has a body when the proof also changes behavior:
+
+```text
+test(identity): prove provider login against its specification
+
+The worker now deletes expired provider login attempts each minute, so
+their provider email and proofs are not kept after the attempt ends.
+Expired attempts were already rejected, so client responses do not
+change.
+
+Closes: #221
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+### Document squash commits
+
 A squash commit that only adds a specification has no body, because the specification on `main` holds the content:
 
 ```text
-docs: specify local observability metrics and dashboards
+docs(observability): specify local metrics and dashboards
 
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
@@ -174,32 +263,19 @@ docs(adr): record local alert routing
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
-A feature squash commit has no body when it builds what its Issue and specification describe and adds no migration, configuration, or decision of its own:
+A squash commit that approves a plan has no body. It refers to each Issue of the plan, because the Issues stay open:
 
 ```text
-feat(identity): validate Google callbacks and issue handoff codes
+docs(observability): approve logs and traces plan
 
-Refs: #217
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
-A feature squash commit has a body when it adds a migration, configuration, or decision that the subject does not state:
-
-```text
-feat(identity): create provider-only accounts from Google logins
-
-A new Google identity with an unused verified email gets a
-passwordless account, a provider link, and a session in the handoff
-transaction. Gmail and Workspace accounts start verified; other
-Google addresses queue a Flowspace verification code in the same
-transaction.
-
-Migration 00008 allows an empty password hash. Password login and
-recovery skip such accounts, and rolling back the migration fails
-while they exist.
-
-Closes: #219
+Refs: #299
+Refs: #300
+Refs: #301
+Refs: #302
+Refs: #303
+Refs: #304
+Refs: #305
+Refs: #306
 
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
@@ -207,7 +283,7 @@ Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 A squash commit that changes existing rules has a body that states only the reason. The changed convention states the new rules:
 
 ```text
-docs: revise module specification sections and approval
+docs(agents): revise module specification sections and approval
 
 Specifications repeated commands that Issue verification steps and
 CONSTRAINTS.md already own. Some section names did not say what

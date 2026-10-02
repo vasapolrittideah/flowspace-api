@@ -96,3 +96,4 @@ Each section groups the tools and Go packages for one concern. Go packages appea
 | Logs | Loki | Self-hosted centralized logs. | [ADR-0029](adr/0029-the-observability-stack-is-self-hosted.md) |
 | Traces | Tempo | Self-hosted distributed traces. | [ADR-0029](adr/0029-the-observability-stack-is-self-hosted.md) |
 | Dashboards | Grafana | Query and visualize metrics, logs, and traces. | [ADR-0029](adr/0029-the-observability-stack-is-self-hosted.md) |
+| Cluster state metrics | kube-state-metrics | Report Kubernetes object state, such as pod restarts, as metrics. | [ADR-0038](adr/0038-local-metrics-reach-a-single-host-prometheus-through-alloy.md) |

@@ -2,7 +2,7 @@
 
 Module id: `observability-logs-and-traces`
 
-Status: Approved
+Status: Draft
 
 ## Objective
 
@@ -72,7 +72,8 @@ Each process sets the resource attribute `service.name` to its `service` log val
 | `workspace-api` | One span for each public HTTP or gRPC request | Server | Incoming `traceparent`, or a new root |
 | `workspace-api` | One span for each `CheckSession` call to Identity | Client | The Workspace request span |
 | `identity-worker` | `identity.outbox_publish` for each published outbox event | Producer | The trace context stored with the outbox event |
-| `identity-worker` | `identity.email_delivery` and `identity.password_change_notice` | Consumer | `traceparent` in the event record headers |
+| `identity-worker` | `identity.email_delivery` for each delivered email event | Consumer | `traceparent` in the event record headers |
+| `identity-worker` | `identity.password_change_notice` for each delivered notice | Consumer | A new root, because the notice comes from a database row and not from an event record |
 
 A server span name is a bounded operation name, such as the HTTP method and route template, or the full gRPC method name. A span name never contains an ID or a raw path.
 

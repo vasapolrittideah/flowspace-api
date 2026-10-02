@@ -17,10 +17,11 @@
   { "name": "area:proto", "description": "Protobuf RPC definitions and public HTTP annotations", "color": "1d76db" },
   { "name": "area:events", "description": "Published Protobuf event schemas", "color": "1d76db" },
   { "name": "area:codegen", "description": "Code-generation configuration and tooling", "color": "1d76db" },
+  { "name": "area:observability", "description": "Telemetry stack, dashboards, alert rules, and observability specifications, plans, and runbooks", "color": "1d76db" },
   { "name": "area:infra", "description": "Infrastructure and deployment configuration", "color": "1d76db" },
   { "name": "area:deps", "description": "Dependency updates", "color": "1d76db" },
   { "name": "area:adr", "description": "Architecture decision records", "color": "1d76db" },
-  { "name": "area:agents", "description": "Agent instructions, skills, commands, and configuration", "color": "1d76db" },
+  { "name": "area:agents", "description": "Agent instructions, conventions, skills, commands, and configuration", "color": "1d76db" },
   { "name": "breaking", "description": "Breaking contract change, marked with ! in the commit title", "color": "d93f0b" },
   { "name": "migration", "description": "Includes a database migration that needs controlled deployment", "color": "fbca04" }
 ]

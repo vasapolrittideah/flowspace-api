@@ -46,7 +46,7 @@ A convention file has a title, a scope paragraph, and the sections below.
 
 - Write one paragraph that starts with "This convention". State the artifact and what the convention controls, such as its format, name, or life cycle.
 - If the artifact has a fixed location, name the location, such as `docs/adr/`.
-- If the convention uses a term that a reader outside the project does not know, define the term in this paragraph.
+- Define each term that the convention uses with a project meaning, such as "artifact" in this convention. A term has a project meaning when the project uses it with a narrower or different meaning than general English. Do not define a term that the Markdown rules or a document linked in this paragraph already define.
 - If another document owns the purpose of the artifact or the decision behind the convention, link to that document in this paragraph.
 - Do not define terms in other sections.
 
@@ -65,7 +65,7 @@ A convention file has a title, a scope paragraph, and the sections below.
 - Name each subsection after its part. Use "Title" for the `#` heading line, the label for a labeled line such as `Date:`, and the heading text for a section such as `## Context`. For a heading that contains a placeholder, use its fixed words, such as "Differences from the skill". For other parts, use a short noun phrase from the placeholder.
 - If the name of a subsection repeats another heading in the convention file, add a word that tells the headings apart, such as "Rules section" or "Result gaps".
 - Write at least one rule in each subsection, such as the format, length, source, or links of the part.
-- Write only bullets in each subsection. If a rule applies steps in order or by precedence, put a numbered list inside its bullet.
+- Write only bullets in each subsection.
 - If a part contains a table, add a `####` subsection for the table under the part. Write bullets for the whole table, and then a table with the columns `Column` and `How to write` that has one row for each column of the described table.
 - Do not repeat the meaning from the placeholder in the subsection.
 
@@ -74,7 +74,16 @@ A convention file has a title, a scope paragraph, and the sections below.
 - Write only bullets in this section.
 - Put the rules for the file, location, numbering, and life cycle of the artifact here. Also put the rules that cover more than one part here.
 - Include one bullet that states how existing artifacts follow a change to the convention. Choose one of these approaches: update every existing artifact in the same PR, or apply the change only to new artifacts and to artifacts that another task changes.
-- If the section has more than five bullets, group them by topic under `###` headings, such as "Files and numbering" or "Status and changes". If it has five bullets or fewer, do not add `###` headings.
+- If the section has more than five bullets, group them under `###` headings. Use only these headings, in this order, and omit a heading that has no bullets:
+  1. `Files` for the location, name, and number of the artifact, and how many artifacts to write.
+  2. `Sections and wording` for the sections of the artifact and the rules that cover several parts.
+  3. `Workflow` for the steps to create, review, and check the artifact.
+  4. `Links and records` for the indexes, tables, links, labels, milestones, and GitHub relationships that must match the artifact.
+  5. `Status` for the status values of the artifact and its approval.
+  6. `Changes` for changes to an artifact after it exists, and for how existing artifacts follow a change to the convention.
+- If a bullet fits several of these headings, put it under the first match in this order: `Changes`, `Status`, `Links and records`, `Workflow`, `Files`, and `Sections and wording`.
+- If the convention covers several kinds of the artifact, such as queries and migrations, name each `###` heading after one kind instead. Order the bullets under each kind by the heading order above, without more headings.
+- If the section has five bullets or fewer, do not add `###` headings.
 - Do not put a rule about one part in this section. Put the rule in the subsection of that part.
 
 ### Special case
@@ -116,26 +125,27 @@ A convention file has a title, a scope paragraph, and the sections below.
 
 ### Files
 
-- Save the file as `docs/conventions/<name>.md`. Write the name as the topic in plural form, in lowercase words separated by hyphens, such as `commit-messages.md`. If the repository uses an abbreviation for the topic, use the abbreviation, such as `adrs.md`.
+- Save the file as `docs/conventions/<name>.md`. Write the name as every word of the topic, in lowercase, separated by hyphens, with the last noun in plural form, such as `commit-messages.md` for "Commit message" or `markdown-and-english-prose.md` for "Markdown and English prose". If the topic contains a term that a directory name in the repository shortens, use the short form, such as `adrs.md` for `docs/adr/` and `module-specs.md` for `docs/specs/`.
 - Write one convention file for each kind of artifact. If a convention already covers the artifact, add the rule to that file.
-- Put each rule in one convention file only. In other files, link to the rule instead of repeating it.
-
-### Agent instructions
-
-- Add a row for each convention file to the convention table in the [agent instructions](../../AGENTS.md#conventions).
-- Put the row in the group of the work that first needs the convention. If the work happens in several groups, use the earliest group in the table.
-- In the group, put the rows in the order in which the work happens.
-- In the `Work` column, write a phrase that starts with a verb ending in "-ing" and names the artifact, such as "Writing or updating module plans in `tasks/<module-id>.md`". If the artifact has a fixed location, name the location.
-- In the `Convention` column, link to the file. Use the topic in plural form as the link text, such as "Commit messages".
 
 ### Sections and wording
 
 - Follow the [Markdown and English prose conventions](markdown-and-prose.md) in each convention file.
 - Start each bullet with a verb, such as "Write", "Put", "Use", "Link", or "Omit". If the rule has a condition or applies to one place, state the condition or the place first, such as "In the index, use the record number". Apply this rule to every bullet outside code blocks.
+- If a rule applies steps in order or by precedence, put a numbered list inside its bullet.
 - Give each bullet one main point, as the [Markdown rules](markdown-and-prose.md#markdown) define. Keep the condition, reason, and exception of the point in the same bullet.
 - Order the bullets in each list: placement and format first, then the order and structure of the content, then allowed values and links, and then the rules that start with "Do not".
 - Use the sections in the template order. Omit an optional section that has no content.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a convention file.
+
+### Links and records
+
+- Put each rule in one convention file only. In other files, link to the rule instead of repeating it.
+- Add a row for each convention file to the convention table in the [agent instructions](../../AGENTS.md#conventions).
+- Put the row in the group of the work that first needs the convention. If the work happens in several groups, use the earliest group in the table.
+- In the group, put the rows in the order in which the work happens.
+- In the `Work` column, write a phrase that starts with a verb ending in "-ing" and names the artifact, such as "Writing or updating module plans in `tasks/<module-id>.md`". If the artifact has a fixed location, name the location.
+- In the `Convention` column, link to the file. Use the topic as the link text, with the last noun in plural form and without short forms, such as "Commit messages" or "Module specifications".
 
 ### Changes
 

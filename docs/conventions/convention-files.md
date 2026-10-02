@@ -125,7 +125,7 @@ A convention file has a title, a scope paragraph, and the sections below.
 
 ### Files
 
-- Save the file as `docs/conventions/<name>.md`. Write the name as every word of the topic, in lowercase, separated by hyphens, with the last noun in plural form, such as `commit-messages.md` for "Commit message" or `markdown-and-english-prose.md` for "Markdown and English prose". If the topic contains a term that a directory name in the repository shortens, use the short form, such as `adrs.md` for `docs/adr/` and `module-specs.md` for `docs/specs/`.
+- Save the file as `docs/conventions/<name>.md`. Write the name as every word of the topic, in lowercase, separated by hyphens. Put the last noun of each name that the topic joins with "and" in plural form, and keep a noun that has no plural, such as `hexagonal-components-and-files.md` for "Hexagonal component and file" or `markdown-and-english-prose.md` for "Markdown and English prose". If the topic contains a term that a directory name in the repository shortens, use the short form, such as `adrs.md` for `docs/adr/` and `module-specs.md` for `docs/specs/`.
 - Write one convention file for each kind of artifact. If a convention already covers the artifact, add the rule to that file.
 
 ### Sections and wording
@@ -145,7 +145,7 @@ A convention file has a title, a scope paragraph, and the sections below.
 - Put the row in the group of the work that first needs the convention. If the work happens in several groups, use the earliest group in the table.
 - In the group, put the rows in the order in which the work happens.
 - In the `Work` column, write a phrase that starts with a verb ending in "-ing" and names the artifact, such as "Writing or updating module plans in `tasks/<module-id>.md`". If the artifact has a fixed location, name the location.
-- In the `Convention` column, link to the file. Use the topic as the link text, with the last noun in plural form and without short forms, such as "Commit messages" or "Module specifications".
+- In the `Convention` column, link to the file. Use the topic as the link text, with the plural forms of the file name and without short forms, such as "Commit messages" or "Module specifications".
 
 ### Changes
 

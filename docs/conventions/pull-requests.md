@@ -1,6 +1,6 @@
 # Pull request conventions
 
-This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready for review when the local checks and CI pass and the title, description, and labels match the final work. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
+This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks and CI pass and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
 
 ## Template
 
@@ -77,19 +77,19 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 ### Workflow
 
 - Follow the [agent instructions](../../AGENTS.md) for the branch, the PR, and merge authority.
-- Preserve work from other tasks. Inspect the staged diff before each commit, and exclude unrelated changes, secrets, local environment files, and unwanted build output.
+- Do not discard or commit changes that belong to another task. Inspect the staged diff before each commit, and exclude unrelated changes, secrets, local environment files, and unwanted build output.
 - For a behavior fix, add a focused regression test.
-- For a contract or generator change, make sure that regeneration and compatibility succeed and that the source files and the generated output agree.
+- For a contract or generator change, run `task buf -- lint`, `task buf -- breaking`, and `task buf -- generate` for Protobuf, or `task sqlc -- generate` for SQL. Commit the generated output with the source change. The `Contract checks` CI job checks the same results again.
 - For a documentation-only change, make sure that the facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
 - Before you open or update a PR, run `task check:task`, `task git:diff:check`, and each command in the `Verification` list of each related Issue. If Markdown changes, also run `task markdown:check`. Add a focused check when it proves behavior that these commands do not cover.
 - Before you open or update a PR, inspect the complete PR diff with the same exclusions as for a commit.
-- Open the PR as ready for review, not as a draft.
-- After each push, wait for the [CI checks](../../.github/workflows/ci.yml) to finish. If a job fails for a cause outside the PR, such as a network timeout, rerun the failed job once. If it fails again, state the cause and link the run in `Risks or limitations`. Fix every other failure in the PR.
-- Tell the maintainer that the PR is ready for review only after it meets every condition of ready for review.
-- When the work changes, update the title, the description, and the labels before you tell the maintainer that the PR is ready again.
-- Before a review comment exists, you can amend or rebase commits and push them with `git push --force-with-lease`. After a review comment exists, add new commits. If the branch needs commits from `main`, merge `main` into the branch.
+- Open the PR as a normal PR, not as a draft.
+- After each push, wait for the [CI checks](../../.github/workflows/ci.yml) to finish. If the job log shows that a failure comes from the runner, the network, or an external service, such as a registry timeout, rerun the failed job once. If it fails again, state the cause and link the run in `Risks or limitations`. Fix every other failure in the PR.
+- Tell the maintainer that the PR is ready only after it meets every condition of a ready PR. If the PR cannot become ready, tell the maintainer which condition fails and why.
+- When the work changes, update the title, the description, and the labels before you tell the maintainer that the PR is ready again. Tell the maintainer in the chat, or in a PR comment if the session has no chat.
+- Before a review comment exists, you can amend or rebase commits and push them with `git push --force-with-lease`. After a review comment exists, add new commits. If the PR has merge conflicts or needs a change that is on `main`, merge `main` into the branch.
 - Before you write each squash message, read the [commit message convention](commit-messages.md) again from `main`, because it can change while a PR is open.
-- Write the squash message as the commit message convention states for a squash commit. Use the reviewed PR title as the subject.
+- Write the squash message as the commit message convention states for a squash commit. Use the current PR title as the subject.
 - Give the exact squash message in the chat before you tell the maintainer that the PR is ready. If the session has no chat, post the squash message as a PR comment. When the PR changes, give the updated squash message.
 - Do not weaken a command or hide a failure.
 - Do not copy CI results or measurements, such as coverage or reachable vulnerabilities, into the description.

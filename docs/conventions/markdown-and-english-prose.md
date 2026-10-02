@@ -12,9 +12,9 @@ This convention defines how to format Markdown and how to write English prose in
 - Give each bullet one main point. Keep its conditions, explanations, and exceptions in the same bullet, even when it takes several sentences.
 - Use a numbered list when readers must follow steps in order or apply rules by precedence.
 - Use a paragraph for context or for an explanation that develops one idea. If a sentence depends on an earlier one, such as through "so", "but", or "this approach", keep both sentences in the same paragraph. Start a new paragraph for each new idea in an explanation, such as a limit, a rejected option, and the decision.
-- Use a table when each item has the same two or more attributes, such as a name and a meaning.
+- If each item has the same two or more attributes, such as a name and a meaning, use a table instead of bullets.
 - Put code, identifiers, file paths, commands, field names, literal values, and GitHub labels in backticks.
-- Link to a tracked file with a relative path. In commit messages and GitHub text, link to a file with its full GitHub URL, and refer to an Issue or a pull request with its number, such as `#123`. Relative links do not work there.
+- Link to a tracked file with a relative path. In commit messages and GitHub text, link to a file with its full GitHub URL on `main`, and refer to an Issue or a pull request with its number, such as `#123`. Relative links do not work there.
 - Use straight quotation marks and apostrophes.
 - Use American spelling.
 - Keep code, identifiers, tool directives, and quoted output unchanged when you edit prose.

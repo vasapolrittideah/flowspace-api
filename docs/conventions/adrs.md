@@ -67,7 +67,7 @@ Status: <current state of the decision>
 
 - In the first paragraph, state the decision in one or two sentences, such as "Use PostgreSQL for primary relational data."
 - If the decision applies only to part of the system, such as one environment, state that scope in the first sentence.
-- Write the rules that follow from the decision in paragraphs, one topic per paragraph, as the [Markdown rules](markdown-and-prose.md#markdown) require.
+- Write the rules that follow from the decision in paragraphs, one topic per paragraph, as the [Markdown rules](markdown-and-english-prose.md#sections-and-wording) require.
 - Use a bullet list only for parallel items of the same kind, such as each service and the data that it owns.
 - State exact values when the decision fixes them, such as limits, durations, and retention periods.
 - Do not add `###` subsections. If the topics of a decision need their own subsections, write a separate record for each topic.

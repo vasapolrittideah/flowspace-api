@@ -59,6 +59,8 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Dependency graph
 
 - Draw the graph as a Mermaid diagram.
+- Name each node with the work that it stands for, such as `Contract[Public recovery contract]`.
+- Do not put task numbers in node labels. The graph can show work that is not a task, such as an approved decision. The task list numbers the tasks, and native `Blocked by` relationships record their dependencies.
 
 ### Task list
 

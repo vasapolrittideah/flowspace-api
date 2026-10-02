@@ -29,7 +29,7 @@ Plan: https://github.com/vasapolrittideah/flowspace-api/blob/main/tasks/<module 
 
 ### Workflow
 
-- When you create the Issues of an approved plan, create one milestone for the plan. If the plan already has a milestone, such as when a reapproved plan adds tasks, reuse it.
+- When you create the Issues of an approved plan, create one milestone for the plan. If the plan already has a milestone, such as when a reapproved plan adds tasks, reuse it. If that milestone is closed, reopen it.
 - After the PR of the final Prove task merges, close the milestone when the plan is `Complete` and every Issue in the milestone is closed.
 
 ### Links and records

@@ -1,15 +1,15 @@
 # Module specification conventions
 
-This convention defines the format, status, and approval of one module's capability specification.
+This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [specification index](../specs/README.md) lists every module. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. An API specification is a specification whose contract has RPCs. A material risk is a failure that would break a success criterion or allow a threat in a threat model.
 
 ## Template
 
-A specification has the following fields and sections:
+A specification has a title, a module ID, a status line, `Objective`, `Scope, dependencies, and ADRs`, `Contract`, `Behavior`, `Testing strategy`, `Implementation boundaries`, `Success criteria`, and `Assumptions and open questions`.
 
 ```markdown
 # Spec: <capability name>
 
-Module ID: `<module-id>`
+Module ID: `<module ID>`
 
 Status: <current state of the specification>
 
@@ -23,7 +23,7 @@ Status: <current state of the specification>
 
 ## Contract
 
-<the shape that a consumer sees: interfaces, routes, fields, events, logs, and errors>
+<the shapes that a consumer sees: interfaces, routes, fields, events, logs, and errors>
 
 ## Behavior
 
@@ -35,7 +35,7 @@ Status: <current state of the specification>
 
 ## Implementation boundaries
 
-<implementer actions to always do, ask about, or never do>
+<implementer actions to always do, to ask about first, and never to do>
 
 ## Success criteria
 
@@ -48,39 +48,42 @@ Status: <current state of the specification>
 
 ### Title
 
-- Write the capability name after the `Spec:` prefix.
+- Write the capability name after the `Spec:` prefix, in sentence case.
+- Use the same capability name as the link text in the `Specification` column of the index.
 
 ### Module ID
 
 - Copy the module ID from the file name, in backticks.
 
-### Status
+### Status line
 
-- Write `Planned`, `Draft`, `Approved`, or `Implemented`.
-- Write the same status as the [specification index](../specs/README.md).
+- Write one [status value](#status-values) other than `Planned`, without a final period.
+- Write the same status as the `Status` column of the index.
 
 ### Objective
 
+- Write the objective as paragraphs.
 - Include one sentence about the first users and their data, such as "The first users are API clients, and all data is disposable under ADR-0022."
-- Put assumptions in `Assumptions and open questions`.
+- Do not write assumptions here. Put them in `Assumptions and open questions`.
 
 ### Scope, dependencies, and ADRs
 
-- Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.`
-- Name each module as the `Depends on` column of the index lists it.
-- Name the included work.
-- Write excluded work as a bullet list after "This capability excludes these items:".
-- Write each ADR as a bullet that starts with a link to the ADR, followed by a colon and what the ADR decides for this capability.
+- Write the parts in this order: the `Depends on` line, the included work, the excluded work, and the ADRs.
+- Start with `Depends on: <module-id>, <module-id>.` or `Depends on: none.` Name each module in backticks, as the `Depends on` column of the index lists it.
+- Write the included work as one paragraph that starts with "The scope covers".
+- Write the excluded work as a bullet list after the sentence "This capability excludes these items:".
+- Write the ADRs as a bullet list after the sentence "These decisions apply:". Start each bullet with a link to the ADR, followed by a colon and what the ADR decides for this capability.
+- If the capability has no excluded work or no ADR to list, omit that list and its sentence.
 - Do not list an ADR only because it applies to every API or every event, such as the ADRs that define Protobuf, REST, versions, errors, and event delivery.
 
 ### Contract
 
-- Include each thing that a consumer reads. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts.
-- Put a shape in the contract and a condition in `Behavior`. A shape is a name, route, field, or value that a consumer can read. A condition states when an effect happens, or why.
+- Include each shape that a consumer reads. Put each condition in `Behavior` instead.
 - For an API specification, start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`."
-- For RPCs and events, use these tables in this order: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, `Published events`, and `Errors`. Omit a table that has no rows.
+- Write each shape that has fewer than two fields as a paragraph directly under `## Contract`, before the subsections.
+- For RPCs and events, write these tables in this order, each under a `###` heading with its name: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, `Published events`, and `Errors`. Omit a table that has no rows.
+- For each other shape with two or more fields, write a `###` subsection with a table, such as `### Log records` or `### Alert rules`.
 - Keep the rows of `Methods` and `Method requirements` in the same RPC order.
-- For each other thing that a consumer reads, write one `###` subsection, such as `### Log records` or `### Alert rules`. Use a table when the thing has several fields.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
 
@@ -152,7 +155,7 @@ Status: <current state of the specification>
 
 ### Behavior
 
-- Put subsections for the topics of the capability first.
+- Write the behavior in `###` subsections. Put the subsections for the topics of the capability first, and name each with a noun phrase, such as `### Correlation`.
 - After the topic subsections, add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
 - If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under `### Data and compatibility`.
 - Under `### Diagnostics`, list the values that logs, traces, metrics, and errors must never contain. Name the log events and fields in `Contract`, not in `Diagnostics`.
@@ -176,65 +179,87 @@ Status: <current state of the specification>
 
 ### Implementation boundaries
 
-- Put each action under `### Always`, `### Ask first`, or `### Never`. Examples are "Ask first before you change the outbox schema" and "Never read another service's database".
-- Start each item with a verb.
-- Start each `Never` item with "Do not".
+- Write up to three bullet lists, in this order, each after its own sentence: "Always do these actions:", "Ask the maintainer before these actions:", and "Never do these actions:". Omit a list that has no items, and its sentence.
+- Start each item with a verb, such as "Change the outbox schema." Start each item of the last list with "Do not", such as "Do not read another service's database."
 - Do not repeat system rules from `Behavior`.
 - Do not repeat a rule from the [constraints](../../CONSTRAINTS.md) or from another convention, such as the rule that a schema change needs a new migration file.
 - Do not put plan work in this section, such as a measurement to record in the plan.
 
 ### Success criteria
 
-- Write a numbered list of observable Given, When, Then outcomes.
-- If a specification has more than about 20 success criteria, consider a split into several modules.
+- Write a numbered list. Write each item as `Given <state>, When <action>, Then <result>.`, with `Given`, `When`, and `Then` capitalized.
+- Refer to a criterion by its number, such as "criterion 2". Do not add IDs, such as `SC-01`.
+- If the list has more than 20 items, propose a split into several modules to the maintainer before approval.
 - Do not add a success criterion for the repository checks. The [constraints](../../CONSTRAINTS.md) apply to every change.
 
 ### Assumptions and open questions
 
-- Resolve or remove each item before approval, as the [status rules](#status-and-approval) state.
+- Write one bullet for each assumption or open question.
+- Resolve or remove each item before approval, as the [status rules](#status) state.
 
 ## Rules
 
-### Modules and files
+### Files
 
-- A module is one capability that can be tested on its own. Write its ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
-- Save one specification as `docs/specs/<module-id>.md`, and add each module to the [specification index](../specs/README.md).
+- Write the module ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
+- Save one specification as `docs/specs/<module-id>.md`.
+
+### Sections and wording
+
+- Use the sections through `Success criteria` in the template order. Add `Assumptions and open questions` only when the specification has an assumption or an open question.
+- Put a check that a capability must pass before Flowspace stops using disposable data in the `Before real teams` list of the [architecture](../architecture.md#observability-and-recovery), not in the specification.
+- Put implementation locations and commands in the plan and its Issues. Repeat a project-wide rule only when it changes observable behavior or completion criteria.
+- Do not add other top-level sections. Add a new section to this convention before you use it in a specification.
+
+### Workflow
+
 - If a request changes an existing capability, change the specification of its module. If a request adds a capability that can be tested on its own, add a new module.
 - Write the specification of a module only after the specification of each module in its `Depends on` column is `Approved` or `Implemented`. A specification can then use the approved contract of each dependency.
 - If one piece of work needs several modules, add a row for each module to the index with the `Planned` status before you write the first specification. Name the dependencies of each row. The maintainer reviews this map in its own PR.
 
-### Sections
+### Links and records
 
-- Use the sections through `Success criteria` in the template order.
-- Add `Assumptions and open questions` only when the specification has an assumption or an open question. Add a new top-level section to this convention before you use it in a specification.
-- Put a check that a capability must pass before Flowspace stops using disposable data in the `Before real teams` list of the [architecture](../architecture.md#observability-and-recovery), not in the specification.
-- Put implementation locations and commands in the plan and its Issues. Repeat a project-wide rule only when it changes observable behavior or completion criteria. Put project-wide rules in their source documents.
+- Add a row for each module to the specification index, and keep its `Status` column the same as the status of the specification.
 
-### Status and approval
+### Status
 
-- `Planned` means that the module is in the index and has no specification file yet. `Draft` means that the specification exists and is not approved. A `Draft` specification can merge into `main`, but it does not permit planning.
-- Only the maintainer approves a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope, if any>): approve <capability> spec`. An agent changes the status to `Approved` only when the maintainer asks for it in chat or in the PR review.
+- Let only the maintainer approve a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope, if any>): approve <capability> spec`.
+- Change the status to `Approved` only when the maintainer asks for it in the chat or in a review comment.
 - Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.
-- An approved specification permits planning.
-- If a change to an approved or implemented specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification needs a new approval PR with the title `docs(<scope, if any>): reapprove <capability> spec`. A change that only corrects wording keeps the status.
+- Start planning only from an `Approved` specification.
+- If a change to an `Approved` or `Implemented` specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification then needs a new approval PR with the title `docs(<scope, if any>): reapprove <capability> spec`.
+- Keep the status when a change only corrects wording or only applies a new version of this convention.
 - Change the status to `Implemented` in the PR that proves the last success criterion.
+
+### Changes
+
+- Apply a change of this convention to new specifications, and to `Draft` and `Approved` specifications that a later PR changes. In that PR, convert the whole specification to the current template.
 - Keep each `Implemented` specification in the format that it had when it was implemented. If a change sets its status to `Draft` again, convert the specification to the current template in the same PR.
 
 ## Differences from the spec-driven-development skill
 
-The [`spec-driven-development` skill](../../.agents/skills/spec-driven-development/SKILL.md) gives a generic format and workflow. Where the skill differs from this convention, follow this convention:
+The [`spec-driven-development` skill](../../.agents/skills/spec-driven-development/SKILL.md) gives a generic format and workflow. This convention applies where the two differ:
 
-- The skill lists commands, tech stack, project structure, and code style in each specification. This project keeps them in their source documents. The [technology stack](../technology-stack.md), [project structure](../project-structure.md), and code conventions apply to all modules. The [constraints](../../CONSTRAINTS.md) define the standard checks, and Issue verification steps name the commands for each task.
-- The skill puts the test framework, test locations, coverage, and test levels in `Testing strategy`. This project keeps only the risks and their [test levels](#test-levels). The technology stack names the framework, the project structure names the locations, and the constraints set the coverage.
-- The skill saves a specification as `SPEC-<module-id>.md` at the project root. This project saves it as `docs/specs/<module-id>.md`.
-- The skill saves a capability map as a file at the project root and uses the map as the index of modules. This project has no map file. The `Planned` rows of the [specification index](../specs/README.md) are the map, as the [module rules](#modules-and-files) state.
-- The skill uses short module IDs in its examples, such as `identity`. This project writes each module ID as `<service-or-area>-<capability>`.
-- The skill continues to planning after a human reviews the specification. In this project, the merge of the approval PR is the only approval, and a `Draft` specification does not permit planning. The [status rules](#status-and-approval) state the approval steps.
-- The skill updates a specification when a decision or the scope changes. In this project, a change to the contract, behavior, or success criteria of an approved or implemented specification sets its status to `Draft` again, as the [status rules](#status-and-approval) state.
-- The skill checks that a specification covers its six core areas. This project checks that a specification has the sections of the [template](#template) instead. Do not add a section to pass the check of the skill.
-- The skill names some sections differently. Its `Boundaries` section is `Implementation boundaries`, and its `Open Questions` section is `Assumptions and open questions`. The skill puts user stories or acceptance criteria in `Objective`, but this project writes them as Given, When, Then outcomes in `Success criteria`.
+- Keep commands, the technology stack, the project structure, and code style out of the specification. The [technology stack](../technology-stack.md), the [project structure](../project-structure.md), the code conventions, and the [constraints](../../CONSTRAINTS.md) apply to all modules, and Issue verification steps name the commands. The skill lists them in each specification.
+- Keep only the risks and their [test levels](#test-levels) in `Testing strategy`. The skill also lists the test framework, the test locations, and the coverage.
+- Save the specification as `docs/specs/<module-id>.md`. The skill saves it as `SPEC-<module-id>.md` at the project root.
+- Use the `Planned` rows of the [specification index](../specs/README.md) as the capability map, as the [workflow rules](#workflow) state. The skill saves the map as a file at the project root.
+- Write each module ID as `<service-or-area>-<capability>`. The skill uses short module IDs, such as `identity`.
+- Start planning only after the approval PR merges, as the [status rules](#status) state. The skill continues to planning after a human reviews the specification.
+- Set an `Approved` or `Implemented` specification to `Draft` when its contract, behavior, or success criteria change. The skill updates a specification when a decision or the scope changes.
+- Check that the specification has the sections of the [template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
+- Name the sections `Implementation boundaries` and `Assumptions and open questions`, and write user stories as Given, When, Then outcomes in `Success criteria`. The skill names them `Boundaries` and `Open Questions`, and puts user stories in `Objective`.
 
 ## Reference
+
+### Status values
+
+| Value | Meaning |
+| --- | --- |
+| `Planned` | The module is in the index and has no specification file yet. |
+| `Draft` | The specification exists and is not approved. It can merge into `main`, but it does not permit planning. |
+| `Approved` | The maintainer approved the specification, and planning can start. |
+| `Implemented` | A PR proved the last success criterion. |
 
 ### Test levels
 

@@ -1,10 +1,10 @@
 # Pull request conventions
 
-This convention defines how to write and review a pull request (PR) and its suggested squash commit.
+This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready for review when the local checks and CI pass and the title, description, and labels match the final work. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
 
 ## Template
 
-A PR has a title and the description sections of the [PR template](../../.github/pull_request_template.md).
+A PR has a title, What changed, Why, Related issues, Risks or limitations, and Follow-up tasks.
 
 ```markdown
 ## What changed
@@ -30,18 +30,19 @@ A PR has a title and the description sections of the [PR template](../../.github
 
 ### Title
 
-- Use only the [commit subject format](commit-messages.md#template), with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes).
-- Describe the result, not the branch or changed files.
+- Use only the [subject line format](commit-messages.md#template) of a commit message, with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes).
+- Describe the result, not the branch or the changed files.
 - Do not include a body or footer.
 
 ### What changed
 
-- Use a paragraph for one point and bullets for several independent points.
+- State the result of the merged PR first. Then state each change that a reviewer must know to review the PR.
+- Do not list every changed file, because the diff shows them.
 
 ### Why
 
-- Use a paragraph for one point and bullets for several independent points.
-- Link the relevant decisions.
+- State the problem that the PR solves and the reason for the chosen change.
+- Link each decision that the change depends on, such as an ADR or a specification.
 
 ### Related issues
 
@@ -54,12 +55,11 @@ A PR has a title and the description sections of the [PR template](../../.github
 
 ### Risks or limitations
 
-- Use a paragraph for one point and bullets for several independent points.
-- State the cause of each unresolved failure and the reason for each local check that did not run. Include material warnings and security risks.
+- Write each material compatibility effect, unresolved failure, local check that did not run, security risk, and remaining limit.
+- For each unresolved failure, state the cause and link the CI run or the output that shows it. For each local check that did not run, state the reason.
 - When a limitation has follow-up work, describe the limitation and refer to `Follow-up tasks` instead of repeating the Issue.
-- Link relevant output when it helps review.
 - If there is nothing to report, write `n/a`.
-- Do not copy module-only Govulncheck counts, paste routine logs, or describe resolved attempts.
+- Do not copy the Govulncheck counts of vulnerabilities in required modules that the code does not call. Do not paste routine logs or describe failed attempts that the PR resolved.
 
 ### Follow-up tasks
 
@@ -68,36 +68,42 @@ A PR has a title and the description sections of the [PR template](../../.github
 
 ## Rules
 
-- Follow the [agent instructions](../../AGENTS.md) for PR creation and merge authority.
-- Follow the [label rules](github-labels.md), which also keep the title and description consistent with the final work.
-- Use the [PR template](../../.github/pull_request_template.md) as the source for the description. Complete every section.
-- Before creating or updating a PR description, reread the [Markdown rules](markdown-and-english-prose.md#sections-and-wording). Review every prose section after editing. Keep new text in an existing paragraph or bullet only when it develops the same point. Start a new paragraph for a separate explanation, or use separate bullets for independent points.
+### Sections and wording
 
-## Review readiness
+- Start the description from the [PR template](../../.github/pull_request_template.md), and complete every section.
+- Delete the HTML comments of the template. If a section has content, replace its `n/a`.
+- If the agent harness gives an attribution line for PR descriptions, put it at the end of the description, after `Follow-up tasks`.
 
-### Before requesting review
+### Workflow
 
-- Preserve work from other tasks.
-- Inspect the staged diff before each commit and the complete PR diff before maintainer review. Exclude unrelated changes, secrets, local environment files, and unwanted build output.
-- Run the relevant tests, lint commands, builds, and contract commands. Do not weaken commands or hide failures.
+- Follow the [agent instructions](../../AGENTS.md) for the branch, the PR, and merge authority.
+- Preserve work from other tasks. Inspect the staged diff before each commit, and exclude unrelated changes, secrets, local environment files, and unwanted build output.
 - For a behavior fix, add a focused regression test.
-- For a contract or generator change, make sure that regeneration and compatibility succeed and that source files and generated output agree.
-- For a documentation-only change, make sure that facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
+- For a contract or generator change, make sure that regeneration and compatibility succeed and that the source files and the generated output agree.
+- For a documentation-only change, make sure that the facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
+- Before you open or update a PR, run `task check:task`, `task git:diff:check`, and each command in the `Verification` list of each related Issue. If Markdown changes, also run `task markdown:check`. Add a focused check when it proves behavior that these commands do not cover.
+- Before you open or update a PR, inspect the complete PR diff with the same exclusions as for a commit.
+- Open the PR as ready for review, not as a draft.
+- After each push, wait for the [CI checks](../../.github/workflows/ci.yml) to finish. If a job fails for a cause outside the PR, such as a network timeout, rerun the failed job once. If it fails again, state the cause and link the run in `Risks or limitations`. Fix every other failure in the PR.
+- Tell the maintainer that the PR is ready for review only after it meets every condition of ready for review.
+- When the work changes, update the title, the description, and the labels before you tell the maintainer that the PR is ready again.
+- Before a review comment exists, you can amend or rebase commits and push them with `git push --force-with-lease`. After a review comment exists, add new commits. If the branch needs commits from `main`, merge `main` into the branch.
+- Before you write each squash message, read the [commit message convention](commit-messages.md) again from `main`, because it can change while a PR is open.
+- Write the squash message as the commit message convention states for a squash commit. Use the reviewed PR title as the subject.
+- Give the exact squash message in the chat before you tell the maintainer that the PR is ready. If the session has no chat, post the squash message as a PR comment. When the PR changes, give the updated squash message.
+- Do not weaken a command or hide a failure.
+- Do not copy CI results or measurements, such as coverage or reachable vulnerabilities, into the description.
+- Do not put the squash message in the description.
+- Do not force-push after a review comment exists.
 
-### Checks
+### Links and records
 
-Run `task check:task` before requesting review. If Markdown changes, run `task markdown:check`. Check the PR diff with `task git:diff:check`. Use a focused check when it proves behavior that these commands do not cover.
+- Follow the [label rules](github-labels.md).
+- Do not set an assignee or a reviewer, and do not add the PR to a GitHub Project.
 
-Review the [CI checks](../../.github/workflows/ci.yml) on the PR. CI reports the required results and measurements, including coverage and reachable vulnerabilities. Do not copy those results into the PR description.
+### Changes
 
-### Suggested squash commit
-
-- Before you write each suggested squash message, read the [commit message convention](commit-messages.md) again from `main`, because it can change while a PR is open.
-- Before maintainer review, provide the exact suggested squash message in the chat. Update it if the PR changes, and do not put it in the PR description.
-- Use the reviewed PR title as the subject. Follow the [commit message convention](commit-messages.md), including formatting and co-author trailers.
-- If the [body rules](commit-messages.md#body) require a body, write it from the final description as those rules state. Otherwise, omit the body.
-- Copy `Related issues` into the [Issue footers](commit-messages.md#issue-footers) in the same order.
-- Use the GitHub Pull request title and description squash default. The maintainer can shorten the copied description but must keep required context and trailers.
+- Apply a change of this convention to new PRs, and to open PRs when their description changes. Do not edit merged PRs to follow it.
 
 ## Examples
 

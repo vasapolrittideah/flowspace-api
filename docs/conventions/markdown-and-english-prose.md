@@ -9,6 +9,7 @@ This convention defines how to format Markdown and how to write English prose in
 - In Markdown text, keep each paragraph and list item on one physical line, regardless of length. Do not hard-wrap Markdown text.
 - In Markdown text, write headings in sentence case. Keep the capitals of names, abbreviations, and the fixed headings that a template defines.
 - Use bullets for two or more rules, checks, choices, or facts that readers can follow independently. To test the choice, remove or reorder the items. If each remaining item is still clear, use bullets. If there is only one item, write a paragraph.
+- If a paragraph states the result or the context that all bullets of a list share, put it directly before the list. Do not write more than one such paragraph for a list.
 - Give each bullet one main point. Keep its conditions, explanations, and exceptions in the same bullet, even when it takes several sentences.
 - Use a numbered list when readers must follow steps in order or apply rules by precedence.
 - Number the items of every numbered list with Arabic numerals that start at 1 and go up by 1, such as `1.`, `2.`, and `3.`. Do not use Roman numerals or letters, such as `i.`, `ii.`, or `a.`. Apply this rule to the source text. GitHub shows a numbered list inside a bullet with Roman numerals, and that display follows this rule.

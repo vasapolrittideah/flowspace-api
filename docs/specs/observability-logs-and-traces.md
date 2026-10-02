@@ -1,6 +1,6 @@
 # Spec: Observability logs and traces
 
-Module id: `observability-logs-and-traces`
+Module ID: `observability-logs-and-traces`
 
 Status: Approved
 
@@ -148,20 +148,20 @@ Subject IDs and session IDs are allowed in log fields only where a line already 
 
 ## Testing strategy
 
-| Risk | Test level | Environment |
-| --- | --- | --- |
-| A process fails to start or serve requests when Alloy is missing or unreachable | Unit | None |
-| A process fails to start or serve requests when Alloy is stopped in the cluster | Cluster | Local cluster |
-| The sampler or resource attributes ignore the environment configuration | Unit | None |
-| A server span ignores the incoming `traceparent`, has an unbounded name, or has a different `trace_id` from its log line | Unit | None |
-| The Workspace `CheckSession` call drops `traceparent` or `x-request-id`, or Identity does not continue them | Unit | None |
-| The outbox loses trace context at commit, or the relay and email worker do not continue it | Integration | Docker |
-| A log line or span contains a token, password, code, or email address | Unit | None |
-| A stored log line, span, or Loki label contains a token, password, code, or email address | Cluster | Local cluster |
-| A request waits for span export | Unit | None |
-| A Loki label takes unbounded values such as request IDs, trace IDs, or paths | Cluster | Local cluster |
-| A telemetry component is reachable outside the cluster | Cluster | Local cluster |
-| Logs and traces of one request cannot be found together in Grafana | Cluster | Local cluster |
+| Risk | Test level |
+| --- | --- |
+| A process fails to start or serve requests when Alloy is missing or unreachable | Unit |
+| A process fails to start or serve requests when Alloy is stopped in the cluster | Cluster |
+| The sampler or resource attributes ignore the environment configuration | Unit |
+| A server span ignores the incoming `traceparent`, has an unbounded name, or has a different `trace_id` from its log line | Unit |
+| The Workspace `CheckSession` call drops `traceparent` or `x-request-id`, or Identity does not continue them | Unit |
+| The outbox loses trace context at commit, or the relay and email worker do not continue it | Integration |
+| A log line or span contains a token, password, code, or email address | Unit |
+| A stored log line, span, or Loki label contains a token, password, code, or email address | Cluster |
+| A request waits for span export | Unit |
+| A Loki label takes unbounded values such as request IDs, trace IDs, or paths | Cluster |
+| A telemetry component is reachable outside the cluster | Cluster |
+| Logs and traces of one request cannot be found together in Grafana | Cluster |
 
 ## Implementation boundaries
 

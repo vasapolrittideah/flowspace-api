@@ -9,7 +9,7 @@ A specification has the following fields and sections:
 ```markdown
 # Spec: <capability name>
 
-Module id: `<module-id>`
+Module ID: `<module-id>`
 
 Status: <current state of the specification>
 
@@ -31,7 +31,7 @@ Status: <current state of the specification>
 
 ## Testing strategy
 
-<risks, the test level that proves each risk, and the environment that each level needs>
+<risks and the test level that proves each risk>
 
 ## Implementation boundaries
 
@@ -50,7 +50,7 @@ Status: <current state of the specification>
 
 - Write the capability name after the `Spec:` prefix.
 
-### Module id
+### Module ID
 
 - Copy the module ID from the file name, in backticks.
 
@@ -173,7 +173,6 @@ Status: <current state of the specification>
 | --- | --- |
 | `Risk` | The failure that the tests must prevent, in one short phrase, such as "A wrong-purpose code verifies an email". In Identity specifications, add the [threat IDs](../security/identity-threat-model.md) in parentheses, such as "(ID-T03, ID-T19)". |
 | `Test level` | One of the [test levels](#test-levels). If two levels prove the risk, write both, separated by a comma. |
-| `Environment` | The environment of the test level, as the [test levels](#test-levels) table lists it. If two levels prove the risk, write both environments. Do not write commands. |
 
 ### Implementation boundaries
 
@@ -200,6 +199,7 @@ Status: <current state of the specification>
 
 - A module is one capability that can be tested on its own. Write its ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
 - Save one specification as `docs/specs/<module-id>.md`, and add each module to the [specification index](../specs/README.md).
+- Write the specification of a module only after the specification of each module in its `Depends on` column is `Approved` or `Implemented`. A specification can then use the approved contract of each dependency.
 - If one piece of work needs several modules, add a row for each module to the index with the `Planned` status before you write the first specification. Name the dependencies of each row. The maintainer reviews this map in its own PR.
 
 ### Sections

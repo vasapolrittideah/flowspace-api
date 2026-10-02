@@ -1,6 +1,6 @@
 # Spec: Observability alerts and runbooks
 
-Module id: `observability-alerts-and-runbooks`
+Module ID: `observability-alerts-and-runbooks`
 
 Status: Approved
 
@@ -131,16 +131,16 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 
 ## Testing strategy
 
-| Risk | Test level | Environment |
-| --- | --- | --- |
-| A provisioned rule has no runbook, or its `runbook_url` points to a missing file | Unit | None |
-| A rule has a severity, label, or annotation outside the contract | Unit | None |
-| A rule does not fire when its symptom exists for the pending period | Cluster | Local cluster |
-| A rule fires while the cluster is idle and healthy | Cluster | Local cluster |
-| A firing or resolved alert does not reach Mailpit | Cluster | Local cluster |
-| Missing worker metrics do not fire `Worker metrics are missing`, or fire `Outbox events are stuck` | Cluster | Local cluster |
-| A notification contains an ID, email address, path, or error text that the contract forbids | Cluster | Local cluster |
-| Grafana cannot reach Mailpit, or another pod can reach Mailpit | Cluster | Local cluster |
+| Risk | Test level |
+| --- | --- |
+| A provisioned rule has no runbook, or its `runbook_url` points to a missing file | Unit |
+| A rule has a severity, label, or annotation outside the contract | Unit |
+| A rule does not fire when its symptom exists for the pending period | Cluster |
+| A rule fires while the cluster is idle and healthy | Cluster |
+| A firing or resolved alert does not reach Mailpit | Cluster |
+| Missing worker metrics do not fire `Worker metrics are missing`, or fire `Outbox events are stuck` | Cluster |
+| A notification contains an ID, email address, path, or error text that the contract forbids | Cluster |
+| Grafana cannot reach Mailpit, or another pod can reach Mailpit | Cluster |
 
 ## Implementation boundaries
 

@@ -74,7 +74,13 @@ A convention file has a title, a scope paragraph, and the sections below.
 - Write only bullets in this section.
 - Put the rules for the file, location, numbering, and life cycle of the artifact here. Also put the rules that cover more than one part here.
 - Include one bullet that states how existing artifacts follow a change to the convention. Choose one of these approaches: update every existing artifact in the same PR, or apply the change only to new artifacts and to artifacts that a later PR changes.
-- If the section has more than five bullets, group them under `###` headings. Use only the [Rules headings](#rules-headings), in the order of the table, and omit a heading that has no bullets.
+- If the section has more than five bullets, group them under `###` headings. Use only these headings, in this order, and omit a heading that has no bullets:
+  1. `Files` for the location, name, and number of the artifact, and how many artifacts to write.
+  2. `Sections and wording` for the sections of the artifact and the rules that cover several parts.
+  3. `Workflow` for the steps to create, review, and check the artifact.
+  4. `Links and records` for the indexes, tables, links, labels, milestones, and GitHub relationships that must match the artifact.
+  5. `Status` for the status values of the artifact and its approval.
+  6. `Changes` for changes to an artifact after it exists, and for how existing artifacts follow a change to the convention.
 - If a bullet fits several of these headings, put it under the first match in this order: `Changes`, `Status`, `Links and records`, `Workflow`, `Files`, and `Sections and wording`.
 - If the convention covers several kinds of the artifact, such as queries and migrations, name each `###` heading after one kind instead. Order the bullets under each kind by the heading order above, without more headings.
 - If the section has five bullets or fewer, do not add `###` headings.
@@ -98,7 +104,7 @@ A convention file has a title, a scope paragraph, and the sections below.
 - Write one bullet for each difference. Start with the project rule, and then state the skill rule that it replaces, such as "Save the specification as `docs/specs/<module-id>.md`. The skill saves it as `SPEC-<module-id>.md`."
 - Link to a rule in this convention instead of repeating the rule.
 
-### Reference section
+### Reference
 
 - Put each table under its own `###` heading, such as the [commit types](commit-messages.md#types).
 - Write only the `###` headings and their tables in this section.
@@ -125,13 +131,12 @@ A convention file has a title, a scope paragraph, and the sections below.
 ### Sections and wording
 
 - Follow the [Markdown and English prose conventions](markdown-and-prose.md) in each convention file.
-- Start each bullet with a verb, such as "Write", "Put", "Use", "Link", or "Omit". If the rule has a condition or applies to one place, state the condition or the place first, such as "In the index, use the record number". Apply this rule to every bullet outside code blocks.
-- If a rule applies items in order or by precedence, name the items in that order in the bullet. If each item needs a description, such as a condition or a definition, put the items in a table under `Reference` instead. Make `Order` the first column, number the rows with Arabic numerals that start at 1, and link to the table from the bullet.
+- Start each bullet with a verb, such as "Write", "Put", "Use", "Link", or "Omit". If the rule has a condition or applies to one place, state the condition or the place first, such as "In the index, use the record number". Apply this rule to every bullet outside code blocks. This rule does not cover the items of a numbered list inside a bullet.
+- If a rule applies steps in order or by precedence, put a numbered list inside its bullet.
 - Number the items of every numbered list with Arabic numerals that start at 1 and go up by 1, such as `1.`, `2.`, and `3.`. Do not use Roman numerals or letters, such as `i.`, `ii.`, or `a.`.
 - Give each bullet one main point, as the [Markdown rules](markdown-and-prose.md#markdown) define. Keep the condition, reason, and exception of the point in the same bullet.
 - Order the bullets in each list: placement and format first, then the order and structure of the content, then allowed values and links, and then the rules that start with "Do not". If a bullet fits several groups, put it in the earliest group.
 - Use the sections in the template order. Omit an optional section that has no content.
-- Do not put a numbered list inside a bullet. GitHub shows a numbered list inside a bullet with Roman numerals, such as `i.` and `ii.`.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a convention file.
 
 ### Links and records
@@ -146,16 +151,3 @@ A convention file has a title, a scope paragraph, and the sections below.
 ### Changes
 
 - Apply a change of this convention only to new convention files and to convention files that a later PR changes for any reason. In that PR, make the whole changed file follow this convention. This includes the file name and the row in the agent instructions. If the PR renames the file, update every link to the file in the same PR.
-
-## Reference
-
-### Rules headings
-
-| Order | Heading | Bullets under the heading |
-| --- | --- | --- |
-| 1 | `Files` | The location, name, and number of the artifact, and how many artifacts to write |
-| 2 | `Sections and wording` | The sections of the artifact and the rules that cover several parts |
-| 3 | `Workflow` | The steps to create, review, and check the artifact |
-| 4 | `Links and records` | The indexes, tables, links, labels, milestones, and GitHub relationships that must match the artifact |
-| 5 | `Status` | The status values of the artifact and its approval |
-| 6 | `Changes` | Changes to an artifact after it exists, and how existing artifacts follow a change to the convention |

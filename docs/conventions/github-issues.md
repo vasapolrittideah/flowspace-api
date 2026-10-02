@@ -4,10 +4,10 @@ This convention defines the GitHub Issue for one task. A task is one piece of wo
 
 ## Template
 
-An Issue has a title, a module, Description, Acceptance criteria, Verification, and Files likely touched.
+An Issue has a title, a module ID, Description, Acceptance criteria, Verification, and Files likely touched.
 
 ```markdown
-Module: `<module ID, if any>`
+Module ID: `<module ID, if any>`
 
 ## Description
 
@@ -33,7 +33,7 @@ Module: `<module ID, if any>`
 - State the outcome of the task, not its steps.
 - Keep the title consistent with the approved specification, the module plan, and the task scope.
 
-### Module
+### Module ID
 
 - Copy the module ID from the approved specification.
 - If the Issue does not belong to a module plan, omit the line.

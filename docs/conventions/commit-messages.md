@@ -52,8 +52,9 @@ Co-authored-by: <agent name> <agent email>
 - If the subject has `!`, explain the incompatibility and the required caller changes.
 - In a checkpoint commit, write for a reviewer who reads the PR one commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
 - In a squash commit, write for a later reader of the `main` history. Describe only the effects that stay on `main` after the merge: changed behavior, compatibility or migration effects, and important decisions or trade-offs. If the subject states every lasting effect, such as in a PR that only adds tests, omit the body.
-- In a squash commit, if the change only adds a document or changes its status, such as a specification, plan, or ADR, omit the body. The document on `main` holds its content. Write a body when the change alters an existing rule or behavior and the changed files do not state the reason.
-- If a squash commit needs a body, summarize the final `What changed` and `Why` sections of the pull request. Make sure that the final diff supports each sentence.
+- In a squash commit, if the change only adds a document or changes its status, such as a specification, plan, or ADR, omit the body. The document on `main` holds its content.
+- In a squash commit that changes an existing rule in a document, write only the reason or trade-off that the changed files do not state. If the files state the reason, omit the body. Do not list the new rules, because the files on `main` state them.
+- If a squash commit needs a body, take its content from the final `What changed` and `Why` sections of the pull request. Keep only what the diff and the changed files do not state, and make sure that the final diff supports each sentence. Do not copy the whole description, because the subject links the pull request.
 - Do not split URLs, code, or trailers.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
 - In a squash commit, do not include verification details, lists of added tests, specification or plan status changes, or process history.
@@ -199,14 +200,14 @@ Closes: #219
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
-A squash commit that changes existing rules has a body that states the new rules:
+A squash commit that changes existing rules has a body that states only the reason. The changed convention states the new rules:
 
 ```text
 docs: revise module specification sections and approval
 
-Specifications drop the Commands section because Issue verification
-steps and CONSTRAINTS.md own commands. Five sections get clearer
-names, and each section states what belongs in it and what does not.
+Specifications repeated commands that Issue verification steps and
+CONSTRAINTS.md already own. Some section names did not say what
+belongs in them.
 
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```

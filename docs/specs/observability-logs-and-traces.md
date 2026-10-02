@@ -16,7 +16,7 @@ The capability must answer these questions from telemetry alone:
 
 Services already write JSON logs and create some spans, but no collector stores the logs and no exporter sends the spans. This capability makes those signals reach storage and fills the gaps in trace context that stop the three questions above.
 
-## Scope and decisions
+## Scope, dependencies, and ADRs
 
 Depends on: none.
 

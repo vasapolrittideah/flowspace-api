@@ -16,7 +16,7 @@ The capability must answer these questions from metrics alone:
 
 Logs and traces show one request at a time. This capability adds rates, percentiles, and trends, and it turns the outbox age and broker lag log lines into metrics.
 
-## Scope and decisions
+## Scope, dependencies, and ADRs
 
 Depends on: `observability-logs-and-traces`.
 

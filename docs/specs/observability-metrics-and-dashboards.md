@@ -2,7 +2,7 @@
 
 Module id: `observability-metrics-and-dashboards`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

@@ -110,6 +110,8 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ## Examples
 
+[Pull request #314](https://github.com/vasapolrittideah/flowspace-api/pull/314) shows a complete PR title and description that follow this convention.
+
 This title describes the result instead of the branch:
 
 ```text

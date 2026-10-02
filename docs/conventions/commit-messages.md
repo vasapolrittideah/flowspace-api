@@ -161,6 +161,14 @@ docs: specify local observability metrics and dashboards
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
+A squash commit that adds an ADR has no body, even when the ADR supersedes an earlier record. The new record states the reason in its `Context` and `Decision` sections, and the earlier record only changes its status:
+
+```text
+docs(adr): record local alert routing
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
 A squash commit that changes existing rules has a body that states the new rules:
 
 ```text

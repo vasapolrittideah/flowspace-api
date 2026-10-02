@@ -88,7 +88,7 @@ A convention file has a title, a scope paragraph, and the sections below.
 
 ### Special case
 
-- Add one section for each situation that needs its own procedure or format, such as the [gap comment](github-issues.md#gap-comment) in the Issue convention or the checks before a review.
+- If a procedure or format applies only to some artifacts of the kind, such as the [gap comment](github-issues.md#gap-comment) in the Issue convention, add one section for that situation. Put a procedure that applies to every artifact of the kind under `Workflow` in the Rules section.
 - Name the situation in the heading as a noun phrase.
 - Start with paragraphs that state when the situation applies and the procedure to follow.
 - If rules apply to the whole situation, write them as bullets after the paragraphs.

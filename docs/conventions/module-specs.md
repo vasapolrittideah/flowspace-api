@@ -210,7 +210,7 @@ Status: <current state of the specification>
 - Only the maintainer approves a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope>): approve <capability> spec`. An agent changes the status to `Approved` only when the maintainer asks for it in chat or in the PR review.
 - Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.
 - An approved specification permits planning.
-- If a change to an approved or implemented specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification needs a new approval PR. A change that only corrects wording keeps the status.
+- If a change to an approved or implemented specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification needs a new approval PR with the title `docs(<scope>): reapprove <capability> spec`. A change that only corrects wording keeps the status.
 - Change the status to `Implemented` in the PR that proves the last success criterion.
 - Keep each `Implemented` specification in the format that it had when it was implemented.
 

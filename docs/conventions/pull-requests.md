@@ -1,6 +1,6 @@
 # Pull request conventions
 
-This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks and CI pass and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. Work for later is work that the PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
+This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks that the Workflow rules name and CI pass, and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. Work for later is work that the PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
 
 ## Template
 
@@ -66,7 +66,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - Write one bullet for each piece of work that the PR leaves for later, even when there is only one.
 - If the work has an open Issue, write the bullet in the [follow-up task format](github-issues.md#follow-up-task-format). If the work has no open Issue, write the remaining work as one sentence without a number, such as `- Rename the hexagonal convention file.` This rule replaces the rule of the follow-up task format that lists only open Issues.
 - Put the bullets with an Issue first, in ascending Issue number. Then put the bullets without an Issue.
-- Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [Issue convention](github-issues.md) states. Otherwise, write the work without a number.
+- Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [Issue convention](github-issues.md) states. If the maintainer does not approve it, or the session has no chat, write the work without a number.
 - If the PR leaves no work for later, write `n/a`.
 
 ## Rules
@@ -80,7 +80,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 ### Workflow
 
 - Follow the [agent instructions](../../AGENTS.md) for the branch, the PR, and merge authority.
-- Do not discard or commit changes that belong to another task. Inspect the staged diff before each commit, and exclude unrelated changes, secrets, local environment files, and unwanted build output.
+- Keep changes that belong to another task out of your commits, and keep them in the working tree. Inspect the staged diff before each commit, and exclude unrelated changes, secrets, local environment files, and unwanted build output.
 - For a behavior fix, add a focused regression test.
 - For a contract or generator change, run `task buf -- lint`, `task buf -- breaking`, and `task buf -- generate` for Protobuf, or `task sqlc -- generate` for SQL. Commit the generated output with the source change. The `Contract checks` CI job checks the same results again.
 - For a documentation-only change, make sure that the facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
@@ -88,8 +88,8 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - Before you open or update a PR, inspect the complete PR diff with the same exclusions as for a commit.
 - Open the PR as a normal PR, not as a draft.
 - After each push, wait for the [CI checks](../../.github/workflows/ci.yml) to finish. If the job log shows that a failure comes from the runner, the network, or an external service, such as a registry timeout, rerun the failed job once. If it fails again, state the cause and link the run in `Risks or limitations`. Fix every other failure in the PR.
-- Tell the maintainer that the PR is ready only after it meets every condition of a ready PR. If the PR cannot become ready, tell the maintainer which condition fails and why.
-- When the work changes, update the title, the description, and the labels before you tell the maintainer that the PR is ready again. Tell the maintainer in the chat, or in a PR comment if the session has no chat.
+- Tell the maintainer that the PR is ready only after it meets every condition of a ready PR. If the PR cannot become ready, tell the maintainer which condition fails and why. Tell the maintainer in the chat, or in a PR comment if the session has no chat.
+- When the work changes, update the title, the description, and the labels before you tell the maintainer that the PR is ready again.
 - Before a review comment exists, you can amend or rebase commits and push them with `git push --force-with-lease`. After a review comment exists, add new commits. If the PR has merge conflicts or needs a change that is on `main`, merge `main` into the branch.
 - Before you write each squash message, read the [commit message convention](commit-messages.md) again from `main`, because it can change while a PR is open.
 - Write the squash message as the commit message convention states for a squash commit. Use the current PR title as the subject.

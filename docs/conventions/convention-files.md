@@ -1,6 +1,6 @@
 # Convention file conventions
 
-This convention defines the sections of each file in `docs/conventions/` and how to write each section.
+This convention defines the sections of each file in `docs/conventions/` and how to write each section. The `Template` section holds the rules for each part of the artifact, and the `Rules` section holds the rules for the whole artifact and its life cycle.
 
 ## Template
 

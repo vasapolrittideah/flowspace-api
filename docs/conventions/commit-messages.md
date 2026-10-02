@@ -1,6 +1,6 @@
 # Commit message conventions
 
-This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. The [agent instructions](../../AGENTS.md) define checkpoint commits and squash merges. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention. The main change of a commit is the change that the commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. A footer or a trailer is a `Key: value` line at the end of the message that Git and GitHub read, such as an Issue footer or a co-author trailer.
+This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. The [agent instructions](../../AGENTS.md) define checkpoint commits and squash merges. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention. The main change of a commit is the change that the commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. Instrumentation is code that emits logs, metrics, or traces. A footer or a trailer is a `Key: value` line at the end of the message that Git and GitHub read, such as an Issue footer or a co-author trailer.
 
 ## Template
 
@@ -31,11 +31,11 @@ Co-authored-by: <co-author name> <co-author email>
 
 - Choose the scope with these steps, and stop after the first match:
   1. If the main change adds or changes instrumentation in more than one service, use `observability`.
-  2. If the main change affects more than one shared package under root `internal/`, use `shared`.
-  3. Use the first scope in the [scope table](#scopes) whose `Paths` column contains every file of the main change.
-  4. If no scope contains every file of the main change, omit the scope.
+  2. If the main change has files in more than one shared package under root `internal/`, use `shared`.
+  3. Use the first scope in the [scope table](#scopes) whose `Paths` column covers all of the main change. A row can cover a whole path or one part of a file, such as a task in `Taskfile.yaml`.
+  4. If no row covers all of the main change, omit the scope.
 - Read the service paths in the scope table as these paths, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service.
-- If a new service or shared package needs a scope, add the scope and its paths to the scope table in the same PR.
+- If a PR adds a service or a shared package, add its scope and paths to the scope table in the same PR.
 - Do not combine scope names.
 
 ### Description
@@ -43,14 +43,14 @@ Co-authored-by: <co-author name> <co-author email>
 - Keep the whole subject line at most 72 characters. Do not count the `(#<number>)` suffix and its leading space, which GitHub adds to a squash commit.
 - Start the description with a lowercase verb in the imperative mood, such as `add` or `reject`.
 - Name the specific change, such as `reject task updates based on an outdated version`. If you use a general verb, such as `update`, give it a specific object, such as `update Go to 1.25`.
-- If the commit reverts an earlier commit, use the scope and the description of the reverted commit.
+- If the commit reverts an earlier commit, use the scope and the description of the reverted commit. Do not copy its `!`. Add `!` only when the revert itself breaks callers, as the [type rules](#type) state.
 - Do not end the description with a period.
 - Do not write a description that names no change, such as `misc` or `fix things`.
 
 ### Body
 
 - Put the body after the subject, separated by a blank line.
-- Wrap prose lines at 72 characters. Separate paragraphs with one blank line. Start each list item with a hyphen and a space, and indent its wrapped lines by two spaces.
+- Wrap prose lines at 72 characters. Separate paragraphs with one blank line. Start each bullet item with a hyphen and a space, and indent its wrapped lines by two spaces. Start each numbered item with its number, a period, and a space, and indent its wrapped lines by three spaces.
 - If the subject has `!`, explain the incompatibility and the changes that callers must make.
 - If the commit reverts an earlier commit, start the body with `This reverts commit <full SHA>.` Then give the reason in a new paragraph.
 - In a checkpoint commit, write a body only when the subject does not explain the step. Write for a reviewer who reads the PR one commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
@@ -80,7 +80,7 @@ Co-authored-by: <co-author name> <co-author email>
 
 - Put the trailers after a blank line at the end of the message. Order them by name in alphabetical order.
 - Add one trailer for each person or agent, other than the commit author, who contributed to the commit.
-- For a person, use the name and the email of their GitHub account. For an agent, use the name and email in the attribution trailer that its harness gives. If the harness gives none, use the identity in [Agent trailers](#agent-trailers).
+- For a person, use their name and the email that GitHub links to their account, such as their `users.noreply.github.com` address. For an agent, use the name and email in the attribution trailer that its harness gives. If the harness gives none, use the identity in [Agent trailers](#agent-trailers).
 - Spell the trailer key as `Co-authored-by`.
 - Keep the existing trailers when you amend or squash commits.
 - Do not add a trailer for a person or agent who did not contribute.
@@ -115,7 +115,7 @@ Co-authored-by: <co-author name> <co-author email>
 | --- | --- | --- |
 | `proto` | Protobuf RPC definitions and public HTTP annotations | `contracts/proto/` |
 | `events` | Published Protobuf event schemas | `contracts/events/` |
-| `codegen` | Code-generation configuration and tooling | `buf.yaml`, `buf.gen.yaml`, `buf.lock`, `sqlc.yaml`, and the `buf` and `sqlc` tasks in `Taskfile.yaml` |
+| `codegen` | Code-generation configuration and tooling | `buf.yaml`, `buf.gen.yaml`, `buf.lock`, `sqlc.yaml`, `gen/`, and the `buf` and `sqlc` tasks in `Taskfile.yaml` |
 | `adr` | Architecture decision records | `docs/adr/` |
 | `agents` | Agent instructions, conventions, skills, commands, and configuration | `AGENTS.md`, `CLAUDE.md`, `docs/conventions/`, `.agents/`, `.claude/`, `skills-lock.json` |
 | `identity` | Accounts, authentication, email verification, and sessions | The service paths for `identity` |

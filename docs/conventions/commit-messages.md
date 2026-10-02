@@ -1,10 +1,10 @@
 # Commit message conventions
 
-This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. The [agent instructions](../../AGENTS.md) define checkpoint commits and squash merges. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention. The main change of a commit is the change that the commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. Instrumentation is code that emits logs, metrics, or traces. A footer or a trailer is a `Key: value` line at the end of the message that Git and GitHub read, such as an Issue footer or a co-author trailer.
+This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. The [agent instructions](../../AGENTS.md) define checkpoint commits and squash merges. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention. The subject line is the first line of the message, which holds the type, the scope, and the description. The main change of a commit is the change that the commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. Instrumentation is code that emits logs, metrics, or traces. A footer or a trailer is a `Key: value` line at the end of the message that Git and GitHub read, such as an Issue footer or a co-author trailer.
 
 ## Template
 
-A message has a type, a scope, a description, a body, Issue footers, and co-author trailers. The type, the scope, and the description form the subject line.
+A message has a type, a scope, a description, a body, Issue footers, and co-author trailers.
 
 ```text
 <type of change>(<scope, if any>): <description of the change>

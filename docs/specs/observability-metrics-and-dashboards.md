@@ -1,6 +1,6 @@
 # Spec: Observability metrics and dashboards
 
-Module id: `observability-metrics-and-dashboards`
+Module ID: `observability-metrics-and-dashboards`
 
 Status: Approved
 
@@ -16,7 +16,7 @@ The capability must answer these questions from metrics alone:
 
 Logs and traces show one request at a time. This capability adds rates, percentiles, and trends, and it turns the outbox age and broker lag log lines into metrics.
 
-## Scope and decisions
+## Scope, dependencies, and ADRs
 
 Depends on: `observability-logs-and-traces`.
 
@@ -147,19 +147,19 @@ The capability records the metrics in the contract. Metric names, attribute valu
 
 ## Testing strategy
 
-| Risk | Test level | Environment |
-| --- | --- | --- |
-| A request waits for a metric export, or a process fails to start without Alloy | Unit | None |
-| A process stops serving requests when Alloy is stopped in the cluster | Cluster | Local cluster |
-| An HTTP or gRPC duration has a raw path, an unknown method name, or a missing status | Unit | None |
-| Workspace records no `CheckSession` client duration, or Identity records no internal server duration | Unit | None |
-| The outbox age is wrong when events are unpublished, published, or absent | Integration | Docker |
-| A failed outbox age or lag measurement blocks export or reports a stale value | Unit | None |
-| Email delivery results have the wrong kind or outcome | Unit | None |
-| A metric label takes an unbounded value | Cluster | Local cluster |
-| kube-state-metrics writes families or namespaces outside the allowlist | Cluster | Local cluster |
-| Prometheus or kube-state-metrics is reachable from a pod other than Alloy or Grafana | Cluster | Local cluster |
-| A dashboard panel shows no data for traffic that exists | Cluster | Local cluster |
+| Risk | Test level |
+| --- | --- |
+| A request waits for a metric export, or a process fails to start without Alloy | Unit |
+| A process stops serving requests when Alloy is stopped in the cluster | Cluster |
+| An HTTP or gRPC duration has a raw path, an unknown method name, or a missing status | Unit |
+| Workspace records no `CheckSession` client duration, or Identity records no internal server duration | Unit |
+| The outbox age is wrong when events are unpublished, published, or absent | Integration |
+| A failed outbox age or lag measurement blocks export or reports a stale value | Unit |
+| Email delivery results have the wrong kind or outcome | Unit |
+| A metric label takes an unbounded value | Cluster |
+| kube-state-metrics writes families or namespaces outside the allowlist | Cluster |
+| Prometheus or kube-state-metrics is reachable from a pod other than Alloy or Grafana | Cluster |
+| A dashboard panel shows no data for traffic that exists | Cluster |
 
 ## Implementation boundaries
 

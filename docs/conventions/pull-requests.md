@@ -1,6 +1,6 @@
 # Pull request conventions
 
-This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks and CI pass and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
+This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message. The [agent instructions](../../AGENTS.md) define a PR and who merges it. A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. A PR is ready when the local checks and CI pass and the title, description, and labels match the final work. A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment. Work for later is work that the PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. A risk or effect is material when it can change the decision to merge or needs an action after the merge.
 
 ## Template
 
@@ -25,7 +25,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ## Follow-up tasks
 
-<open Issues for later work>
+<work that the PR leaves for later>
 ```
 
 ### Title
@@ -57,14 +57,17 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 - Write each material compatibility effect, unresolved failure, local check that did not run, security risk, and remaining limit.
 - For each unresolved failure, state the cause and link the CI run or the output that shows it. For each local check that did not run, state the reason.
-- When a limitation has follow-up work, describe the limitation and refer to `Follow-up tasks` instead of repeating the Issue.
+- When a limitation has follow-up work, describe the limitation and refer to `Follow-up tasks` instead of repeating the work.
 - If there is nothing to report, write `n/a`.
 - Do not copy the Govulncheck counts of vulnerabilities in required modules that the code does not call. Do not paste routine logs or describe failed attempts that the PR resolved.
 
 ### Follow-up tasks
 
-- Write each follow-up Issue in the [follow-up task format](github-issues.md#follow-up-task-format), even when there is only one.
-- If there is no follow-up Issue, write `n/a`.
+- Write one bullet for each piece of work that the PR leaves for later, even when there is only one.
+- If the work has an open Issue, write the bullet in the [follow-up task format](github-issues.md#follow-up-task-format). If the work has no open Issue, write the remaining work as one sentence without a number, such as `- Rename the hexagonal convention file.` This rule replaces the rule of the follow-up task format that lists only open Issues.
+- Put the bullets with an Issue first, in ascending Issue number. Then put the bullets without an Issue.
+- Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [Issue convention](github-issues.md) states. Otherwise, write the work without a number.
+- If the PR leaves no work for later, write `n/a`.
 
 ## Rules
 

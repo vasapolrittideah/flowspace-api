@@ -79,11 +79,11 @@ Module: `<module ID, if any>`
 - Before you create an Issue for a module plan, compare its title, body, and planned blockers with the approved specification and the module plan.
 - After you create an Issue, apply the [Issue labels](github-labels.md), and add the Issue to the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) with the `Todo` status.
 - When you start a task, set the Project status of its Issue to `In Progress`. After the Issue closes, make sure that its status is `Done`.
-- When the local checks and CI of the PR pass, check each passed item in `Acceptance criteria` and `Verification`. Leave each gap unchecked. Do this before you tell the maintainer that the PR is ready.
+- Before you tell the maintainer that the PR is ready, or that it cannot become ready, check each passed item in `Acceptance criteria` and `Verification`. Leave each gap unchecked.
 
 ### Links and records
 
-- Record each blocking Issue as one native GitHub `Blocked by` relationship. Use these relationships as the dependency list, and do not list dependencies in the body.
+- Record each blocking Issue as one native GitHub `Blocked by` relationship. Use these relationships as the dependency list, and do not list blocking Issues in the body.
 - If the Issue belongs to a module plan, assign the milestone of the plan, as the [milestone rules](github-milestones.md) state.
 
 ### Changes
@@ -116,9 +116,10 @@ A follow-up task has an Issue number and remaining work.
 
 ## Gap comment
 
-The PR that closes an Issue records the changes and the CI result, so an ordinary task has no comment by default. Post a gap comment only when the Issue has a gap or work for later that a reader of the Issue needs to know.
+The PR that closes an Issue records the changes and the CI result, so an ordinary task has no comment by default. Post a gap comment only when the Issue has a gap or work for later that a reader of the Issue needs to know. A final Prove task uses its result comment instead.
 
-- Post the comment on the Issue before you tell the maintainer that the PR is ready.
+- Post the comment on the Issue before you tell the maintainer that the PR is ready, or that it cannot become ready.
+- If the Issue has a gap, the PR still closes the Issue. Name the work that each gap leaves in `Follow-up tasks`.
 - Do not add the PR, CI results, or measurements to the comment.
 - Do not include secrets or test account data.
 
@@ -150,7 +151,7 @@ The final Prove task checks the approved specification through tests and review.
 
 - Title the Issue `Prove <capability> against its specification`, with the capability name from the title of the specification.
 - In `Description`, name the final test scope and each cross-service check that another Issue owns. Link to that Issue instead of repeating its work.
-- In `Acceptance criteria`, require a test or a recorded cluster check for each success criterion of the specification and for each threat ID in its `Testing strategy`.
+- In `Acceptance criteria`, require a test, or a cluster check that the result comment records, for each success criterion of the specification and for each threat ID in its `Testing strategy`.
 - In `Acceptance criteria`, add an item for each public, private, failure, and cross-service path that the module has.
 - If the module has public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` that run against a running service, and add a `task smoke:bruno` item to `Verification`.
 - In `Verification`, add one item for each integration, smoke, contract, and generation check that applies to the module.
@@ -162,7 +163,7 @@ The final Prove task checks the approved specification through tests and review.
 
 The result comment records the evidence that CI does not keep: local checks, gaps, the module closure decision, and work for later.
 
-- Post the comment on the Issue before you tell the maintainer that the PR is ready.
+- Post the comment on the Issue before you tell the maintainer that the PR is ready, or that it cannot become ready.
 - Complete every section, and separate the lines under `Result` with blank lines.
 - Do not add a date, because GitHub shows when the comment was posted.
 - Do not repeat the Verification checklist or CI measurements.

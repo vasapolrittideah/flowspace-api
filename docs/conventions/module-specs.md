@@ -199,6 +199,7 @@ Status: <current state of the specification>
 
 - A module is one capability that can be tested on its own. Write its ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
 - Save one specification as `docs/specs/<module-id>.md`, and add each module to the [specification index](../specs/README.md).
+- If a request changes an existing capability, change the specification of its module. If a request adds a capability that can be tested on its own, add a new module.
 - Write the specification of a module only after the specification of each module in its `Depends on` column is `Approved` or `Implemented`. A specification can then use the approved contract of each dependency.
 - If one piece of work needs several modules, add a row for each module to the index with the `Planned` status before you write the first specification. Name the dependencies of each row. The maintainer reviews this map in its own PR.
 
@@ -212,12 +213,12 @@ Status: <current state of the specification>
 ### Status and approval
 
 - `Planned` means that the module is in the index and has no specification file yet. `Draft` means that the specification exists and is not approved. A `Draft` specification can merge into `main`, but it does not permit planning.
-- Only the maintainer approves a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope>): approve <capability> spec`. An agent changes the status to `Approved` only when the maintainer asks for it in chat or in the PR review.
+- Only the maintainer approves a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope, if any>): approve <capability> spec`. An agent changes the status to `Approved` only when the maintainer asks for it in chat or in the PR review.
 - Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.
 - An approved specification permits planning.
-- If a change to an approved or implemented specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification needs a new approval PR with the title `docs(<scope>): reapprove <capability> spec`. A change that only corrects wording keeps the status.
+- If a change to an approved or implemented specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification needs a new approval PR with the title `docs(<scope, if any>): reapprove <capability> spec`. A change that only corrects wording keeps the status.
 - Change the status to `Implemented` in the PR that proves the last success criterion.
-- Keep each `Implemented` specification in the format that it had when it was implemented.
+- Keep each `Implemented` specification in the format that it had when it was implemented. If a change sets its status to `Draft` again, convert the specification to the current template in the same PR.
 
 ## Differences from the spec-driven-development skill
 

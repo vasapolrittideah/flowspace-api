@@ -52,6 +52,7 @@ Co-authored-by: <agent name> <agent email>
 - If the subject has `!`, explain the incompatibility and the required caller changes.
 - In a checkpoint commit, write for a reviewer who reads the PR one commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
 - In a squash commit, write for a later reader of the `main` history. Describe only the effects that stay on `main` after the merge: changed behavior, compatibility or migration effects, and important decisions or trade-offs. If the subject states every lasting effect, such as in a PR that only adds tests, omit the body.
+- In a squash commit, if the change only adds a document or changes its status, such as a specification, plan, or ADR, omit the body. The document on `main` holds its content. Write a body when the change alters an existing rule or behavior and the changed files do not state the reason.
 - If a squash commit needs a body, summarize the final `What changed` and `Why` sections of the pull request. Make sure that the final diff supports each sentence.
 - Do not split URLs, code, or trailers.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
@@ -150,4 +151,62 @@ A documentation checkpoint with Codex attribution uses the full message. Other a
 docs(agents): clarify convention headings
 
 Co-authored-by: Codex <noreply@openai.com>
+```
+
+A squash commit that only adds a specification has no body, because the specification on `main` holds the content:
+
+```text
+docs: specify local observability metrics and dashboards
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+A squash commit that adds an ADR has no body, even when the ADR supersedes an earlier record. The new record states the reason in its `Context` and `Decision` sections, and the earlier record only changes its status:
+
+```text
+docs(adr): record local alert routing
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+A feature squash commit has no body when it builds what its Issue and specification describe and adds no migration, configuration, or decision of its own:
+
+```text
+feat(identity): validate Google callbacks and issue handoff codes
+
+Refs: #217
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+A feature squash commit has a body when it adds a migration, configuration, or decision that the subject does not state:
+
+```text
+feat(identity): create provider-only accounts from Google logins
+
+A new Google identity with an unused verified email gets a
+passwordless account, a provider link, and a session in the handoff
+transaction. Gmail and Workspace accounts start verified; other
+Google addresses queue a Flowspace verification code in the same
+transaction.
+
+Migration 00008 allows an empty password hash. Password login and
+recovery skip such accounts, and rolling back the migration fails
+while they exist.
+
+Closes: #219
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+A squash commit that changes existing rules has a body that states the new rules:
+
+```text
+docs: revise module specification sections and approval
+
+Specifications drop the Commands section because Issue verification
+steps and CONSTRAINTS.md own commands. Five sections get clearer
+names, and each section states what belongs in it and what does not.
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```

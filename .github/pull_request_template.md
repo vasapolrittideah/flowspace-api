@@ -22,6 +22,6 @@ n/a
 
 ## Follow-up tasks
 
-<!-- Add one bullet per open Issue for later work, even when there is only one: `- #<issue-number>: <remaining work in one sentence>.` -->
+<!-- Add one bullet per piece of later work, even when there is only one: `- #<issue-number>: <remaining work in one sentence>.` for work with an open Issue, or `- <remaining work in one sentence>.` for work without one. -->
 
 n/a

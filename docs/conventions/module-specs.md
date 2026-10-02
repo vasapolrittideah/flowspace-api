@@ -221,11 +221,17 @@ Status: <current state of the specification>
 
 ## Differences from the spec-driven-development skill
 
-The [`spec-driven-development` skill](../../.agents/skills/spec-driven-development/SKILL.md) lists commands, tech stack, project structure, and code style in each specification. This project keeps them in their source documents instead:
+The [`spec-driven-development` skill](../../.agents/skills/spec-driven-development/SKILL.md) gives a generic format and workflow. Where the skill differs from this convention, follow this convention:
 
-- The [technology stack](../technology-stack.md), [project structure](../project-structure.md), and code conventions apply to all modules.
-- The [constraints](../../CONSTRAINTS.md) define the standard checks. Issue verification steps name the commands for each task.
+- The skill lists commands, tech stack, project structure, and code style in each specification. This project keeps them in their source documents. The [technology stack](../technology-stack.md), [project structure](../project-structure.md), and code conventions apply to all modules. The [constraints](../../CONSTRAINTS.md) define the standard checks, and Issue verification steps name the commands for each task.
 - The skill puts the test framework, test locations, coverage, and test levels in `Testing strategy`. This project keeps only the risks and their [test levels](#test-levels). The technology stack names the framework, the project structure names the locations, and the constraints set the coverage.
+- The skill saves a specification as `SPEC-<module-id>.md` at the project root. This project saves it as `docs/specs/<module-id>.md`.
+- The skill saves a capability map as a file at the project root and uses the map as the index of modules. This project has no map file. The `Planned` rows of the [specification index](../specs/README.md) are the map, as the [module rules](#modules-and-files) state.
+- The skill uses short module IDs in its examples, such as `identity`. This project writes each module ID as `<service-or-area>-<capability>`.
+- The skill continues to planning after a human reviews the specification. In this project, the merge of the approval PR is the only approval, and a `Draft` specification does not permit planning. The [status rules](#status-and-approval) state the approval steps.
+- The skill updates a specification when a decision or the scope changes. In this project, a change to the contract, behavior, or success criteria of an approved or implemented specification sets its status to `Draft` again, as the [status rules](#status-and-approval) state.
+- The skill checks that a specification covers its six core areas. This project checks that a specification has the sections of the [template](#template) instead. Do not add a section to pass the check of the skill.
+- The skill names some sections differently. Its `Boundaries` section is `Implementation boundaries`, and its `Open Questions` section is `Assumptions and open questions`. The skill puts user stories or acceptance criteria in `Objective`, but this project writes them as Given, When, Then outcomes in `Success criteria`.
 
 ## Reference
 

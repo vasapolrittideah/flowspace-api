@@ -137,6 +137,7 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 - Provision rules, the contact point, and the notification policy from files in the `local` overlay.
 - Write each runbook from a real check in the local cluster, and run its first query before the change merges.
 - Record the command that induced each symptom in the plan, so that later work can repeat the test.
+- In the change that adds the first runbook, replace the `Examples` section of the [runbook conventions](../conventions/runbooks.md) with a link to that runbook.
 
 ### Ask first
 

@@ -20,7 +20,7 @@ Each alert links to a runbook that names the first check and the next action. Th
 
 Depends on: `observability-metrics-and-dashboards`.
 
-The scope covers seven Grafana alert rules, one contact point, one notification policy, the Mailpit NetworkPolicy change for Grafana, and one runbook for each rule in `docs/runbooks/`.
+The scope covers eight Grafana alert rules, one contact point, one notification policy, the Mailpit NetworkPolicy change for Grafana, and one runbook for each rule in `docs/runbooks/`.
 
 This capability excludes these items:
 
@@ -47,14 +47,15 @@ Each rule reads the metrics that `observability-metrics-and-dashboards` defines.
 | Rule title | Severity | Condition | Pending period | Labels |
 | --- | --- | --- | --- | --- |
 | `API error rate is high` | `page` | More than 5% of the HTTP and gRPC server requests of a service end with an error status, and the service receives at least 0.1 requests each second, over the last 5 minutes | 5 minutes | `service` |
-| `API latency is high` | `ticket` | The p99 HTTP or gRPC server duration of a service is above 2 seconds, and the service receives at least 0.1 requests each second, over the last 5 minutes | 10 minutes | `service` |
+| `API latency is high` | `ticket` | The p99 HTTP or gRPC server duration of a service is above 2.5 seconds, and the service receives at least 0.1 requests each second, over the last 5 minutes | 10 minutes | `service` |
 | `Outbox events are stuck` | `page` | The oldest unpublished Identity outbox event is older than 5 minutes | 5 minutes | None |
 | `Email consumer lag is not decreasing` | `ticket` | The email worker consumer lag stays above 0 for 10 minutes and is not lower than 10 minutes earlier | 0 minutes | None |
+| `Worker metrics are missing` | `ticket` | Prometheus has no outbox age or consumer lag sample from `identity-worker` in the last 5 minutes | 5 minutes | None |
 | `Email delivery fails` | `ticket` | At least one email delivery ended with the `failed` or `commit_failed` outcome in the last 15 minutes | 0 minutes | `identity_email_kind` |
 | `Telemetry is dropped` | `ticket` | Alloy refuses or fails to send spans, metric points, or log entries in each evaluation | 10 minutes | Alloy component name |
 | `Host disk is almost full` | `ticket` | A node-local volume reports more than 90% of its capacity in use | 10 minutes | `persistentvolumeclaim` |
 
-An error status is an HTTP 5xx status or a gRPC code that `observability-logs-and-traces` treats as an error. Each volume reports the host filesystem, so the disk rule fires once for each volume when the host disk is almost full. The email worker retries a failed delivery without a limit, and each failed attempt counts as `failed`, so one short SMTP failure fires `Email delivery fails`.
+The latency threshold of 2.5 seconds is a bucket bound of the latency histograms, so the p99 estimate does not depend on interpolation inside a bucket. An error status is an HTTP 5xx status or a gRPC code that `observability-logs-and-traces` treats as an error. Each volume reports the host filesystem, so the disk rule fires once for each volume when the host disk is almost full. The email worker retries a failed delivery without a limit, and each failed attempt counts as `failed`, so one short SMTP failure fires `Email delivery fails`.
 
 Each rule also has the labels `severity` and `environment`, and these annotations:
 
@@ -78,6 +79,7 @@ Each rule has one runbook in `docs/runbooks/` that follows the [runbook conventi
 | `API latency is high` | `docs/runbooks/api-latency-is-high.md` |
 | `Outbox events are stuck` | `docs/runbooks/outbox-events-are-stuck.md` |
 | `Email consumer lag is not decreasing` | `docs/runbooks/email-consumer-lag-is-not-decreasing.md` |
+| `Worker metrics are missing` | `docs/runbooks/worker-metrics-are-missing.md` |
 | `Email delivery fails` | `docs/runbooks/email-delivery-fails.md` |
 | `Telemetry is dropped` | `docs/runbooks/telemetry-is-dropped.md` |
 | `Host disk is almost full` | `docs/runbooks/host-disk-is-almost-full.md` |
@@ -99,8 +101,8 @@ The Grafana root URL is `http://localhost:3000`, which is the local address of t
 ### Evaluation
 
 - Evaluate all rules in one rule group every minute.
-- If a query of `Outbox events are stuck` or `Email consumer lag is not decreasing` returns no data, set the rule state to firing. The worker reports these values every 30 seconds, so missing data means that the worker or the metric pipeline stopped.
-- If a query of another rule returns no data, set the rule state to normal. These metrics have no series while a service has no traffic.
+- If the query of a rule returns no data, set the rule state to normal. Service metrics have no series while a service has no traffic.
+- `Worker metrics are missing` reports missing worker data instead. The worker reports the outbox age and consumer lag every 30 seconds, so missing samples mean that the worker, Alloy, or Prometheus stopped. This rule keeps `Outbox events are stuck` and `Email consumer lag is not decreasing` from firing when only the data is missing.
 - If Grafana cannot query Prometheus, set the rule state to error. Grafana sends a notification for the error through the same contact point.
 
 ### Notification policy
@@ -125,7 +127,7 @@ The capability records the rule states in Grafana and the notifications in Mailp
 
 The error notification for a failed Prometheus query is an exception. It can contain the error text from Grafana about the connection to Prometheus, because that text has no user data.
 
-When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot deliver that notification or any other one. The rule state in Grafana still shows the alert.
+When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot deliver that notification or any other one. The rule state in Grafana still shows the alert. Mailpit keeps no messages when its pod restarts, so alert emails from before the restart are lost. A `ticket` email is sent again only after 24 hours, so the current state is in Grafana alerting, not in Mailpit.
 
 ## Testing strategy
 
@@ -136,7 +138,7 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 | A rule does not fire when its symptom exists for the pending period | Cluster | Local cluster |
 | A rule fires while the cluster is idle and healthy | Cluster | Local cluster |
 | A firing or resolved alert does not reach Mailpit | Cluster | Local cluster |
-| A missing outbox or lag metric does not fire its rule | Cluster | Local cluster |
+| Missing worker metrics do not fire `Worker metrics are missing`, or fire `Outbox events are stuck` | Cluster | Local cluster |
 | A notification contains an ID, email address, path, or error text that the contract forbids | Cluster | Local cluster |
 | Grafana cannot reach Mailpit, or another pod can reach Mailpit | Cluster | Local cluster |
 
@@ -146,7 +148,7 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 
 - Provision rules, the contact point, and the notification policy from files in the `local` overlay.
 - Add each rule and its runbook in the same change.
-- Start the `First checks` of the runbooks for `Outbox events are stuck` and `Email consumer lag is not decreasing` with a check that Alloy and Prometheus still receive metrics from `identity-worker`. Missing data fires these rules when the metric pipeline stops, even when the outbox moves.
+- Start the `First checks` of the `Worker metrics are missing` runbook with a check that Alloy and Prometheus still receive metrics, and then check the `identity-worker` pod.
 - Write each runbook from a real check in the local cluster, and run its first query before the change merges.
 - Record the command that induced each symptom in the plan, so that later work can repeat the test.
 - In the change that adds the first runbook, replace the `Examples` section of the [runbook conventions](../conventions/runbooks.md) with a link to that runbook.
@@ -168,9 +170,9 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 1. Given the cluster runs with no faults and normal test traffic for 30 minutes, When a developer opens Grafana alerting and Mailpit, Then no rule fires and no alert email exists.
 2. Given Identity is stopped while a client reads workspaces at least once each second, When 5 minutes pass, Then `API error rate is high` fires for `workspace-api`, and Mailpit receives a `page` email with the runbook and dashboard links.
 3. Given the fault in criterion 2 ends, When the error rate returns below the threshold, Then Mailpit receives a resolved email for the same group.
-4. Given a service answers a route in more than 2 seconds for 10 minutes, When the rule evaluates, Then `API latency is high` fires for that service with the `ticket` severity.
+4. Given a service answers a route in more than 2.5 seconds for 10 minutes, When the rule evaluates, Then `API latency is high` fires for that service with the `ticket` severity.
 5. Given the broker is stopped while signups create outbox events, When the oldest event is older than 5 minutes for 5 minutes, Then `Outbox events are stuck` fires.
-6. Given `identity-worker` is stopped, When the outbox age metric is missing for 5 minutes, Then `Outbox events are stuck` fires.
+6. Given `identity-worker` is stopped, When Prometheus has no outbox age or consumer lag sample for 10 minutes, Then `Worker metrics are missing` fires, and `Outbox events are stuck` and `Email consumer lag is not decreasing` do not fire.
 7. Given the email worker cannot consume while events are published, When the lag stays above 0 and does not decrease for 10 minutes, Then `Email consumer lag is not decreasing` fires.
 8. Given a test NetworkPolicy blocks `identity-worker` from Mailpit while Grafana can still reach it, When one email delivery fails, Then `Email delivery fails` fires for the kind of that email, and Mailpit receives the alert email.
 9. Given Tempo is stopped while services send spans, When Alloy fails to send spans for 10 minutes, Then `Telemetry is dropped` fires.

@@ -1,65 +1,43 @@
 ---
-description: Implement GitHub Issues with tests, commits, and verification
+description: Implement the next GitHub Issue of a plan with tests, commits, and verification
 ---
 
-Invoke the agent-skills:incremental-implementation skill and the agent-skills:test-driven-development skill.
+Invoke the agent-skills:incremental-implementation skill and the agent-skills:test-driven-development skill. If a step fails, follow the agent-skills:debugging-and-error-recovery skill.
 
-## Select the module
+The work starts from one module with an `Approved` plan. It implements one task, which is the next ready Issue of the plan. It ends when the PR of that task is ready, the Issue shows its results, and the maintainer has the squash message. The maintainer merges the PR. Do not start the next task in the same run.
 
-Use the first `$ARGUMENTS` value that is not `auto` or `all` as the module id. Read its plan from `tasks/<module-id>.md`. If no module id is present, use the only plan in `tasks/`. If `tasks/` contains multiple plans, stop and ask for the module id.
+## Select the task
 
-Before you read issues, run `gh auth status --active --hostname github.com` and `gh api user --jq .login`. If a command reports a connection or DNS error, retry it with network access outside the sandbox. Keep the current credentials during this retry. If GitHub rejects the credentials after a successful connection, ask the maintainer to run `gh auth login -h github.com -p https -w` and stop.
+1. Use `$ARGUMENTS` as the module ID. If it is empty, use the only plan in `tasks/` with the `Approved` status. If there is no such plan, or there is more than one, stop and ask for the module ID.
+2. Run `gh auth status --active --hostname github.com` and `gh api user --jq .login`. If either reports a connection or DNS error, retry both outside the sandbox with the current credentials. If GitHub rejects the credentials after a successful connection, ask the maintainer to run `gh auth login -h github.com -p https -w`, and stop.
+3. Make sure that the active token has the `project` scope. If it does not, ask the maintainer to run `gh auth refresh -h github.com -s project`, and stop.
+4. For each closed Issue of the plan, make sure that its Project status is `Done`, as the [Issue workflow](../../docs/conventions/github-issues.md#workflow) states. If the plan is `Complete`, close its milestone as the [milestone workflow](../../docs/conventions/github-milestones.md#workflow) states, and stop.
+5. If `docs/specs/<module-id>.md` is not `Approved`, the plan is not `Approved`, or `tasks/.todo.md` exists, stop.
+6. Select the first open Issue in the order of the plan whose blockers are all closed. Read the blockers with `gh api repos/{owner}/{repo}/issues/<issue-number>/dependencies/blocked_by`. If no Issue is ready, report the blockers and stop.
 
-Make sure that the active token has the `project` scope. If this scope is absent, ask the maintainer to run `gh auth refresh -h github.com -s project` and stop. Repeat the authentication checks after the command succeeds. If `tasks/.todo.md` exists, stop because task migration is incomplete.
+## Implement
 
-Use the issue links in the plan as the task list. Read acceptance criteria and verification steps from each Issue body. Read its blockers from the native GitHub `Blocked by` relationships with `gh api repos/{owner}/{repo}/issues/<issue-number>/dependencies/blocked_by`.
+1. Run `git status --porcelain`, and preserve work outside the task.
+2. Create a branch from `main`, as the [branch name conventions](../../docs/conventions/branch-names.md) state.
+3. Set the Project status of the Issue to `In Progress`:
+   1. Read the owner and the number of the project from the link in the [Issue workflow](../../docs/conventions/github-issues.md#workflow). Run `gh project view <project-number> --owner <owner> --format json` to get the project ID.
+   2. Run `gh project item-list <project-number> --owner <owner> --format json --limit 1000` to get the Project item ID of the Issue. If the Issue is absent, stop.
+   3. Run `gh project field-list <project-number> --owner <owner> --format json` to get the ID of the `Status` field and of its `In Progress` option.
+   4. Run `gh project item-edit --id <project-item-id> --project-id <project-id> --field-id <status-field-id> --single-select-option-id <in-progress-option-id>`.
+4. Read the Issue, the specification, and the code, patterns, and types that the task affects.
+5. Build the task in slices with the skills. For each slice, write a failing test, make it pass, run the focused tests, and create a checkpoint commit with a `Refs` footer, as the [commit message conventions](../../docs/conventions/commit-messages.md) state.
+6. Run each check in the `Verification` list of the Issue, except the CI review.
+7. If the Issue is the last open Issue of its phase, check the checkpoint of the phase in the plan, as the [task list rules](../../docs/conventions/module-plans.md#task-list) state.
+8. If the Issue is the final Prove task, follow the [final Prove task rules](../../docs/conventions/github-issues.md#final-prove-task) for the statuses of the specification and the plan.
 
-## Modes
+## Open the PR
 
-- `/build <module-id>` implements the next ready open issue and then stops.
-- `/build <module-id> auto` implements every issue in dependency order after one approval.
-- `/build <module-id> all` is the same as `auto`.
+1. Inspect the complete diff, push the branch, and open the PR, as the [pull request conventions](../../docs/conventions/pull-requests.md) and the [label conventions](../../docs/conventions/github-labels.md) state. For the final Prove task, also follow the [final Prove task PR rules](../../docs/conventions/pull-requests.md#final-prove-task-pr).
+2. Wait for CI, and fix each failure that the pull request conventions require you to fix.
+3. Check the passed items of the Issue, and leave each gap unchecked, as the Issue workflow states:
+   1. Immediately before the edit, run `gh issue view <issue-number> --json body --jq .body`, and copy the body to a temporary file.
+   2. In `Acceptance criteria` and `Verification`, change each passed item from `[ ]` to `[x]`. Keep all other content.
+   3. Run `gh issue edit <issue-number> --body-file <temporary-file>`.
+4. Give the squash message in the chat, and tell the maintainer that the PR is ready, or why it cannot become ready. Stop.
 
-An Issue is ready when each Issue in its `Blocked by` relationships is complete. In autonomous mode, a verified commit completes the dependency for the current run.
-
-## Implement one issue
-
-1. Select the first ready open issue from the plan.
-2. Set its GitHub Project status to `In Progress`:
-   - Run `gh repo view --json nameWithOwner,owner` to get the repository owner and name.
-   - Run `gh project list --owner <owner> --format json` and select the open Project for the repository. If the result is unclear, stop.
-   - Run `gh project item-list <project-number> --owner <owner> --format json --limit 1000` to get the issue's Project item ID. If the issue is absent, stop.
-   - Run `gh project field-list <project-number> --owner <owner> --format json` to get the `Status` field ID and `In Progress` option ID.
-   - Run `gh project item-edit --id <project-item-id> --project-id <project-id> --field-id <status-field-id> --single-select-option-id <in-progress-option-id>`.
-3. Read the issue acceptance criteria and likely files.
-4. Read the relevant code, patterns, and types.
-5. Write a failing test for the expected behavior.
-6. Implement the minimum change that passes the test.
-7. Run the focused tests, required checks, and build commands from the issue.
-8. Run the affected regression tests.
-9. Update the issue description after verification:
-   - Immediately before the edit, fetch the current body with `gh issue view <issue-number> --json body --jq .body`.
-   - Copy the current body to a temporary file. Preserve all content outside `Acceptance criteria` and `Verification`.
-   - In those sections, change each completed checkbox from `[ ]` to `[x]`. Leave failed and unrun items unchecked.
-   - Run `gh issue edit <issue-number> --body-file <temporary-file>` with the complete updated body.
-10. Inspect the staged diff and exclude unrelated changes.
-11. Commit only the issue changes. Add `Refs: #<issue-number>` before the co-author trailers.
-
-Leave the issue open and keep its status as `In Progress`. The pull request closes it after the maintainer merges the change.
-
-## Autonomous mode
-
-Use autonomous mode only after the human approves the full plan.
-
-1. Make sure that `docs/specs/<module-id>.md` and `tasks/<module-id>.md` exist.
-2. Run `git status --porcelain` and preserve unrelated work.
-3. Present the issue order and wait for clear approval.
-4. Implement each issue with the full issue loop.
-5. Create one tested commit per issue with the matching `Refs: #<issue-number>` footer.
-6. Stop when an issue fails, needs an undecided product choice, or requires an irreversible action.
-7. Prepare the pull request with `Closes #<issue-number>` for every completed issue.
-8. Summarize completed issues, tests, commits, and remaining work.
-
-Do not close issues or set their status to `Done` before the maintainer merges the pull request.
-
-If any step fails, follow the agent-skills:debugging-and-error-recovery skill.
+Keep the Issue open with the `In Progress` status. The PR closes it after the maintainer merges it.

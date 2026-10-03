@@ -57,23 +57,6 @@ Each application log line is one JSON object on standard output. The `msg` field
 
 A request line is a line that a service writes while it handles one inbound request. An event line is a line that the worker or the outbox relay writes while it handles one event.
 
-### Log labels
-
-| Label | Value |
-| --- | --- |
-| `service` | The `service` field of the line |
-| `environment` | The `environment` field of the line |
-| `namespace` | The Kubernetes namespace of the pod |
-
-All other fields, including `request_id` and `trace_id`, stay in the log line. A developer filters them with a LogQL JSON parser.
-
-### Resource attributes
-
-| Attribute | Value |
-| --- | --- |
-| `service.name` | The `service` log value of the process |
-| `deployment.environment.name` | The `environment` log value of the process |
-
 ### Spans
 
 | Process | Span | Kind | Parent |
@@ -88,15 +71,15 @@ All other fields, including `request_id` and `trace_id`, stay in the log line. A
 
 A span name never contains an ID or a raw path.
 
-### Span attributes
+### Log labels
 
-| Attribute | Spans | Meaning |
-| --- | --- | --- |
-| `http.request.method` | HTTP server spans | HTTP method of the request |
-| `http.route` | HTTP server spans | Route template of the request |
-| `http.response.status_code` | HTTP server spans | HTTP status of the response |
-| `rpc.method` | gRPC server spans | gRPC method of the call |
-| `rpc.grpc.status_code` | gRPC server spans | gRPC status code of the response |
+| Label | Value |
+| --- | --- |
+| `service` | The `service` field of the line |
+| `environment` | The `environment` field of the line |
+| `namespace` | The Kubernetes namespace of the pod |
+
+All other fields, including `request_id` and `trace_id`, stay in the log line. A developer filters them with a LogQL JSON parser.
 
 ### Propagated headers
 
@@ -107,6 +90,23 @@ A span name never contains an ID or a raw path.
 | `x-request-id` | Workspace `CheckSession` gRPC metadata | Request ID of the Workspace request |
 | `traceparent` | Identity event record headers | W3C trace context of the request or relay span that produced the record |
 | `tracestate` | Identity event record headers | W3C trace state of the request or relay span that produced the record |
+
+### Resource attributes
+
+| Attribute | Value |
+| --- | --- |
+| `service.name` | The `service` log value of the process |
+| `deployment.environment.name` | The `environment` log value of the process |
+
+### Span attributes
+
+| Attribute | Spans | Meaning |
+| --- | --- | --- |
+| `http.request.method` | HTTP server spans | HTTP method of the request |
+| `http.route` | HTTP server spans | Route template of the request |
+| `http.response.status_code` | HTTP server spans | HTTP status of the response |
+| `rpc.method` | gRPC server spans | gRPC method of the call |
+| `rpc.grpc.status_code` | gRPC server spans | gRPC status code of the response |
 
 ### Configuration
 

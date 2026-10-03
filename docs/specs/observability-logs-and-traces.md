@@ -2,23 +2,17 @@
 
 Module ID: `observability-logs-and-traces`
 
-Status: Approved
+Status: Draft
 
 ## Objective
 
 Give developers who run Flowspace in the `local` cluster one place to find the logs and traces of a request. The first users are these developers, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md). A developer starts from a request ID or a trace ID and follows the request through each service and event that it touches.
 
-The capability must answer these questions from telemetry alone:
-
-1. Why did this request fail? The developer finds the logs of a request by its request ID and opens its trace.
-2. Where did a slow request spend its time? The trace shows the time in Workspace and in its session check to Identity.
-3. Why did a signup email not arrive? One trace connects the signup request, the outbox publish, and the email worker.
+The capability must answer three questions from telemetry alone. First, why did a request fail? The developer finds the logs of the request by its request ID and opens its trace. Second, where did a slow request spend its time? The trace shows the time in Workspace and in its session check to Identity. Third, why did a signup email not arrive? One trace connects the signup request, the outbox publish, and the email worker.
 
 Services already write JSON logs and create some spans, but no collector stores the logs and no exporter sends the spans. This capability makes those signals reach storage and fills the gaps in trace context that stop the three questions above.
 
-## Scope, dependencies, and ADRs
-
-Depends on: none.
+## Scope and ADRs
 
 The scope covers the `identity-api`, `identity-worker`, and `workspace-api` processes. It also covers Alloy, Loki, Tempo, and Grafana in the `local` overlay, which Tilt applies. Migration jobs are in scope for logs only. Their logs reach Loki through the same pod log path, and they create no spans.
 
@@ -49,45 +43,78 @@ Each application log line is one JSON object on standard output. The `msg` field
 
 | Field | Required on | Meaning |
 | --- | --- | --- |
-| `ts`, `level`, `msg` | Every line | Time, level, and event name from the shared logger |
-| `service` | Every line | Process name, such as `identity-api` |
-| `environment` | Every line | Environment name, such as `local` |
+| `ts` | All | Time of the line, from the shared logger |
+| `level` | All | Level of the line, from the shared logger |
+| `msg` | All | Event name, from the shared logger |
+| `service` | All | Process name, such as `identity-api` |
+| `environment` | All | Environment name, such as `local` |
 | `request_id` | Request lines | Effective `X-Request-ID` of an inbound HTTP request, or the forwarded `x-request-id` gRPC metadata |
 | `trace_id` | Request and event lines | 32-character lowercase hex trace ID when the context has a valid span |
 | `operation` | Request and event lines | Bounded operation name, such as a route template or a full gRPC method name |
-| `outcome`, `status`, `duration` | Completion lines | Result, HTTP or gRPC status, and elapsed time |
+| `outcome` | Completion lines | Result of the request |
+| `status` | Completion lines | HTTP or gRPC status |
+| `duration` | Completion lines | Elapsed time |
 
 A request line is a line that a service writes while it handles one inbound request. An event line is a line that the worker or the outbox relay writes while it handles one event.
 
-Loki stores `service`, `environment`, and `namespace` as labels. All other fields, including `request_id` and `trace_id`, stay in the log line. A developer filters them with a LogQL JSON parser. Loki never stores a request ID, trace ID, subject, or path as a label.
+### Log labels
 
-### Trace resources and spans
+| Label | Value |
+| --- | --- |
+| `service` | The `service` field of the line |
+| `environment` | The `environment` field of the line |
+| `namespace` | The Kubernetes namespace of the pod |
 
-Each process sets the resource attribute `service.name` to its `service` log value and `deployment.environment.name` to its `environment` log value.
+All other fields, including `request_id` and `trace_id`, stay in the log line. A developer filters them with a LogQL JSON parser.
+
+### Resource attributes
+
+| Attribute | Value |
+| --- | --- |
+| `service.name` | The `service` log value of the process |
+| `deployment.environment.name` | The `environment` log value of the process |
+
+### Spans
 
 | Process | Span | Kind | Parent |
 | --- | --- | --- | --- |
-| `identity-api` | One span for each public HTTP or gRPC request | Server | Incoming `traceparent`, or a new root |
-| `identity-api` | One span for each internal `CheckSession` call | Server | `traceparent` in gRPC metadata |
-| `workspace-api` | One span for each public HTTP or gRPC request | Server | Incoming `traceparent`, or a new root |
-| `workspace-api` | One span for each `CheckSession` call to Identity | Client | The Workspace request span |
-| `identity-worker` | `identity.outbox_publish` for each published outbox event | Producer | The trace context stored with the outbox event |
-| `identity-worker` | `identity.email_delivery` for each delivered email event | Consumer | `traceparent` in the event record headers |
-| `identity-worker` | `identity.password_change_notice` for each delivered notice | Consumer | A new root, because the notice comes from a database row and not from an event record |
+| `identity-api` | `<HTTP method> <route template>` or the full gRPC method name of each public request | `SERVER` | Incoming `traceparent` |
+| `identity-api` | The full gRPC method name of `CheckSession` | `SERVER` | `traceparent` in gRPC metadata |
+| `workspace-api` | `<HTTP method> <route template>` or the full gRPC method name of each public request | `SERVER` | Incoming `traceparent` |
+| `workspace-api` | The full gRPC method name of `CheckSession` | `CLIENT` | The Workspace server span |
+| `identity-worker` | `identity.outbox_publish` | `PRODUCER` | The trace context stored with the outbox event |
+| `identity-worker` | `identity.email_delivery` | `CONSUMER` | `traceparent` in the event record headers |
+| `identity-worker` | `identity.password_change_notice` | `CONSUMER` | `None` |
 
-A server span name is a bounded operation name, such as the HTTP method and route template, or the full gRPC method name. A span name never contains an ID or a raw path.
+A span name never contains an ID or a raw path.
 
-A server span records `http.request.method`, `http.route`, and `http.response.status_code` for HTTP. It records `rpc.method` and `rpc.grpc.status_code` for gRPC. A span has the error status when the HTTP status is 5xx or the gRPC code is `Internal`, `Unavailable`, `DeadlineExceeded`, or `Unknown`.
+### Span attributes
 
-### Trace context propagation
+| Attribute | Spans | Meaning |
+| --- | --- | --- |
+| `http.request.method` | HTTP server spans | HTTP method of the request |
+| `http.route` | HTTP server spans | Route template of the request |
+| `http.response.status_code` | HTTP server spans | HTTP status of the response |
+| `rpc.method` | gRPC server spans | gRPC method of the call |
+| `rpc.grpc.status_code` | gRPC server spans | gRPC status code of the response |
 
-The Workspace `CheckSession` call carries `traceparent`, `tracestate` when present, and `x-request-id` as gRPC metadata. Identity reads them on its internal listener.
+### Propagated headers
 
-Each Identity event record carries the W3C `traceparent` and, when present, `tracestate` headers of the request or relay span that produced it.
+| Header | Carrier | Meaning |
+| --- | --- | --- |
+| `traceparent` | Workspace `CheckSession` gRPC metadata | W3C trace context of the Workspace client span |
+| `tracestate` | Workspace `CheckSession` gRPC metadata | W3C trace state of the Workspace client span |
+| `x-request-id` | Workspace `CheckSession` gRPC metadata | Request ID of the Workspace request |
+| `traceparent` | Identity event record headers | W3C trace context of the request or relay span that produced the record |
+| `tracestate` | Identity event record headers | W3C trace state of the request or relay span that produced the record |
 
 ### Configuration
 
-Each process reads standard OpenTelemetry environment variables. `OTEL_EXPORTER_OTLP_ENDPOINT` names the Alloy OTLP gRPC endpoint. `OTEL_TRACES_SAMPLER` is `parentbased_traceidratio`, and `OTEL_TRACES_SAMPLER_ARG` is `1.0` in `local`.
+| Variable | Default | Value in `local` | Meaning |
+| --- | --- | --- | --- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Unset | The Alloy OTLP gRPC endpoint | Endpoint that receives the spans |
+| `OTEL_TRACES_SAMPLER` | The OpenTelemetry SDK default | `parentbased_traceidratio` | Sampler of the process |
+| `OTEL_TRACES_SAMPLER_ARG` | The OpenTelemetry SDK default | `1.0` | Ratio of the sampler |
 
 ## Behavior
 
@@ -95,8 +122,13 @@ Each process reads standard OpenTelemetry environment variables. `OTEL_EXPORTER_
 
 Apply these rules in each process:
 
+- Create one server span for each public request, one `identity.outbox_publish` span for each published outbox event, one `identity.email_delivery` span for each delivered email event, and one `identity.password_change_notice` span for each delivered notice.
+- If a public request has no valid `traceparent`, start its server span as a new root.
+- Start `identity.password_change_notice` as a new root, because the notice comes from a database row and not from an event record.
+- Set the error status on a span when the HTTP status is 5xx or the gRPC code is `Internal`, `Unavailable`, `DeadlineExceeded`, or `Unknown`.
 - Write `trace_id` on every request and event line when the context has a valid span. This includes `identity_rpc`, `identity_session_check`, and the Workspace `request_completed` line, which do not have it now.
 - Write the same `trace_id` in the log line and in the span of one request.
+- Send `tracestate` in gRPC metadata and record headers only when the context has one. Identity reads the `CheckSession` metadata on its internal listener.
 - Write the request ID that Workspace forwards on the Identity `identity_session_check` line.
 - Keep the request ID rules of the [architecture](../architecture.md#observability-and-recovery). Do not replace a valid request ID with a trace ID.
 
@@ -136,13 +168,14 @@ A migration adds nullable `traceparent` and `tracestate` text columns to `identi
 
 ### Diagnostics
 
-The capability records the log fields, Loki labels, and spans in the contract. Logs, span names, span attributes, span events, and Loki labels must never contain these values:
+Logs, span names, span attributes, span events, and Loki labels must never contain these values:
 
 - Access tokens, refresh tokens, provider tokens, and handoff values.
 - Passwords, verification codes, reset codes, and claim codes.
 - Email addresses and provider account names.
 - `Authorization`, `Cookie`, and `Set-Cookie` headers.
 - Request and response bodies, query strings, and client certificate data.
+- Request IDs, trace IDs, subjects, and paths as Loki labels.
 
 Subject IDs and session IDs are allowed in log fields only where a line already has them. They are not allowed as span attributes.
 
@@ -165,21 +198,19 @@ Subject IDs and session IDs are allowed in log fields only where a line already 
 
 ## Implementation boundaries
 
-### Always
+Always do these actions:
 
-- Add the outbox columns in a new migration file. Do not edit an existing migration.
 - Extend the shared logging and request ID packages instead of adding a second logger or request ID helper.
 - Add each telemetry component to the `local` overlay so that Tilt applies it with the services.
-- Record the measured CPU and memory use of each telemetry component in the plan after the first full run.
 
-### Ask first
+Ask the maintainer before these actions:
 
 - Change a retention, volume, sampling, or queue value from ADR-0037.
 - Add a Loki label, a telemetry component that this specification does not name, or a route to Grafana.
 - Change the outbox schema beyond the stored trace context.
 - Add a Go dependency other than OpenTelemetry exporters and instrumentation.
 
-### Never
+Never do these actions:
 
 - Do not change the public Identity or Workspace API contracts.
 - Do not add telemetry components to `staging` or `production` overlays or to the tunnel configuration.

@@ -2,7 +2,7 @@
 
 Module ID: `observability-logs-and-traces`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

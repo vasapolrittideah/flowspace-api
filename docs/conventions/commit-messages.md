@@ -138,6 +138,7 @@ The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-
 | `logging` | Shared structured logging | `internal/logging/` |
 | `postgrespool` | Shared PostgreSQL startup connections | `internal/postgrespool/` |
 | `requestid` | Shared request ID validation and generation | `internal/requestid/` |
+| `tracing` | Shared span export and trace context propagation | `internal/tracing/` |
 | `shared` | Changes spanning several shared Go packages | Several packages under `internal/` |
 | `infra` | Infrastructure and deployment configuration | `deploy/`, `Tiltfile`, and the `cluster:*` tasks in `Taskfile.yaml` |
 | `deps` | Dependency updates | `go.mod`, `go.sum`, `renovate.json` |

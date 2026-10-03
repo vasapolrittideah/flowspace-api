@@ -285,7 +285,7 @@ helm_resource(
     namespace='flowspace-local',
     deps=['deploy/overlays/local/observability/grafana-values.yaml'],
     flags=['--version=13.2.7', '--values=deploy/overlays/local/observability/grafana-values.yaml', '--create-namespace'],
-    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo'],
+    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo', 'loki'],
     port_forwards=[port_forward(3000, 3000, name='Grafana')],
     labels='observability',
 )

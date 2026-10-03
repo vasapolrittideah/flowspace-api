@@ -26,6 +26,27 @@ datasources:
         access: proxy
         url: http://tempo:3200
         isDefault: true
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: -5m
+            spanEndTimeShift: 5m
+            tags:
+              - key: service.name
+                value: service
+            filterByTraceID: true
+      - name: Loki
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://loki:3100
+        jsonData:
+          derivedFields:
+            - name: trace_id
+              matcherType: regex
+              matcherRegex: '"trace_id":"([0-9a-f]{32})"'
+              datasourceUid: tempo
+              url: "$${__value.raw}"
 # Grafana 13 registers its API groups at startup, which needs about one CPU
 # for a few minutes. The startup probe keeps the liveness probe from
 # restarting it during that time.

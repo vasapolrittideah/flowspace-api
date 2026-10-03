@@ -104,7 +104,7 @@ The final Prove task checks the approved specification through tests and review.
 - If the module has public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` that run against a running service, and add a `task smoke:bruno` item to `Verification`.
 - In `Verification`, add one item for each integration, smoke, contract, and generation check that applies to the module.
 - In `Files likely touched`, include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and the likely test paths.
-- When every item passes, mark the specification `Implemented` and the plan `Complete` in the PR of the task, and record the PR in the plan.
+- When every item passes, mark the specification `Implemented` and the plan `Complete` in the PR of the task.
 - If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Prove task PR rules](pull-requests.md#final-prove-task-pr) state how the PR refers to the Issue.
 
 ## Differences from the planning-and-task-breakdown skill

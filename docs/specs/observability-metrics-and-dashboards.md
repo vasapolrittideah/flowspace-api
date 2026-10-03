@@ -55,6 +55,20 @@ The latency histograms use these bucket bounds in seconds: 0.005, 0.01, 0.025, 0
 | `identity_broker_consumer_lag` | Gauge, records | `identity-worker` | None | `identity.broker.consumer_lag` | Records that the email worker consumer group has not consumed |
 | `identity_email_deliveries_total` | Counter, deliveries | `identity-worker` | `identity_email_kind`, `outcome` | `identity.email.deliveries` | Email delivery attempts |
 
+### Dashboards
+
+Git provisions three dashboards in a `Flowspace` folder. Each dashboard opens with a time range of the last hour and has a `service` variable where it applies.
+
+| Dashboard | UID | Panels |
+| --- | --- | --- |
+| Service health | `flowspace-service-health` | Request rate, Error rate, Latency percentiles, CheckSession latency, CheckSession errors, Database connections, Connection acquire wait, Container restarts |
+| Event delivery | `flowspace-event-delivery` | Oldest outbox event age, Consumer lag, Email deliveries |
+| Telemetry stack | `flowspace-telemetry-stack` | Alloy telemetry loss, Store ingestion failures, Host filesystem use, Prometheus database size |
+
+The Service health panels show these values for each HTTP route and gRPC method: the request rate, the error rate by status class, and the p50, p95, and p99 latency. A status class groups status codes, such as `5xx` for HTTP or the gRPC codes that `observability-logs-and-traces` treats as errors. Error panels count the HTTP 5xx statuses and those gRPC codes. The CheckSession panels show the client latency and errors. Database connections shows the connection use against the maximum, and Container restarts shows the restarts in the last hour.
+
+Email deliveries shows the deliveries by kind and outcome. Alloy telemetry loss shows the refused, failed, and dropped telemetry in Alloy. Host filesystem use reads the kubelet volume metrics.
+
 ### Metric label values
 
 | Label | Values |
@@ -82,20 +96,6 @@ The plan names the exact metric names of each component version.
 | Log entries that Alloy drops or fails to send | Alloy | Component name |
 | Storage size of the Prometheus database | Prometheus | None |
 | Ingestion failures of Loki, Tempo, and Prometheus | Each component | Component name |
-
-### Dashboards
-
-Git provisions three dashboards in a `Flowspace` folder. Each dashboard opens with a time range of the last hour and has a `service` variable where it applies.
-
-| Dashboard | UID | Panels |
-| --- | --- | --- |
-| Service health | `flowspace-service-health` | Request rate, Error rate, Latency percentiles, CheckSession latency, CheckSession errors, Database connections, Connection acquire wait, Container restarts |
-| Event delivery | `flowspace-event-delivery` | Oldest outbox event age, Consumer lag, Email deliveries |
-| Telemetry stack | `flowspace-telemetry-stack` | Alloy telemetry loss, Store ingestion failures, Host filesystem use, Prometheus database size |
-
-The Service health panels show these values for each HTTP route and gRPC method: the request rate, the error rate by status class, and the p50, p95, and p99 latency. A status class groups status codes, such as `5xx` for HTTP or the gRPC codes that `observability-logs-and-traces` treats as errors. Error panels count the HTTP 5xx statuses and those gRPC codes. The CheckSession panels show the client latency and errors. Database connections shows the connection use against the maximum, and Container restarts shows the restarts in the last hour.
-
-Email deliveries shows the deliveries by kind and outcome. Alloy telemetry loss shows the refused, failed, and dropped telemetry in Alloy. Host filesystem use reads the kubelet volume metrics.
 
 ## Behavior
 

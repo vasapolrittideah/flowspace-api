@@ -23,7 +23,7 @@ Plan: https://github.com/vasapolrittideah/flowspace-api/blob/main/tasks/<module 
 
 ## Rules
 
-### Sections and wording
+### Format and content
 
 - Leave the due date field of the milestone empty, because a module plan has no due date.
 
@@ -32,7 +32,7 @@ Plan: https://github.com/vasapolrittideah/flowspace-api/blob/main/tasks/<module 
 - When you create the Issues of an approved plan, create one milestone for the plan. If the plan already has a milestone, such as when a reapproved plan adds tasks, reuse it. If that milestone is closed, reopen it.
 - After the PR of the final Prove task merges, close the milestone when the plan is `Complete` and every Issue in the milestone is closed.
 
-### Links and records
+### Links and tracking
 
 - Assign the milestone to every Issue in the numbered Task list of the plan. An Issue that the plan mentions only as a dependency keeps the milestone of its own plan.
 - If the Task list of the plan changes, update the Issue assignments to match.

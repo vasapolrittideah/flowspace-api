@@ -4,7 +4,7 @@ This convention defines how to format Markdown and how to write English prose in
 
 ## Rules
 
-### Sections and wording
+### Format and content
 
 - In Markdown text, keep each paragraph and list item on one physical line, regardless of length. Do not hard-wrap Markdown text.
 - In Markdown text, write headings in sentence case. Keep the capitals of names, abbreviations, and the fixed headings that a template defines.

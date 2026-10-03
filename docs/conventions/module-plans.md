@@ -57,7 +57,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Status line
 
-- Write `Draft`, `Approved`, or `Complete`, without a final period, as the [status rules](#status) state.
+- Write `Draft`, `Approved`, or `Complete`, without a final period, as the [status rules](#status-and-approval) state.
 
 ### Overview
 
@@ -104,11 +104,11 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ## Rules
 
-### Files
+### Naming and location
 
 - Save one plan as `tasks/<module-id>.md`, with the module ID of its specification.
 
-### Sections and wording
+### Format and content
 
 - Use the sections in the template order.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a plan.
@@ -121,7 +121,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 - After every Issue appears in the GitHub Project with the `Todo` status and in the milestone, replace each task title with its Issue link, add the fixed sentence of the task list, delete `tasks/.todo.md`, and change the status to `Approved`.
 - Open one PR with the approved plan and the title `docs(<scope, if any>): approve <capability> plan`. Write the capability name in lowercase, except for names and abbreviations.
 
-### Status
+### Status and approval
 
 - Let only the maintainer approve a plan. The approval is the merge of the PR that adds the plan with the `Approved` status.
 - Change the status to `Complete` in the PR of the final Prove task, when every item of that task passes.

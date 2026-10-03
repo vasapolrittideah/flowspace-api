@@ -4,7 +4,7 @@ This convention defines which labels to apply to GitHub Issues and pull requests
 
 ## Rules
 
-### Links and records
+### Links and tracking
 
 - Use only the labels in `.github/labels.json`. To add, change, or remove a label, change the file in a PR.
 - Apply exactly one type label, with the name of the type in the PR title, such as `type:docs` for `docs(agents): ...`.

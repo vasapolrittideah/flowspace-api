@@ -198,16 +198,16 @@ Status: <current state of the specification>
 ### Assumptions and open questions
 
 - Write one bullet for each assumption or open question.
-- Resolve or remove each item before approval, as the [status rules](#status) state.
+- Resolve or remove each item before approval, as the [status rules](#status-and-approval) state.
 
 ## Rules
 
-### Files
+### Naming and location
 
 - Write the module ID in kebab-case as `<service-or-area>-<capability>`, such as `identity-provider-login` or `observability-logs-and-traces`. Do not rename an ID after it appears in the index.
 - Save one specification as `docs/specs/<module-id>.md`.
 
-### Sections and wording
+### Format and content
 
 - Use the sections through `Success criteria` in the template order. Add `Assumptions and open questions` only when the specification has an assumption or an open question.
 - Put a check that a capability must pass before Flowspace stops using disposable data in the `Before real teams` list of the [architecture](../architecture.md#observability-and-recovery), not in the specification.
@@ -220,13 +220,13 @@ Status: <current state of the specification>
 - Write the specification of a module only after the specification of each module in its `Depends on` column is `Approved` or `Implemented`. A specification can then use the approved contract of each dependency.
 - If one piece of work needs several modules, add a row for each module to the index with the `Planned` status before you write the first specification. Name the dependencies of each row. The maintainer reviews this map in its own PR.
 
-### Links and records
+### Links and tracking
 
 - Add a row for each module to the specification index, and keep its `Status` column the same as the status of the specification.
 - Record the module dependencies only in the `Depends on` column of the index. Do not list them in the specification.
 - Write the module ID in backticks in the `Module` column. In the `Specification` column, link the capability name to the file, or write the name without a link for a `Planned` module. In the `Depends on` column, write the module IDs in backticks, separated by commas, or `None`.
 
-### Status
+### Status and approval
 
 - Let only the maintainer approve a specification. The approval is the merge of the one PR that adds the specification, or that changes its contract, behavior, or success criteria, with the `Approved` status.
 - Open that PR with the `Draft` status in the specification and in the index. Use the title `docs(<scope, if any>): approve <capability> spec` for a new specification and `docs(<scope, if any>): reapprove <capability> spec` for a changed one. Write the capability name in lowercase except for names and abbreviations, such as `docs(observability): approve observability alerts and runbooks spec`.
@@ -251,7 +251,7 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 - Save the specification as `docs/specs/<module-id>.md`. The skill saves it as `SPEC-<module-id>.md` at the project root.
 - Use the `Planned` rows of the [specification index](../specs/README.md) as the capability map, as the [workflow rules](#workflow) state. The skill saves the map as a file at the project root.
 - Write each module ID as `<service-or-area>-<capability>`. The skill uses short module IDs, such as `identity`.
-- Start planning only after the approval PR merges, as the [status rules](#status) state. The skill continues to planning after a human reviews the specification.
+- Start planning only after the approval PR merges, as the [status rules](#status-and-approval) state. The skill continues to planning after a human reviews the specification.
 - Review a change to the contract, behavior, or success criteria of an `Approved` or `Implemented` specification as a new approval. The skill updates a specification when a decision or the scope changes.
 - Check that the specification has the sections of the [template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
 - Name the sections `Implementation boundaries` and `Assumptions and open questions`, and write user stories as Given, When, Then outcomes in `Success criteria`. The skill names them `Boundaries` and `Open Questions`, and puts user stories in `Objective`.

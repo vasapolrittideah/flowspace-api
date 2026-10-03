@@ -1,57 +1,63 @@
 # Runbook conventions
 
-This convention defines the file and format of one runbook in `docs/runbooks/`. A runbook tells a developer what an alert means and what to do when it fires.
+This convention defines the file and format of one runbook in `docs/runbooks/`. A runbook tells a developer what an alert means and what to do when it fires. The rule title is the `title` field of the provisioned Grafana alert rule. The [alerts and runbooks specification](../specs/observability-alerts-and-runbooks.md) lists the alert rules and their runbooks.
 
 ## Template
 
+A runbook has a title, an alert line, a severity line, `Meaning`, `First checks`, `Resolution`, and `Escalation`.
+
 ```markdown
-# Runbook: <alert name>
+# Runbook: <rule title>
 
-Alert: `<alert rule name>`
+Alert: `<rule title>`
 
-Severity: <page or ticket>
+Severity: <severity label value>
 
 ## Meaning
 
-<the symptom that users or event delivery feel, and the condition that fires the alert>
+<symptom and the condition that fires the alert>
 
 ## First checks
 
-<numbered checks that find the cause>
+<checks that find the cause>
 
 ## Resolution
 
-<actions that remove the common causes>
+### <common cause>
+
+<steps that remove the cause>
 
 ## Escalation
 
-<the condition that ends the runbook and the next action>
+<condition that ends the runbook and the next action>
 ```
 
-### Alert name
+### Title
 
-- Write the title as `# Runbook: <alert name>` with the alert title from Grafana, such as "API error rate is high".
+- Write the rule title exactly, such as "API error rate is high".
 
-### Alert rule name
+### Alert line
 
-- Write the rule name exactly as the `title` field of the provisioned Grafana rule.
+- Put the line after the title, separated by a blank line.
+- Write the rule title exactly, in backticks.
 
-### Severity
+### Severity line
 
+- Put the line after the alert line, separated by a blank line.
 - Write the `severity` label value of the rule, `page` or `ticket`.
 
 ### Meaning
 
 - Write one paragraph that states the symptom first and then the condition, threshold, and duration of the rule.
 - State who or what feels the symptom, such as API clients or the email recipients.
-- Do not copy the full rule expression. Link to the rule file in the repository instead.
+- Link to the rule file in the repository. Do not copy the full rule expression.
 
 ### First checks
 
 - Write a numbered list in the order to follow.
 - Start with the dashboard panel that shows the symptom. Link to the dashboard file and name the panel.
-- Give each query as a code block with its language, such as `promql` or `logql`, and state what result points to which cause.
-- Name the host, namespace, or port-forward command that a check needs before the check uses it.
+- Write each query in a code block with its language, such as `promql` or `logql`, and state what result points to which cause.
+- Before a check uses a host, a namespace, or a port forward, name it and give the command that the check needs.
 
 ### Resolution
 
@@ -66,18 +72,37 @@ Severity: <page or ticket>
 
 ## Rules
 
-- Save each runbook as `docs/runbooks/<alert-slug>.md`. The slug is the alert name in lowercase words separated by hyphens.
+### Naming and location
+
+- Save each runbook as `docs/runbooks/<alert-slug>.md`. Write the slug as the rule title in lowercase words separated by hyphens.
+
+### Workflow
+
 - Write one runbook for each alert rule. Add the runbook in the same PR as its rule.
+
+### Links and tracking
+
 - Set the `runbook_url` annotation of the rule to the GitHub URL of the runbook file on `main`.
-- When a rule changes its condition, threshold, or severity, update the runbook in the same PR.
-- When a rule is removed, remove its runbook in the same PR.
+
+### Changes
+
+- If a rule changes its condition, threshold, or severity, update the runbook in the same PR.
+- If a rule is removed, remove its runbook in the same PR.
+- Apply a change of this convention to every existing runbook in the same PR as the change.
+
+## Differences from the observability-and-instrumentation skill
+
+The [`observability-and-instrumentation` skill](../../.agents/skills/observability-and-instrumentation/SKILL.md) gives a short runbook with three labeled lines. This convention applies where the two differ:
+
+- Write the lines and sections of the [template](#template), including a `Resolution` section for the common causes. The skill writes three bold labels: `Means`, `First check`, and `Escalate to`.
+- End with a GitHub Issue as the next action, as the [escalation rules](#escalation) state. The skill escalates to an on-call channel or rotation.
 
 ## Examples
 
-This `Meaning` section states the symptom before the condition:
+These first sentences of a `Meaning` section state the symptom before the condition:
 
 ```markdown
 ## Meaning
 
-API clients receive server errors from one Flowspace service. The alert fires when more than 5% of the requests to a service return HTTP 5xx or a gRPC error status for 5 minutes, and the service receives at least 1 request each second.
+API clients receive server errors from one Flowspace service. The alert fires when, over the last 5 minutes, more than 5% of the HTTP and gRPC server requests of a service end with an error status and the service receives at least 0.1 requests each second. The condition must stay true for 5 minutes.
 ```

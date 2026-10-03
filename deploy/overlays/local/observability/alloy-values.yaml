@@ -1,0 +1,45 @@
+# Values for the grafana/alloy chart. Alloy receives OTLP over gRPC from
+# Flowspace pods and sends the spans to Tempo.
+crds:
+  create: false
+alloy:
+  enableReporting: false
+  configMap:
+    content: |
+      otelcol.receiver.otlp "default" {
+        grpc {
+          endpoint = "0.0.0.0:4317"
+        }
+        output {
+          traces = [otelcol.exporter.otlp.tempo.input]
+        }
+      }
+
+      otelcol.exporter.otlp "tempo" {
+        client {
+          endpoint = "tempo:4317"
+          tls {
+            insecure = true
+          }
+        }
+      }
+  extraPorts:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+configReloader:
+  enabled: false
+controller:
+  type: deployment
+rbac:
+  create: false
+serviceAccount:
+  automountServiceAccountToken: false

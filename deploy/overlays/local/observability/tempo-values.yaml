@@ -1,0 +1,47 @@
+# Values for the grafana-community/tempo chart. Tempo runs one single-binary
+# replica that keeps traces for 3 days on a 5Gi node-local volume (ADR-0037).
+# The chart lists the Jaeger and Zipkin ports in its Service, but this config
+# starts only the OTLP gRPC receiver.
+config: |
+  stream_over_http_enabled: false
+  memberlist:
+    cluster_label: "{{ .Release.Name }}.{{ .Release.Namespace }}"
+  multitenancy_enabled: false
+  usage_report:
+    reporting_enabled: false
+  backend_scheduler:
+    provider:
+      compaction:
+        compaction:
+          block_retention: 72h
+  distributor:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+  server:
+    http_listen_port: 3200
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+  overrides:
+    defaults: {}
+    per_tenant_override_config: /conf/overrides.yaml
+tempo:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+persistence:
+  enabled: true
+  size: 5Gi
+serviceAccount:
+  automountServiceAccountToken: false

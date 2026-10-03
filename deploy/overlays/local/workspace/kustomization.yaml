@@ -10,6 +10,9 @@ configMapGenerator:
   - name: workspace-config
     literals:
       - ENVIRONMENT=local
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317
+      - OTEL_TRACES_SAMPLER=parentbased_traceidratio
+      - OTEL_TRACES_SAMPLER_ARG=1.0
       - HTTP_ADDR=:8080
       - IDENTITY_JWKS_URL=http://identity-internal:8081/.well-known/jwks.json
       - IDENTITY_ISSUER=urn:flowspace:identity:local

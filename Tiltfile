@@ -245,3 +245,37 @@ k8s_resource(
     labels='identity',
 )
 k8s_resource('identity-worker', resource_deps=['identity-migrate', 'identity-secrets', 'identity-broker-bootstrap', 'mailpit'], labels='identity')
+
+helm_repo('grafana', 'https://grafana.github.io/helm-charts', resource_name='grafana-chart-repo', labels='observability')
+helm_repo('grafana-community', 'https://grafana-community.github.io/helm-charts', resource_name='grafana-community-chart-repo', labels='observability')
+k8s_yaml(kustomize('deploy/overlays/local/observability'))
+k8s_resource(new_name='grafana-admin', objects=['grafana-admin:sealedsecret'], resource_deps=['sealed-secrets'], labels='observability')
+helm_resource(
+    'tempo',
+    'grafana-community/tempo',
+    namespace='flowspace-local',
+    deps=['deploy/overlays/local/observability/tempo-values.yaml'],
+    flags=['--version=3.1.0', '--values=deploy/overlays/local/observability/tempo-values.yaml', '--create-namespace'],
+    resource_deps=['grafana-community-chart-repo'],
+    labels='observability',
+)
+helm_resource(
+    'alloy',
+    'grafana/alloy',
+    namespace='flowspace-local',
+    deps=['deploy/overlays/local/observability/alloy-values.yaml'],
+    flags=['--version=1.13.0', '--values=deploy/overlays/local/observability/alloy-values.yaml', '--create-namespace'],
+    resource_deps=['grafana-chart-repo', 'tempo'],
+    labels='observability',
+)
+# Grafana has no Tilt port forward. Open it with kubectl port-forward, as the
+# observability logs and traces specification requires.
+helm_resource(
+    'grafana',
+    'grafana-community/grafana',
+    namespace='flowspace-local',
+    deps=['deploy/overlays/local/observability/grafana-values.yaml'],
+    flags=['--version=13.2.7', '--values=deploy/overlays/local/observability/grafana-values.yaml', '--create-namespace'],
+    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo'],
+    labels='observability',
+)

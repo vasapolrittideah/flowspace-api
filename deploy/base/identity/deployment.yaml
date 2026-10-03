@@ -10,6 +10,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: identity-api
+        app.kubernetes.io/part-of: flowspace
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -120,6 +121,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: identity-worker
+        app.kubernetes.io/part-of: flowspace
     spec:
       automountServiceAccountToken: false
       securityContext:

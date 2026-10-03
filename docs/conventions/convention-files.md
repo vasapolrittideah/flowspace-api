@@ -83,7 +83,7 @@ A convention file has a title, a scope, a template, rules, special cases, differ
   5. `Status` for the status values of the artifact and its approval.
   6. `Changes` for changes to an artifact after it exists, and for how existing artifacts follow a change to the convention.
 - If a bullet fits several of these headings, put it under the first match in this order: `Changes`, `Status`, `Links and records`, `Workflow`, `Files`, and `Sections and wording`.
-- If the convention covers several kinds of the artifact, such as queries and migrations, name each `###` heading after one kind instead. Order the bullets under each kind by the heading order above, without more headings.
+- If the convention covers several kinds of the artifact, such as queries and migrations, name each `###` heading after one kind instead. Order the bullets under each kind by the heading order above, without more headings. Put the bullet about how existing artifacts follow a change under a last `### Changes` heading.
 - If the section has five bullets or fewer, do not add `###` headings.
 - Do not put a rule about one part in this section. Put the rule in the subsection of that part.
 

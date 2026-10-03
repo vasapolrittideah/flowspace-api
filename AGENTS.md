@@ -58,7 +58,7 @@ The groups below follow the order of the work, from planning to delivery.
 
 | Work | Convention |
 | --- | --- |
-| Naming hexagonal components and grouping their files | [Hexagonal components and files](docs/conventions/hexagonal-files.md) |
+| Naming hexagonal components and grouping their files | [Hexagonal components and files](docs/conventions/hexagonal-components-and-files.md) |
 | Writing SQL queries or migrations | [SQL files](docs/conventions/sql-files.md) |
 | Naming Bruno request files in `tests/smoke/bruno/` | [Bruno request files](docs/conventions/bruno-request-files.md) |
 | Writing or updating runbooks in `docs/runbooks/` | [Runbooks](docs/conventions/runbooks.md) |

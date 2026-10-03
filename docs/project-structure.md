@@ -90,7 +90,7 @@ Root `internal/` is not a default home for helpers. Code with one service owner 
 
 Each service follows the hexagonal architecture established in [ADR-0003](adr/0003-hexagonal-layers-inside-each-service.md): business rules stay at the center and infrastructure stays at the edges.
 
-Use the [hexagonal component and file conventions](conventions/hexagonal-files.md) when naming and grouping handwritten components. Use the [SQL file conventions](conventions/sql-files.md) for query and migration files.
+Use the [hexagonal component and file conventions](conventions/hexagonal-components-and-files.md) when naming and grouping handwritten components. Use the [SQL file conventions](conventions/sql-files.md) for query and migration files.
 
 ```text
 services/<service>/

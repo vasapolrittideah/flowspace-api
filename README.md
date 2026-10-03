@@ -36,6 +36,10 @@ Tilt also starts Adminer at `http://localhost:8083`. Opening that address connec
 
 After Tilt finishes starting the databases, run `sh scripts/check-adminer-autologin.sh` to check both connections.
 
+Tilt also starts Alloy, Tempo, and Grafana. The services send their spans to Alloy, and Tempo keeps them for 3 days. Tilt forwards Grafana to `http://localhost:3000` through the Kubernetes API, as `kubectl port-forward` does. Grafana has no route outside the cluster.
+
+Sign in as `admin` with the password in `.secrets/grafana-admin-password`. The Grafana admin Secret in Git is sealed with the key of one cluster. After you create a new cluster, run `task observability:grafana-admin:setup` to seal the password again, and commit the changed manifest.
+
 Google login is optional. To turn it on locally, create a Google OAuth web client with the redirect URI `http://localhost:8082/v1/provider-login-callbacks/google`. Save the client ID in `.secrets/identity-google-client-id` and the client secret in `.secrets/identity-google-client-secret`, without a trailing newline. Tilt then configures Identity for Google login. If either file is missing, Google login returns an unavailable error.
 
 GitHub login is optional in the same way. Create a GitHub OAuth app with the callback URL `http://localhost:8082/v1/provider-login-callbacks/github`. Save the client ID in `.secrets/identity-github-client-id` and the client secret in `.secrets/identity-github-client-secret`, without a trailing newline. If either file is missing, GitHub login returns an unavailable error.

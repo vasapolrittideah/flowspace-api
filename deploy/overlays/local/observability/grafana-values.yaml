@@ -1,0 +1,44 @@
+# Values for the grafana-community/grafana chart. Grafana has no persistent
+# volume and no anonymous access. Developers open it with kubectl port-forward.
+admin:
+  existingSecret: grafana-admin
+automountServiceAccountToken: false
+rbac:
+  create: false
+testFramework:
+  enabled: false
+initChownData:
+  enabled: false
+grafana.ini:
+  analytics:
+    reporting_enabled: false
+    check_for_updates: false
+    check_for_plugin_updates: false
+  auth.anonymous:
+    enabled: false
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Tempo
+        uid: tempo
+        type: tempo
+        access: proxy
+        url: http://tempo:3200
+        isDefault: true
+# Grafana 13 registers its API groups at startup, which needs about one CPU
+# for a few minutes. The startup probe keeps the liveness probe from
+# restarting it during that time.
+startupProbe:
+  httpGet:
+    path: /api/health
+    port: grafana
+  periodSeconds: 10
+  failureThreshold: 60
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi

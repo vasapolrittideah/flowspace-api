@@ -9,6 +9,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: identity-migrate
+        app.kubernetes.io/part-of: flowspace
     spec:
       automountServiceAccountToken: false
       restartPolicy: Never

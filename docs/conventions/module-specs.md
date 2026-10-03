@@ -1,6 +1,6 @@
 # Module specification conventions
 
-This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [specification index](../specs/README.md) lists every module. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. An API specification is a specification whose contract has RPCs. A material risk is a failure that would break a success criterion or allow a threat in a threat model.
+This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [specification index](../specs/README.md) lists every module. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. A material risk is a failure that would break a success criterion or allow a threat in a threat model.
 
 ## Template
 
@@ -78,10 +78,12 @@ Status: <current state of the specification>
 ### Contract
 
 - Include each shape that a consumer reads. Put each condition in `Behavior` instead.
-- For an API specification, start the contract with "Use package `flowspace.<service>.v1` and service `<Service>`."
+- If the contract has RPCs, start it with "Use package `flowspace.<service>.v1` and service `<Service>`." If it has events but no RPCs, start it with "Use package `flowspace.<service>.v1`."
 - If a shape has fewer than two named items, such as fields, labels, or panels, write it as a paragraph directly under `## Contract`, before the subsections.
 - For RPCs and events, write these tables in this order, each under a `###` heading with its name: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, `Published events`, and `Errors`. Omit a table that has no rows.
-- For each other shape, write a `###` subsection with a table that has one row for each named item, such as `### Log records` or `### Alert rules`.
+- For each other shape, write a `###` subsection with a table that has one row for each named item. Use the heading and the columns of the shape in the [contract shapes](#contract-shapes) table.
+- If a shape is not in the contract shapes table, name its heading with a plural noun phrase. Make the first column the name of the item, add one column for each property that a consumer reads, in the order that the consumer uses them, and end with a `Meaning` column when a property name does not state its meaning. In the same PR, add the shape to the contract shapes table.
+- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table, and then the shapes that the PR adds.
 - Keep the rows of `Methods` and `Method requirements` in the same RPC order.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
@@ -261,6 +263,35 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 | `Draft` | The specification exists and is not approved. It can merge into `main`, but it does not permit planning. |
 | `Approved` | The maintainer approved the specification, and planning can start. |
 | `Implemented` | A PR proved the last success criterion. |
+
+### Contract shapes
+
+| Heading | Column | How to write |
+| --- | --- | --- |
+| `### Log records` | `Field` | The field name in backticks, such as `` `request_id` ``. |
+| `### Log records` | `Required on` | The log events that must contain the field, or `All`. |
+| `### Log records` | `Meaning` | What the value is and its format. |
+| `### Spans` | `Process` | The process that creates the span, such as `identity-api`. |
+| `### Spans` | `Span` | The span name in backticks. |
+| `### Spans` | `Kind` | The OpenTelemetry span kind in backticks, such as `` `SERVER` ``. |
+| `### Spans` | `Parent` | The span or the incoming context that is the parent, or `None` for a root span. |
+| `### Metrics` | `Metric` | The metric name in backticks, as Prometheus shows it. |
+| `### Metrics` | `Type and unit` | The instrument type and the unit, such as "Histogram, seconds". |
+| `### Metrics` | `Source` | The processes or components that emit the metric. |
+| `### Metrics` | `Labels` | The label names in backticks, separated by commas, or `None`. |
+| `### Dashboards` | `Dashboard` | The dashboard title. |
+| `### Dashboards` | `UID` | The dashboard UID in backticks. |
+| `### Dashboards` | `Panels` | The panel titles, separated by commas. |
+| `### Alert rules` | `Rule title` | The `title` field of the rule. |
+| `### Alert rules` | `Severity` | `page` or `ticket`. |
+| `### Alert rules` | `Condition` | What the rule measures and its threshold, in words. |
+| `### Alert rules` | `Pending period` | How long the condition must hold before the rule fires, such as "5 minutes". |
+| `### Alert rules` | `Labels` | The labels that the rule adds other than `severity`, in backticks, or `None`. |
+| `### Runbooks` | `Rule title` | The `title` field of the rule that the runbook covers. |
+| `### Runbooks` | `Runbook file` | The path of the runbook file in backticks. |
+| `### Configuration` | `Variable` | The environment variable name in backticks. |
+| `### Configuration` | `Default` | The default value in backticks, or `None` when the variable is required. |
+| `### Configuration` | `Meaning` | What the value controls and its allowed values. |
 
 ### Test levels
 

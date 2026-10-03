@@ -24,4 +24,4 @@ Call the `codex` tool with these arguments:
 1. Fix each Critical and Required finding, run the tests again, and send the new test output to the same reviewer with `codex-reply` and its `threadId`. Do not start a new thread for the same change.
 2. Treat the review as passed when the verdict is `APPROVE` and no Critical or Required finding is left. Optional findings and nits do not block a commit, a PR, or a squash message.
 3. If the review does not pass after 3 rounds, stop and ask the user.
-4. If the `codex` tool is not available, stop and tell the user how to enable it: install the Codex CLI, run `codex login`, and approve the `codex` server in [`.mcp.json`](../../.mcp.json). Do not fall back to the Claude subagents without approval.
+4. If the `codex` tool is not available, stop and tell the user how to enable it: install Codex CLI 0.160.0 or later, run `codex login`, and approve the `codex` server in [`.mcp.json`](../../.mcp.json). If Codex says that a model is not supported, tell the user to run `codex update`, because older versions do not know the newer models. Do not fall back to the Claude subagents without approval.

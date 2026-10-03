@@ -1,7 +1,7 @@
 name = "convention-reviewer"
 description = "Convention reviewer that checks each changed artifact against the project conventions that apply to it. Use before a PR is opened or updated, and before a squash message is given."
-model = "gpt-6-astra"
-model_reasoning_effort = "medium"
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """
 Read and follow AGENTS.md in the repository root.

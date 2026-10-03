@@ -266,6 +266,26 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 | `Approved` | The maintainer approved the specification, and planning can start. |
 | `Implemented` | A PR proved the last success criterion. |
 
+### Test levels
+
+| Level | What the test runs | Environment |
+| --- | --- | --- |
+| `Unit` | Code in one process. Fakes replace the database, the broker, the network, and other services. | None |
+| `Integration` | Code with real dependencies, such as PostgreSQL, Redpanda, or another Flowspace service, in Docker containers that the test starts. | Docker |
+| `Cluster` | The services and platform components that Tilt deploys to the local cluster, including the Bruno smoke tests. | Local cluster |
+
+### Method requirement values
+
+| Column | Value | Meaning |
+| --- | --- | --- |
+| `Authentication` | `None` | The method takes no credential. Use it only for a public method. |
+| `Authentication` | `Bearer access token` | The request needs exactly one `Authorization: Bearer` header, and the subject comes from the token. |
+| `Authentication` | `Service mTLS` | The caller is a service that proves its identity with a client certificate. |
+| `Retry` | `Safe to retry` | A retry with the same request has no additional effect. |
+| `Retry` | `Requires Idempotency-Key` | The request needs a key, and a retry with the same key returns the original result. |
+| `Retry` | `Rejects Idempotency-Key` | The method rejects a key. Link the ADR that makes this exception. |
+| `Retry` | `Do not retry` | A retry causes a harmful effect. Explain the effect in `Behavior`. |
+
 ### Contract shapes
 
 | Heading | Column | How to write |
@@ -294,23 +314,3 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 | `### Configuration` | `Variable` | The environment variable name in backticks. |
 | `### Configuration` | `Default` | The default value in backticks, or `None` when the variable is required. |
 | `### Configuration` | `Meaning` | What the value controls and its allowed values. |
-
-### Test levels
-
-| Level | What the test runs | Environment |
-| --- | --- | --- |
-| `Unit` | Code in one process. Fakes replace the database, the broker, the network, and other services. | None |
-| `Integration` | Code with real dependencies, such as PostgreSQL, Redpanda, or another Flowspace service, in Docker containers that the test starts. | Docker |
-| `Cluster` | The services and platform components that Tilt deploys to the local cluster, including the Bruno smoke tests. | Local cluster |
-
-### Method requirement values
-
-| Column | Value | Meaning |
-| --- | --- | --- |
-| `Authentication` | `None` | The method takes no credential. Use it only for a public method. |
-| `Authentication` | `Bearer access token` | The request needs exactly one `Authorization: Bearer` header, and the subject comes from the token. |
-| `Authentication` | `Service mTLS` | The caller is a service that proves its identity with a client certificate. |
-| `Retry` | `Safe to retry` | A retry with the same request has no additional effect. |
-| `Retry` | `Requires Idempotency-Key` | The request needs a key, and a retry with the same key returns the original result. |
-| `Retry` | `Rejects Idempotency-Key` | The method rejects a key. Link the ADR that makes this exception. |
-| `Retry` | `Do not retry` | A retry causes a harmful effect. Explain the effect in `Behavior`. |

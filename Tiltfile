@@ -274,7 +274,7 @@ helm_resource(
     namespace='flowspace-local',
     deps=['deploy/overlays/local/observability/alloy-values.yaml'],
     flags=['--version=1.13.0', '--values=deploy/overlays/local/observability/alloy-values.yaml', '--create-namespace'],
-    resource_deps=['grafana-chart-repo', 'tempo'],
+    resource_deps=['grafana-chart-repo', 'tempo', 'loki'],
     labels='observability',
 )
 # Tilt forwards Grafana through the Kubernetes API, as kubectl port-forward

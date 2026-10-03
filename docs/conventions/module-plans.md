@@ -49,7 +49,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Title
 
-- Copy the capability name from the title of the approved specification.
+- Copy the capability name from the title of the approved specification, without the `Spec:` prefix.
 
 ### Module ID
 
@@ -74,18 +74,18 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 - Draw the graph as a Mermaid `flowchart TD` diagram in a `mermaid` code block.
 - Write an edge `A --> B` when the work of `B` cannot start before the work of `A` is done.
-- Give each node an ID and a label that names its work, such as `Contract[Public recovery contract]`.
+- Give each node a one-word ID in PascalCase and a label that names its work, such as `Contract[Public recovery contract]`.
 - End the graph at one node for the final Prove task.
 - Do not put task numbers in node labels. The graph can show work that is not a task, such as an approved decision, and native `Blocked by` relationships record the task dependencies.
 
 ### Task list
 
 - Keep the fixed sentence that links the GitHub Project and the milestone of the plan. While the plan is `Draft`, omit the sentence, because the milestone does not exist yet.
-- Group the tasks in phases, numbered from 1, under `### Phase <N>: <name>` headings.
+- Group the tasks in phases, numbered from 1, under `### Phase <N>: <name>` headings. Name each phase with a noun phrase in sentence case, such as "Export and storage".
 - Number the tasks from 1 across the whole plan, in the order of work. Put the final Prove task alone in the last phase.
 - While the plan is `Draft`, write each task as `- Task <N>: <task title>`. After its Issue exists, replace the task title with a link to the Issue, and use `#<number> <Issue title>` as the link text.
 - After the tasks of each phase, write `### Checkpoint: <phase name>` with one `- [ ]` item for each outcome. Name the checkpoint of the last phase `### Checkpoint: Complete`.
-- Check the items of a checkpoint in the PR of the last task of its phase, after you verify each outcome.
+- Check the items of a checkpoint in the PR that closes the last open Issue of its phase, after you verify each outcome.
 - Do not keep a task checklist apart from the task lines, because the Issues and the GitHub Project hold the status of each task.
 
 ### Risks and controls
@@ -117,7 +117,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 - Write a plan only for a specification with the `Approved` status.
 - Write the plan with the `Draft` status, and write each task as an Issue draft in `tasks/.todo.md` with the [Issue template](github-issues.md#template). Show the plan and the drafts to the maintainer in the chat.
-- When the maintainer approves the plan in the chat, create or reuse the milestone of the plan, as the [milestone rules](github-milestones.md) state. Then create one Issue from each draft, as the Issue convention states.
+- When the maintainer agrees with the plan in the chat, create or reuse the milestone of the plan, as the [milestone rules](github-milestones.md) state. Then create one Issue from each draft, as the Issue convention states. This agreement does not approve the plan.
 - After every Issue appears in the GitHub Project with the `Todo` status and in the milestone, replace each task title with its Issue link, add the fixed sentence of the task list, delete `tasks/.todo.md`, and change the status to `Approved`.
 - Open one PR with the approved plan and the title `docs(<scope, if any>): approve <capability> plan`. Write the capability name in lowercase, except for names and abbreviations.
 

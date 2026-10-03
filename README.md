@@ -40,6 +40,8 @@ Tilt also starts Alloy, Tempo, and Grafana. The services send their spans to All
 
 Sign in as `admin` with the password in `.secrets/grafana-admin-password`. The Grafana admin Secret in Git is sealed with the key of one cluster. After you create a new cluster, run `task observability:grafana-admin:setup` to seal the password again, and commit the changed manifest.
 
+To check that Tempo survives parallel trace searches and answers afterward, run `sh scripts/smoke-tempo-search-local.sh` while Tilt runs. The script sends Identity requests to create traces first.
+
 Google login is optional. To turn it on locally, create a Google OAuth web client with the redirect URI `http://localhost:8082/v1/provider-login-callbacks/google`. Save the client ID in `.secrets/identity-google-client-id` and the client secret in `.secrets/identity-google-client-secret`, without a trailing newline. Tilt then configures Identity for Google login. If either file is missing, Google login returns an unavailable error.
 
 GitHub login is optional in the same way. Create a GitHub OAuth app with the callback URL `http://localhost:8082/v1/provider-login-callbacks/github`. Save the client ID in `.secrets/identity-github-client-id` and the client secret in `.secrets/identity-github-client-secret`, without a trailing newline. If either file is missing, GitHub login returns an unavailable error.

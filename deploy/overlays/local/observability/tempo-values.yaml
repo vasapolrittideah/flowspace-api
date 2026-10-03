@@ -33,6 +33,13 @@ config: |
     defaults: {}
     per_tenant_override_config: /conf/overrides.yaml
 tempo:
+  # Without a Go memory limit, the heap grows to about twice its live size
+  # before a garbage collection. Parallel trace searches then exceed the
+  # container limit. A 400MiB soft Go memory limit leaves headroom below the
+  # 512Mi container limit.
+  extraEnv:
+    - name: GOMEMLIMIT
+      value: 400MiB
   resources:
     requests:
       cpu: 50m

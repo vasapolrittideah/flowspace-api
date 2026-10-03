@@ -231,6 +231,7 @@ Status: <current state of the specification>
 
 - Let only the maintainer approve a specification. The approval is the merge of the one PR that adds the specification, or that changes its contract, behavior, or success criteria, with the `Approved` status.
 - Open that PR with the `Draft` status in the specification and in the index. Use the title `docs(<scope, if any>): approve <capability> spec` for a new specification and `docs(<scope, if any>): reapprove <capability> spec` for a changed one. Write the capability name in lowercase except for names and abbreviations, such as `docs(observability): approve observability alerts and runbooks spec`.
+- While the specification or the index has the `Draft` status, the `Lint Markdown` CI job fails, so GitHub blocks the merge. This failure is expected. When every other check passes, tell the maintainer that the PR is ready for review.
 - When the maintainer asks for approval in the chat or in a review comment, change the status to `Approved` in the specification and in the index in one commit. Do not change it before the maintainer asks.
 - Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.
 - Start planning only from an `Approved` specification.

@@ -83,9 +83,10 @@ Status: <current state of the specification>
 - For RPCs and events, write these tables in this order, each under a `###` heading with its name: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, `Published events`, and `Errors`. Omit a table that has no rows.
 - For each other shape, write a `###` subsection with a table that has one row for each named item. If the shape is in the [contract shapes](#contract-shapes) table, use its heading and all of its columns in that order.
 - If a consumer reads a property that the contract shapes table does not list, add a column for it after the listed columns. If the table has a `Meaning` column, put the new column before `Meaning`.
-- If a shape is not in the contract shapes table, name its heading with a plural noun phrase, and search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns. Then add the shape to the contract shapes table in a separate PR of this convention, and list that PR in `Follow-up tasks` of the specification PR.
+- If a shape is not in the contract shapes table, name its heading with a plural noun phrase, and search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns. The first specification that uses a heading sets its columns.
 - If no specification has the heading, make the first column the name of the item, add one column for each property that a consumer reads, in the order that the consumer uses them, and end with a `Meaning` column when a property name does not state its meaning.
-- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table, and then the other shapes in alphabetical order of their headings.
+- Add a new shape to the contract shapes table only when one of its columns needs a rule that the steps above do not give, such as a fixed set of values or a required format. Add the shape to the contract shapes table in a separate PR of this convention. List that PR in `Follow-up tasks` of the specification PR.
+- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table except `Configuration`, then the other shapes in alphabetical order of their headings, and then `Configuration`.
 - Keep the rows of `Methods` and `Method requirements` in the same RPC order.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
@@ -294,29 +295,14 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 | `### Log records` | `Field` | The field name in backticks, such as `` `request_id` ``. |
 | `### Log records` | `Required on` | The log events that must contain the field, or `All`. |
 | `### Log records` | `Meaning` | What the value is and its format. |
-| `### Log labels` | `Label` | The Loki label name in backticks. |
-| `### Log labels` | `Value` | Where the value comes from, such as a log field. |
-| `### Resource attributes` | `Attribute` | The OpenTelemetry resource attribute name in backticks. |
-| `### Resource attributes` | `Value` | Where the value comes from, such as a log field. |
 | `### Spans` | `Process` | The process that creates the span, such as `identity-api`. |
 | `### Spans` | `Span` | The span name in backticks. |
 | `### Spans` | `Kind` | The OpenTelemetry span kind in backticks, such as `` `SERVER` ``. |
 | `### Spans` | `Parent` | The span or the incoming context that is the parent, or `None` for a root span. |
-| `### Span attributes` | `Attribute` | The span attribute name in backticks. |
-| `### Span attributes` | `Spans` | The spans that record the attribute. |
-| `### Span attributes` | `Meaning` | What the value is. |
-| `### Propagated headers` | `Header` | The header or metadata key in backticks. |
-| `### Propagated headers` | `Carrier` | The call or record that carries the header. |
-| `### Propagated headers` | `Meaning` | What the value is. |
 | `### Metrics` | `Metric` | The metric name in backticks, as Prometheus shows it. |
 | `### Metrics` | `Type and unit` | The instrument type and the unit, such as "Histogram, seconds". |
 | `### Metrics` | `Source` | The processes or components that emit the metric. |
 | `### Metrics` | `Labels` | The label names in backticks, separated by commas, or `None`. |
-| `### Metric label values` | `Label` | The label name in backticks, as Prometheus shows it. |
-| `### Metric label values` | `Values` | The allowed values in backticks, or where the value comes from. |
-| `### Scraped signals` | `Signal` | What the signal measures, for a metric whose name depends on the version of its source. |
-| `### Scraped signals` | `Source` | The component that exposes the signal. |
-| `### Scraped signals` | `Labels` | The label names in backticks, separated by commas, or `None`. |
 | `### Dashboards` | `Dashboard` | The dashboard title. |
 | `### Dashboards` | `UID` | The dashboard UID in backticks. |
 | `### Dashboards` | `Panels` | The panel titles, separated by commas. |
@@ -325,12 +311,6 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 | `### Alert rules` | `Condition` | What the rule measures and its threshold, in words. |
 | `### Alert rules` | `Pending period` | How long the condition must hold before the rule fires, such as "5 minutes". |
 | `### Alert rules` | `Labels` | The labels that the rule adds other than `severity`, in backticks, or `None`. |
-| `### Alert annotations` | `Annotation` | The annotation name in backticks. |
-| `### Alert annotations` | `Content` | What the value contains. |
-| `### Notification emails` | `Part` | The part of the email, such as the recipient or the subject. |
-| `### Notification emails` | `Content` | What the part contains. |
-| `### Runbooks` | `Rule title` | The `title` field of the rule that the runbook covers. |
-| `### Runbooks` | `Runbook file` | The path of the runbook file in backticks. |
 | `### Configuration` | `Variable` | The environment variable name in backticks. |
 | `### Configuration` | `Default` | The default value in backticks, `None` when the variable is required, or `Unset` when the process runs without the variable and has no default. |
 | `### Configuration` | `Meaning` | What the value controls and its allowed values. |

@@ -73,6 +73,7 @@ Co-authored-by: <co-author name> <co-author email>
 - Use `Closes` only in a squash commit. GitHub closes the Issue when the commit reaches `main`.
 - If a checkpoint commit belongs to an Issue, add a `Refs` footer for it.
 - In a squash commit, copy the PR's `Related issues` as footers: `Closes` for each Issue it completes and `Refs` for each Issue that stays open.
+- In the squash commit of a PR whose main change is a module plan, omit the `Refs` footers, because the plan links each of its Issues. Keep each `Closes` footer.
 - Do not leave blank lines between Issue footers or add a period at the end.
 - Do not add Issues from `Follow-up tasks`.
 
@@ -261,19 +262,10 @@ docs(adr): record local alert routing
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
-A squash commit that approves a plan has no body. It refers to each Issue of the plan, because the Issues stay open:
+A squash commit that approves a plan has no body and no `Refs` footers, because the plan on `main` links each of its Issues:
 
 ```text
 docs(observability): approve observability logs and traces plan
-
-Refs: #299
-Refs: #300
-Refs: #301
-Refs: #302
-Refs: #303
-Refs: #304
-Refs: #305
-Refs: #306
 
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```

@@ -10,20 +10,25 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/vasapolrittideah/flowspace-api/internal/logging"
+	"github.com/vasapolrittideah/flowspace-api/internal/tracing"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/bootstrap"
 )
 
+const service = "identity-worker"
+
 func main() {
-	logger := logging.New("identity-worker", os.Getenv("ENVIRONMENT"))
-	stopTracing := bootstrap.StartTracing()
-	code := logging.Run(logger, func() error { return run(logger) })
-	stopTracing()
-	os.Exit(code)
+	logger := logging.New(service, os.Getenv("ENVIRONMENT"))
+	os.Exit(logging.Run(logger, func() error { return run(logger) }))
 }
 
 func run(logger *zap.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	stopTracing, err := tracing.Start(ctx, logger, service, os.Getenv("ENVIRONMENT"))
+	if err != nil {
+		return err
+	}
+	defer stopTracing()
 	config, err := bootstrap.LoadWorkerConfig()
 	if err != nil {
 		return err

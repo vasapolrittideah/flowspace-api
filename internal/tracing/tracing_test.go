@@ -135,7 +135,7 @@ func TestStartWithUnreachableEndpointDoesNotWait(t *testing.T) {
 	}
 }
 
-func TestStartSetsTraceContextPropagator(t *testing.T) {
+func TestTracingCreatesPropagatedContext(t *testing.T) {
 	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
 	restoreGlobals(t)
 
@@ -149,8 +149,8 @@ func TestStartSetsTraceContextPropagator(t *testing.T) {
 	carrier := propagation.MapCarrier{}
 	otel.GetTextMapPropagator().Inject(ctx, carrier)
 
-	if carrier.Get("traceparent") == "" {
-		t.Fatal("global propagator did not write traceparent")
+	if carrier.Get("traceparent") == "" || !span.SpanContext().HasTraceID() {
+		t.Fatal("trace context was not created and propagated")
 	}
 }
 

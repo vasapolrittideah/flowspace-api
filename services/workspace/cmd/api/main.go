@@ -9,17 +9,22 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/vasapolrittideah/flowspace-api/internal/logging"
+	"github.com/vasapolrittideah/flowspace-api/internal/tracing"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/bootstrap"
 )
 
+const service = "workspace-api"
+
 func main() {
-	logger := logging.New("workspace-api", os.Getenv("ENVIRONMENT"))
+	logger := logging.New(service, os.Getenv("ENVIRONMENT"))
 	os.Exit(logging.Run(logger, func() error { return run(logger) }))
 }
 
 func run(logger *zap.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	stopTracing := tracing.Start(ctx, logger, service, os.Getenv("ENVIRONMENT"))
+	defer stopTracing()
 
 	config, err := bootstrap.LoadConfig()
 	if err != nil {

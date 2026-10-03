@@ -81,9 +81,10 @@ Status: <current state of the specification>
 - If the contract has RPCs, start it with "Use package `flowspace.<service>.v1` and service `<Service>`." If it has events but no RPCs, start it with "Use package `flowspace.<service>.v1`."
 - If a shape has fewer than two named items, such as fields, labels, or panels, write it as a paragraph directly under `## Contract`, before the subsections.
 - For RPCs and events, write these tables in this order, each under a `###` heading with its name: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, `Published events`, and `Errors`. Omit a table that has no rows.
-- For each other shape, write a `###` subsection with a table that has one row for each named item. Use the heading and the columns of the shape in the [contract shapes](#contract-shapes) table.
-- If a shape is not in the contract shapes table, name its heading with a plural noun phrase. Make the first column the name of the item, add one column for each property that a consumer reads, in the order that the consumer uses them, and end with a `Meaning` column when a property name does not state its meaning. In the same PR, add the shape to the contract shapes table.
-- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table, and then the shapes that the PR adds.
+- For each other shape, write a `###` subsection with a table that has one row for each named item. If the shape is in the [contract shapes](#contract-shapes) table, use its heading and all of its columns in that order.
+- If a consumer reads a property that the contract shapes table does not list, add a column for it after the listed columns. If the table has a `Meaning` column, put the new column before `Meaning`.
+- If a shape is not in the contract shapes table, name its heading with a plural noun phrase. Make the first column the name of the item, add one column for each property that a consumer reads, in the order that the consumer uses them, and end with a `Meaning` column when a property name does not state its meaning.
+- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table, and then the other shapes in alphabetical order of their headings.
 - Keep the rows of `Methods` and `Method requirements` in the same RPC order.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.

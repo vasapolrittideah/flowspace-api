@@ -69,7 +69,7 @@ Module ID: `<module ID, if any>`
 
 ## Rules
 
-### Sections and wording
+### Format and content
 
 - Use the body fields in the template order, with the same spelling and capitalization.
 
@@ -83,7 +83,7 @@ Module ID: `<module ID, if any>`
 - If an ordinary task has a gap, let its PR close the Issue. The PR states the gap in `Risks or limitations` and the remaining work in `Follow-up tasks`. A gap in the final Prove task keeps the Issue open, as the [Final Prove task](#final-prove-task) rules state.
 - Do not post a comment with the results of a task. The PR description records them.
 
-### Links and records
+### Links and tracking
 
 - Record each blocking Issue as one native GitHub `Blocked by` relationship. Use these relationships as the dependency list, and do not list blocking Issues in the body.
 - If the Issue belongs to a module plan, assign the milestone of the plan, as the [milestone rules](github-milestones.md) state.
@@ -112,7 +112,7 @@ The final Prove task checks the approved specification through tests and review.
 The [`planning-and-task-breakdown` skill](../../.agents/skills/planning-and-task-breakdown/SKILL.md) gives each task a structure for a task list or a tracker. This convention applies where the two differ:
 
 - Write the task as a GitHub Issue with the [Issue template](#template). The skill writes `Description`, `Acceptance criteria`, and other fields as bold labels in a `## Task` section.
-- Record dependencies as native `Blocked by` relationships, as the [link rules](#links-and-records) state. The skill lists them in a `Dependencies` field.
+- Record dependencies as native `Blocked by` relationships, as the [link rules](#links-and-tracking) state. The skill lists them in a `Dependencies` field.
 - Omit an estimated scope. The skill sizes each task by its number of files.
 - End `Verification` with the fixed items in the [Verification rules](#verification). The skill uses `Tests pass`, `Build succeeds`, and `Manual check` labels.
 

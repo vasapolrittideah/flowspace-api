@@ -73,7 +73,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ## Rules
 
-### Sections and wording
+### Format and content
 
 - Start the description from the [PR template](../../.github/pull_request_template.md), and complete every section.
 - Delete the HTML comments of the template. If a section has content, replace its `n/a`.
@@ -101,7 +101,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - Do not put the squash message in the description.
 - Do not force-push after a review comment exists.
 
-### Links and records
+### Links and tracking
 
 - Follow the [label rules](github-labels.md).
 - Do not set an assignee or a reviewer, and do not add the PR to a GitHub Project.

@@ -228,17 +228,18 @@ Status: <current state of the specification>
 
 ### Status
 
-- Let only the maintainer approve a specification. The approval is the merge of a PR that changes the status to `Approved` in the specification and in the index in the same commit. Use the PR title `docs(<scope, if any>): approve <capability> spec`, with the capability name in lowercase except for names and abbreviations, such as `docs(observability): approve observability alerts and runbooks spec`.
-- Change the status to `Approved` only when the maintainer asks for it in the chat or in a review comment.
+- Let only the maintainer approve a specification. The approval is the merge of the one PR that adds the specification, or that changes its contract, behavior, or success criteria, with the `Approved` status.
+- Open that PR with the `Draft` status in the specification and in the index. Use the title `docs(<scope, if any>): approve <capability> spec` for a new specification and `docs(<scope, if any>): reapprove <capability> spec` for a changed one. Write the capability name in lowercase except for names and abbreviations, such as `docs(observability): approve observability alerts and runbooks spec`.
+- When the maintainer asks for approval in the chat or in a review comment, change the status to `Approved` in the specification and in the index in one commit. Do not change it before the maintainer asks.
 - Before the status changes to `Approved`, resolve each item in `Assumptions and open questions`, or remove the section.
 - Start planning only from an `Approved` specification.
-- If a change to an `Approved` or `Implemented` specification affects its contract, behavior, or success criteria, change its status to `Draft` in the same PR. The specification then needs a new approval PR with the title `docs(<scope, if any>): reapprove <capability> spec`.
+- If a change to an `Approved` or `Implemented` specification affects its contract, behavior, or success criteria, set its status to `Draft` in the PR of the change, and follow the approval rules above. An `Implemented` specification becomes `Approved` again, because the changed behavior is not implemented yet.
 - Keep the status when a change only corrects wording or only applies a new version of this convention.
 - Change the status to `Implemented` in the PR that proves the last success criterion.
 
 ### Changes
 
-- Apply a change of this convention to new specifications, and to `Draft` and `Approved` specifications that a later PR changes. In that PR, convert the whole specification to the current template.
+- Apply a change of this convention to new specifications, and to `Approved` specifications that a later PR changes. In that PR, convert the whole specification to the current template.
 - Keep each `Implemented` specification in the format that it had when it was implemented. If a change sets its status to `Draft` again, convert the specification to the current template in the same PR.
 
 ## Differences from the spec-driven-development skill
@@ -251,7 +252,7 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 - Use the `Planned` rows of the [specification index](../specs/README.md) as the capability map, as the [workflow rules](#workflow) state. The skill saves the map as a file at the project root.
 - Write each module ID as `<service-or-area>-<capability>`. The skill uses short module IDs, such as `identity`.
 - Start planning only after the approval PR merges, as the [status rules](#status) state. The skill continues to planning after a human reviews the specification.
-- Set an `Approved` or `Implemented` specification to `Draft` when its contract, behavior, or success criteria change. The skill updates a specification when a decision or the scope changes.
+- Review a change to the contract, behavior, or success criteria of an `Approved` or `Implemented` specification as a new approval. The skill updates a specification when a decision or the scope changes.
 - Check that the specification has the sections of the [template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
 - Name the sections `Implementation boundaries` and `Assumptions and open questions`, and write user stories as Given, When, Then outcomes in `Success criteria`. The skill names them `Boundaries` and `Open Questions`, and puts user stories in `Objective`.
 
@@ -262,7 +263,7 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 | Value | Meaning |
 | --- | --- |
 | `Planned` | The module is in the index and has no specification file yet. |
-| `Draft` | The specification exists and is not approved. It can merge into `main`, but it does not permit planning. |
+| `Draft` | The specification is under review in an open PR. It does not reach `main` with this status. |
 | `Approved` | The maintainer approved the specification, and planning can start. |
 | `Implemented` | A PR proved the last success criterion. |
 

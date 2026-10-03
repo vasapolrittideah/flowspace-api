@@ -260,6 +260,15 @@ helm_resource(
     labels='observability',
 )
 helm_resource(
+    'loki',
+    'grafana-community/loki',
+    namespace='flowspace-local',
+    deps=['deploy/overlays/local/observability/loki-values.yaml'],
+    flags=['--version=18.13.7', '--values=deploy/overlays/local/observability/loki-values.yaml', '--create-namespace'],
+    resource_deps=['grafana-community-chart-repo'],
+    labels='observability',
+)
+helm_resource(
     'alloy',
     'grafana/alloy',
     namespace='flowspace-local',

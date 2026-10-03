@@ -149,7 +149,7 @@ These subjects show the type and scope choices:
 feat(workspace): allow owners to invite workspace members
 fix(work): reject task updates based on an outdated version
 test(identity): prove provider login against its specification
-docs(observability): specify local logs and traces
+docs(observability): approve observability logs and traces spec
 docs(adr): explain the choice of squash merging
 fix(agents): preserve multiline PR descriptions
 build(codegen): configure Buf to generate ConnectRPC clients
@@ -239,7 +239,7 @@ Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 A squash commit that only adds a specification has no body, because the specification on `main` holds the content:
 
 ```text
-docs(observability): specify local metrics and dashboards
+docs(observability): approve observability metrics and dashboards spec
 
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
@@ -255,7 +255,7 @@ Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 A squash commit that approves a plan has no body. It refers to each Issue of the plan, because the Issues stay open:
 
 ```text
-docs(observability): approve logs and traces plan
+docs(observability): approve observability logs and traces plan
 
 Refs: #299
 Refs: #300

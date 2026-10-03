@@ -96,6 +96,12 @@ jobs:
           globs: "**/*.md"
       - name: Check local Markdown links
         run: node scripts/check-local-links.mjs
+      - name: Block Draft specifications and plans
+        run: |
+          if grep -nE '^Status: Draft$|\| Draft \|$' docs/specs/*.md tasks/*.md; then
+            echo '::error::Change the Draft status to Approved before merge.'
+            exit 1
+          fi
 
   contracts:
     name: Contract checks

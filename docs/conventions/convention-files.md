@@ -76,13 +76,13 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 - Put the rules for the file, location, numbering, and life cycle of the artifact here. Also put the rules that cover more than one part here.
 - Include exactly one bullet that states how existing artifacts follow a change to the convention. Choose one of these approaches: update every existing artifact in the same PR, or apply the change only to new artifacts and to artifacts that a later PR changes. Put the bullet under `Changes` when the section has `###` headings. Other bullets under `Changes` can cover changes to an artifact after it exists.
 - If the section has more than five bullets, group them under `###` headings. Use only these headings, in this order, and omit a heading that has no bullets:
-  1. `Files` for the location, name, and number of the artifact, and how many artifacts to write.
-  2. `Sections and wording` for the sections of the artifact and the rules that cover several parts.
-  3. `Workflow` for the steps to create, review, and check the artifact.
-  4. `Links and records` for the indexes, tables, links, labels, milestones, and GitHub relationships that must match the artifact.
-  5. `Status` for the status values of the artifact and its approval.
+  1. `Naming and location` for the name, number, and location of the artifact.
+  2. `Format and content` for the sections and fields of the artifact and the rules that cover several parts.
+  3. `Workflow` for the steps to create, review, and check the artifact, and how many artifacts to write.
+  4. `Links and tracking` for the indexes, tables, links, labels, milestones, and GitHub relationships that must match the artifact.
+  5. `Status and approval` for the status values of the artifact and its approval.
   6. `Changes` for changes to an artifact after it exists, and for how existing artifacts follow a change to the convention.
-- If a bullet fits several of these headings, put it under the first match in this order: `Changes`, `Status`, `Links and records`, `Workflow`, `Files`, and `Sections and wording`.
+- If a bullet fits several of these headings, put it under the first match in this order: `Changes`, `Status and approval`, `Links and tracking`, `Workflow`, `Naming and location`, and `Format and content`.
 - If the convention covers several kinds of the artifact, such as queries and migrations, name each `###` heading after one kind instead. Order the bullets under each kind by the heading order above, without more headings. Put the bullet about how existing artifacts follow a change under a last `### Changes` heading.
 - If the section has five bullets or fewer, do not add `###` headings.
 - Do not put a rule about one part in this section. Put the rule in the subsection of that part.
@@ -124,12 +124,11 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 
 ## Rules
 
-### Files
+### Naming and location
 
 - Save the file as `docs/conventions/<name>.md`. Write the name as every word of the topic, in lowercase, separated by hyphens. Put the last noun of each name that the topic joins with "and" in plural form, and keep a noun that has no plural, such as `hexagonal-components-and-files.md` for "Hexagonal component and file" or `markdown-and-english-prose.md` for "Markdown and English prose". If the topic contains a term that a directory name in the repository shortens, use the short form, such as `adrs.md` for `docs/adr/` and `module-specs.md` for `docs/specs/`.
-- Write one convention file for each kind of artifact. If a convention already covers the artifact, add the rule to that file.
 
-### Sections and wording
+### Format and content
 
 - Follow the [Markdown and English prose conventions](markdown-and-english-prose.md) in each convention file.
 - Start each bullet with a verb, such as "Write", "Put", "Use", "Link", or "Omit". If the rule has a condition or applies to one place, state the condition or the place first, such as "In the index, use the record number". Apply this rule to every bullet outside code blocks. This rule does not cover the items of a numbered list inside a bullet.
@@ -139,7 +138,11 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 - Use the sections in the template order. Omit an optional section that has no content.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a convention file.
 
-### Links and records
+### Workflow
+
+- Write one convention file for each kind of artifact. If a convention already covers the artifact, add the rule to that file.
+
+### Links and tracking
 
 - Put each rule in one convention file only. In other files, link to the rule instead of repeating it.
 - Add a row for each convention file to the convention table in the [agent instructions](../../AGENTS.md#conventions).

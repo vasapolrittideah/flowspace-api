@@ -228,6 +228,16 @@ tasks:
     cmds:
       - sh scripts/retire-identity-signing-key-local.test.sh
 
+  observability:grafana-admin:setup:
+    desc: Seal the local Grafana admin password
+    cmds:
+      - sh scripts/setup-grafana-admin-local.sh
+
+  observability:grafana-admin:test:
+    desc: Test local Grafana admin password sealing without a cluster
+    cmds:
+      - sh scripts/setup-grafana-admin-local.test.sh
+
   secrets:local-test:
     desc: Test local secret paths and Git and Docker exclusions
     cmds:
@@ -253,6 +263,7 @@ tasks:
       - task: check:fast
       - task: identity:session-tls:test
       - task: identity:signing-key:test
+      - task: observability:grafana-admin:test
       - task: lint
       - task: coverage
       - task: vuln

@@ -268,8 +268,8 @@ helm_resource(
     resource_deps=['grafana-chart-repo', 'tempo'],
     labels='observability',
 )
-# Grafana has no Tilt port forward. Open it with kubectl port-forward, as the
-# observability logs and traces specification requires.
+# Tilt forwards Grafana through the Kubernetes API, as kubectl port-forward
+# does. Grafana has no Service outside the cluster.
 helm_resource(
     'grafana',
     'grafana-community/grafana',
@@ -277,5 +277,6 @@ helm_resource(
     deps=['deploy/overlays/local/observability/grafana-values.yaml'],
     flags=['--version=13.2.7', '--values=deploy/overlays/local/observability/grafana-values.yaml', '--create-namespace'],
     resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo'],
+    port_forwards=[port_forward(3000, 3000, name='Grafana')],
     labels='observability',
 )

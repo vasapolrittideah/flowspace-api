@@ -36,11 +36,7 @@ Tilt also starts Adminer at `http://localhost:8083`. Opening that address connec
 
 After Tilt finishes starting the databases, run `sh scripts/check-adminer-autologin.sh` to check both connections.
 
-Tilt also starts Alloy, Tempo, and Grafana. The services send their spans to Alloy, and Tempo keeps them for 3 days. Grafana has no Tilt port forward and no route outside the cluster. Open it with this command, then go to `http://localhost:3000`:
-
-```sh
-kubectl port-forward -n flowspace-local svc/grafana 3000:80
-```
+Tilt also starts Alloy, Tempo, and Grafana. The services send their spans to Alloy, and Tempo keeps them for 3 days. Tilt forwards Grafana to `http://localhost:3000` through the Kubernetes API, as `kubectl port-forward` does. Grafana has no route outside the cluster.
 
 Sign in as `admin` with the password in `.secrets/grafana-admin-password`. The Grafana admin Secret in Git is sealed with the key of one cluster. After you create a new cluster, run `task observability:grafana-admin:setup` to seal the password again, and commit the changed manifest.
 

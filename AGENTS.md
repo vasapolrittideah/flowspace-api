@@ -15,15 +15,15 @@ A pull request (PR) proposes changes for review. A squash merge combines all com
 The working tree contains local repository files and changes. A branch holds changes outside `main`. A checkpoint commit records one tested work step. A diff shows the changes between two versions.
 
 1. Inspect the working tree and read the relevant project documents.
-2. Preserve work that is outside the task.
+2. Preserve work that is outside the task, as the [pull request workflow](docs/conventions/pull-requests.md#workflow) states.
 3. For new work, create a short-lived branch from the current `main`. When updating a PR, continue on its branch.
 4. Keep `main` ready for deployment.
 5. Make small changes and test each change.
 6. Create checkpoint commits for the tested changes.
 7. Keep unrelated refactoring and formatting separate from behavior changes.
-8. Run the applicable local checks and review the [CI results](.github/workflows/ci.yml) on the PR.
-9. Push the branch. Open a PR to `main` for new work, or update the existing PR.
-10. Address review comments and rerun the affected commands.
+8. Run the local checks that the pull request workflow names.
+9. Push the branch. Open a PR to `main` for new work, or update the existing PR. Then wait for CI, as the pull request workflow states.
+10. Address review comments, as the pull request workflow states.
 11. After the maintainer merges the PR, remove the branch if it contains no work to preserve.
 
 Keep each branch and PR limited to one reviewable change. Split unrelated changes into separate PRs.

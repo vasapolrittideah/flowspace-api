@@ -18,10 +18,11 @@ This convention names and groups the handwritten Go components and files inside 
 
 ### Files
 
-- Name each handwritten Go file in snake_case after its main component or capability, as a noun phrase, such as `password_login_service.go`.
+- Name each handwritten Go file in snake_case after its main component, capability, or domain concept, as a noun phrase, such as `password_login_service.go` or `email.go`.
 - Name each bootstrap file after its server or worker role, such as `server.go`.
+- Put a helper that several files of one package share in its own file, named after what it provides, such as `source_address.go` or `errors.go`.
 - Put the interface, input, and result of an inbound port in `port/in/<capability>_service.go`, with the same file name as its service in `app/`.
-- Set file boundaries separately for each layer. Group handlers by related RPCs, services by workflows and transaction boundaries, and data access by concrete repository and shared transaction mechanism. Do not create matching files in all three layers for every capability.
+- Set file boundaries separately for each layer. Group handlers by related RPCs, which serve one client flow, such as password recovery, services by workflows and transaction boundaries, and data access by concrete repository and shared transaction mechanism. Do not create matching files in all three layers for every capability.
 - Keep related actions in one capability file, such as `email_verification_handler.go`. If no existing capability owns the work, add a file.
 - Keep domain rules with the concept whose invariants they protect. Add a rule to an existing concept file when it belongs there.
 - Keep related application workflows in one `<capability>_service.go`. Separate them only when their outcomes or transaction boundaries define distinct capabilities. Keep the steps of each workflow together.

@@ -1,8 +1,10 @@
 # Architecture decision record conventions
 
-This convention defines the file, format, and status of one architecture decision record (ADR) in `docs/adr/`.
+This convention defines the file, format, and status of one architecture decision record (ADR) in `docs/adr/`. A record is one ADR. The index is the table of records in the [ADR README](../adr/README.md), which also states the purpose of a record.
 
 ## Template
+
+A record has a title, a date line, a status line, `Context`, `Decision`, `Alternatives Considered`, `Consequences`, and `Sources`.
 
 ```markdown
 # ADR-<NNNN>: <decision that the record accepts>
@@ -29,7 +31,7 @@ Status: <current state of the decision>
 
 ## Consequences
 
-- <effect of the decision, including a cost or open work>
+- <effect of the decision>
 
 ## Sources
 
@@ -43,19 +45,18 @@ Status: <current state of the decision>
 - Start the sentence with the thing that the decision controls, not with a verb.
 - Do not write only a topic, such as "Database choice".
 
-### Date
+### Date line
 
 - Put the line directly after the title, separated by a blank line.
 - Write the date in `YYYY-MM-DD` format.
 - Do not change the date when the status changes.
 
-### Status
+### Status line
 
-- Put the line after `Date`, separated by a blank line.
+- Put the line after the date line, separated by a blank line.
 - Write one [status value](#status-values).
 - Link each `ADR-<NNNN>` in the value to the file of that record.
-- Write the same value in the `Status` column of the index.
-- In the index, use only the record number as the link text, such as `0031` instead of `ADR-0031`.
+- If a record makes scoped exceptions to several records, write `scoped exceptions to`, and join the records with `and`.
 
 ### Context
 
@@ -69,7 +70,7 @@ Status: <current state of the decision>
 - If the decision applies only to part of the system, such as one environment, state that scope in the first sentence.
 - Write the rules that follow from the decision in paragraphs, one topic per paragraph, as the [Markdown rules](markdown-and-english-prose.md#format-and-content) require.
 - Use a bullet list only for parallel items of the same kind, such as each service and the data that it owns.
-- State exact values when the decision fixes them, such as limits, durations, and retention periods.
+- If the decision fixes a value, such as a limit, a duration, or a retention period, state the exact value.
 - Do not add `###` subsections. If the topics of a decision need their own subsections, write a separate record for each topic.
 
 ### Alternatives Considered
@@ -85,34 +86,55 @@ Status: <current state of the decision>
 ### Consequences
 
 - Write one bullet for each effect.
-- Include costs, risks, and the effects of failures, as well as benefits.
 - Put open work last, such as a decision that a later record must make.
+- Include costs, risks, and the effects of failures, as well as benefits.
 
 ### Sources
 
-- Write one bullet for each document.
+- Write one bullet for each external document.
 - Use the document title as the link text.
-- Put links to repository documents in `Context` or `Decision`.
+- Do not list repository documents. Link to them in `Context` or `Decision`.
 
 ## Rules
 
-### Files and numbering
+### Naming and location
 
-- Write a record for one decision that is expensive to reverse. Put replaceable tools and libraries in the [technology stack](../technology-stack.md).
+- Save the record as `docs/adr/<NNNN>-<slug>.md`. Write the slug as a short form of the title in lowercase words separated by hyphens.
 - Give each record the next four-digit number. Do not reuse or skip a number.
-- Save the record as `docs/adr/<NNNN>-<slug>.md`. The slug is a short form of the title in lowercase words separated by hyphens.
-- Add a row for each record to the [ADR index](../adr/README.md). Copy the title sentence to the `Decision` column and the [status value](#status) to the `Status` column.
 
-### Sections
+### Format and content
 
 - Use the sections through `Consequences` in the template order. Add `Sources` only when the decision depends on external documents.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a record.
 
-### Status and changes
+### Workflow
 
-- A record merges only with an `Accepted` status. The maintainer accepts a record by merging its PR. Keep an undecided proposal in the [open proposals](../architecture.md#open-proposals) of the architecture until a record accepts it.
-- Do not change the title, date, or sections of an accepted record. When a decision changes, write a new record. In the same PR, change the `Status` line of the earlier record and its row in the index.
-- Records accepted before this convention keep their titles and sections. A PR that applies this format to them can change only the `Date` and `Status` lines.
+- Write one record for each decision that is expensive to reverse. Put replaceable tools and libraries in the [technology stack](../technology-stack.md).
+
+### Links and tracking
+
+- Add a row for each record to the index. Copy the title sentence to the `Decision` column and the [status value](#status-values) to the `Status` column.
+- In the index, use only the record number as the link text, such as `0031` instead of `ADR-0031`.
+
+### Status and approval
+
+- Open the PR of a record with the `Accepted` status. The maintainer accepts the record by merging the PR.
+- Keep an undecided proposal in the [open proposals](../architecture.md#open-proposals) of the architecture until a record accepts it.
+
+### Changes
+
+- If a decision changes, write a new record. In the same PR, change the status line of the earlier record and its row in the index. If the new record only makes a scoped exception to the earlier record, keep the status of the earlier record.
+- Apply a change of this convention to new records only. Do not convert accepted records to the new format.
+- Do not change the title, date, or sections of an accepted record.
+
+## Differences from the documentation-and-adrs skill
+
+The [`documentation-and-adrs` skill](../../.agents/skills/documentation-and-adrs/SKILL.md) gives a generic ADR template and life cycle. This convention applies where the two differ:
+
+- Save each record in `docs/adr/` with a four-digit number, as the [naming rules](#naming-and-location) state. The skill saves records in `docs/decisions/` with three-digit numbers, such as `ADR-001`.
+- Write the date and the status as lines after the title, as the [template](#template) shows. The skill writes them as `## Status` and `## Date` sections, with the status first.
+- Open each record with the `Accepted` status, and keep undecided proposals in the architecture, as the [status rules](#status-and-approval) state. The skill starts a record with the `Proposed` status.
+- Use only the [status values](#status-values) of this convention. The skill also uses `Deprecated`.
 
 ## Reference
 
@@ -121,6 +143,6 @@ Status: <current state of the decision>
 | Value | Use when |
 | --- | --- |
 | `Accepted` | The decision applies in full. |
-| `Accepted; scoped exception to ADR-<NNNN>` | The decision makes an exception to an earlier accepted record for a named scope. The earlier record keeps its status. For several records, write `scoped exceptions to` and join the records with `and`. |
+| `Accepted; scoped exception to ADR-<NNNN>` | The decision makes an exception to an earlier accepted record for a named scope. |
 | `Accepted, except <part> superseded by ADR-<NNNN>` | A later record replaces part of the decision. |
 | `Superseded by ADR-<NNNN>` | A later record replaces the whole decision. |

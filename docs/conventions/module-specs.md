@@ -83,9 +83,10 @@ Status: <current state of the specification>
 - For RPCs and events, write these tables in this order, each under a `###` heading with its name: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, `Published events`, and `Errors`. Omit a table that has no rows.
 - For each other shape, write a `###` subsection with a table that has one row for each named item. If the shape is in the [contract shapes](#contract-shapes) table, use its heading and all of its columns in that order.
 - If a consumer reads a property that the contract shapes table does not list, add a column for it after the listed columns. If the table has a `Meaning` column, put the new column before `Meaning`.
-- If a shape is not in the contract shapes table, name its heading with a plural noun phrase, and search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns. Then add the shape to the contract shapes table in a separate PR of this convention, and list that PR in `Follow-up tasks` of the specification PR.
+- If a shape is not in the contract shapes table, name its heading with a plural noun phrase, and search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns. The first specification that uses a heading sets its columns.
 - If no specification has the heading, make the first column the name of the item, add one column for each property that a consumer reads, in the order that the consumer uses them, and end with a `Meaning` column when a property name does not state its meaning.
-- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table, and then the other shapes in alphabetical order of their headings.
+- Add a new shape to the contract shapes table only when one of its columns needs a rule that the steps above do not give, such as a fixed set of values or a required format. Add the shape to the contract shapes table in a separate PR of this convention. List that PR in `Follow-up tasks` of the specification PR.
+- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table except `Configuration`, then the other shapes in alphabetical order of their headings, and then `Configuration`.
 - Keep the rows of `Methods` and `Method requirements` in the same RPC order.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in `Behavior`.
@@ -310,8 +311,6 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 | `### Alert rules` | `Condition` | What the rule measures and its threshold, in words. |
 | `### Alert rules` | `Pending period` | How long the condition must hold before the rule fires, such as "5 minutes". |
 | `### Alert rules` | `Labels` | The labels that the rule adds other than `severity`, in backticks, or `None`. |
-| `### Runbooks` | `Rule title` | The `title` field of the rule that the runbook covers. |
-| `### Runbooks` | `Runbook file` | The path of the runbook file in backticks. |
 | `### Configuration` | `Variable` | The environment variable name in backticks. |
-| `### Configuration` | `Default` | The default value in backticks, or `None` when the variable is required. |
+| `### Configuration` | `Default` | The default value in backticks, `None` when the variable is required, or `Unset` when the process runs without the variable and has no default. |
 | `### Configuration` | `Meaning` | What the value controls and its allowed values. |

@@ -143,6 +143,13 @@ The evidence has a local checks table.
 | `Result` | `Passed` or `Failed`, followed by the passed and total counts when the check reports them, such as "Passed 44/44 requests". |
 | `Stack` | The local cluster or environment and the services that the check ran against, such as "k3d `flowspace-local` with Mailpit". |
 
+## Differences from the git-workflow-and-versioning skill
+
+The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-versioning/SKILL.md) gives a change summary for review. This convention applies where the two differ:
+
+- Write the description in the sections of the [template](#template), and state the result before the changes. The skill writes a summary with `CHANGES MADE`, `THINGS I DIDN'T TOUCH`, and `POTENTIAL CONCERNS`.
+- Do not list every changed file, as the [What changed rules](#what-changed) state. The skill names each changed file.
+
 ## Examples
 
 [Pull request #314](https://github.com/vasapolrittideah/flowspace-api/pull/314) shows a complete PR title and description that follow this convention.

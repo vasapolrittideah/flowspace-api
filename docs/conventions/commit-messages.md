@@ -91,6 +91,15 @@ Co-authored-by: <co-author name> <co-author email>
 - If a message has more than one line, write it to a file outside the working tree, and pass the file with `git commit --file <message-file>` in its own command.
 - Apply a change of this convention to new commits only. Do not rewrite commits on `main` to follow it.
 
+## Differences from the git-workflow-and-versioning skill
+
+The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-versioning/SKILL.md) gives a generic commit message format. This convention applies where the two differ:
+
+- Add the scope after the type when a row of the scope table covers the main change, as the [scope rules](#scope) state. The skill writes `<type>: <description>` without a scope.
+- Use the eleven [types](#types) of this convention. The skill lists six types and has no `perf`, `build`, `ci`, `style`, or `revert` type.
+- In a checkpoint commit, explain what the step changes when the subject does not, as the [body rules](#body) state. The skill explains only why a change was made.
+- Write a checkpoint commit for each tested step on the branch, and write a squash message for the merge of the PR. The skill advises against squashing commits.
+
 ## Reference
 
 ### Types

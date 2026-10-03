@@ -10,24 +10,25 @@ Before you ask questions, read these documents:
 2. Read the [constraints](../../CONSTRAINTS.md), the [architecture](../../docs/architecture.md), the [technology stack](../../docs/technology-stack.md), and the [ADRs](../../docs/adr/README.md) that apply to the capability. Treat an open proposal as undecided.
 3. For an Identity capability, read the [Identity threat model](../../docs/security/identity-threat-model.md).
 
-Use the module rules of the convention to decide whether the request changes an existing module or adds new modules.
+Use the workflow rules of the convention to decide whether the request changes an existing module or adds new modules.
 
 Ask clarifying questions until you can write each section of the convention template without a guess. Cover these topics:
 
 1. The objective, the first users, and their data.
-2. The scope, the excluded work, the module dependencies, and the ADRs that apply.
-3. The contract that consumers see.
-4. The behavior, including security, data compatibility, and diagnostics.
-5. The material risks and the test level that proves each risk.
-6. The implementation boundaries and the success criteria.
+2. The scope, the excluded work, and the ADRs that apply.
+3. The module dependencies for the `Depends on` column of the index.
+4. The contract that consumers see.
+5. The behavior, including security, data compatibility, and diagnostics.
+6. The material risks and the test level that proves each risk.
+7. The implementation boundaries and the success criteria.
 
 If the capability needs a decision that no accepted ADR makes, stop and ask the maintainer.
 
 If the request bundles several independently testable capabilities, use these steps before you write a specification:
 
 1. Propose a capability map in chat. A capability map lists the module IDs, the dependencies of each module, and the build order.
-2. After the maintainer agrees, deliver the `Planned` rows of the map in their own PR, as the module rules of the convention state.
-3. Write the specifications in the build order. Start each specification only when the module rules allow it.
+2. After the maintainer agrees, deliver the `Planned` rows of the map in their own PR, as the workflow rules of the convention state.
+3. Write the specifications in the build order. Start each specification only when the workflow rules allow it.
 
 Deliver one specification in each PR:
 

@@ -24,10 +24,7 @@ func main() {
 func run(logger *zap.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	stopTracing, err := tracing.Start(ctx, logger, service, os.Getenv("ENVIRONMENT"))
-	if err != nil {
-		return err
-	}
+	stopTracing := tracing.Start(ctx, logger, service, os.Getenv("ENVIRONMENT"))
 	defer stopTracing()
 	config, err := bootstrap.LoadAPIConfig()
 	if err != nil {

@@ -94,10 +94,7 @@ func TestStartWithoutEndpointExportsNothing(t *testing.T) {
 	t.Setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://"+listener.Addr().String())
 	restoreGlobals(t)
 
-	stop, err := Start(context.Background(), zap.NewNop(), "identity-api", "local")
-	if err != nil {
-		t.Fatal(err)
-	}
+	stop := Start(context.Background(), zap.NewNop(), "identity-api", "local")
 	_, span := otel.Tracer("test").Start(context.Background(), "test")
 	span.End()
 	stop()
@@ -117,10 +114,7 @@ func TestStartWithUnreachableEndpointDoesNotWait(t *testing.T) {
 	restoreGlobals(t)
 	started := time.Now()
 
-	stop, err := Start(context.Background(), zap.NewNop(), "identity-api", "local")
-	if err != nil {
-		t.Fatal(err)
-	}
+	stop := Start(context.Background(), zap.NewNop(), "identity-api", "local")
 	for range 3000 {
 		ctx, span := otel.Tracer("test").Start(context.Background(), "test")
 		if !span.SpanContext().IsValid() || !trace.SpanContextFromContext(ctx).IsSampled() {
@@ -139,10 +133,7 @@ func TestTracingCreatesPropagatedContext(t *testing.T) {
 	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
 	restoreGlobals(t)
 
-	stop, err := Start(context.Background(), zap.NewNop(), "workspace-api", "local")
-	if err != nil {
-		t.Fatal(err)
-	}
+	stop := Start(context.Background(), zap.NewNop(), "workspace-api", "local")
 	defer stop()
 	ctx, span := otel.Tracer("test").Start(context.Background(), "test")
 	defer span.End()
@@ -159,10 +150,7 @@ func TestStartLogsTracingErrors(t *testing.T) {
 	restoreGlobals(t)
 	core, logs := observer.New(zap.WarnLevel)
 
-	stop, err := Start(context.Background(), zap.New(core), "identity-worker", "local")
-	if err != nil {
-		t.Fatal(err)
-	}
+	stop := Start(context.Background(), zap.New(core), "identity-worker", "local")
 	defer stop()
 	otel.Handle(errors.New("export failed"))
 

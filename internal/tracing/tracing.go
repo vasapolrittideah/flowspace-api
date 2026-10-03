@@ -29,23 +29,29 @@ const (
 // OTEL_* variables. Without OTEL_EXPORTER_OTLP_ENDPOINT, spans keep their
 // trace context but are not exported. The returned function flushes the
 // queued spans for at most four seconds and stops the provider.
-func Start(ctx context.Context, logger *zap.Logger, service, environment string) (func(), error) {
+func Start(ctx context.Context, logger *zap.Logger, service, environment string) func() {
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
 		logger.Warn("tracing_error", zap.Error(err))
 	}))
-	var exporter sdktrace.SpanExporter
-	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
-		// The gRPC connection is lazy, so an unreachable endpoint does not
-		// delay startup.
-		var err error
-		if exporter, err = otlptracegrpc.New(ctx); err != nil {
-			return nil, err
-		}
-	}
-	provider := newProvider(exporter, service, environment)
+	provider := newProvider(newExporter(ctx), service, environment)
 	otel.SetTracerProvider(provider)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
-	return func() { flush(context.WithoutCancel(ctx), provider, flushTimeout) }, nil
+	return func() { flush(context.WithoutCancel(ctx), provider, flushTimeout) }
+}
+
+// newExporter returns nil when no endpoint is set or the exporter cannot
+// start, because telemetry never stops a process. The gRPC connection is
+// lazy, so an unreachable endpoint does not delay startup.
+func newExporter(ctx context.Context) sdktrace.SpanExporter {
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
+		return nil
+	}
+	exporter, err := otlptracegrpc.New(ctx)
+	if err != nil {
+		otel.Handle(err)
+		return nil
+	}
+	return exporter
 }
 
 func newProvider(exporter sdktrace.SpanExporter, service, environment string) *sdktrace.TracerProvider {

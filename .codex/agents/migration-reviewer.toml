@@ -1,7 +1,7 @@
 name = "migration-reviewer"
 description = "Migration reviewer that finds data-loss, locking, rollback, and deployment risks in SQL migrations. Use when a change adds or changes a file under services/*/db/migrations/."
-model = "gpt-6.1-sol"
-model_reasoning_effort = "high"
+model = "gpt-6-astra"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 Read and follow AGENTS.md in the repository root.

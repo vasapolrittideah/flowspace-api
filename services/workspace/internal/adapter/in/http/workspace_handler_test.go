@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -518,4 +519,37 @@ func (f fakeTokenVerifier) VerifyToken(ctx context.Context, token string) (strin
 
 func newTestWorkspaceHandler(service *fakeWorkspaceService, verifier outbound.TokenVerifier, logger *zap.Logger) *WorkspaceHandler {
 	return NewWorkspaceHandler(service, verifier, logger)
+}
+
+func TestWorkspaceHandlerLogsTheTraceIDOfTheRequestSpan(t *testing.T) {
+	spanContext := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID{0x4b, 0xf9, 0x2f, 0x35, 0x77, 0xb3, 0x4d, 0xa6, 0xa3, 0xce, 0x92, 0x9d, 0x0e, 0x0e, 0x47, 0x36},
+		SpanID:     trace.SpanID{0, 0xf0, 0x67, 0xaa, 0x0b, 0xa9, 0x02, 0xb7},
+		TraceFlags: trace.FlagsSampled,
+	})
+	for name, call := range map[string]func(*WorkspaceHandler, context.Context) error{
+		"success": func(handler *WorkspaceHandler, ctx context.Context) error {
+			_, err := handler.GetWorkspace(ctx, &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
+			return err
+		},
+		"early failure": func(handler *WorkspaceHandler, ctx context.Context) error {
+			_, err := handler.GetWorkspace(ctx, &workspacev1.GetWorkspaceRequest{})
+			return err
+		},
+	} {
+		core, logs := observer.New(zap.InfoLevel)
+		handler := newTestWorkspaceHandler(
+			&fakeWorkspaceService{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
+				return domain.Workspace{ID: "workspace-1"}, nil
+			}},
+			fakeTokenVerifier{subject: "user-1"},
+			zap.New(core),
+		)
+		_ = call(handler, trace.ContextWithSpanContext(requestContext("request-1", ""), spanContext))
+		entries := logs.AllUntimed()
+		if len(entries) != 1 || entries[0].ContextMap()["trace_id"] != "4bf92f3577b34da6a3ce929d0e0e4736" ||
+			entries[0].ContextMap()["request_id"] != "request-1" {
+			t.Fatalf("%s: logs = %v", name, entries)
+		}
+	}
 }

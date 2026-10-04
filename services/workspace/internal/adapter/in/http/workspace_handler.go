@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/logging"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/in"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
@@ -38,6 +39,7 @@ func (h *WorkspaceHandler) requestLogger(ctx context.Context, operation string) 
 	return h.logger.With(
 		zap.String("operation", operation),
 		zap.String("request_id", requestID(ctx)),
+		logging.TraceID(ctx),
 	)
 }
 

@@ -84,7 +84,7 @@ func lockRefreshAccount(ctx context.Context, queries *sqlc.Queries, id pgtype.UU
 	if err != nil {
 		return err
 	}
-	if _, err := queries.GetPasswordAccountForUpdate(ctx, subject); errors.Is(err, pgx.ErrNoRows) {
+	if _, err := queries.GetActiveAccountForUpdate(ctx, subject); errors.Is(err, pgx.ErrNoRows) {
 		return outbound.ErrUnauthenticated
 	} else if err != nil {
 		return err

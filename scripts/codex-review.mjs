@@ -20,8 +20,8 @@ export function textStampPath(gitCommonDir, role, text) {
 // Adds the exact change under review to the prompt. Tree objects never change, and the
 // text snapshot is read once, so the stamps cover exactly what the reviewer saw.
 export function promptWithSnapshot(prompt, { tree, head, headTree, text }) {
-  // After a commit, the staged tree equals the tree of HEAD and the staged diff is empty,
-  // so the reviewer must use the diff scope that the prompt gives, such as a branch diff.
+  // After a commit, the staged tree equals the tree of HEAD, so the staged diff is empty.
+  // The reviewer must use the diff scope that the prompt gives, such as a branch diff.
   const scope =
     tree === headTree
       ? `Nothing is staged beyond HEAD, whose tree is ${tree}. Review the diff scope that the task above ` +

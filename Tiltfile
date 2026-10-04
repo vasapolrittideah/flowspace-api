@@ -260,12 +260,21 @@ helm_resource(
     labels='observability',
 )
 helm_resource(
+    'loki',
+    'grafana-community/loki',
+    namespace='flowspace-local',
+    deps=['deploy/overlays/local/observability/loki-values.yaml'],
+    flags=['--version=18.13.7', '--values=deploy/overlays/local/observability/loki-values.yaml', '--create-namespace'],
+    resource_deps=['grafana-community-chart-repo'],
+    labels='observability',
+)
+helm_resource(
     'alloy',
     'grafana/alloy',
     namespace='flowspace-local',
     deps=['deploy/overlays/local/observability/alloy-values.yaml'],
     flags=['--version=1.13.0', '--values=deploy/overlays/local/observability/alloy-values.yaml', '--create-namespace'],
-    resource_deps=['grafana-chart-repo', 'tempo'],
+    resource_deps=['grafana-chart-repo', 'tempo', 'loki'],
     labels='observability',
 )
 # Tilt forwards Grafana through the Kubernetes API, as kubectl port-forward
@@ -276,7 +285,7 @@ helm_resource(
     namespace='flowspace-local',
     deps=['deploy/overlays/local/observability/grafana-values.yaml'],
     flags=['--version=13.2.7', '--values=deploy/overlays/local/observability/grafana-values.yaml', '--create-namespace'],
-    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo'],
+    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo', 'loki'],
     port_forwards=[port_forward(3000, 3000, name='Grafana')],
     labels='observability',
 )

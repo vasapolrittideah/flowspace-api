@@ -1,0 +1,63 @@
+# Values for the grafana-community/loki chart. Loki runs one single-binary
+# replica that keeps logs for 7 days on a 5Gi node-local volume (ADR-0037).
+# The gateway, canary, caches, and object storage are turned off.
+deploymentMode: Monolithic
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2026-10-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  limits_config:
+    retention_period: 168h
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+  analytics:
+    reporting_enabled: false
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 5Gi
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+gateway:
+  enabled: false
+lokiCanary:
+  enabled: false
+test:
+  enabled: false
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+memcached:
+  enabled: false
+sidecar:
+  rules:
+    enabled: false
+rbac:
+  namespaced: true
+serviceAccount:
+  automountServiceAccountToken: false

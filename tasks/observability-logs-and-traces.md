@@ -1,8 +1,8 @@
 # Implementation plan: Observability logs and traces
 
-Module id: `observability-logs-and-traces`
+Module ID: `observability-logs-and-traces`
 
-Status: Approved.
+Status: Approved
 
 ## Overview
 
@@ -50,11 +50,11 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Export and storage
 
-- [ ] Unit tests show that each process starts, serves, and stops on time without an endpoint and with an unreachable endpoint.
-- [ ] Tilt brings up Alloy, Loki, Tempo, and Grafana with limits, and Grafana opens only through `kubectl port-forward`.
-- [ ] An Identity request appears in Tempo, and its log lines appear in Loki with only the `service`, `environment`, and `namespace` labels.
-- [ ] The plan records the measured CPU and memory use of each telemetry component after the first full run.
-- [ ] A human reviews the chart choices, the turned-off chart parts, and the network policies.
+- [x] Unit tests show that each process starts, serves, and stops on time without an endpoint and with an unreachable endpoint.
+- [x] Tilt brings up Alloy, Loki, Tempo, and Grafana with limits, and Grafana opens only through `kubectl port-forward`.
+- [x] An Identity request appears in Tempo, and its log lines appear in Loki with only the `service`, `environment`, and `namespace` labels.
+- [x] The plan records the measured CPU and memory use of each telemetry component after the first full run. On 2026-10-04, `kubectl top pods` showed Alloy at 4m CPU and 65Mi, Loki at 7m CPU and 101Mi, Tempo at 19m CPU and 405Mi, and Grafana at 19m CPU and 259Mi. Each component has a `512Mi` memory limit.
+- [x] A human reviews the chart choices, the turned-off chart parts, and the network policies.
 
 ### Phase 2: Correlation
 

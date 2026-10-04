@@ -12,13 +12,18 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
+	"github.com/vasapolrittideah/flowspace-api/internal/tracing"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/identity"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/out/postgres"
@@ -139,21 +144,31 @@ func shutDown(ctx context.Context, shutdown func(context.Context) error) error {
 func newHandler(ctx context.Context, handler workspacev1.WorkspaceServiceServer) (http.Handler, error) {
 	grpcServer := grpc.NewServer()
 	workspacev1.RegisterWorkspaceServiceServer(grpcServer, handler)
+	grpcMethods := map[string]bool{}
+	for service, info := range grpcServer.GetServiceInfo() {
+		for _, method := range info.Methods {
+			grpcMethods["/"+service+"/"+method.Name] = true
+		}
+	}
 
-	gateway := runtime.NewServeMux(runtime.WithIncomingHeaderMatcher(incomingHeader))
+	gateway := runtime.NewServeMux(runtime.WithIncomingHeaderMatcher(incomingHeader), runtime.WithMiddlewares(recordRoute))
 	if err := workspacev1.RegisterWorkspaceServiceHandlerServer(ctx, gateway, handler); err != nil {
 		return nil, err
 	}
 	restHandler := withBodyLimit(gateway)
 
 	httpHandler := http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		if request.ProtoMajor == 2 && strings.HasPrefix(strings.ToLower(request.Header.Get("Content-Type")), "application/grpc") {
+		if isGRPCRequest(request) {
 			grpcServer.ServeHTTP(response, request)
 			return
 		}
 		restHandler.ServeHTTP(response, request)
 	})
-	return withRequestID(withTraceContext(httpHandler)), nil
+	return withRequestID(withServerSpan(httpHandler, grpcMethods)), nil
+}
+
+func isGRPCRequest(request *http.Request) bool {
+	return request.ProtoMajor == 2 && strings.HasPrefix(strings.ToLower(request.Header.Get("Content-Type")), "application/grpc")
 }
 
 func withBodyLimit(next http.Handler) http.Handler {
@@ -178,12 +193,65 @@ func withBodyLimit(next http.Handler) http.Handler {
 	})
 }
 
-func withTraceContext(next http.Handler) http.Handler {
+// withServerSpan creates the server span of each public request. A known
+// gRPC method names the span. Otherwise the span takes the HTTP method, and
+// recordRoute adds the route of a matched REST request. grpcMethods holds the
+// full names of the gRPC methods that the server serves.
+func withServerSpan(next http.Handler, grpcMethods map[string]bool) http.Handler {
 	propagator := propagation.TraceContext{}
 	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		grpcRequest := isGRPCRequest(request)
+		name := tracing.HTTPMethod(request.Method)
+		attributes := []attribute.KeyValue{semconv.HTTPRequestMethodKey.String(name)}
+		if grpcRequest {
+			attributes = nil
+			if grpcMethods[request.URL.Path] {
+				name = request.URL.Path
+				attributes = append(attributes, semconv.RPCMethod(strings.TrimPrefix(name, "/")))
+			}
+		}
 		ctx := propagator.Extract(request.Context(), propagation.HeaderCarrier(request.Header))
-		next.ServeHTTP(response, request.WithContext(ctx))
+		ctx, span := otel.Tracer("flowspace/workspace/api").Start(ctx, name,
+			trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attributes...))
+		defer span.End()
+		observed := &statusWriter{ResponseWriter: response, status: http.StatusOK}
+		next.ServeHTTP(observed, request.WithContext(ctx))
+		if code, ok := tracing.GRPCStatus(observed.Header()); grpcRequest && ok {
+			tracing.SetGRPCStatus(span, code)
+			return
+		}
+		tracing.SetHTTPStatus(span, observed.status)
 	})
+}
+
+// recordRoute names the server span after the route template of the matched
+// gateway route, such as GET /v1/workspaces/{workspace_id}.
+func recordRoute(next runtime.HandlerFunc) runtime.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request, parameters map[string]string) {
+		if pattern, ok := runtime.HTTPPattern(request.Context()); ok {
+			route := strings.ReplaceAll(pattern.String(), "=*}", "}")
+			span := trace.SpanFromContext(request.Context())
+			span.SetName(tracing.HTTPMethod(request.Method) + " " + route)
+			span.SetAttributes(semconv.HTTPRoute(route))
+		}
+		next(response, request, parameters)
+	}
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) Flush() {
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
 }
 
 func withRequestID(next http.Handler) http.Handler {

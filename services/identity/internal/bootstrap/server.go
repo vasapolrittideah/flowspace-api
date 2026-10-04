@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -26,8 +27,10 @@ import (
 	"google.golang.org/grpc/status"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/logging"
 	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
+	"github.com/vasapolrittideah/flowspace-api/internal/tracing"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/github"
@@ -301,8 +304,9 @@ func newPublicHandler(ctx context.Context, handler identityv1.IdentityServiceSer
 		if len(id) == 1 && requestid.Valid(id[0]) {
 			requestID = id[0]
 		}
-		logger.Info("identity_rpc", zap.String("request_id", requestID), zap.String("operation", info.FullMethod),
-			zap.String("outcome", status.Code(err).String()), zap.Duration("duration", time.Since(started)))
+		code := status.Code(err)
+		logger.Info("identity_rpc", zap.String("request_id", requestID), logging.TraceID(ctx), zap.String("operation", info.FullMethod),
+			zap.String("outcome", outcome(code == codes.OK)), zap.String("status", code.String()), zap.Duration("duration", time.Since(started)))
 		return response, err
 	}))
 	identityv1.RegisterIdentityServiceServer(grpcServer, handler)
@@ -320,16 +324,22 @@ func newPublicHandler(ctx context.Context, handler identityv1.IdentityServiceSer
 	}
 	rest := httptransport.NewIdentityRequestHandler(gateway, trusted)
 	public := http.NewServeMux()
-	public.Handle("GET /v1/provider-login-callbacks/{provider}", callback)
+	public.Handle("GET "+providerCallbackRoute, callback)
 	public.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor == 2 && strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/grpc") {
+		if isGRPCRequest(r) {
 			grpcServer.ServeHTTP(w, r)
 			return
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 		rest.ServeHTTP(w, r)
 	})
-	return observeRequests(public, logger), nil
+	grpcMethods := map[string]bool{}
+	for service, info := range grpcServer.GetServiceInfo() {
+		for _, method := range info.Methods {
+			grpcMethods["/"+service+"/"+method.Name] = true
+		}
+	}
+	return observeRequests(public, logger, grpcMethods), nil
 }
 
 type statusWriter struct {
@@ -348,7 +358,10 @@ func (w *statusWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-func observeRequests(next http.Handler, logger *zap.Logger) http.Handler {
+// observeRequests creates the server span and writes the identity_request
+// line of each public request. grpcMethods holds the full names of the gRPC
+// methods that the server serves.
+func observeRequests(next http.Handler, logger *zap.Logger, grpcMethods map[string]bool) http.Handler {
 	propagator := propagation.TraceContext{}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
@@ -356,35 +369,76 @@ func observeRequests(next http.Handler, logger *zap.Logger) http.Handler {
 		w.Header().Set("X-Request-ID", requestID)
 		r.Header.Set("X-Request-ID", requestID)
 		observed := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+		operation, route := requestOperation(r, grpcMethods)
+		name := operation
+		if operation == unknownOperation {
+			name = tracing.HTTPMethod(r.Method)
+		}
 		ctx := propagator.Extract(r.Context(), propagation.HeaderCarrier(r.Header))
-		ctx, span := otel.Tracer("flowspace/identity/api").Start(ctx, "identity.http")
+		ctx, span := otel.Tracer("flowspace/identity/api").Start(ctx, name, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
+		switch {
+		case isGRPCRequest(r) && operation != unknownOperation:
+			span.SetAttributes(semconv.RPCMethod(strings.TrimPrefix(operation, "/")))
+		case !isGRPCRequest(r):
+			span.SetAttributes(semconv.HTTPRequestMethodKey.String(tracing.HTTPMethod(r.Method)))
+			if route != "" {
+				span.SetAttributes(semconv.HTTPRoute(route))
+			}
+		}
 		next.ServeHTTP(observed, r.WithContext(ctx))
-		logger.Info("identity_request", zap.String("request_id", requestID), zap.String("trace_id", traceID(ctx)), zap.String("operation", safeOperation(r)),
-			zap.Int("status", observed.status), zap.Duration("duration", time.Since(started)))
+		statusField, succeeded := zap.Int("status", observed.status), observed.status < http.StatusBadRequest
+		if code, ok := tracing.GRPCStatus(observed.Header()); isGRPCRequest(r) && ok {
+			tracing.SetGRPCStatus(span, code)
+			statusField, succeeded = zap.String("status", code.String()), code == codes.OK
+		} else {
+			tracing.SetHTTPStatus(span, observed.status)
+		}
+		logger.Info("identity_request", zap.String("request_id", requestID), logging.TraceID(ctx), zap.String("operation", operation),
+			zap.String("outcome", outcome(succeeded)), statusField, zap.Duration("duration", time.Since(started)))
 	})
 }
 
-func traceID(ctx context.Context) string {
-	spanContext := trace.SpanContextFromContext(ctx)
-	if spanContext.IsValid() {
-		return spanContext.TraceID().String()
+func outcome(succeeded bool) string {
+	if succeeded {
+		return "success"
 	}
-	return ""
+	return "failure"
 }
 
-func safeOperation(r *http.Request) string {
-	for _, path := range []string{
-		"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
-		"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-reset-codes", "/v1/password-resets", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts", "/v1/account-session-logouts",
-		"/v1/provider-login-attempts", "/v1/provider-sessions", "/v1/provider-login-callbacks/google", "/v1/provider-login-callbacks/github",
-	} {
+func isGRPCRequest(r *http.Request) bool {
+	return r.ProtoMajor == 2 && strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/grpc")
+}
+
+const unknownOperation = "unknown"
+
+var publicRoutes = []string{
+	"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
+	"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-reset-codes", "/v1/password-resets", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts", "/v1/account-session-logouts",
+	"/v1/provider-login-attempts", "/v1/provider-sessions",
+}
+
+const providerCallbackRoute = "/v1/provider-login-callbacks/{provider}"
+
+// requestOperation returns a bounded operation name and, for a known REST
+// route, the route. A raw path or a client-defined method never becomes
+// part of the operation.
+func requestOperation(r *http.Request, grpcMethods map[string]bool) (operation, route string) {
+	for _, path := range publicRoutes {
 		if r.URL.Path == path {
-			return r.Method + " " + path
+			return tracing.HTTPMethod(r.Method) + " " + path, path
 		}
 	}
-	if r.ProtoMajor == 2 && strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/grpc") {
-		return "identity-rpc"
+	if provider, found := strings.CutPrefix(r.URL.Path, "/v1/provider-login-callbacks/"); found && provider != "" && !strings.Contains(provider, "/") {
+		return tracing.HTTPMethod(r.Method) + " " + providerCallbackRoute, providerCallbackRoute
 	}
-	return "unknown"
+	if isGRPCRequest(r) && grpcMethods[r.URL.Path] {
+		return r.URL.Path, ""
+	}
+	return unknownOperation, ""
+}
+
+func safeOperation(r *http.Request, grpcMethods map[string]bool) string {
+	operation, _ := requestOperation(r, grpcMethods)
+	return operation
 }

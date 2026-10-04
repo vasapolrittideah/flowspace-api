@@ -1,4 +1,5 @@
-// Package tracing sets up bounded, non-blocking span export for Flowspace processes.
+// Package tracing sets up bounded, non-blocking span export for Flowspace
+// processes and records the status of server spans.
 package tracing
 
 import (

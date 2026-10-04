@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import { createHash } from 'node:crypto';
 
-import { codexArgs, isApproved, promptWithSnapshot, roleSettings, sessionID, stampPath, textStampPath } from './codex-review.mjs';
+import { codexArgs, isApproved, promptWithSnapshot, roleSettings, sandboxArgs, sessionID, stagedTree, stampPath, textStampPath } from './codex-review.mjs';
 import { commitContentProblem, commitMakerProblem, decide, ghPr, gitCommands, prBody, pushTargets, shellCommands } from './git-guard.mjs';
 
 const COMMON = '/repo/.git';
@@ -214,12 +218,28 @@ test('codex-review helpers read role settings, verdicts, and session IDs', () =>
   assert.equal(sessionID('model: x\nsession id: 01a1-22\n'), '01a1-22');
 });
 
-test('codexArgs keeps the sandbox read-only for a start and a resume', () => {
-  const base = { model: 'm', effort: 'high', report: '/r.md', prompt: 'p' };
-  assert.deepEqual(codexArgs(base).slice(0, 3), ['exec', '-s', 'read-only']);
+test('codexArgs uses the secret-denying read-only profile for a start and a resume', () => {
+  const base = { model: 'm', effort: 'high', report: '/r.md', prompt: 'p', home: '/Users/dev' };
+  for (const args of [codexArgs(base), codexArgs({ ...base, resume: 'id-1' })]) {
+    assert.ok(!args.includes('-s'));
+    assert.ok(args.includes('default_permissions="codex-review"'));
+    const profile = args.find((arg) => arg.startsWith('permissions.codex-review='));
+    assert.match(profile, /extends=":read-only"/);
+    assert.match(profile, /"\/Users\/dev\/\.ssh"="deny"/);
+    assert.match(profile, /"\/Users\/dev\/\.codex\/auth\.json"="deny"/);
+    assert.match(profile, /":workspace_roots"=\{"\*\*\/\.secrets"="deny"/);
+    // A -s flag or sandbox_mode silently replaces the profile, so neither must return.
+    assert.ok(!args.some((arg) => arg.includes('sandbox_mode')));
+    for (const path of ['.ssh', '.gnupg', '.aws', '.azure', '.config/gcloud', '.config/gh', '.kube', '.docker', '.netrc', '.npmrc', '.codex/auth.json']) {
+      assert.ok(profile.includes(`"/Users/dev/${path}"="deny"`), path);
+    }
+    for (const pattern of ['**/.secrets', '**/.secrets/**', '**/.env', '**/.env.*']) {
+      assert.ok(profile.includes(`"${pattern}"="deny"`), pattern);
+    }
+  }
   const resume = codexArgs({ ...base, resume: 'id-1' });
   assert.deepEqual(resume.slice(0, 3), ['exec', 'resume', 'id-1']);
-  assert.ok(resume.includes('sandbox_mode="read-only"'));
+  assert.ok(sandboxArgs('/home/a "b"').join(' ').includes('"/home/a \\"b\\"/.ssh"="deny"'));
 });
 
 test('push to main is blocked in every form', () => {
@@ -327,4 +347,20 @@ test('the review prompt carries the exact tree and description that the stamps c
   const committed = promptWithSnapshot('Review git diff origin/main...HEAD.', { tree: 't1', head: 'h1', headTree: 't1' });
   assert.ok(!committed.includes('git diff h1 t1'));
   assert.match(committed, /Nothing is staged beyond HEAD/);
+});
+
+test('stagedTree works while another process holds index.lock', () => {
+  const repo = mkdtempSync(join(tmpdir(), 'git-guard-lock-'));
+  const git = (...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd: repo, encoding: 'utf8' });
+  try {
+    git('init', '-q');
+    writeFileSync(join(repo, 'a.txt'), 'staged\n');
+    git('add', 'a.txt');
+    const expected = git('write-tree').stdout.trim();
+    writeFileSync(join(repo, '.git', 'index.lock'), '');
+    assert.notEqual(git('write-tree').status, 0);
+    assert.equal(stagedTree(repo), expected);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
 });

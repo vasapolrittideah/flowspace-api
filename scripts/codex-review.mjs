@@ -5,7 +5,8 @@
 // Add --stamp-file <file> to also stamp the exact text of a file, such as a PR description.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, copyFileSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -67,13 +68,33 @@ export function sessionID(log) {
   return log.match(/^session id:\s*(\S+)/m)?.[1];
 }
 
-export function codexArgs({ model, effort, report, prompt, resume }) {
-  const settings = ['-m', model, '-c', `model_reasoning_effort="${effort}"`];
+// Credentials in the home directory and local secrets in the repository. A read-only sandbox
+// can still read them, and Codex sends what it reads to the model. No review needs them.
+const HOME_SECRETS = ['.ssh', '.gnupg', '.aws', '.azure', '.config/gcloud', '.config/gh', '.kube', '.docker',
+  '.netrc', '.npmrc', '.codex/auth.json'];
+const WORKSPACE_SECRETS = ['**/.secrets', '**/.secrets/**', '**/.env', '**/.env.*'];
+
+// Returns the Codex options for a sandbox that reads like `:read-only` but denies the secrets.
+// A denied directory also denies everything under it.
+export function sandboxArgs(home) {
+  const homeEntries = HOME_SECRETS.map((path) => `${JSON.stringify(join(home, path))}="deny"`);
+  const workspaceEntries = WORKSPACE_SECRETS.map((pattern) => `${JSON.stringify(pattern)}="deny"`);
+  const filesystem = [...homeEntries, `":workspace_roots"={${workspaceEntries.join(', ')}}`].join(', ');
+  return [
+    '-c',
+    'default_permissions="codex-review"',
+    '-c',
+    `permissions.codex-review={extends=":read-only", filesystem={${filesystem}}}`,
+  ];
+}
+
+export function codexArgs({ model, effort, report, prompt, resume, home }) {
+  // `codex exec resume` keeps none of the settings of the session, so both forms pass them all.
+  const settings = ['-m', model, '-c', `model_reasoning_effort="${effort}"`, ...sandboxArgs(home)];
   if (resume) {
-    // `codex exec resume` keeps none of the settings of the session and has no -s flag.
-    return ['exec', 'resume', resume, ...settings, '-c', 'sandbox_mode="read-only"', '-o', report, prompt];
+    return ['exec', 'resume', resume, ...settings, '-o', report, prompt];
   }
-  return ['exec', '-s', 'read-only', ...settings, '-o', report, prompt];
+  return ['exec', ...settings, '-o', report, prompt];
 }
 
 function parseArgs(argv) {
@@ -91,12 +112,24 @@ function parseArgs(argv) {
   return { role, ...options };
 }
 
-function git(args) {
-  const result = spawnSync('git', args, { encoding: 'utf8' });
+function git(args, { cwd, env } = {}) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...env } });
   if (result.status !== 0) {
     throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`);
   }
   return result.stdout.trim();
+}
+
+// Returns the staged tree. It reads a copy of the index, because `git write-tree` locks the
+// index, and two reviews that start at the same time would fail on index.lock.
+export function stagedTree(cwd = process.cwd()) {
+  const copy = join(tmpdir(), `codex-review-index-${process.pid}-${Date.now()}`);
+  copyFileSync(resolve(cwd, git(['rev-parse', '--git-path', 'index'], { cwd })), copy);
+  try {
+    return git(['write-tree'], { cwd, env: { GIT_INDEX_FILE: copy } });
+  } finally {
+    rmSync(copy, { force: true });
+  }
 }
 
 function main() {
@@ -104,7 +137,7 @@ function main() {
   const root = git(['rev-parse', '--show-toplevel']);
   const settings = roleSettings(readFileSync(join(root, '.codex/agents', `${options.role}.toml`), 'utf8'));
   // The stamp covers the tree that is staged when the review starts. A later edit changes the tree.
-  const tree = git(['write-tree']);
+  const tree = stagedTree();
   const head = git(['rev-parse', 'HEAD']);
   const headTree = git(['rev-parse', 'HEAD^{tree}']);
   const report = resolve(`${options.out}.md`);
@@ -120,7 +153,7 @@ function main() {
     headTree,
     text: stampText,
   });
-  const run = spawnSync('codex', codexArgs({ ...settings, report, prompt, resume: options.resume }), {
+  const run = spawnSync('codex', codexArgs({ ...settings, report, prompt, resume: options.resume, home: homedir() }), {
     cwd: root,
     stdio: [input, log, log],
   });

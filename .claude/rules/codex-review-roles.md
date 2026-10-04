@@ -23,7 +23,7 @@ codex exec -s read-only -m <model> -c 'model_reasoning_effort="<effort>"' -o <re
 - Read `model` and `model_reasoning_effort` from the role file in [`.codex/agents/`](../../.codex/agents/), and pass them with `-m` and `-c`.
 - Put the report file, the input file, and the log file in the scratchpad directory, not in the working tree. Codex writes its final report to the report file.
 - In the prompt, tell Codex to read `AGENTS.md` and the role file in [`.agents/agents/`](../../.agents/agents/). Give the goal of the task, the diff scope, such as `git diff origin/main...HEAD`, and the test commands with their results. Do not add your own reasoning about the change, so that the review stays independent.
-- Put long text in the input file, because `codex exec` appends standard input to the prompt. For convention-reviewer, put the branch name, the PR title, description, and labels, and the squash message there when they exist, because the read-only sandbox cannot read GitHub.
+- Put long text in the input file, because `codex exec` appends standard input to the prompt. If there is no input file, use `< /dev/null`. Without a redirect, a background run waits for standard input until it times out. For convention-reviewer, put the branch name, the PR title, description, and labels, and the squash message there when they exist, because the read-only sandbox cannot read GitHub.
 - Read the session ID from the `session id:` line of the log file. The review loop needs it.
 - If the review can take minutes, run it in the background. Do not switch branches in the checkout while a review runs, because Codex reads the files there.
 

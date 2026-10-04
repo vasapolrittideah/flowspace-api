@@ -224,7 +224,7 @@ test('codexArgs uses the secret-denying read-only profile for a start and a resu
     assert.match(profile, /"\/Users\/dev\/\.ssh"="deny"/);
     assert.match(profile, /"\/Users\/dev\/\.codex\/auth\.json"="deny"/);
     assert.match(profile, /":workspace_roots"=\{"\*\*\/\.secrets"="deny"/);
-    // A -s flag or sandbox_mode silently replaces the profile, so neither may come back.
+    // A -s flag or sandbox_mode silently replaces the profile, so neither must return.
     assert.ok(!args.some((arg) => arg.includes('sandbox_mode')));
     for (const path of ['.ssh', '.gnupg', '.aws', '.azure', '.config/gcloud', '.config/gh', '.kube', '.docker', '.netrc', '.npmrc', '.codex/auth.json']) {
       assert.ok(profile.includes(`"/Users/dev/${path}"="deny"`), path);

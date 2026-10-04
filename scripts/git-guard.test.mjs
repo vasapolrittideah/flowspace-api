@@ -324,4 +324,7 @@ test('the review prompt carries the exact tree and description that the stamps c
   assert.ok(prompt.includes(createHash('sha256').update(text).digest('hex')));
   assert.equal(textStampPath('/g', 'r', text), stampPath('/g', 'r', `text-${createHash('sha256').update(text).digest('hex')}`));
   assert.ok(!promptWithSnapshot('Review this.', { tree: 't1', head: 'h1' }).includes('<pr-description>'));
+  const committed = promptWithSnapshot('Review git diff origin/main...HEAD.', { tree: 't1', head: 'h1', headTree: 't1' });
+  assert.ok(!committed.includes('git diff h1 t1'));
+  assert.match(committed, /Nothing is staged beyond HEAD/);
 });

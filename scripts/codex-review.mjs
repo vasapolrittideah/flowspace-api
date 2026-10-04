@@ -19,13 +19,16 @@ export function textStampPath(gitCommonDir, role, text) {
 
 // Adds the exact change under review to the prompt. Tree objects never change, and the
 // text snapshot is read once, so the stamps cover exactly what the reviewer saw.
-export function promptWithSnapshot(prompt, { tree, head, text }) {
-  const lines = [
-    prompt.trimEnd(),
-    '',
-    `The staged tree under review is ${tree}. Before you give a verdict, read exactly this change with ` +
-      `\`git diff ${head} ${tree}\`. An APPROVE verdict approves that tree for commit.`,
-  ];
+export function promptWithSnapshot(prompt, { tree, head, headTree, text }) {
+  // After a commit, the staged tree equals the tree of HEAD and the staged diff is empty,
+  // so the reviewer must use the diff scope that the prompt gives, such as a branch diff.
+  const scope =
+    tree === headTree
+      ? `Nothing is staged beyond HEAD, whose tree is ${tree}. Review the diff scope that the task above ` +
+        'gives. An APPROVE verdict approves that tree for a pull request.'
+      : `The staged tree under review is ${tree}. Before you give a verdict, read exactly this change with ` +
+        `\`git diff ${head} ${tree}\`. An APPROVE verdict approves that tree for commit.`;
+  const lines = [prompt.trimEnd(), '', scope];
   if (text !== undefined) {
     const hash = createHash('sha256').update(text).digest('hex');
     lines.push(
@@ -103,6 +106,7 @@ function main() {
   // The stamp covers the tree that is staged when the review starts. A later edit changes the tree.
   const tree = git(['write-tree']);
   const head = git(['rev-parse', 'HEAD']);
+  const headTree = git(['rev-parse', 'HEAD^{tree}']);
   const report = resolve(`${options.out}.md`);
   const logPath = resolve(`${options.out}.log`);
   mkdirSync(dirname(report), { recursive: true });
@@ -110,7 +114,12 @@ function main() {
   const input = openSync(options.input ?? '/dev/null', 'r');
   const log = openSync(logPath, 'w');
   const stampText = options['stamp-file'] ? readFileSync(options['stamp-file'], 'utf8') : undefined;
-  const prompt = promptWithSnapshot(readFileSync(options['prompt-file'], 'utf8'), { tree, head, text: stampText });
+  const prompt = promptWithSnapshot(readFileSync(options['prompt-file'], 'utf8'), {
+    tree,
+    head,
+    headTree,
+    text: stampText,
+  });
   const run = spawnSync('codex', codexArgs({ ...settings, report, prompt, resume: options.resume }), {
     cwd: root,
     stdio: [input, log, log],

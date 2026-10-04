@@ -5,8 +5,8 @@
 // Add --stamp-file <file> to also stamp the exact text of a file, such as a PR description.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { closeSync, copyFileSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -109,12 +109,24 @@ function parseArgs(argv) {
   return { role, ...options };
 }
 
-function git(args) {
-  const result = spawnSync('git', args, { encoding: 'utf8' });
+function git(args, { cwd, env } = {}) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...env } });
   if (result.status !== 0) {
     throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`);
   }
   return result.stdout.trim();
+}
+
+// Returns the staged tree. It reads a copy of the index, because `git write-tree` locks the
+// index, and two reviews that start at the same time would fail on index.lock.
+export function stagedTree(cwd = process.cwd()) {
+  const copy = join(tmpdir(), `codex-review-index-${process.pid}-${Date.now()}`);
+  copyFileSync(resolve(cwd, git(['rev-parse', '--git-path', 'index'], { cwd })), copy);
+  try {
+    return git(['write-tree'], { cwd, env: { GIT_INDEX_FILE: copy } });
+  } finally {
+    rmSync(copy, { force: true });
+  }
 }
 
 function main() {
@@ -122,7 +134,7 @@ function main() {
   const root = git(['rev-parse', '--show-toplevel']);
   const settings = roleSettings(readFileSync(join(root, '.codex/agents', `${options.role}.toml`), 'utf8'));
   // The stamp covers the tree that is staged when the review starts. A later edit changes the tree.
-  const tree = git(['write-tree']);
+  const tree = stagedTree();
   const head = git(['rev-parse', 'HEAD']);
   const report = resolve(`${options.out}.md`);
   const logPath = resolve(`${options.out}.log`);

@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import { createHash } from 'node:crypto';
 
-import { codexArgs, isApproved, promptWithSnapshot, roleSettings, sandboxArgs, sessionID, stampPath, textStampPath } from './codex-review.mjs';
+import { codexArgs, isApproved, promptWithSnapshot, roleSettings, sandboxArgs, sessionID, stagedTree, stampPath, textStampPath } from './codex-review.mjs';
 import { commitContentProblem, commitMakerProblem, decide, ghPr, gitCommands, prBody, pushTargets, shellCommands } from './git-guard.mjs';
 
 const COMMON = '/repo/.git';
@@ -340,4 +344,20 @@ test('the review prompt carries the exact tree and description that the stamps c
   assert.ok(prompt.includes(createHash('sha256').update(text).digest('hex')));
   assert.equal(textStampPath('/g', 'r', text), stampPath('/g', 'r', `text-${createHash('sha256').update(text).digest('hex')}`));
   assert.ok(!promptWithSnapshot('Review this.', { tree: 't1', head: 'h1' }).includes('<pr-description>'));
+});
+
+test('stagedTree works while another process holds index.lock', () => {
+  const repo = mkdtempSync(join(tmpdir(), 'git-guard-lock-'));
+  const git = (...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd: repo, encoding: 'utf8' });
+  try {
+    git('init', '-q');
+    writeFileSync(join(repo, 'a.txt'), 'staged\n');
+    git('add', 'a.txt');
+    const expected = git('write-tree').stdout.trim();
+    writeFileSync(join(repo, '.git', 'index.lock'), '');
+    assert.notEqual(git('write-tree').status, 0);
+    assert.equal(stagedTree(repo), expected);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
 });

@@ -1,6 +1,6 @@
 # Review roles in Codex
 
-Claude Code runs the test-engineer, code-reviewer, security-auditor, and convention-reviewer roles in Codex with `codex exec`, so a different model family checks the work. Codex does not read this file. Do not start the Claude subagents in [`.claude/agents/`](../agents/) for these roles.
+Claude Code runs the test-engineer, code-reviewer, security-auditor, convention-reviewer, spec-reviewer, and migration-reviewer roles in Codex with `codex exec`, so a different model family checks the work. Codex does not read this file. Do not start the Claude subagents in [`.claude/agents/`](../agents/) for these roles.
 
 The roles need Codex CLI 0.160.0 or later and a `codex login`. Do not use an MCP server for these roles, because Codex CLI 0.154.0 removed `codex mcp-server`.
 
@@ -10,6 +10,8 @@ The roles need Codex CLI 0.160.0 or later and a `codex login`. Do not use an MCP
 | code-reviewer | After each tested change and before each commit. |
 | security-auditor | When the change touches secrets, authentication, authorization, or input from outside the system. Run it at the same time as code-reviewer. |
 | convention-reviewer | Before you open or update a PR, and before you give a squash message. Run `git fetch origin main` first. |
+| spec-reviewer | Before you open or update a PR for a task of a module plan. Run it at the same time as convention-reviewer. |
+| migration-reviewer | When the change adds or changes a file under `services/*/db/migrations/`. Run it at the same time as code-reviewer. |
 
 ## Start a review
 
@@ -23,7 +25,7 @@ codex exec -s read-only -m <model> -c 'model_reasoning_effort="<effort>"' -o <re
 - Read `model` and `model_reasoning_effort` from the role file in [`.codex/agents/`](../../.codex/agents/), and pass them with `-m` and `-c`.
 - Put the report file, the input file, and the log file in the scratchpad directory, not in the working tree. Codex writes its final report to the report file.
 - In the prompt, tell Codex to read `AGENTS.md` and the role file in [`.agents/agents/`](../../.agents/agents/). Give the goal of the task, the diff scope, such as `git diff origin/main...HEAD`, and the test commands with their results. Do not add your own reasoning about the change, so that the review stays independent.
-- Put long text in the input file, because `codex exec` appends standard input to the prompt. For convention-reviewer, put the branch name, the PR title, description, and labels, and the squash message there when they exist, because the read-only sandbox cannot read GitHub.
+- Put long text in the input file, because `codex exec` appends standard input to the prompt. For convention-reviewer, put the branch name, the PR title, description, and labels, and the squash message there when they exist, because the read-only sandbox cannot read GitHub. For spec-reviewer, put the module ID and the GitHub Issue of the task there, for the same reason.
 - Read the session ID from the `session id:` line of the log file. The review loop needs it.
 - If the review can take minutes, run it in the background. Do not switch branches in the checkout while a review runs, because Codex reads the files there.
 

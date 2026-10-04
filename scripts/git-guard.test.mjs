@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { codexArgs, isApproved, roleSettings, sessionID, stampPath } from './codex-review.mjs';
-import { commitContentProblem, decide, gitCommands, pushTargets, shellCommands } from './git-guard.mjs';
+import { createHash } from 'node:crypto';
+
+import { codexArgs, isApproved, promptWithSnapshot, roleSettings, sessionID, stampPath, textStampPath } from './codex-review.mjs';
+import { commitContentProblem, commitMakerProblem, decide, ghPr, gitCommands, prBody, pushTargets, shellCommands } from './git-guard.mjs';
 
 const COMMON = '/repo/.git';
 const TREE = 'tree-staged';
@@ -34,7 +36,14 @@ function existing(...paths) {
 }
 
 const STAMP = stampPath(COMMON, 'code-reviewer', TREE);
-const decideWith = (command, run = fakeGit(), exists = existing()) => decide({ command, cwd: '/repo' }, { run, exists });
+const FILES = { '/repo/pr.md': 'Approved description\n' };
+const read = (path) => {
+  if (!(path in FILES)) {
+    throw new Error(`missing ${path}`);
+  }
+  return FILES[path];
+};
+const decideWith = (command, run = fakeGit(), exists = existing()) => decide({ command, cwd: '/repo' }, { run, exists, read });
 
 test('shellCommands respects quotes and shell operators', () => {
   assert.deepEqual(shellCommands(`printf '%s' 'a; git commit; b' && (git status)`), [
@@ -211,4 +220,108 @@ test('codexArgs keeps the sandbox read-only for a start and a resume', () => {
   const resume = codexArgs({ ...base, resume: 'id-1' });
   assert.deepEqual(resume.slice(0, 3), ['exec', 'resume', 'id-1']);
   assert.ok(resume.includes('sandbox_mode="read-only"'));
+});
+
+test('push to main is blocked in every form', () => {
+  const onMain = (cmd, args, cwd) =>
+    args.join(' ') === 'rev-parse --abbrev-ref HEAD' ? { status: 0, stdout: 'main\n' } : fakeGit()(cmd, args, cwd);
+  for (const command of ['git push origin main', 'git push origin HEAD:main', 'git push origin HEAD:refs/heads/main', 'git push --delete origin main', 'git push origin :main']) {
+    assert.equal(decideWith(command).block, true, command);
+  }
+  assert.equal(decideWith('git push origin HEAD', onMain).block, true);
+  assert.equal(decideWith('git push', onMain).block, true);
+});
+
+test('commands that create commits without git commit are blocked', () => {
+  for (const command of [
+    'git cherry-pick abc123',
+    'git revert abc123',
+    'git rebase origin/main',
+    'git rebase --continue',
+    'git am patch.mbox',
+    'git pull',
+    'git pull --rebase origin main',
+    'git merge feat/other',
+    'git merge -m "main" feat/other',
+    'git merge --continue',
+  ]) {
+    assert.equal(decideWith(command).block, true, command);
+  }
+  for (const command of [
+    'git cherry-pick --no-commit abc123',
+    'git cherry-pick -n abc123',
+    'git revert --no-commit abc123',
+    'git rebase --abort',
+    'git cherry-pick --abort',
+    'git pull --ff-only',
+    'git merge origin/main',
+    'git merge -m "Merge main" origin/main',
+    'git merge --no-commit feat/other',
+    'git merge --ff-only feat/other',
+    'git merge --abort',
+  ]) {
+    assert.equal(decideWith(command).block, false, command);
+  }
+  assert.match(commitMakerProblem('cherry-pick', ['abc']), /--no-commit/);
+});
+
+test('gh pr merge is always blocked', () => {
+  assert.equal(decideWith('gh pr merge 12 --squash').block, true);
+  assert.equal(decideWith('gh pr merge --auto --squash').block, true);
+});
+
+test('gh pr create and edit need a convention-reviewer approval for the tree and the description', () => {
+  const run = fakeGit({ headTree: TREE });
+  const treeStamp = stampPath(COMMON, 'convention-reviewer', TREE);
+  const textStamp = textStampPath(COMMON, 'convention-reviewer', FILES['/repo/pr.md']);
+  const create = 'gh pr create --base main --title "feat: x" --body-file pr.md';
+
+  assert.equal(decideWith(create, run, existing()).block, true);
+  assert.equal(decideWith(create, run, existing(treeStamp)).block, true);
+  assert.equal(decideWith(create, run, existing(treeStamp, textStamp)).block, false);
+
+  const otherText = textStampPath(COMMON, 'convention-reviewer', 'An older description\n');
+  assert.equal(decideWith(create, run, existing(treeStamp, otherText)).block, true);
+
+  assert.equal(decideWith('gh pr create --title x --body "inline"', run, existing(treeStamp, textStamp)).block, true);
+  assert.equal(decideWith('gh pr create --title x --fill', run, existing(treeStamp, textStamp)).block, true);
+  assert.equal(decideWith('gh pr create --title x', run, existing(treeStamp, textStamp)).block, true);
+  assert.equal(decideWith('gh pr create --title x --body-file missing.md', run, existing(treeStamp)).block, true);
+
+  assert.equal(decideWith('gh pr edit 12 --body-file pr.md', run, existing(treeStamp, textStamp)).block, false);
+  assert.equal(decideWith('gh pr edit 12 --add-label type:docs', run, existing(treeStamp)).block, false);
+  assert.equal(decideWith('gh pr edit 12 --add-label type:docs', run, existing()).block, true);
+  assert.equal(decideWith('gh pr view 12', run, existing()).block, false);
+  assert.equal(decideWith('cd sub && gh pr edit 12 --body-file pr.md', run, existing(treeStamp, textStamp)).block, true);
+});
+
+test('gh pr is found after the repository option in either position', () => {
+  assert.deepEqual(ghPr(['--repo', 'owner/repo', 'pr', 'merge', '12', '--squash']), { action: 'merge', args: ['12', '--squash'] });
+  assert.deepEqual(ghPr(['-R', 'owner/repo', 'pr', 'create', '--body-file', 'pr.md']), { action: 'create', args: ['--body-file', 'pr.md'] });
+  assert.deepEqual(ghPr(['pr', 'merge', '-R', 'owner/repo', '12']), { action: 'merge', args: ['12'] });
+  assert.equal(ghPr(['issue', 'view', '3']), undefined);
+  assert.equal(decideWith('gh --repo owner/repo pr merge 12 --squash').block, true);
+  assert.equal(decideWith('gh -R owner/repo pr create --title x --body-file pr.md').block, true);
+});
+
+test('every body option is read, and only one body file counts', () => {
+  assert.deepEqual(prBody(['-Fpr.md']), { file: 'pr.md' });
+  assert.match(prBody(['-bunreviewed']).problem, /-b/);
+  assert.match(prBody(['--body-file', 'pr.md', '--body-file', 'other.md']).problem, /more than one/);
+  const run = fakeGit({ headTree: TREE });
+  const treeStamp = stampPath(COMMON, 'convention-reviewer', TREE);
+  const textStamp = textStampPath(COMMON, 'convention-reviewer', FILES['/repo/pr.md']);
+  assert.equal(decideWith('gh pr edit 12 -bunreviewed', run, existing(treeStamp, textStamp)).block, true);
+  assert.equal(decideWith('gh pr edit 12 --body-file pr.md --body-file other.md', run, existing(treeStamp, textStamp)).block, true);
+  assert.equal(decideWith('gh pr edit 12 -Fpr.md', run, existing(treeStamp, textStamp)).block, false);
+});
+
+test('the review prompt carries the exact tree and description that the stamps cover', () => {
+  const text = 'Description under review\n';
+  const prompt = promptWithSnapshot('Review this.', { tree: 't1', head: 'h1', text });
+  assert.match(prompt, /git diff h1 t1/);
+  assert.ok(prompt.includes(text));
+  assert.ok(prompt.includes(createHash('sha256').update(text).digest('hex')));
+  assert.equal(textStampPath('/g', 'r', text), stampPath('/g', 'r', `text-${createHash('sha256').update(text).digest('hex')}`));
+  assert.ok(!promptWithSnapshot('Review this.', { tree: 't1', head: 'h1' }).includes('<pr-description>'));
 });

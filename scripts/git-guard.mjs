@@ -1,12 +1,14 @@
 // Claude Code PreToolUse hook for Bash. It blocks a `git commit` that has no Codex approval
-// for the staged tree, and a `git push` to a branch whose pull request is merged or closed.
+// for the staged tree, other commands that create commits, a `git push` to `main` or to a
+// branch whose pull request is merged or closed, `gh pr merge`, and a `gh pr create` or
+// `gh pr edit` without a convention-reviewer approval.
 // It guards against forgotten steps, not against a deliberate bypass.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { stampPath } from './codex-review.mjs';
+import { stampPath, textStampPath } from './codex-review.mjs';
 
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
 const WRAPPERS = new Set(['command', 'exec', 'env', 'time', 'nohup', 'builtin']);
@@ -15,6 +17,10 @@ const COMMIT_VALUE_OPTIONS = new Set(['-m', '-F', '-C', '-c', '-t', '--message',
 const COMMIT_CONTENT_OPTIONS = new Set(['-a', '--all', '-i', '--include', '-o', '--only', '-p', '--patch',
   '--interactive', '--pathspec-from-file']);
 const PUSH_VALUE_OPTIONS = new Set(['-o', '--push-option', '--receive-pack', '--exec']);
+const MERGE_VALUE_OPTIONS = new Set(['-m', '-F', '--file', '-s', '--strategy', '-X', '--strategy-option']);
+// Commits on main already passed review, so merging main into a branch needs no new review.
+const REVIEWED_REFS = new Set(['main', 'origin/main']);
+const PROTECTED_BRANCH = 'main';
 
 // Splits a shell line into simple commands. Each command is a list of words without quotes.
 // Operators outside quotes end a command: ; & | ( ) { } and newlines. Comments and the bodies
@@ -122,6 +128,10 @@ export function gitCommands(line, cwd) {
       found.push({ dir: cwd, sub: 'cd', args: words.slice(1) });
       continue;
     }
+    if (words[0] === 'gh') {
+      found.push({ dir: cwd, sub: 'gh', args: words.slice(1) });
+      continue;
+    }
     if (words[0] !== 'git') {
       continue;
     }
@@ -211,11 +221,13 @@ export function pushTargets(args, currentBranch) {
     all = true;
   }
   if (refspecs.length === 0) {
-    return { all, deletes, branches: currentBranch ? [currentBranch] : [] };
+    return { all, deletes, branches: currentBranch ? [currentBranch] : [], deleted: [] };
   }
   const branches = [];
+  const deleted = [];
   for (const refspec of refspecs) {
     if (refspec.startsWith(':')) {
+      deleted.push(refspec.slice(1).replace(/^refs\/heads\//, ''));
       continue;
     }
     let target = refspec.includes(':') ? refspec.split(':')[1] : refspec;
@@ -227,17 +239,110 @@ export function pushTargets(args, currentBranch) {
       branches.push(target);
     }
   }
-  return { all, deletes, branches };
+  return { all, deletes, branches, deleted };
+}
+
+// Returns why a git command other than `git commit` can create a commit, or undefined.
+// Such a commit would skip the review that `git commit` needs.
+export function commitMakerProblem(sub, args) {
+  if (!['cherry-pick', 'revert', 'merge', 'rebase', 'am', 'pull'].includes(sub)) {
+    return undefined;
+  }
+  if (args.includes('--abort') || args.includes('--quit')) {
+    return undefined;
+  }
+  if (sub === 'pull') {
+    return args.includes('--ff-only') ? undefined : '`git pull` can create a merge commit. Use `git pull --ff-only`.';
+  }
+  if (sub === 'merge') {
+    if (args.includes('--no-commit') || args.includes('--squash') || args.includes('--ff-only')) {
+      return undefined;
+    }
+    const refs = [];
+    for (let i = 0; i < args.length; i += 1) {
+      if (MERGE_VALUE_OPTIONS.has(args[i])) {
+        i += 1;
+      } else if (!args[i].startsWith('-')) {
+        refs.push(args[i]);
+      }
+    }
+    if (refs.length > 0 && refs.every((ref) => REVIEWED_REFS.has(ref))) {
+      return undefined;
+    }
+  }
+  if ((sub === 'cherry-pick' || sub === 'revert') && (args.includes('--no-commit') || args.includes('-n'))) {
+    return undefined;
+  }
+  const alternative = ['cherry-pick', 'revert', 'merge'].includes(sub)
+    ? `Run \`git ${sub} --no-commit\`, review the staged change, and then run \`git commit\`.`
+    : 'Apply the change without it, review the staged change, and then run `git commit`.';
+  return `\`git ${sub}\` creates commits that no reviewer approved. ${alternative}`;
+}
+
+// Returns the action and the arguments of a `gh pr` command, or undefined. It skips the
+// repository option, which gh accepts before and after `pr`.
+export function ghPr(args) {
+  const rest = [];
+  let action;
+  let sawPr = false;
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === '-R' || arg === '--repo') {
+      i += 1;
+    } else if (arg.startsWith('--repo=') || /^-R./.test(arg)) {
+      continue;
+    } else if (!sawPr) {
+      if (arg === 'pr') {
+        sawPr = true;
+      } else if (!arg.startsWith('-')) {
+        return undefined;
+      }
+    } else if (action === undefined && !arg.startsWith('-')) {
+      action = arg;
+    } else {
+      rest.push(arg);
+    }
+  }
+  return sawPr && action ? { action, args: rest } : undefined;
+}
+
+// Returns the body file of `gh pr create` or `gh pr edit`, or a problem when the body is not
+// in exactly one file.
+export function prBody(args) {
+  const files = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === '--body-file' || arg === '-F') {
+      files.push(args[i + 1]);
+      i += 1;
+    } else if (arg.startsWith('--body-file=')) {
+      files.push(arg.slice('--body-file='.length));
+    } else if (/^-F./.test(arg)) {
+      files.push(arg.slice(2));
+    } else if (
+      ['--body', '-b', '--fill', '--fill-first', '--fill-verbose', '-f'].includes(arg) ||
+      arg.startsWith('--body=') ||
+      /^-b./.test(arg)
+    ) {
+      return { problem: `it sets the body with ${arg.startsWith('--') ? arg.split('=')[0] : arg.slice(0, 2)}` };
+    }
+  }
+  if (files.length > 1) {
+    return { problem: 'it passes more than one body file' };
+  }
+  return { file: files[0] };
 }
 
 // Decides whether to block the command. `run(cmd, args, cwd)` returns { status, stdout }.
-export function decide({ command, cwd }, { run, exists }) {
+export function decide({ command, cwd }, { run, exists, read }) {
   const gits = gitCommands(command, cwd);
-  const guarded = gits.filter((git) => git.sub === 'commit' || git.sub === 'push');
+  const prOf = (git) => (git.sub === 'gh' ? ghPr(git.args) : undefined);
+  const isPr = (git) => ['create', 'edit', 'merge'].includes(prOf(git)?.action);
+  const guarded = gits.filter((git) => git.sub === 'commit' || git.sub === 'push' || isPr(git));
   if (guarded.length > 0 && gits.some((git) => git.sub === 'cd')) {
     return {
       block: true,
-      reason: 'Do not combine `cd` with `git commit` or `git push`. Use `git -C <dir>` so that this hook checks the right repository.',
+      reason: 'Do not combine `cd` with `git commit`, `git push`, or `gh pr`. Use `git -C <dir>` and run `gh` from the repository root.',
     };
   }
   for (const git of gits) {
@@ -245,6 +350,53 @@ export function decide({ command, cwd }, { run, exists }) {
       const result = run('git', args, git.dir);
       return result.status === 0 ? result.stdout.trim() : undefined;
     };
+
+    const makerProblem = commitMakerProblem(git.sub, git.args);
+    if (makerProblem) {
+      return { block: true, reason: makerProblem };
+    }
+
+    if (isPr(git)) {
+      const { action, args: prArgs } = prOf(git);
+      if (action === 'merge') {
+        return { block: true, reason: 'The maintainer merges pull requests. Do not run `gh pr merge` or enable auto-merge.' };
+      }
+      if (gits.length > 1) {
+        return { block: true, reason: `Run \`gh pr ${action}\` as its own command.` };
+      }
+      const body = prBody(prArgs);
+      if (body.problem || (action === 'create' && !body.file)) {
+        return {
+          block: true,
+          reason: `Pass the PR description with --body-file, so that this hook can match it with the convention-reviewer approval${body.problem ? `; ${body.problem}` : ''}.`,
+        };
+      }
+      const tree = out(['rev-parse', 'HEAD^{tree}']);
+      const commonDir = out(['rev-parse', '--git-common-dir']);
+      if (!tree || !commonDir) {
+        continue;
+      }
+      const common = resolve(git.dir, commonDir);
+      const needed = [stampPath(common, 'convention-reviewer', tree)];
+      if (body.file) {
+        let text;
+        try {
+          text = read(resolve(git.dir, body.file));
+        } catch {
+          return { block: true, reason: `Cannot read the PR description file ${body.file}.` };
+        }
+        needed.push(textStampPath(common, 'convention-reviewer', text));
+      }
+      if (!needed.every(exists)) {
+        return {
+          block: true,
+          reason:
+            'No convention-reviewer approval for this branch and this PR description. Run ' +
+            '`node scripts/codex-review.mjs convention-reviewer ... --stamp-file <description-file>` and ' +
+            'pass the same file with --body-file after it prints `verdict: APPROVE`.',
+        };
+      }
+    }
 
     if ((git.sub === 'commit' || git.sub === 'push') && gits.length > 1) {
       return {
@@ -296,6 +448,9 @@ export function decide({ command, cwd }, { run, exists }) {
       if (targets.all) {
         return { block: true, reason: 'Push branches by name, so that this hook can check their pull requests.' };
       }
+      if ([...targets.branches, ...targets.deleted].includes(PROTECTED_BRANCH)) {
+        return { block: true, reason: 'Do not push to main. Push a branch and open a pull request.' };
+      }
       if (targets.deletes) {
         continue;
       }
@@ -327,6 +482,7 @@ function main() {
     {
       run: (cmd, args, cwd) => spawnSync(cmd, args, { cwd, encoding: 'utf8' }),
       exists: existsSync,
+      read: (path) => readFileSync(path, 'utf8'),
     },
   );
   if (decision.block) {

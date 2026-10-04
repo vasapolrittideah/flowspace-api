@@ -21,10 +21,20 @@ node scripts/codex-review.mjs <role> --out <scratchpad>/<name> --prompt-file <pr
 
 - The script reads `model` and `model_reasoning_effort` from the role file in [`.codex/agents/`](../../.codex/agents/), runs `codex exec` with a read-only sandbox, and closes standard input when there is no input file.
 - It writes `<name>.md` with the report and `<name>.log` with the Codex output, and it prints the session ID and the verdict. Put the prompt file, the input file, and the output in the scratchpad directory, not in the working tree.
-- On `APPROVE`, it stamps the staged tree. The [`git-guard` hook](../../scripts/git-guard.mjs) blocks `git commit` when the staged tree has no `code-reviewer` stamp, or no `migration-reviewer` stamp for a staged migration. A later edit changes the staged tree, so it needs a new review. The hook also blocks `git push` to a branch whose pull request is merged or closed.
+- On `APPROVE`, it stamps the staged tree. The [`git-guard` hook](../../scripts/git-guard.mjs) blocks `git commit` when the staged tree has no `code-reviewer` stamp, or no `migration-reviewer` stamp for a staged migration. A later edit changes the staged tree, so it needs a new review.
 - In the prompt, tell Codex to read `AGENTS.md` and the role file in [`.agents/agents/`](../../.agents/agents/). Give the goal of the task, the diff scope, such as `git diff --cached` or `git diff origin/main...HEAD`, and the test commands with their results. Do not add your own reasoning about the change, so that the review stays independent.
-- Put long text in the input file. For convention-reviewer, put the branch name, the PR title, description, and labels, and the squash message there when they exist, because the read-only sandbox cannot read GitHub.
+- Put long text in the input file. For convention-reviewer, put the branch name, the PR title, description, and labels, and the squash message there when they exist, because the read-only sandbox cannot read GitHub. Also pass the PR description file with `--stamp-file`, so that the script stamps its exact text.
 - If the review can take minutes, run it in the background. Do not switch branches in the checkout while a review runs, because Codex reads the files there.
+
+## What the hook blocks
+
+The [`git-guard` hook](../../scripts/git-guard.mjs) runs before each Bash command and blocks these commands:
+
+- `git commit` without a stamp for the staged tree, as stated above. It must run as its own command, without `cd`, and without `-a`, `-i`, `-o`, `-p`, or paths.
+- `git cherry-pick`, `git revert`, and `git merge` without `--no-commit`, `git rebase`, `git am`, and `git pull` without `--ff-only`, because they create commits that skip the review. `--abort` is allowed, and so is a merge of `main` or `origin/main`, because its commits already passed review.
+- `git push` to `main`, or to a branch whose pull requests are all merged or closed. It must run as its own command.
+- `gh pr merge`, because the maintainer merges pull requests.
+- `gh pr create` and `gh pr edit` without a convention-reviewer stamp for the tree of `HEAD`. When the command passes a description, it must use `--body-file` with the same file that the review stamped.
 
 ## Review loop
 

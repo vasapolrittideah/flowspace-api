@@ -2,13 +2,42 @@
 // Usage:
 //   node scripts/codex-review.mjs <role> --out <prefix> --prompt-file <file> [--input <file>]
 //   node scripts/codex-review.mjs <role> --out <prefix> --prompt-file <file> --resume <session-id>
+// Add --stamp-file <file> to also stamp the exact text of a file, such as a PR description.
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export function stampPath(gitCommonDir, role, tree) {
   return join(gitCommonDir, 'codex-reviews', role, tree);
+}
+
+export function textStampPath(gitCommonDir, role, text) {
+  return stampPath(gitCommonDir, role, `text-${createHash('sha256').update(text).digest('hex')}`);
+}
+
+// Adds the exact change under review to the prompt. Tree objects never change, and the
+// text snapshot is read once, so the stamps cover exactly what the reviewer saw.
+export function promptWithSnapshot(prompt, { tree, head, text }) {
+  const lines = [
+    prompt.trimEnd(),
+    '',
+    `The staged tree under review is ${tree}. Before you give a verdict, read exactly this change with ` +
+      `\`git diff ${head} ${tree}\`. An APPROVE verdict approves that tree for commit.`,
+  ];
+  if (text !== undefined) {
+    const hash = createHash('sha256').update(text).digest('hex');
+    lines.push(
+      '',
+      `An APPROVE verdict also approves this exact PR description (sha256 ${hash}). Review it as written:`,
+      '',
+      '<pr-description>',
+      text,
+      '</pr-description>',
+    );
+  }
+  return `${lines.join('\n')}\n`;
 }
 
 export function isApproved(report) {
@@ -80,11 +109,8 @@ function main() {
 
   const input = openSync(options.input ?? '/dev/null', 'r');
   const log = openSync(logPath, 'w');
-  // Tree objects never change, so this diff shows the reviewer exactly the tree that the stamp covers.
-  const prompt =
-    `${readFileSync(options['prompt-file'], 'utf8').trimEnd()}\n\n` +
-    `The staged tree under review is ${tree}. Before you give a verdict, read exactly this change with ` +
-    `\`git diff ${head} ${tree}\`. An APPROVE verdict approves that tree for commit.\n`;
+  const stampText = options['stamp-file'] ? readFileSync(options['stamp-file'], 'utf8') : undefined;
+  const prompt = promptWithSnapshot(readFileSync(options['prompt-file'], 'utf8'), { tree, head, text: stampText });
   const run = spawnSync('codex', codexArgs({ ...settings, report, prompt, resume: options.resume }), {
     cwd: root,
     stdio: [input, log, log],
@@ -101,9 +127,15 @@ function main() {
   })();
   const approved = run.status === 0 && isApproved(reportText);
   if (approved) {
-    const stamp = stampPath(resolve(root, git(['rev-parse', '--git-common-dir'])), options.role, tree);
-    mkdirSync(dirname(stamp), { recursive: true });
-    writeFileSync(stamp, `${report}\n`);
+    const commonDir = resolve(root, git(['rev-parse', '--git-common-dir']));
+    const stamps = [stampPath(commonDir, options.role, tree)];
+    if (stampText !== undefined) {
+      stamps.push(textStampPath(commonDir, options.role, stampText));
+    }
+    for (const stamp of stamps) {
+      mkdirSync(dirname(stamp), { recursive: true });
+      writeFileSync(stamp, `${report}\n`);
+    }
   }
   process.stdout.write(
     [
@@ -111,6 +143,7 @@ function main() {
       `session id: ${sessionID(readFileSync(logPath, 'utf8')) ?? 'unknown'}`,
       `verdict: ${approved ? 'APPROVE' : 'not approved'}`,
       `staged tree: ${tree}${approved ? ' (stamped)' : ''}`,
+      ...(options['stamp-file'] ? [`stamp file: ${options['stamp-file']}${approved ? ' (stamped)' : ''}`] : []),
       `report: ${report}`,
       `log: ${logPath}`,
       '',

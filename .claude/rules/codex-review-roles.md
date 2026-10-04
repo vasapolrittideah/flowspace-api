@@ -13,29 +13,28 @@ The roles need Codex CLI 0.160.0 or later and a `codex login`. Do not use an MCP
 
 ## Start a review
 
-Run `codex exec` with the Bash tool from the root of the current checkout or worktree:
+Stage the change first. Then run [`scripts/codex-review.mjs`](../../scripts/codex-review.mjs) with the Bash tool:
 
 ```bash
-codex exec -s read-only -m <model> -c 'model_reasoning_effort="<effort>"' -o <report-file> "<prompt>" < <input-file> > <log-file> 2>&1
+node scripts/codex-review.mjs <role> --out <scratchpad>/<name> --prompt-file <prompt-file> [--input <input-file>]
 ```
 
-- Always pass `-s read-only`.
-- Read `model` and `model_reasoning_effort` from the role file in [`.codex/agents/`](../../.codex/agents/), and pass them with `-m` and `-c`.
-- Put the report file, the input file, and the log file in the scratchpad directory, not in the working tree. Codex writes its final report to the report file.
-- In the prompt, tell Codex to read `AGENTS.md` and the role file in [`.agents/agents/`](../../.agents/agents/). Give the goal of the task, the diff scope, such as `git diff origin/main...HEAD`, and the test commands with their results. Do not add your own reasoning about the change, so that the review stays independent.
-- Put long text in the input file, because `codex exec` appends standard input to the prompt. For convention-reviewer, put the branch name, the PR title, description, and labels, and the squash message there when they exist, because the read-only sandbox cannot read GitHub.
-- Read the session ID from the `session id:` line of the log file. The review loop needs it.
+- The script reads `model` and `model_reasoning_effort` from the role file in [`.codex/agents/`](../../.codex/agents/), runs `codex exec` with a read-only sandbox, and closes standard input when there is no input file.
+- It writes `<name>.md` with the report and `<name>.log` with the Codex output, and it prints the session ID and the verdict. Put the prompt file, the input file, and the output in the scratchpad directory, not in the working tree.
+- On `APPROVE`, it stamps the staged tree. The [`git-guard` hook](../../scripts/git-guard.mjs) blocks `git commit` when the staged tree has no `code-reviewer` stamp, or no `migration-reviewer` stamp for a staged migration. A later edit changes the staged tree, so it needs a new review. The hook also blocks `git push` to a branch whose pull request is merged or closed.
+- In the prompt, tell Codex to read `AGENTS.md` and the role file in [`.agents/agents/`](../../.agents/agents/). Give the goal of the task, the diff scope, such as `git diff --cached` or `git diff origin/main...HEAD`, and the test commands with their results. Do not add your own reasoning about the change, so that the review stays independent.
+- Put long text in the input file. For convention-reviewer, put the branch name, the PR title, description, and labels, and the squash message there when they exist, because the read-only sandbox cannot read GitHub.
 - If the review can take minutes, run it in the background. Do not switch branches in the checkout while a review runs, because Codex reads the files there.
 
 ## Review loop
 
-1. Fix each Critical and Required finding and run the tests again. Then send the changes and the new test results to the same reviewer:
+1. Fix each Critical and Required finding, run the tests again, and stage the result. Then send the changes and the new test results to the same reviewer:
 
    ```bash
-   codex exec resume <session-id> -m <model> -c 'model_reasoning_effort="<effort>"' -c 'sandbox_mode="read-only"' -o <report-file> "<prompt>" > <log-file> 2>&1
+   node scripts/codex-review.mjs <role> --out <scratchpad>/<name-2> --prompt-file <prompt-file> --resume <session-id>
    ```
 
-   `codex exec resume` does not keep the model, effort, or sandbox of the session, and it ignores standard input when you pass the prompt as an argument. Pass the three settings again, and put all new text in the prompt. Do not start a new session for the same change.
+   `codex exec resume` ignores standard input, so put all new text in the prompt file. Do not start a new session for the same change.
 2. If a finding misreads a convention, do not change the work. Quote the exact rule text in the reply and ask the reviewer to quote the words that support the finding.
 3. Treat the review as passed when the verdict is `APPROVE` and no Critical or Required finding is left. Optional findings and nits do not block a commit, a PR, or a squash message.
 4. If the review does not pass after 3 rounds, stop and ask the user.

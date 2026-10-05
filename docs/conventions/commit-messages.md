@@ -54,6 +54,7 @@ Co-authored-by: <co-author name> <co-author email>
 - If the subject has `!`, explain the incompatibility and the changes that callers must make.
 - If the commit reverts an earlier commit, start the body with `This reverts commit <full SHA>.` Then give the reason in a new paragraph.
 - In a checkpoint commit, write a body only when the subject does not explain the step. Write for a reviewer who reads the PR one commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
+- If a checkpoint subject matches the PR title, apply the checkpoint body rule above. This also applies to the only commit of a PR. Do not omit the body only because the squash commit can have no body. The squash body leaves out text that only reviewers need, such as the tests that the step adds.
 - In a squash commit, write for a later reader of the `main` history. Choose the body with these steps, and stop after the first match:
   1. If the change only adds a document or changes its status, such as a specification, plan, or ADR, omit the body. The document on `main` holds its content.
   2. If the change edits an existing rule in a document, write only the reason or trade-off that the changed files do not state. If the files state the reason, omit the body.

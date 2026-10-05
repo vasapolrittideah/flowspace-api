@@ -398,6 +398,84 @@ test('PR body and command rules still block with every approval in place', () =>
   }
 });
 
+const PLANNING_ROLE = '/repo/.codex/agents/planning-reviewer.toml';
+const BRANCH_DIFF = 'diff --name-only origin/main...HEAD';
+// This function extends fakeGit with an answer for the branch diff that the hook reads before a
+// PR command.
+function planningGit({ paths = 'docs/specs/identity.md\n', status = 0, headTree = TREE } = {}) {
+  const base = fakeGit({ headTree });
+  return (cmd, args, cwd) => (args.join(' ') === BRANCH_DIFF ? { status, stdout: paths } : base(cmd, args, cwd));
+}
+const PLANNING_STAMP = (tree = TREE) => stampPath(COMMON, 'planning-reviewer', tree);
+const ALL_PR = [...PR_STAMPS, PLANNING_STAMP()];
+const CREATE = 'gh pr create --title x --body-file pr.md';
+const BODY_EDIT = 'gh pr edit 12 --body-file pr.md';
+const LABEL_EDIT = 'gh pr edit 12 --add-label type:docs';
+
+test('a branch that changes a planning artifact needs a planning-reviewer approval for the PR', () => {
+  for (const path of ['docs/specs/identity.md', 'tasks/identity-provider-login.md', 'docs/adr/0040-example.md']) {
+    const run = planningGit({ paths: `cmd/main.go\n${path}\n` });
+    for (const command of [CREATE, BODY_EDIT, LABEL_EDIT]) {
+      const decision = decideWith(command, run, existing(WRITING_ROLE, PLANNING_ROLE, ...PR_STAMPS));
+      assert.equal(decision.block, true, `${command} with ${path}`);
+      assert.match(decision.reason, /from: planning-reviewer\./, `${command} with ${path}`);
+      assert.match(decision.reason, /node scripts\/codex-review\.mjs planning-reviewer \.\.\.`/);
+      assert.equal(decideWith(command, run, existing(WRITING_ROLE, PLANNING_ROLE, ...ALL_PR)).block, false, `${command} with ${path}`);
+    }
+  }
+});
+
+test('the planning-reviewer approval covers the tree of HEAD and needs no text stamp', () => {
+  const run = planningGit({ headTree: 'tree-head' });
+  const others = [...prTreeStamps('tree-head'), ...prTextStamps()];
+  assert.equal(decideWith(CREATE, run, existing(WRITING_ROLE, PLANNING_ROLE, ...others, PLANNING_STAMP('tree-head'))).block, false);
+  assert.equal(decideWith(CREATE, run, existing(WRITING_ROLE, PLANNING_ROLE, ...others, PLANNING_STAMP(TREE))).block, true);
+  const planningText = textStampPath(COMMON, 'planning-reviewer', FILES['/repo/pr.md']);
+  assert.equal(decideWith(CREATE, run, existing(WRITING_ROLE, PLANNING_ROLE, ...others, planningText)).block, true);
+});
+
+test('on a planning branch, only the complete set of approvals allows the PR', () => {
+  const run = planningGit();
+  for (const command of [CREATE, BODY_EDIT]) {
+    for (let mask = 0; mask < 32; mask += 1) {
+      const stamps = ALL_PR.filter((_, i) => mask & (1 << i));
+      assert.equal(decideWith(command, run, existing(WRITING_ROLE, PLANNING_ROLE, ...stamps)).block, mask !== 31, `${command} with stamp set ${mask}`);
+    }
+  }
+  const trees = [...prTreeStamps(), PLANNING_STAMP()];
+  for (let mask = 0; mask < 8; mask += 1) {
+    const stamps = trees.filter((_, i) => mask & (1 << i));
+    assert.equal(decideWith(LABEL_EDIT, run, existing(WRITING_ROLE, PLANNING_ROLE, ...stamps)).block, mask !== 7, `label edit with stamp set ${mask}`);
+  }
+});
+
+test('the block reason lists each missing reviewer once', () => {
+  const run = planningGit();
+  const missing = (stamps) => decideWith(CREATE, run, existing(WRITING_ROLE, PLANNING_ROLE, ...stamps)).reason.match(/from: ([^.]*)\./)[1];
+  assert.equal(missing([]), 'convention-reviewer, writing-reviewer, planning-reviewer');
+  assert.equal(missing(PR_STAMPS), 'planning-reviewer');
+  assert.equal(missing(ALL_PR.filter((path) => !path.includes('convention-reviewer'))), 'convention-reviewer');
+  assert.equal(missing([...PR_STAMPS.filter((path) => !path.includes('writing-reviewer'))]), 'writing-reviewer, planning-reviewer');
+});
+
+test('the planning check reads the branch diff, not the staged diff', () => {
+  const stagedOnly = (cmd, args, cwd) =>
+    args.join(' ') === 'diff --cached --name-only' ? { status: 0, stdout: 'docs/specs/identity.md\n' } : planningGit({ paths: 'cmd/main.go\n' })(cmd, args, cwd);
+  assert.equal(decideWith(CREATE, stagedOnly, existing(WRITING_ROLE, PLANNING_ROLE, ...PR_STAMPS)).block, false);
+});
+
+test('no planning approval is needed without the role file, for other paths, or when the branch diff fails', () => {
+  const approved = existing(WRITING_ROLE, PLANNING_ROLE, ...PR_STAMPS);
+  assert.equal(decideWith(CREATE, planningGit(), existing(WRITING_ROLE, ...PR_STAMPS)).block, false);
+  for (const paths of ['', 'cmd/main.go\n', 'docs/specs-old/x.md\n', 'tasks-old/x.md\n', 'other/docs/adr/x.md\n']) {
+    assert.equal(decideWith(CREATE, planningGit({ paths }), approved).block, false, JSON.stringify(paths));
+  }
+  for (const paths of ['', 'docs/specs/identity.md\n']) {
+    assert.equal(decideWith(CREATE, planningGit({ paths, status: 1 }), approved).block, false, `failed diff ${JSON.stringify(paths)}`);
+  }
+  assert.match(decideWith(CREATE, planningGit({ status: 1 }), existing(WRITING_ROLE, PLANNING_ROLE)).reason, /from: convention-reviewer, writing-reviewer\./);
+});
+
 test('gh pr is found after the repository option in either position', () => {
   assert.deepEqual(ghPr(['--repo', 'owner/repo', 'pr', 'merge', '12', '--squash']), { action: 'merge', args: ['12', '--squash'] });
   assert.deepEqual(ghPr(['-R', 'owner/repo', 'pr', 'create', '--body-file', 'pr.md']), { action: 'create', args: ['--body-file', 'pr.md'] });

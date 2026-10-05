@@ -2,7 +2,7 @@
 
 Module ID: `observability-metrics-and-dashboards`
 
-Status: Approved
+Status: Draft
 
 ## Objective
 
@@ -183,8 +183,8 @@ Never do these actions:
 3. Given a client sends a request to a path that no route matches, When the service answers, Then the series has the `unmatched` route, and no series has the raw path.
 4. Given a request fails with HTTP 5xx or a gRPC error code, When a developer opens the Service health dashboard, Then the error rate panel shows the failure for that service and route.
 5. Given requests with known latencies, When a developer opens the Service health dashboard, Then it shows p50, p95, and p99 latency for each route from the histogram buckets.
-6. Given unpublished events wait in the outbox because the relay is stopped, When a developer opens the Event delivery dashboard, Then the outbox age increases until the relay publishes them, and then it returns to 0.
-7. Given the email worker is stopped while events are published, When a developer opens the Event delivery dashboard, Then the consumer lag increases until the worker consumes the records.
+6. Given Redpanda is stopped while signups add events to the outbox, When a developer opens the Event delivery dashboard, Then the outbox age increases, and it returns to 0 after Redpanda starts and the relay publishes the events.
+7. Given Mailpit is stopped while signups publish events, When a developer opens the Event delivery dashboard, Then the consumer lag increases, and it falls to 0 after Mailpit starts and the worker delivers the records.
 8. Given a signup sends a verification email, When the worker delivers it, Then `identity_email_deliveries_total` increases for kind `verify-email` and outcome `delivered`.
 9. Given a Flowspace container restarts, When a developer opens the Service health dashboard, Then the restart panel shows the restart for that pod and container.
 10. Given the stack runs, When a developer opens the Telemetry stack dashboard, Then it shows host filesystem use, the Prometheus database size, and the Alloy refused and failed counts.

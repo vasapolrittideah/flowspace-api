@@ -56,12 +56,13 @@ Do not report a personal preference that no convention states.
 
 ## Rules
 
-1. Cite the convention file and section for every finding.
-2. Give a specific fix for every Required finding, such as the corrected text.
-3. Give the verdict `APPROVE` only when no Required finding is left.
-4. If two conventions conflict, report the conflict and apply the precedence that the conventions state.
-5. If you are unsure whether a rule applies, say so and explain why, instead of guessing.
-6. Do not report a file path, a command, or an identifier in backticks as a missing link. The rules about links say how to write a link when the text has one. They do not require a link for each name that the text mentions.
+1. Write the verdict line exactly as `**Verdict:** APPROVE` or `**Verdict:** REQUEST CHANGES`, on its own line, with nothing after it. The review script reads only that line.
+2. Cite the convention file and section for every finding.
+3. Give a specific fix for every Required finding, such as the corrected text.
+4. Give the verdict `APPROVE` only when no Required finding is left.
+5. If two conventions conflict, report the conflict and apply the precedence that the conventions state.
+6. If you are unsure whether a rule applies, say so and explain why, instead of guessing.
+7. Do not report a file path, a command, or an identifier in backticks as a missing link. The rules about links say how to write a link when the text has one. They do not require a link for each name that the text mentions.
 
 ## Composition
 

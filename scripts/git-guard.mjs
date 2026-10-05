@@ -4,7 +4,7 @@
 // - `git push` to `main`, or to a branch whose pull request is merged or closed.
 // - `gh pr merge`.
 // - `gh pr create` and `gh pr edit` without the approvals of convention-reviewer and
-//   writing-reviewer.
+//   writing-reviewer, and of planning-reviewer when the branch changes a planning artifact.
 // It guards against forgotten steps, not against a deliberate bypass.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { stampPath, textStampPath } from './codex-review.mjs';
 
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
+const PLANNING_PATH = /^(docs\/specs\/|tasks\/|docs\/adr\/)/;
 const WRAPPERS = new Set(['command', 'exec', 'env', 'time', 'nohup', 'builtin']);
 const COMMIT_VALUE_OPTIONS = new Set(['-m', '-F', '-C', '-c', '-t', '--message', '--file', '--reuse-message',
   '--reedit-message', '--template', '--author', '--date', '--fixup', '--squash', '--trailer', '--cleanup']);
@@ -396,15 +397,30 @@ export function decide({ command, cwd }, { run, exists, read }) {
       if (exists(join(root, '.codex/agents/writing-reviewer.toml'))) {
         roles.push('writing-reviewer');
       }
+      // planning-reviewer approves the tree of HEAD when the branch changes a planning
+      // artifact. It does not review the PR description, so it needs no text stamp. If the
+      // branch diff fails, the hook does not require it.
+      const branchPaths = (out(['diff', '--name-only', 'origin/main...HEAD']) ?? '').split('\n');
+      const planning =
+        branchPaths.some((path) => PLANNING_PATH.test(path)) && exists(join(root, '.codex/agents/planning-reviewer.toml'));
       const missing = roles.filter(
         (role) => !exists(stampPath(common, role, tree)) || (text !== undefined && !exists(textStampPath(common, role, text))),
       );
+      if (planning && !exists(stampPath(common, 'planning-reviewer', tree))) {
+        missing.push('planning-reviewer');
+      }
       if (missing.length > 0) {
         return {
           block: true,
           reason:
             `No approval for this branch and this PR description from: ${missing.join(', ')}. ` +
-            missing.map((role) => `Run \`node scripts/codex-review.mjs ${role} ... --stamp-file <description-file>\``).join(', and ') +
+            missing
+              .map((role) =>
+                role === 'planning-reviewer'
+                  ? 'Run `node scripts/codex-review.mjs planning-reviewer ...`'
+                  : `Run \`node scripts/codex-review.mjs ${role} ... --stamp-file <description-file>\``,
+              )
+              .join(', and ') +
             '. Pass the same file with --body-file after each prints `verdict: APPROVE`.',
         };
       }

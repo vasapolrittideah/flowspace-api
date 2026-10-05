@@ -87,6 +87,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - For a contract or generator change, run `task buf -- lint`, `task buf -- breaking`, and `task buf -- generate` for Protobuf, or `task sqlc -- generate` for SQL. Commit the generated output with the source change. The `Contract checks` CI job checks the same results again.
 - For a documentation-only change, make sure that the facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
 - Before you open or update a PR, run `task check:task`, `task git:diff:check`, and each command in the `Verification` list of each related Issue. If Markdown changes, also run `task markdown:check`. Add a focused check when it proves behavior that these commands do not cover.
+- Before you open or update a PR, run `node scripts/check-pr-metadata.mjs --title "<title>" --labels "<label>,<label>" --body-file <description-file>`, and fix each finding. The script checks the branch name and the checkpoint commits, and the title, labels, and description that you give it. It checks only the rules of this convention, the [branch name convention](branch-names.md), the [commit message convention](commit-messages.md), and the [label convention](github-labels.md) that need no judgment. The [PR metadata workflow](../../.github/workflows/pr-metadata.yml) runs the same check after each change to the PR.
 - Before you open or update a PR, inspect the complete PR diff with the same exclusions as for a commit.
 - Open the PR as a normal PR, not as a draft.
 - After each push, wait for the [CI checks](../../.github/workflows/ci.yml) to finish. If the job log shows that a failure comes from the runner, the network, or an external service, such as a registry timeout, rerun the failed job once. If it fails again, state the cause and link the run in `Risks or limitations`. Fix every other failure in the PR.
@@ -94,7 +95,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - When the work changes, update the title, the description, and the labels before you tell the maintainer that the PR is ready again.
 - Before a review comment exists, you can amend or rebase commits and push them with `git push --force-with-lease`. After a review comment exists, add new commits. If the PR has merge conflicts or needs a change that is on `main`, merge `main` into the branch.
 - Before you write each squash message, read the [commit message convention](commit-messages.md) again from `main`, because it can change while a PR is open.
-- Write the squash message as the commit message convention states for a squash commit. Use the current PR title as the subject.
+- Write the squash message as the commit message convention states for a squash commit. Use the current PR title as the subject. Before you give it, run `node scripts/check-pr-metadata.mjs --title "<title>" --squash-file <message-file>`, and fix each finding.
 - Give the exact squash message in the chat before you tell the maintainer that the PR is ready. If the session has no chat, post the squash message as a PR comment. When the PR changes, give the updated squash message.
 - Do not weaken a command or hide a failure.
 - Do not copy CI results or measurements, such as coverage or reachable vulnerabilities, into the description.

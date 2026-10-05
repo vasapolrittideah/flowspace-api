@@ -22,6 +22,7 @@ This convention defines how to format Markdown and how to write English prose in
 - Use American spelling.
 - Keep code, identifiers, tool directives, and quoted output unchanged when you edit prose.
 - In Go doc comments, keep the symbol prefix and the comment syntax that Go requires.
+- Aim for the sentence limits of the `simple-english` skill: 25 words for a descriptive sentence and 20 words for a procedural sentence, which tells the reader what to do. If a longer sentence is clearer than two short ones, keep it.
 - In Markdown text, do not put product names or ordinary words in backticks, such as PostgreSQL or Issue.
 - In Markdown text, do not use bare URLs or link text such as "here" or "this link".
 - In Markdown text, do not use bold or italic text.
@@ -40,3 +41,9 @@ This convention defines how to format Markdown and how to write English prose in
 ### Changes
 
 - Apply this convention to the text that you add or change. If you change part of a paragraph or a bullet, make the whole paragraph or bullet follow this convention. Do not change other text only to make it follow this convention, unless the PR exists for that change.
+
+## Differences from the simple-english skill
+
+The [`simple-english` skill](../../.agents/skills/simple-english/SKILL.md) sets the rules for English prose, but this convention applies where the two differ.
+
+- Use the sentence guidance in the [format rules](#format-and-content). The skill treats its sentence limits as maximums.

@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -24,7 +25,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
@@ -486,6 +489,26 @@ func publicHandler(t *testing.T, handler identityv1.IdentityServiceServer, logge
 	return public
 }
 
+// assertRPCLineMatches makes sure that the one identity_rpc line has a
+// duration and the correlation and completion fields of the identity_request
+// line.
+func assertRPCLineMatches(t *testing.T, logs *observer.ObservedLogs, request map[string]any) {
+	t.Helper()
+	rpcLines := logs.FilterMessage("identity_rpc").All()
+	if len(rpcLines) != 1 {
+		t.Fatalf("identity_rpc lines = %d, want 1", len(rpcLines))
+	}
+	rpc := rpcLines[0].ContextMap()
+	if _, ok := rpc["duration"].(time.Duration); !ok {
+		t.Fatalf("identity_rpc duration = %#v", rpc["duration"])
+	}
+	for _, key := range []string{"request_id", "trace_id", "operation", "outcome", "status"} {
+		if rpc[key] != request[key] {
+			t.Fatalf("identity_rpc %s = %#v, want %#v", key, rpc[key], request[key])
+		}
+	}
+}
+
 func TestPublicHandlerCreatesOneBoundedServerSpan(t *testing.T) {
 	createAccount := identityv1.IdentityService_CreateAccount_FullMethodName
 	tests := []struct {
@@ -494,6 +517,9 @@ func TestPublicHandlerCreatesOneBoundedServerSpan(t *testing.T) {
 		wantName  string
 		wantAttrs map[string]string
 		wantLog   map[string]any
+		// wantRPCLine means that the gRPC interceptor also writes an
+		// identity_rpc completion line with the same fields.
+		wantRPCLine bool
 	}{
 		{
 			name: "known REST route",
@@ -553,7 +579,8 @@ func TestPublicHandlerCreatesOneBoundedServerSpan(t *testing.T) {
 			wantAttrs: map[string]string{
 				"rpc.method": strings.TrimPrefix(createAccount, "/"), "rpc.grpc.status_code": "0",
 			},
-			wantLog: map[string]any{"operation": createAccount, "status": "OK", "outcome": "success"},
+			wantLog:     map[string]any{"operation": createAccount, "status": "OK", "outcome": "success"},
+			wantRPCLine: true,
 		},
 		{
 			name: "unknown gRPC method",
@@ -597,6 +624,9 @@ func TestPublicHandlerCreatesOneBoundedServerSpan(t *testing.T) {
 				if fields[key] != want {
 					t.Fatalf("%s = %#v, want %#v", key, fields[key], want)
 				}
+			}
+			if test.wantRPCLine {
+				assertRPCLineMatches(t, logs, fields)
 			}
 		})
 	}
@@ -670,8 +700,9 @@ func TestPublicHandlerRecordsGRPCFailures(t *testing.T) {
 		exporter := recordSpans(t)
 		core, logs := observer.New(zap.InfoLevel)
 		handler := failingIdentityHandler{err: status.Error(test.code, "secret-detail")}
-		publicHandler(t, handler, zap.New(core)).ServeHTTP(httptest.NewRecorder(),
-			grpcRequest(t, createAccount, &identityv1.CreateAccountRequest{}))
+		incoming := grpcRequest(t, createAccount, &identityv1.CreateAccountRequest{})
+		incoming.Header.Set("X-Request-ID", "request-1")
+		publicHandler(t, handler, zap.New(core)).ServeHTTP(httptest.NewRecorder(), incoming)
 
 		span := onlySpan(t, exporter)
 		if got := span.Status.Code == otelcodes.Error; got != test.wantError || span.Status.Description != "" {
@@ -686,7 +717,7 @@ func TestPublicHandlerRecordsGRPCFailures(t *testing.T) {
 		}
 		fields := rpcLines[0].ContextMap()
 		if fields["status"] != test.code.String() || fields["outcome"] != "failure" || fields["operation"] != createAccount ||
-			fields["trace_id"] != span.SpanContext.TraceID().String() {
+			fields["request_id"] != "request-1" || fields["trace_id"] != span.SpanContext.TraceID().String() {
 			t.Fatalf("%v: identity_rpc = %v", test.code, fields)
 		}
 		if _, ok := fields["duration"].(time.Duration); !ok {
@@ -714,26 +745,70 @@ func TestObservedRequestsMarkHTTPServerErrors(t *testing.T) {
 	}
 }
 
+const responseCookie = "secret-cookie-name=secret-cookie-value"
+
+// cookieIdentityHandler sets a Set-Cookie response header on CreateAccount.
+type cookieIdentityHandler struct {
+	stubIdentityHandler
+}
+
+func (h cookieIdentityHandler) CreateAccount(ctx context.Context, request *identityv1.CreateAccountRequest) (*identityv1.CreateAccountResponse, error) {
+	if err := grpc.SetHeader(ctx, metadata.Pairs("set-cookie", responseCookie)); err != nil {
+		return nil, err
+	}
+	return h.stubIdentityHandler.CreateAccount(ctx, request)
+}
+
 func TestPublicHandlerSpansOmitRequestData(t *testing.T) {
 	createAccount := identityv1.IdentityService_CreateAccount_FullMethodName
-	for name, request := range map[string]func(*testing.T) *http.Request{
-		"REST": func(t *testing.T) *http.Request {
-			t.Helper()
-			return restRequest(t, http.MethodPost, "/v1/accounts?email=secret-user@example.com&code=secret-code",
-				`{"email":"secret-user@example.com","password":"secret-password"}`)
+	// cookieHeader names the response header that carries responseCookie.
+	// The REST gateway prefixes the gRPC header metadata with Grpc-Metadata-.
+	for name, test := range map[string]struct {
+		request      func(*testing.T) *http.Request
+		cookieHeader string
+	}{
+		"REST": {
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return restRequest(t, http.MethodPost, "/v1/accounts?email=secret-user@example.com&code=secret-code",
+					`{"email":"secret-user@example.com","password":"secret-password"}`)
+			},
+			cookieHeader: "Grpc-Metadata-Set-Cookie",
 		},
-		"gRPC": func(t *testing.T) *http.Request {
-			t.Helper()
-			return grpcRequest(t, createAccount, &identityv1.CreateAccountRequest{Email: "secret-user@example.com", Password: "secret-password"})
+		"gRPC": {
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return grpcRequest(t, createAccount, &identityv1.CreateAccountRequest{Email: "secret-user@example.com", Password: "secret-password"})
+			},
+			cookieHeader: "Set-Cookie",
+		},
+		"provider callback": {
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return restRequest(t, http.MethodGet, "/v1/provider-login-callbacks/google?code=secret-code&state=secret-state", "")
+			},
+			cookieHeader: "Set-Cookie",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			exporter := recordSpans(t)
 			core, logs := observer.New(zap.InfoLevel)
-			incoming := request(t)
+			callback := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Add("Set-Cookie", responseCookie)
+				w.WriteHeader(http.StatusFound)
+			})
+			public, err := newPublicHandler(t.Context(), cookieIdentityHandler{}, callback, zap.New(core), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			incoming := test.request(t)
 			incoming.Header.Set("Authorization", "Bearer secret-access-token")
 			incoming.Header.Set("Cookie", "session=secret-cookie")
-			publicHandler(t, stubIdentityHandler{}, zap.New(core)).ServeHTTP(httptest.NewRecorder(), incoming)
+			response := httptest.NewRecorder()
+			public.ServeHTTP(response, incoming)
+			if !slices.Contains(response.Header().Values(test.cookieHeader), responseCookie) {
+				t.Fatalf("response headers = %v, want %s: %s", response.Header(), test.cookieHeader, responseCookie)
+			}
 
 			span := onlySpan(t, exporter)
 			recorded := []any{span.Name, span.Attributes, span.Status, span.Events}

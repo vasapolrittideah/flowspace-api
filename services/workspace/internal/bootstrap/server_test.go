@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -22,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -411,13 +413,15 @@ func workspaceServer(err error) *fakeWorkspaceServer {
 	}
 }
 
-func serveRequest(t *testing.T, server workspacev1.WorkspaceServiceServer, request *http.Request) {
+func serveRequest(t *testing.T, server workspacev1.WorkspaceServiceServer, request *http.Request) *httptest.ResponseRecorder {
 	t.Helper()
 	handler, err := newHandler(t.Context(), server)
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler.ServeHTTP(httptest.NewRecorder(), request)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	return response
 }
 
 func TestHandlerCreatesOneBoundedServerSpan(t *testing.T) {
@@ -609,28 +613,44 @@ func TestHandlerRecordsServerFailures(t *testing.T) {
 
 func TestHandlerCorrelatesTheCompletionLine(t *testing.T) {
 	getWorkspace := workspacev1.WorkspaceService_GetWorkspace_FullMethodName
-	for name, request := range map[string]func(*testing.T) *http.Request{
-		"REST": func(t *testing.T) *http.Request {
-			t.Helper()
-			return httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/workspaces/workspace-1", nil)
+	// cookieHeader names the response header that carries responseCookie.
+	// The REST gateway prefixes the gRPC header metadata with Grpc-Metadata-.
+	for name, test := range map[string]struct {
+		request      func(*testing.T) *http.Request
+		cookieHeader string
+	}{
+		"REST": {
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/workspaces/workspace-1", nil)
+			},
+			cookieHeader: "Grpc-Metadata-Set-Cookie",
 		},
-		"gRPC": func(t *testing.T) *http.Request {
-			t.Helper()
-			return grpcRequest(t, getWorkspace, &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
+		"gRPC": {
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return grpcRequest(t, getWorkspace, &workspacev1.GetWorkspaceRequest{WorkspaceId: "workspace-1"})
+			},
+			cookieHeader: "Set-Cookie",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			exporter := recordSpans(t)
 			core, logs := observer.New(zap.InfoLevel)
-			service := &fakeService{get: func(context.Context, inbound.GetWorkspaceInput) (domain.Workspace, error) {
+			service := &fakeService{get: func(ctx context.Context, _ inbound.GetWorkspaceInput) (domain.Workspace, error) {
+				if err := grpc.SetHeader(ctx, metadata.Pairs("set-cookie", responseCookie)); err != nil {
+					return domain.Workspace{}, err
+				}
 				return domain.Workspace{ID: "workspace-1"}, nil
 			}}
 			handler := httptransport.NewWorkspaceHandler(service, fakeVerifier{subject: "secret-subject"}, zap.New(core))
-			incoming := request(t)
+			incoming := test.request(t)
 			incoming.Header.Set("Authorization", "Bearer secret-access-token")
 			incoming.Header.Set("Cookie", "session=secret-cookie")
 			incoming.Header.Set("X-Request-ID", "request-1")
-			serveRequest(t, handler, incoming)
+			if response := serveRequest(t, handler, incoming); !slices.Contains(response.Header().Values(test.cookieHeader), responseCookie) {
+				t.Fatalf("response headers = %v, want %s: %s", response.Header(), test.cookieHeader, responseCookie)
+			}
 
 			span := onlySpan(t, exporter)
 			entries := logs.FilterMessage("request_completed").All()
@@ -642,13 +662,19 @@ func TestHandlerCorrelatesTheCompletionLine(t *testing.T) {
 				fields["operation"] != getWorkspace || fields["outcome"] != "success" || fields["status"] != "OK" || fields["duration"] == nil {
 				t.Fatalf("request_completed = %v", fields)
 			}
-			telemetry := fmt.Sprint(span.Name, span.Attributes, span.Status, span.Events, fields)
+			recorded := []any{span.Name, span.Attributes, span.Status, span.Events}
+			for _, entry := range logs.All() {
+				recorded = append(recorded, entry.Message, entry.ContextMap())
+			}
+			telemetry := fmt.Sprint(recorded...)
 			if strings.Contains(telemetry, "secret-") {
 				t.Fatalf("telemetry contains request data: %s", telemetry)
 			}
 		})
 	}
 }
+
+const responseCookie = "secret-cookie-name=secret-cookie-value"
 
 type fakeService struct {
 	inbound.WorkspaceService

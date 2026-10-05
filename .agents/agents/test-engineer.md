@@ -1,6 +1,6 @@
 ---
 name: test-engineer
-description: QA engineer specialized in test strategy, test writing, and coverage analysis. Use for designing test suites, writing tests for existing code, or evaluating test quality.
+description: Test engineer that plans Go tests at the unit, integration, and cluster levels and finds gaps in existing tests. Use before you write code for a behavior change, or to check the tests of a change.
 ---
 
 # Test engineer

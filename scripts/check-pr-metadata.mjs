@@ -15,11 +15,11 @@
 // - The PR description: the template headings, no HTML comments, the format and order of
 //   Related issues, and the format and order of Follow-up tasks.
 // - A squash subject that matches the PR title.
-// - The prose of the PR description and of the checkpoint and squash message bodies. Each
-//   sentence has at most 30 words. The prose has none of the modals, contractions, semicolons,
-//   em dashes, present perfect forms, or filler words that the simple-english skill forbids.
-//   Code, URLs, HTML comments, and headings are not prose. Table rows skip only the sentence
-//   length.
+// - The prose of the PR description and of the checkpoint and squash message bodies. The prose
+//   has none of the modals, contractions, semicolons, em dashes, present perfect forms, or
+//   filler words that the simple-english skill forbids. Code, URLs, HTML comments, and headings
+//   are not prose. The convention treats the sentence limits of the skill as targets, so the
+//   script does not count words.
 //
 // PRs that renovate[bot] opens skip the branch, commit, and description checks, because
 // Renovate writes them.
@@ -41,9 +41,6 @@ const TRAILER_KEY = /^co-authored-by:/i;
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
 const PR_HEADINGS = ['What changed', 'Why', 'Related issues', 'Risks or limitations', 'Follow-up tasks'];
 const MAX_LINE = 72;
-// The prose convention allows 30 words in a descriptive sentence and 25 in a procedural one.
-// The script cannot tell the two apart, so it uses the larger limit.
-const MAX_WORDS = 30;
 // Rules of the simple-english skill that a pattern can find. Each match is a finding.
 const PROSE_RULES = [
   [/\b(should|would|may|might|could)\b/gi, (word) => `"${word}" is a modal that simple-english forbids. Use can, will, or must`],
@@ -53,9 +50,6 @@ const PROSE_RULES = [
   [/\b(has|have) been\b/gi, (words) => `"${words}" is the present perfect. Use a simple tense`],
   [/\b(simply|seamlessly|robust|powerful|comprehensive|leverage|crucial|in order to|it is worth noting|in conclusion)\b/gi, (words) => `"${words}" carries no fact`],
 ];
-// An abbreviation that never ends a sentence, and one that ends it when a capital follows.
-const ABBREVIATION = /\b(e\.g|i\.e|Dr|Mr|Ms)\.$/i;
-const FINAL_ABBREVIATION = /\b(etc|vs)\.$/i;
 
 // Returns the first-column codes of the table under `heading`, with each row's other cells.
 function tableRows(markdown, heading) {
@@ -313,13 +307,14 @@ export function checkBody(body) {
 }
 
 // Returns the prose units of a text: each paragraph, list item, or table row, without code,
-// URLs, HTML comments, and headings. A code span stays as one word. A commit message joins
-// the hard-wrapped lines of each paragraph. Markdown keeps each paragraph on one line.
+// URLs, HTML comments, and headings. A commit message joins the hard-wrapped lines of each
+// paragraph, so that a phrase across two lines counts. Markdown keeps a paragraph on one line.
 function proseUnits(text, { commit }) {
   const lines = text.replace(/\r\n/g, '\n').replace(/<!--[\s\S]*?-->/g, '').split('\n');
   const units = [];
   let fence = '';
   let current;
+  let currentTable = false;
   const end = () => {
     if (current) units.push(current);
     current = undefined;
@@ -351,35 +346,16 @@ function proseUnits(text, { commit }) {
     const item = /^\s*([-*+]|\d+\.)\s/.test(line);
     const table = /^\s*\|/.test(line);
     const textOnly = line.replace(/^\s*([-*+]|\d+\.)\s+/, '').trim();
-    if (commit && current && !item && !table && !current.table) {
-      current.text += ` ${textOnly}`;
+    if (commit && current && !item && !table && !currentTable) {
+      current += ` ${textOnly}`;
     } else {
       end();
-      current = { text: textOnly, table };
+      current = textOnly;
+      currentTable = table;
     }
-    if (!commit) end();
   }
   end();
   return units;
-}
-
-// Splits a unit into sentences at a period, question mark, or exclamation mark that ends a
-// word. A period inside a word, such as in v1.2.3, 25.0%, or a file name, does not end one.
-function sentences(text) {
-  const result = [];
-  let words = [];
-  const all = text.split(/\s+/).filter(Boolean);
-  for (const [index, word] of all.entries()) {
-    words.push(word);
-    const bare = word.replace(/["')\]]+$/, '');
-    const abbreviation = ABBREVIATION.test(bare) || (FINAL_ABBREVIATION.test(bare) && !/^\p{Lu}/u.test(all[index + 1] ?? 'A'));
-    if (/[.?!]["')\]]*$/.test(word) && !abbreviation) {
-      result.push(words);
-      words = [];
-    }
-  }
-  if (words.length > 0) result.push(words);
-  return result;
 }
 
 // Returns the findings for the rules of the simple-english skill that need no judgment.
@@ -387,15 +363,8 @@ export function checkProse(text, { commit = false } = {}) {
   const findings = [];
   for (const unit of proseUnits(text, { commit })) {
     for (const [pattern, message] of PROSE_RULES) {
-      for (const match of unit.text.matchAll(pattern)) {
+      for (const match of unit.matchAll(pattern)) {
         findings.push(message(match[0]));
-      }
-    }
-    if (unit.table) continue;
-    for (const words of sentences(unit.text)) {
-      const count = words.filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
-      if (count > MAX_WORDS) {
-        findings.push(`a sentence has ${count} words, more than ${MAX_WORDS}: "${words.slice(0, 8).join(' ')} ..."`);
       }
     }
   }

@@ -1,6 +1,7 @@
 // Claude Code runs this PreToolUse hook before each Bash command. The hook blocks these commands:
 // - `git commit` without a Codex approval for the staged tree, and other commands that create
-//   commits.
+//   commits. `--continue` of a paused operation needs the same approval, and only when it creates
+//   one commit.
 // - `git push` to `main`, or to a branch whose pull request is merged or closed.
 // - `gh pr merge`.
 // - `gh pr create` and `gh pr edit` without the approvals of convention-reviewer and
@@ -24,6 +25,8 @@ const PUSH_VALUE_OPTIONS = new Set(['-o', '--push-option', '--receive-pack', '--
 const MERGE_VALUE_OPTIONS = new Set(['-m', '-F', '--file', '-s', '--strategy', '-X', '--strategy-option']);
 // Commits on main already passed review, so merging main into a branch needs no new review.
 const REVIEWED_REFS = new Set(['main', 'origin/main']);
+// These operations can pause for conflicts, and `--continue` commits the staged tree.
+const PAUSED_OPERATIONS = new Set(['merge', 'cherry-pick', 'revert', 'rebase', 'am']);
 const PROTECTED_BRANCH = 'main';
 
 // Splits a shell line into simple commands. Each command is a list of words without quotes.
@@ -246,13 +249,52 @@ export function pushTargets(args, currentBranch) {
   return { all, deletes, branches, deleted };
 }
 
+// Returns whether the command continues a paused operation. `decide` checks it as a commit of
+// the staged tree. The option must be the only argument, so that it is not the value of another
+// option, such as `git merge -m --continue`.
+export function continues(sub, args) {
+  return PAUSED_OPERATIONS.has(sub) && args.length === 1 && args[0] === '--continue';
+}
+
+// Returns whether the command only shows the patch of the current step, which creates no commit.
+function showsCurrentPatch(sub, args) {
+  return (sub === 'rebase' || sub === 'am') && args.length === 1 && /^--show-current-patch(=.*)?$/.test(args[0]);
+}
+
+// Returns how many commits a paused operation creates after the commit of its current step.
+// `file(name)` returns the text of a file in the git directory, or undefined when the file does
+// not exist. It returns undefined when the state of the operation is not valid.
+export function laterCommits(sub, file) {
+  const steps = (text) => text.split('\n').filter((line) => line.trim() && !line.trimStart().startsWith('#')).length;
+  if (sub === 'merge') {
+    return file('MERGE_HEAD') === undefined ? undefined : 0;
+  }
+  if (sub === 'cherry-pick' || sub === 'revert') {
+    // A sequence of picks keeps its current step on the first line of the todo file. A single
+    // pick has no todo file, only its head file.
+    const todo = file('sequencer/todo');
+    if (todo !== undefined) {
+      return Math.max(steps(todo) - 1, 0);
+    }
+    return file(sub === 'revert' ? 'REVERT_HEAD' : 'CHERRY_PICK_HEAD') === undefined ? undefined : 0;
+  }
+  // A rebase moves its current step from the todo file to the done file.
+  const todo = sub === 'rebase' ? file('rebase-merge/git-rebase-todo') : undefined;
+  if (todo !== undefined) {
+    return steps(todo);
+  }
+  const next = Number(file('rebase-apply/next'));
+  const last = Number(file('rebase-apply/last'));
+  return Number.isInteger(next) && Number.isInteger(last) && next > 0 && last >= next ? last - next : undefined;
+}
+
 // Returns why a git command other than `git commit` can create a commit, or undefined.
 // Such a commit would skip the review that `git commit` needs.
 export function commitMakerProblem(sub, args) {
   if (!['cherry-pick', 'revert', 'merge', 'rebase', 'am', 'pull'].includes(sub)) {
     return undefined;
   }
-  if (args.includes('--abort') || args.includes('--quit')) {
+  if (args.includes('--abort') || args.includes('--quit') || showsCurrentPatch(sub, args) || continues(sub, args)) {
     return undefined;
   }
   if (sub === 'pull') {
@@ -342,11 +384,13 @@ export function decide({ command, cwd }, { run, exists, read }) {
   const gits = gitCommands(command, cwd);
   const prOf = (git) => (git.sub === 'gh' ? ghPr(git.args) : undefined);
   const isPr = (git) => ['create', 'edit', 'merge'].includes(prOf(git)?.action);
-  const guarded = gits.filter((git) => git.sub === 'commit' || git.sub === 'push' || isPr(git));
+  const commits = (git) => git.sub === 'commit' || continues(git.sub, git.args);
+  const guarded = gits.filter((git) => commits(git) || git.sub === 'push' || isPr(git));
   if (guarded.length > 0 && gits.some((git) => git.sub === 'cd')) {
     return {
       block: true,
-      reason: 'Do not combine `cd` with `git commit`, `git push`, or `gh pr`. Use `git -C <dir>` and run `gh` from the repository root.',
+      reason:
+        'Do not combine `cd` with `git commit`, `--continue`, `git push`, or `gh pr`. Use `git -C <dir>` and run `gh` from the repository root.',
     };
   }
   for (const git of gits) {
@@ -426,15 +470,52 @@ export function decide({ command, cwd }, { run, exists, read }) {
       }
     }
 
-    if ((git.sub === 'commit' || git.sub === 'push') && gits.length > 1) {
+    // A continuation counts every shell command, because another command on the line can change
+    // the staged tree after this check.
+    if (continues(git.sub, git.args) && shellCommands(command).length > 1) {
+      return {
+        block: true,
+        reason: `Run \`git ${git.sub} --continue\` as its own command, so that it acts on the state that this hook checks.`,
+      };
+    }
+
+    if ((commits(git) || git.sub === 'push') && gits.length > 1) {
       return {
         block: true,
         reason: `Run \`git ${git.sub}\` as its own command, so that it acts on the state that this hook checks.`,
       };
     }
 
-    if (git.sub === 'commit') {
-      const problem = commitContentProblem(git.args);
+    if (continues(git.sub, git.args)) {
+      // If the operation continues, each later step commits a tree that no reviewer approved.
+      let later;
+      try {
+        later = laterCommits(git.sub, (name) => {
+          const path = out(['rev-parse', '--git-path', name]);
+          if (!path) {
+            throw new Error(`cannot find ${name}`);
+          }
+          const full = resolve(git.dir, path);
+          return exists(full) ? read(full) : undefined;
+        });
+      } catch {
+        later = undefined;
+      }
+      if (later === undefined) {
+        return { block: true, reason: `Cannot read the state of the paused \`git ${git.sub}\`. Run \`git ${git.sub} --abort\`, or ask the user to finish it.` };
+      }
+      if (later > 0) {
+        return {
+          block: true,
+          reason:
+            `\`git ${git.sub} --continue\` creates ${later} more commit${later === 1 ? '' : 's'} after this step that no reviewer approved. ` +
+            `Run \`git ${git.sub} --abort\`, or ask the user to finish it.`,
+        };
+      }
+    }
+
+    if (commits(git)) {
+      const problem = git.sub === 'commit' ? commitContentProblem(git.args) : undefined;
       if (problem) {
         return {
           block: true,

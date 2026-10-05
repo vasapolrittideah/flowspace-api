@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import test from 'node:test';
 
 import { createHash } from 'node:crypto';
@@ -13,7 +13,7 @@ import { commitContentProblem, commitMakerProblem, decide, ghPr, gitCommands, pr
 const COMMON = '/repo/.git';
 const TREE = 'tree-staged';
 
-function fakeGit({ staged = 'cmd/main.go', headTree = 'tree-head', prs = {}, ghStatus = 0 } = {}) {
+function fakeGit({ staged = 'cmd/main.go', headTree = 'tree-head', prs = {}, ghStatus = 0, gitPathStatus = 0 } = {}) {
   const outputs = {
     'write-tree': TREE,
     'rev-parse --git-common-dir': COMMON,
@@ -27,6 +27,9 @@ function fakeGit({ staged = 'cmd/main.go', headTree = 'tree-head', prs = {}, ghS
     calls.push({ cmd, args, cwd });
     if (cmd === 'gh') {
       return { status: ghStatus, stdout: JSON.stringify(prs[args[3]] ?? []) };
+    }
+    if (args[0] === 'rev-parse' && args[1] === '--git-path') {
+      return { status: gitPathStatus, stdout: `${COMMON}/${args[2]}\n` };
     }
     const key = args.join(' ');
     return key in outputs ? { status: 0, stdout: `${outputs[key]}\n` } : { status: 1, stdout: '' };
@@ -283,6 +286,181 @@ test('commands that create commits without git commit are blocked', () => {
     assert.equal(decideWith(command).block, false, command);
   }
   assert.match(commitMakerProblem('cherry-pick', ['abc']), /--no-commit/);
+});
+
+// These are the state files that git 2.54 writes while each operation waits at its last step or
+// before later steps.
+const LAST_STEP = {
+  merge: { MERGE_HEAD: 'abc\n' },
+  'cherry-pick': { CHERRY_PICK_HEAD: 'abc\n' },
+  'cherry-pick in a sequence': { 'sequencer/todo': 'pick abc b3\n' },
+  revert: { REVERT_HEAD: 'abc\n' },
+  'revert in a sequence': { 'sequencer/todo': 'revert abc b3\n' },
+  rebase: { 'rebase-merge/git-rebase-todo': '\n# Rebase 1..3 onto 4\n#\n# Commands:\n' },
+  am: { 'rebase-apply/next': '3\n', 'rebase-apply/last': '3\n' },
+};
+const LATER_STEPS = {
+  'cherry-pick': { 'sequencer/todo': 'pick abc b2\npick def b3\n' },
+  revert: { 'sequencer/todo': 'revert abc b2\nrevert def b3\n' },
+  rebase: { 'rebase-merge/git-rebase-todo': 'pick def b3\n\n# Rebase 1..3 onto 4\n' },
+  am: { 'rebase-apply/next': '1\n', 'rebase-apply/last': '3\n' },
+};
+const operationOf = (name) => name.split(' ')[0];
+
+function decidePaused(command, state, { stamps = [], ...options } = {}) {
+  const files = Object.fromEntries(Object.entries(state).map(([name, text]) => [`${COMMON}/${name}`, text]));
+  return decide(
+    { command, cwd: '/repo' },
+    {
+      run: fakeGit(options),
+      exists: (path) => path in files || stamps.includes(path),
+      read: (path) => {
+        if (!(path in files)) {
+          throw new Error(`missing ${path}`);
+        }
+        return files[path];
+      },
+    },
+  );
+}
+
+test('continuing the last step of a paused operation needs a stamp for the staged tree', () => {
+  for (const [name, state] of Object.entries(LAST_STEP)) {
+    const command = `git ${operationOf(name)} --continue`;
+    assert.equal(decidePaused(command, state, { stamps: [STAMP] }).block, false, name);
+    const unapproved = decidePaused(command, state);
+    assert.equal(unapproved.block, true, name);
+    assert.match(unapproved.reason, /code-reviewer/, name);
+    const old = stampPath(COMMON, 'code-reviewer', 'tree-before-edit');
+    assert.equal(decidePaused(command, state, { stamps: [old] }).block, true, name);
+    assert.equal(decidePaused(command, state, { headTree: TREE }).block, false, name);
+  }
+});
+
+test('continuing with a staged migration needs a migration-reviewer stamp', () => {
+  const migration = stampPath(COMMON, 'migration-reviewer', TREE);
+  const state = LAST_STEP.merge;
+  const options = { staged: 'services/work/db/migrations/00009_x.sql' };
+  const roleFile = '/repo/.codex/agents/migration-reviewer.toml';
+  assert.equal(decidePaused('git merge --continue', state, { ...options, stamps: [STAMP, roleFile] }).block, true);
+  assert.equal(
+    decidePaused('git merge --continue', state, { ...options, stamps: [STAMP, migration, roleFile] }).block,
+    false,
+  );
+});
+
+test('continuing is blocked when the operation creates more commits after this step', () => {
+  for (const [name, state] of Object.entries(LATER_STEPS)) {
+    const decision = decidePaused(`git ${name} --continue`, state, { stamps: [STAMP], headTree: TREE });
+    assert.equal(decision.block, true, name);
+    assert.match(decision.reason, /more commit/, name);
+  }
+});
+
+test('continuing is blocked when the state of the operation cannot be read', () => {
+  const stamps = [STAMP];
+  assert.equal(decidePaused('git am --continue', {}, { stamps }).block, true);
+  assert.equal(decidePaused('git am --continue', { 'rebase-apply/next': 'x\n', 'rebase-apply/last': '3\n' }, { stamps }).block, true);
+  assert.equal(decidePaused('git rebase --continue', {}, { stamps }).block, true);
+  for (const name of Object.keys(LAST_STEP)) {
+    const command = `git ${operationOf(name)} --continue`;
+    assert.equal(decidePaused(command, LAST_STEP[name], { stamps, gitPathStatus: 1 }).block, true, name);
+  }
+});
+
+test('continuing must run as its own command', () => {
+  for (const command of [
+    'git add -A && git merge --continue',
+    'git merge --continue; git status',
+    'git status && git cherry-pick --continue',
+    'echo ready && git merge --continue',
+    'git merge --continue | cat',
+    'git add f\ngit rebase --continue',
+    'cd sub && git am --continue',
+  ]) {
+    assert.equal(decidePaused(command, { ...LAST_STEP.merge, ...LAST_STEP.rebase, ...LAST_STEP.am }, { stamps: [STAMP], headTree: TREE }).block, true, command);
+  }
+});
+
+test('skipping a step stays blocked, and showing the current patch is allowed', () => {
+  for (const operation of ['merge', 'cherry-pick', 'revert', 'rebase', 'am']) {
+    assert.equal(decidePaused(`git ${operation} --skip`, LAST_STEP[operation], { stamps: [STAMP], headTree: TREE }).block, true, operation);
+  }
+  for (const operation of ['rebase', 'am']) {
+    assert.equal(decidePaused(`git ${operation} --show-current-patch`, LATER_STEPS[operation]).block, false, operation);
+    assert.equal(decidePaused(`git ${operation} --show-current-patch=diff`, LATER_STEPS[operation]).block, false, operation);
+  }
+});
+
+test('an option value that looks like --continue or --show-current-patch does not change the rules', () => {
+  for (const command of [
+    'git merge -m --show-current-patch feat/other',
+    'git merge -m --continue feat/other',
+    'git cherry-pick --show-current-patch abc123',
+    'git rebase --onto --show-current-patch feat/other',
+  ]) {
+    const decision = decidePaused(command, LAST_STEP.merge, { stamps: [STAMP], headTree: TREE });
+    assert.equal(decision.block, true, command);
+    assert.match(decision.reason, /no reviewer approved/, command);
+  }
+});
+
+test('a reviewed continuation commits the staged tree in a real repository', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'git-guard-'));
+  const env = {
+    ...process.env,
+    GIT_AUTHOR_NAME: 't',
+    GIT_AUTHOR_EMAIL: 't@example.com',
+    GIT_COMMITTER_NAME: 't',
+    GIT_COMMITTER_EMAIL: 't@example.com',
+    GIT_EDITOR: 'true',
+    GIT_CONFIG_GLOBAL: '/dev/null',
+  };
+  const git = (...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8', env });
+  const reviewed = [];
+  const deps = {
+    run: (cmd, args, cwd) => spawnSync(cmd, args, { cwd, encoding: 'utf8', env }),
+    exists: (path) => reviewed.includes(path) || existsSync(path),
+    read: (path) => readFileSync(path, 'utf8'),
+  };
+  const approveStaged = () => {
+    const common = resolve(dir, git('rev-parse', '--git-common-dir').stdout.trim());
+    reviewed.push(stampPath(common, 'code-reviewer', git('write-tree').stdout.trim()));
+  };
+  try {
+    git('init', '-q', '-b', 'main');
+    writeFileSync(join(dir, 'f'), 'base\n');
+    git('add', 'f');
+    git('commit', '-qm', 'base');
+    git('switch', '-qc', 'feat');
+    for (const step of ['b1', 'b2']) {
+      writeFileSync(join(dir, 'f'), `${step}\n`);
+      git('commit', '-qam', step);
+    }
+    git('switch', '-q', 'main');
+    writeFileSync(join(dir, 'f'), 'main\n');
+    git('commit', '-qam', 'main');
+
+    // Two picks that both conflict leave a later commit after the current one.
+    assert.notEqual(git('cherry-pick', 'feat~1', 'feat').status, 0);
+    writeFileSync(join(dir, 'f'), 'resolved\n');
+    git('add', 'f');
+    approveStaged();
+    assert.match(decide({ command: 'git cherry-pick --continue', cwd: dir }, deps).reason, /more commit/);
+    git('cherry-pick', '--abort');
+
+    assert.notEqual(git('merge', 'feat').status, 0);
+    writeFileSync(join(dir, 'f'), 'merged\n');
+    git('add', 'f');
+    assert.equal(decide({ command: 'git merge --continue', cwd: dir }, deps).block, true);
+    approveStaged();
+    const tree = git('write-tree').stdout.trim();
+    assert.equal(decide({ command: 'git merge --continue', cwd: dir }, deps).block, false);
+    assert.equal(git('merge', '--continue').status, 0);
+    assert.equal(git('rev-parse', 'HEAD^{tree}').stdout.trim(), tree);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('gh pr merge is always blocked', () => {

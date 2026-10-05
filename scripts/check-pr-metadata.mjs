@@ -15,6 +15,10 @@
 // - The PR description: the template headings, no HTML comments, the format and order of
 //   Related issues, and the format and order of Follow-up tasks.
 // - A squash subject that matches the PR title.
+// - The prose of the PR description and of the checkpoint and squash message bodies: sentences
+//   of at most 25 words, and none of the modals, contractions, semicolons, em dashes, present
+//   perfect forms, or filler words that the simple-english skill forbids. Code, URLs, HTML
+//   comments, and headings are not prose. Table rows skip only the sentence length.
 //
 // PRs that renovate[bot] opens skip the branch, commit, and description checks, because
 // Renovate writes them.
@@ -36,6 +40,19 @@ const TRAILER_KEY = /^co-authored-by:/i;
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
 const PR_HEADINGS = ['What changed', 'Why', 'Related issues', 'Risks or limitations', 'Follow-up tasks'];
 const MAX_LINE = 72;
+const MAX_WORDS = 25;
+// Rules of the simple-english skill that a pattern can find. Each match is a finding.
+const PROSE_RULES = [
+  [/\b(should|would|may|might|could)\b/gi, (word) => `"${word}" is a modal that simple-english forbids. Use can, will, or must`],
+  [/\b[a-z]+(n['’]t|['’](re|ve|ll|m|d))\b|\b(it|that|there|here|what|let|he|she|who|where|when|why|how)['’]s\b/gi, (word) => `"${word}" is a contraction`],
+  [/;/g, () => 'a semicolon joins two sentences. Write two sentences'],
+  [/—/g, () => 'an em dash joins two parts. Write two sentences or name the relation'],
+  [/\b(has|have) been\b/gi, (words) => `"${words}" is the present perfect. Use a simple tense`],
+  [/\b(simply|seamlessly|robust|powerful|comprehensive|leverage|crucial|in order to|it is worth noting|in conclusion)\b/gi, (words) => `"${words}" carries no fact`],
+];
+// An abbreviation that never ends a sentence, and one that ends it when a capital follows.
+const ABBREVIATION = /\b(e\.g|i\.e|Dr|Mr|Ms)\.$/i;
+const FINAL_ABBREVIATION = /\b(etc|vs)\.$/i;
 
 // Returns the first-column codes of the table under `heading`, with each row's other cells.
 function tableRows(markdown, heading) {
@@ -292,6 +309,96 @@ export function checkBody(body) {
   return findings;
 }
 
+// Returns the prose units of a text: each paragraph, list item, or table row, without code,
+// URLs, HTML comments, and headings. A code span stays as one word. A commit message joins
+// the hard-wrapped lines of each paragraph; Markdown keeps each paragraph on one line.
+function proseUnits(text, { commit }) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/<!--[\s\S]*?-->/g, '').split('\n');
+  const units = [];
+  let fence = '';
+  let current;
+  const end = () => {
+    if (current) units.push(current);
+    current = undefined;
+  };
+  for (const [index, raw] of lines.entries()) {
+    const marker = raw.match(/^\s*(`{3,}|~{3,})/)?.[1] ?? '';
+    if (marker && (!fence || (marker[0] === fence[0] && marker.length >= fence.length))) {
+      fence = fence ? '' : marker;
+      end();
+      continue;
+    }
+    // A line indented by four spaces or a tab is an indented code block.
+    if (fence || /^( {4}|\t)/.test(raw)) {
+      end();
+      continue;
+    }
+    if (commit && (index === 0 || ISSUE_KEYWORD.test(raw) || TRAILER_KEY.test(raw) || /^This reverts commit [0-9a-f]{7,40}\.$/.test(raw))) {
+      end();
+      continue;
+    }
+    const line = raw
+      .replace(/(`+)[^`]*?\1/g, 'code')
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/<https?:[^>]*>|https?:\/\/\S+?(?=[.,;:!?)]?(\s|$))/g, 'URL');
+    if (line.trim() === '' || /^#{1,6}\s/.test(line)) {
+      end();
+      continue;
+    }
+    const item = /^\s*([-*+]|\d+\.)\s/.test(line);
+    const table = /^\s*\|/.test(line);
+    const textOnly = line.replace(/^\s*([-*+]|\d+\.)\s+/, '').trim();
+    if (commit && current && !item && !table && !current.table) {
+      current.text += ` ${textOnly}`;
+    } else {
+      end();
+      current = { text: textOnly, table };
+    }
+    if (!commit) end();
+  }
+  end();
+  return units;
+}
+
+// Splits a unit into sentences at a period, question mark, or exclamation mark that ends a
+// word. A period inside a word, such as in v1.2.3, 25.0%, or a file name, does not end one.
+function sentences(text) {
+  const result = [];
+  let words = [];
+  const all = text.split(/\s+/).filter(Boolean);
+  for (const [index, word] of all.entries()) {
+    words.push(word);
+    const bare = word.replace(/["')\]]+$/, '');
+    const abbreviation = ABBREVIATION.test(bare) || (FINAL_ABBREVIATION.test(bare) && !/^\p{Lu}/u.test(all[index + 1] ?? 'A'));
+    if (/[.?!]["')\]]*$/.test(word) && !abbreviation) {
+      result.push(words);
+      words = [];
+    }
+  }
+  if (words.length > 0) result.push(words);
+  return result;
+}
+
+// Returns the findings for the rules of the simple-english skill that need no judgment.
+export function checkProse(text, { commit = false } = {}) {
+  const findings = [];
+  for (const unit of proseUnits(text, { commit })) {
+    for (const [pattern, message] of PROSE_RULES) {
+      for (const match of unit.text.matchAll(pattern)) {
+        findings.push(message(match[0]));
+      }
+    }
+    if (unit.table) continue;
+    for (const words of sentences(unit.text)) {
+      const count = words.filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
+      if (count > MAX_WORDS) {
+        findings.push(`a sentence has ${count} words, more than ${MAX_WORDS}: "${words.slice(0, 8).join(' ')} ..."`);
+      }
+    }
+  }
+  return findings;
+}
+
 function git(args) {
   const result = spawnSync('git', args, { encoding: 'utf8' });
   if (result.status !== 0) {
@@ -320,6 +427,7 @@ export function run(options, rules, { git: runGit = git, read = (path) => readFi
     for (const entry of log.split('\x1e').map((text) => text.replace(/^\n/, '')).filter(Boolean)) {
       const [sha, message] = entry.split('\0');
       findings.push(...checkMessage(message, rules, { squash: false }).map((finding) => `Commit ${sha}: ${finding}`));
+      findings.push(...checkProse(message, { commit: true }).map((finding) => `Commit ${sha}: ${finding}`));
     }
   }
   if (options.labels !== undefined && title?.type) {
@@ -328,11 +436,14 @@ export function run(options, rules, { git: runGit = git, read = (path) => readFi
     findings.push(...checkLabels(labels, title, rules, { migration }).map((finding) => `Labels: ${finding}`));
   }
   if (options['body-file'] !== undefined && !renovate) {
-    findings.push(...checkBody(read(options['body-file'])).map((finding) => `PR description: ${finding}`));
+    const body = read(options['body-file']);
+    findings.push(...checkBody(body).map((finding) => `PR description: ${finding}`));
+    findings.push(...checkProse(body).map((finding) => `PR description: ${finding}`));
   }
   if (options['squash-file'] !== undefined) {
     const message = read(options['squash-file']).replace(/\r\n/g, '\n');
     findings.push(...checkMessage(message, rules, { squash: true }).map((finding) => `Squash message: ${finding}`));
+    findings.push(...checkProse(message, { commit: true }).map((finding) => `Squash message: ${finding}`));
     if (options.title !== undefined && message.split('\n')[0] !== options.title) {
       findings.push('Squash message: the subject differs from the PR title');
     }

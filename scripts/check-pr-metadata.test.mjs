@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { checkBody, checkBranch, checkLabels, checkMessage, checkSubject, loadRules, run } from './check-pr-metadata.mjs';
+import { checkBody, checkBranch, checkLabels, checkMessage, checkProse, checkSubject, loadRules, run } from './check-pr-metadata.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const script = fileURLToPath(new URL('check-pr-metadata.mjs', import.meta.url));
@@ -322,4 +322,102 @@ test('the CLI exits 1 with each finding and 0 when the metadata follows the rule
   assert.ok(token, output[0]);
   assert.ok(output.slice(1, -1).some((line) => line.includes('##[warning]forged')));
   assert.equal(output.at(-1), `::${token}::`);
+});
+
+const words = (count, word = 'word') => Array.from({ length: count }, () => word).join(' ');
+const tooLong = (count) => new RegExp(`^a sentence has ${count} words, more than 25`);
+
+test('prose sentences end only at punctuation that ends a word', () => {
+  for (const text of [
+    `Use e.g. a fake, i.e. a port, etc. in ${words(16)}.`,
+    `Version v1.2.3 of check-pr-metadata.test.mjs with 25.0% and 0.001 and 2.5 in ${words(13)}.`,
+    `The change addresses #383. ${words(24)}.`,
+    `Is it ready? ${words(24)}! "${words(23)}." (${words(23)}.)`,
+    `${words(25)}`,
+  ]) {
+    assert.deepEqual(checkProse(text), [], text);
+  }
+  assert.match(checkProse(`Use e.g. a fake ${words(22)}.`)[0], tooLong(26));
+  assert.match(checkProse(`See v1.2.3 and 25.0% ${words(22)}.`)[0], tooLong(26));
+  assert.match(checkProse(`${words(26)}`)[0], tooLong(26));
+  assert.equal(checkProse(`${words(20)}. ${words(26)}.`).length, 1);  // etc. and vs. end a sentence when a capital follows them.
+  assert.deepEqual(checkProse(`We handle retries, timeouts, etc. The ${words(20)}.`), []);
+  assert.match(checkProse(`We handle retries, timeouts, etc. and ${words(20)}.`)[0], tooLong(26));
+});
+
+test('prose units keep paragraphs, list items, and table rows apart', () => {
+  assert.deepEqual(checkProse(`${words(20)}\n\n${words(20)}\n- ${words(20)}\n1. ${words(20)}`), []);
+  assert.deepEqual(checkProse(`| ${words(30)} |`), []);
+  assert.deepEqual(checkProse('| It should pass | yes |'), ['"should" is a modal that simple-english forbids. Use can, will, or must']);
+});
+
+test('code, URLs, comments, and headings are not prose', () => {
+  assert.deepEqual(checkProse('```text\nIt should; can\'t — has been robust.\n```\nIt runs.'), []);
+  assert.deepEqual(checkProse('~~~~\n```\nIt should.\n```\n~~~~\nIt runs.'), []);
+  assert.deepEqual(checkProse('```\nIt runs.\n```\nIt should run.'), ['"should" is a modal that simple-english forbids. Use can, will, or must']);
+  assert.deepEqual(checkProse('Run `it should; never` and ``a `b` should``.'), []);
+  assert.deepEqual(checkProse(`${words(24)} \`a long code span\`.`), []);
+  assert.match(checkProse(`${words(25)} \`code\`.`)[0], tooLong(26));
+  assert.deepEqual(checkProse('Read [the guide](https://example.com/should;could) and <https://example.com/may>.'), []);
+  assert.deepEqual(checkProse('Read [what you should know](docs/x.md).'), ['"should" is a modal that simple-english forbids. Use can, will, or must']);
+  assert.deepEqual(checkProse(`See https://example.com/a.b?c=should. ${words(24)}.`), []);
+  assert.deepEqual(checkProse('<!-- It should\nnot count; at all. -->\n## It should not count\nIt runs.'), []);
+  assert.deepEqual(checkProse(`${words(15)}\n## Heading\n${words(15)}`), []);
+  assert.deepEqual(checkProse('Run this:\n\n    echo should;\n\tlet x = 1; // it\'s fine\n\nIt runs.'), []);
+  assert.deepEqual(checkProse('fix: a\n\n1. It runs a long step\n   that should wrap.', { commit: true }), ['"should" is a modal that simple-english forbids. Use can, will, or must']);
+});
+
+test('each forbidden word and mark is found as a whole word only', () => {
+  const rule = (text) => checkProse(text).map((finding) => finding.split(' ')[0]);
+  for (const modal of ['should', 'WOULD', 'May', 'might', 'Could']) {
+    assert.deepEqual(rule(`It ${modal} run.`), [`"${modal}"`], modal);
+  }
+  for (const contraction of ["don't", "isn't", "they're", "we've", "it'll", "I'm", "you'd", "it's", "That's", "there's", "here's", "what's", "let's", "won’t", "He's", "she's", "who's", "where's", "how's"]) {
+    assert.deepEqual(rule(`Yes ${contraction} fine.`), [`"${contraction}"`], contraction);
+  }
+  for (const phrase of ['has been', 'Have been', 'simply', 'seamlessly', 'robust', 'powerful', 'comprehensive', 'leverage', 'crucial', 'in order to', 'It is worth noting', 'In conclusion']) {
+    assert.equal(checkProse(`It ${phrase} done.`).length, 1, phrase);
+  }
+  assert.deepEqual(checkProse('A shoulder, mayhem, robustness, and leveraged work. The team\'s, Jane\'s, users\' and its data can, will, and must run. It had been done. It has completed. A pre-commit hook – fine.'), []);
+  assert.deepEqual(checkProse('One; two.'), ['a semicolon joins two sentences. Write two sentences']);
+  assert.deepEqual(checkProse('One — two.'), ['an em dash joins two parts. Write two sentences or name the relation']);
+});
+
+test('commit prose joins wrapped lines and skips the subject, footers, trailers, and the revert line', () => {
+  const wrapped = `fix: a\n\n${words(13)}\n${words(13)}.\n\n${words(20)}.\n- ${words(20)}\n  ${words(3)}.`;
+  assert.deepEqual(checkProse(wrapped, { commit: true }).map((finding) => finding.match(/\d+ words/)[0]), ['26 words']);
+  assert.deepEqual(checkProse('fix: a\n\nIt runs in order\nto finish.', { commit: true }), ['"in order to" carries no fact']);
+  const metadata = [
+    'fix: it should simply work',
+    '',
+    'This reverts commit 2f77dde4c1b9a6e3d5f8a0b7c2e4d6f8a1b3c5e7.',
+    '',
+    'Closes: #217',
+    'Refs: #304',
+    '',
+    'Co-authored-by: May Robust <may@example.com>',
+  ].join('\n');
+  assert.deepEqual(checkProse(metadata, { commit: true }), []);
+  assert.equal(checkProse('fix: a\n\nRefs: the old code should go.', { commit: true }).length, 1);
+  assert.deepEqual(checkProse(metadata.replace(/\n/g, '\r\n'), { commit: true }), []);
+  assert.deepEqual(checkProse('', { commit: true }), []);
+  assert.deepEqual(checkProse('   \n\n'), []);
+});
+
+test('run reports prose findings from each source', () => {
+  const runGit = (args) => {
+    if (args[0] === 'log') return 'abc1234\0fix: a\n\nIt should run.\n\x1e';
+    if (args[0] === 'diff') return '';
+    return 'fix/login\n';
+  };
+  const read = (path) => (path === 'body' ? body({ what: 'It could run.' }) : 'fix: a\n\nIt might run.\n');
+  const findings = run({ title: 'fix: a', 'body-file': 'body', 'squash-file': 'squash' }, rules, { git: runGit, read });
+  assert.deepEqual(findings, [
+    'Commit abc1234: "should" is a modal that simple-english forbids. Use can, will, or must',
+    'PR description: "could" is a modal that simple-english forbids. Use can, will, or must',
+    'Squash message: "might" is a modal that simple-english forbids. Use can, will, or must',
+  ]);
+  // Renovate writes its commits and description, so only the squash message is checked.
+  const renovate = run({ title: 'fix: a', author: 'renovate[bot]', branch: 'renovate/x', 'body-file': 'body', 'squash-file': 'squash' }, rules, { git: runGit, read });
+  assert.deepEqual(renovate, ['Squash message: "might" is a modal that simple-english forbids. Use can, will, or must']);
 });

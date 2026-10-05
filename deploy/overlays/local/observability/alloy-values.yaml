@@ -74,7 +74,8 @@ alloy:
       // The exporter queue keeps spans while Tempo is down. Above 256MiB of
       // heap, the limiter refuses new spans and the services drop them. With
       // Tempo down, Alloy stayed near 294Mi of its 512Mi limit and stayed
-      // ready, instead of rising to 510Mi and failing its readiness probe.
+      // ready. Before the limiter, Alloy rose to 510Mi and failed its
+      // readiness probe. scripts/smoke-alloy-memory-local.sh checks this.
       otelcol.processor.memory_limiter "default" {
         check_interval = "1s"
         limit          = "320MiB"

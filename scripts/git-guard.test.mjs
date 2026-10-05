@@ -400,7 +400,8 @@ test('PR body and command rules still block with every approval in place', () =>
 
 const PLANNING_ROLE = '/repo/.codex/agents/planning-reviewer.toml';
 const BRANCH_DIFF = 'diff --name-only origin/main...HEAD';
-// fakeGit with an answer for the branch diff that the hook reads before a PR command.
+// This function extends fakeGit with an answer for the branch diff that the hook reads before a
+// PR command.
 function planningGit({ paths = 'docs/specs/identity.md\n', status = 0, headTree = TREE } = {}) {
   const base = fakeGit({ headTree });
   return (cmd, args, cwd) => (args.join(' ') === BRANCH_DIFF ? { status, stdout: paths } : base(cmd, args, cwd));

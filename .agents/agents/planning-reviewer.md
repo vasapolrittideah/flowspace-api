@@ -110,7 +110,7 @@ Omit the coverage table when you review only an ADR.
 4. Give the verdict `APPROVE` only when no Critical or Required finding is left.
 5. If two accepted documents conflict, report the conflict. Do not choose one for the author.
 6. If a question needs a decision from the maintainer, say so, and state the options instead of choosing one.
-7. Do not report a format rule of a convention. The `convention-reviewer` role checks format.
+7. Do not report a format rule of a convention. The `convention-reviewer` and `writing-reviewer` roles check format.
 
 ## Composition
 

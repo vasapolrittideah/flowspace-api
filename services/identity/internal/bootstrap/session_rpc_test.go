@@ -186,8 +186,8 @@ func onlySessionCheckLine(t *testing.T, logs *observer.ObservedLogs) map[string]
 }
 
 // assertNoSessionData fails when the span or the logs contain a session
-// value. The span may have only the rpc.method and rpc.grpc.status_code
-// attributes, so it cannot hold token or client certificate data.
+// value. The test permits only the rpc.method and rpc.grpc.status_code
+// span attributes, so the span cannot hold token or client certificate data.
 func assertNoSessionData(t *testing.T, span tracetest.SpanStub, logs map[string]any, values ...string) {
 	t.Helper()
 	keys := slices.Sorted(maps.Keys(spanAttributes(span)))
@@ -203,8 +203,9 @@ func assertNoSessionData(t *testing.T, span tracetest.SpanStub, logs map[string]
 	}
 }
 
-// assertContinuedSessionSpan checks that span is the successful CheckSession
-// server span under parentTraceparent with the vendor=value trace state.
+// assertContinuedSessionSpan makes sure that span is the successful
+// CheckSession server span under parentTraceparent with the
+// vendor=value trace state.
 func assertContinuedSessionSpan(t *testing.T, span tracetest.SpanStub) {
 	t.Helper()
 	checkSessionMethod := identityv1.IdentityService_CheckSession_FullMethodName

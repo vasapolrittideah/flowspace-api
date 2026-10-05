@@ -253,6 +253,7 @@ tasks:
     cmds:
       - node --test scripts/constraint-check.test.mjs
       - node --test scripts/check-local-links.test.mjs
+      - node --test scripts/check-pr-metadata.test.mjs
       - node --test scripts/git-guard.test.mjs
       - task: constraints:floor
       - task: format:check

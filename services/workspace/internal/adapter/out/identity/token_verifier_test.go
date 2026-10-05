@@ -307,6 +307,28 @@ func TestSessionCheckSendsOnlyTheContextThatExists(t *testing.T) {
 	}
 }
 
+func TestSessionCheckReplacesEarlierCorrelationMetadata(t *testing.T) {
+	recordSpans(t)
+	server := &stubSessionServer{received: make(chan metadata.MD, 1), verified: true}
+	verifier, token := sessionVerifier(t, server)
+	inWorkspaceRequest(t, "", []string{"x-request-id", "request-1"}, func(ctx context.Context) {
+		ctx = metadata.AppendToOutgoingContext(ctx, "traceparent", "00-"+strings.Repeat("1", 32)+"-"+strings.Repeat("2", 16)+"-01",
+			"tracestate", "stale=value", "x-request-id", "stale-request", "other", "kept")
+		if subject, err := verifier.VerifyToken(ctx, token); err != nil || subject != testSubject {
+			t.Fatalf("subject = %q, error = %v", subject, err)
+		}
+	})
+
+	sent := <-server.received
+	if got := sent.Get("traceparent"); len(got) != 1 || !strings.Contains(got[0], parentTraceID) {
+		t.Fatalf("traceparent = %v", got)
+	}
+	if sent.Get("tracestate") != nil || len(sent.Get("x-request-id")) != 1 || sent.Get("x-request-id")[0] != "request-1" ||
+		len(sent.Get("other")) != 1 || sent.Get("other")[0] != "kept" {
+		t.Fatalf("sent metadata = %v", sent)
+	}
+}
+
 func TestSessionCheckTracingKeepsTheVerificationResult(t *testing.T) {
 	for _, test := range []struct {
 		name      string

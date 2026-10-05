@@ -106,13 +106,15 @@ func traceSessionCheck(ctx context.Context, method string, request, reply any, c
 ) error {
 	ctx, span := otel.Tracer("flowspace/workspace/api").Start(ctx, method, trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
-	outgoing := metadata.MD{}
+	// Replace earlier correlation values, because Identity ignores a key
+	// that has more than one value.
+	existing, _ := metadata.FromOutgoingContext(ctx)
+	outgoing := existing.Copy()
+	outgoing.Delete("tracestate")
+	outgoing.Delete("x-request-id")
 	propagation.TraceContext{}.Inject(ctx, tracing.MetadataCarrier(outgoing))
 	if id := requestid.FromIncoming(ctx); id != "" {
 		outgoing.Set("x-request-id", id)
-	}
-	if existing, ok := metadata.FromOutgoingContext(ctx); ok {
-		outgoing = metadata.Join(existing, outgoing)
 	}
 	err := invoker(metadata.NewOutgoingContext(ctx, outgoing), method, request, reply, conn, options...)
 	tracing.SetGRPCStatus(span, status.Code(err))

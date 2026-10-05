@@ -14,11 +14,18 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v4"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
 	"github.com/vasapolrittideah/flowspace-api/internal/authn"
+	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
+	"github.com/vasapolrittideah/flowspace-api/internal/tracing"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/port/out"
 )
 
@@ -62,21 +69,54 @@ func NewTokenVerifier(config Config) (*TokenVerifier, error) {
 	if !roots.AppendCertsFromPEM(caPEM) {
 		return nil, errors.New("invalid Identity CA certificate")
 	}
-	conn, err := grpc.NewClient(config.SessionAddress, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+	conn, err := dialSession(config.SessionAddress, credentials.NewTLS(&tls.Config{
 		MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}, RootCAs: roots, ServerName: config.SessionServerName,
-	})))
+	}))
 	if err != nil {
 		return nil, errors.New("invalid Identity session address")
 	}
-	client := identityv1.NewIdentityServiceClient(conn)
 	return &TokenVerifier{
 		jwksURL: config.JWKSURL, issuer: config.Issuer, audience: config.Audience,
 		client: &http.Client{Timeout: 2 * time.Second},
-		check: func(ctx context.Context, request *identityv1.CheckSessionRequest) (*identityv1.CheckSessionResponse, error) {
-			return client.CheckSession(ctx, request)
-		},
-		conn: conn,
+		check:  newSessionCheck(conn),
+		conn:   conn,
 	}, nil
+}
+
+// dialSession returns the connection for session checks. Each call on it
+// gets a client span and sends the correlation metadata.
+func dialSession(address string, transport credentials.TransportCredentials, options ...grpc.DialOption) (*grpc.ClientConn, error) {
+	return grpc.NewClient(address, append([]grpc.DialOption{
+		grpc.WithTransportCredentials(transport), grpc.WithUnaryInterceptor(traceSessionCheck),
+	}, options...)...)
+}
+
+func newSessionCheck(conn *grpc.ClientConn) func(context.Context, *identityv1.CheckSessionRequest) (*identityv1.CheckSessionResponse, error) {
+	client := identityv1.NewIdentityServiceClient(conn)
+	return func(ctx context.Context, request *identityv1.CheckSessionRequest) (*identityv1.CheckSessionResponse, error) {
+		return client.CheckSession(ctx, request)
+	}
+}
+
+// traceSessionCheck creates the client span of a session check under the
+// Workspace request span. It sends the trace context of the client span
+// and the request ID of the Workspace request as gRPC metadata.
+func traceSessionCheck(ctx context.Context, method string, request, reply any, conn *grpc.ClientConn,
+	invoker grpc.UnaryInvoker, options ...grpc.CallOption,
+) error {
+	ctx, span := otel.Tracer("flowspace/workspace/api").Start(ctx, method, trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+	outgoing := metadata.MD{}
+	propagation.TraceContext{}.Inject(ctx, tracing.MetadataCarrier(outgoing))
+	if id := requestid.FromIncoming(ctx); id != "" {
+		outgoing.Set("x-request-id", id)
+	}
+	if existing, ok := metadata.FromOutgoingContext(ctx); ok {
+		outgoing = metadata.Join(existing, outgoing)
+	}
+	err := invoker(metadata.NewOutgoingContext(ctx, outgoing), method, request, reply, conn, options...)
+	tracing.SetGRPCStatus(span, status.Code(err))
+	return err
 }
 
 func (v *TokenVerifier) Close() error {

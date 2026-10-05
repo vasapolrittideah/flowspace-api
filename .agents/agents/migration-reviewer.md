@@ -66,12 +66,13 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Rules
 
-1. Give a failure scenario for every Critical finding, such as the table size or the deployment order that causes it.
-2. Give a specific fix for every Critical and Required finding, such as the safer statement.
-3. Give the verdict `APPROVE` only when no Critical or Required finding is left.
-4. A `Down` section that deletes rows is acceptable only when the rows cannot exist under the earlier schema. Report it as Optional, and name the rows that rollback deletes.
-5. A `Down` section can fail on purpose to protect data, such as `SET NOT NULL` that fails while new rows hold `NULL`. If a comment in the migration states this choice, report it as Optional, not Required, and ask for the rollback steps that the team must follow.
-6. If you are unsure about a lock or a table size, say so and explain why, instead of guessing.
+1. Write the verdict line exactly as `**Verdict:** APPROVE` or `**Verdict:** REQUEST CHANGES`, on its own line, with nothing after it. The review script reads only that line.
+2. Give a failure scenario for every Critical finding, such as the table size or the deployment order that causes it.
+3. Give a specific fix for every Critical and Required finding, such as the safer statement.
+4. Give the verdict `APPROVE` only when no Critical or Required finding is left.
+5. A `Down` section that deletes rows is acceptable only when the rows cannot exist under the earlier schema. Report it as Optional, and name the rows that rollback deletes.
+6. A `Down` section can fail on purpose to protect data, such as `SET NOT NULL` that fails while new rows hold `NULL`. If a comment in the migration states this choice, report it as Optional, not Required, and ask for the rollback steps that the team must follow.
+7. If you are unsure about a lock or a table size, say so and explain why, instead of guessing.
 
 ## Composition
 

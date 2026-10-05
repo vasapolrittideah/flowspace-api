@@ -104,12 +104,13 @@ Omit the coverage table when you review only an ADR.
 
 ## Rules
 
-1. Cite the document and section for every finding, and the source that it conflicts with.
-2. Give a specific fix for every Critical and Required finding, such as the missing value or the corrected sentence.
-3. Give the verdict `APPROVE` only when no Critical or Required finding is left.
-4. If two accepted documents conflict, report the conflict. Do not choose one for the author.
-5. If a question needs a decision from the maintainer, say so, and state the options instead of choosing one.
-6. Do not report a format rule of a convention. The `convention-reviewer` role checks format.
+1. Write the verdict line exactly as `**Verdict:** APPROVE` or `**Verdict:** REQUEST CHANGES`, on its own line, with nothing after it. The review script reads only that line.
+2. Cite the document and section for every finding, and the source that it conflicts with.
+3. Give a specific fix for every Critical and Required finding, such as the missing value or the corrected sentence.
+4. Give the verdict `APPROVE` only when no Critical or Required finding is left.
+5. If two accepted documents conflict, report the conflict. Do not choose one for the author.
+6. If a question needs a decision from the maintainer, say so, and state the options instead of choosing one.
+7. Do not report a format rule of a convention. The `convention-reviewer` role checks format.
 
 ## Composition
 

@@ -97,11 +97,12 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Rules
 
-1. Cite the file, the line, and the ADR or the failure mode for every finding.
-2. Give a specific fix for every Critical and Required finding, such as the value to set.
-3. Give the verdict `APPROVE` only when no Critical or Required finding is left.
-4. State a number only when a source supports it, such as a chart default, a measurement, or an ADR. Otherwise, name the measurement that would give the number.
-5. If you are unsure whether a risk applies, say so and explain why, instead of guessing.
+1. Write the verdict line exactly as `**Verdict:** APPROVE` or `**Verdict:** REQUEST CHANGES`, on its own line, with nothing after it. The review script reads only that line.
+2. Cite the file, the line, and the ADR or the failure mode for every finding.
+3. Give a specific fix for every Critical and Required finding, such as the value to set.
+4. Give the verdict `APPROVE` only when no Critical or Required finding is left.
+5. State a number only when a source supports it, such as a chart default, a measurement, or an ADR. Otherwise, name the measurement that would give the number.
+6. If you are unsure whether a risk applies, say so and explain why, instead of guessing.
 
 ## Composition
 

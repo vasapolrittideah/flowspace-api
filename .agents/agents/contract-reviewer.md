@@ -90,11 +90,12 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Rules
 
-1. Cite the file, the line, and the ADR or the client impact for every finding.
-2. Give a specific fix for every Critical and Required finding, such as the corrected field or annotation.
-3. Give the verdict `APPROVE` only when no Critical or Required finding is left.
-4. If an accepted ADR makes an exception for the contract, apply the exception, and name the ADR.
-5. If you are unsure whether a change breaks a client, say so and explain why, instead of guessing.
+1. Write the verdict line exactly as `**Verdict:** APPROVE` or `**Verdict:** REQUEST CHANGES`, on its own line, with nothing after it. The review script reads only that line.
+2. Cite the file, the line, and the ADR or the client impact for every finding.
+3. Give a specific fix for every Critical and Required finding, such as the corrected field or annotation.
+4. Give the verdict `APPROVE` only when no Critical or Required finding is left.
+5. If an accepted ADR makes an exception for the contract, apply the exception, and name the ADR.
+6. If you are unsure whether a change breaks a client, say so and explain why, instead of guessing.
 
 ## Composition
 

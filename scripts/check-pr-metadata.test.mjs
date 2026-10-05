@@ -417,7 +417,7 @@ test('run reports prose findings from each source', () => {
     'PR description: "could" is a modal that simple-english forbids. Use can, will, or must',
     'Squash message: "might" is a modal that simple-english forbids. Use can, will, or must',
   ]);
-  // Renovate writes its commits and description, so only the squash message is checked.
+  // The script checks only the squash message, because Renovate writes its commits and description.
   const renovate = run({ title: 'fix: a', author: 'renovate[bot]', branch: 'renovate/x', 'body-file': 'body', 'squash-file': 'squash' }, rules, { git: runGit, read });
   assert.deepEqual(renovate, ['Squash message: "might" is a modal that simple-english forbids. Use can, will, or must']);
 });

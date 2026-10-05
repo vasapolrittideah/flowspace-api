@@ -15,10 +15,11 @@
 // - The PR description: the template headings, no HTML comments, the format and order of
 //   Related issues, and the format and order of Follow-up tasks.
 // - A squash subject that matches the PR title.
-// - The prose of the PR description and of the checkpoint and squash message bodies: sentences
-//   of at most 25 words, and none of the modals, contractions, semicolons, em dashes, present
-//   perfect forms, or filler words that the simple-english skill forbids. Code, URLs, HTML
-//   comments, and headings are not prose. Table rows skip only the sentence length.
+// - The prose of the PR description and of the checkpoint and squash message bodies. Each
+//   sentence has at most 25 words. The prose has none of the modals, contractions, semicolons,
+//   em dashes, present perfect forms, or filler words that the simple-english skill forbids.
+//   Code, URLs, HTML comments, and headings are not prose. Table rows skip only the sentence
+//   length.
 //
 // PRs that renovate[bot] opens skip the branch, commit, and description checks, because
 // Renovate writes them.
@@ -311,7 +312,7 @@ export function checkBody(body) {
 
 // Returns the prose units of a text: each paragraph, list item, or table row, without code,
 // URLs, HTML comments, and headings. A code span stays as one word. A commit message joins
-// the hard-wrapped lines of each paragraph; Markdown keeps each paragraph on one line.
+// the hard-wrapped lines of each paragraph. Markdown keeps each paragraph on one line.
 function proseUnits(text, { commit }) {
   const lines = text.replace(/\r\n/g, '\n').replace(/<!--[\s\S]*?-->/g, '').split('\n');
   const units = [];

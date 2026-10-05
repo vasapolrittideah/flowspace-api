@@ -325,29 +325,31 @@ test('the CLI exits 1 with each finding and 0 when the metadata follows the rule
 });
 
 const words = (count, word = 'word') => Array.from({ length: count }, () => word).join(' ');
-const tooLong = (count) => new RegExp(`^a sentence has ${count} words, more than 25`);
+const LIMIT = 30;
+const tooLong = (count) => new RegExp(`^a sentence has ${count} words, more than ${LIMIT}`);
 
 test('prose sentences end only at punctuation that ends a word', () => {
   for (const text of [
-    `Use e.g. a fake, i.e. a port, etc. in ${words(16)}.`,
-    `Version v1.2.3 of check-pr-metadata.test.mjs with 25.0% and 0.001 and 2.5 in ${words(13)}.`,
-    `The change addresses #383. ${words(24)}.`,
-    `Is it ready? ${words(24)}! "${words(23)}." (${words(23)}.)`,
-    `${words(25)}`,
+    `Use e.g. a fake, i.e. a port, etc. in ${words(LIMIT - 9)}.`,
+    `Version v1.2.3 of check-pr-metadata.test.mjs with 25.0% and 0.001 and 2.5 in ${words(LIMIT - 12)}.`,
+    `The change addresses #383. ${words(LIMIT - 1)}.`,
+    `Is it ready? ${words(LIMIT - 1)}! "${words(LIMIT - 2)}." (${words(LIMIT - 2)}.)`,
+    `${words(LIMIT)}`,
   ]) {
     assert.deepEqual(checkProse(text), [], text);
   }
-  assert.match(checkProse(`Use e.g. a fake ${words(22)}.`)[0], tooLong(26));
-  assert.match(checkProse(`See v1.2.3 and 25.0% ${words(22)}.`)[0], tooLong(26));
-  assert.match(checkProse(`${words(26)}`)[0], tooLong(26));
-  assert.equal(checkProse(`${words(20)}. ${words(26)}.`).length, 1);  // etc. and vs. end a sentence when a capital follows them.
+  assert.match(checkProse(`Use e.g. a fake ${words(LIMIT - 3)}.`)[0], tooLong(LIMIT + 1));
+  assert.match(checkProse(`See v1.2.3 and 25.0% ${words(LIMIT - 3)}.`)[0], tooLong(LIMIT + 1));
+  assert.match(checkProse(`${words(LIMIT + 1)}`)[0], tooLong(LIMIT + 1));
+  assert.equal(checkProse(`${words(20)}. ${words(LIMIT + 1)}.`).length, 1);
+  // etc. and vs. end a sentence when a capital follows them.
   assert.deepEqual(checkProse(`We handle retries, timeouts, etc. The ${words(20)}.`), []);
-  assert.match(checkProse(`We handle retries, timeouts, etc. and ${words(20)}.`)[0], tooLong(26));
+  assert.match(checkProse(`We handle retries, timeouts, etc. and ${words(LIMIT - 5)}.`)[0], tooLong(LIMIT + 1));
 });
 
 test('prose units keep paragraphs, list items, and table rows apart', () => {
   assert.deepEqual(checkProse(`${words(20)}\n\n${words(20)}\n- ${words(20)}\n1. ${words(20)}`), []);
-  assert.deepEqual(checkProse(`| ${words(30)} |`), []);
+  assert.deepEqual(checkProse(`| ${words(LIMIT + 5)} |`), []);
   assert.deepEqual(checkProse('| It should pass | yes |'), ['"should" is a modal that simple-english forbids. Use can, will, or must']);
 });
 
@@ -356,13 +358,13 @@ test('code, URLs, comments, and headings are not prose', () => {
   assert.deepEqual(checkProse('~~~~\n```\nIt should.\n```\n~~~~\nIt runs.'), []);
   assert.deepEqual(checkProse('```\nIt runs.\n```\nIt should run.'), ['"should" is a modal that simple-english forbids. Use can, will, or must']);
   assert.deepEqual(checkProse('Run `it should; never` and ``a `b` should``.'), []);
-  assert.deepEqual(checkProse(`${words(24)} \`a long code span\`.`), []);
-  assert.match(checkProse(`${words(25)} \`code\`.`)[0], tooLong(26));
+  assert.deepEqual(checkProse(`${words(LIMIT - 1)} \`a long code span\`.`), []);
+  assert.match(checkProse(`${words(LIMIT)} \`code\`.`)[0], tooLong(LIMIT + 1));
   assert.deepEqual(checkProse('Read [the guide](https://example.com/should;could) and <https://example.com/may>.'), []);
   assert.deepEqual(checkProse('Read [what you should know](docs/x.md).'), ['"should" is a modal that simple-english forbids. Use can, will, or must']);
-  assert.deepEqual(checkProse(`See https://example.com/a.b?c=should. ${words(24)}.`), []);
+  assert.deepEqual(checkProse(`See https://example.com/a.b?c=should. ${words(LIMIT - 1)}.`), []);
   assert.deepEqual(checkProse('<!-- It should\nnot count; at all. -->\n## It should not count\nIt runs.'), []);
-  assert.deepEqual(checkProse(`${words(15)}\n## Heading\n${words(15)}`), []);
+  assert.deepEqual(checkProse(`${words(20)}\n## Heading\n${words(20)}`), []);
   assert.deepEqual(checkProse('Run this:\n\n    echo should;\n\tlet x = 1; // it\'s fine\n\nIt runs.'), []);
   assert.deepEqual(checkProse('fix: a\n\n1. It runs a long step\n   that should wrap.', { commit: true }), ['"should" is a modal that simple-english forbids. Use can, will, or must']);
 });
@@ -384,8 +386,8 @@ test('each forbidden word and mark is found as a whole word only', () => {
 });
 
 test('commit prose joins wrapped lines and skips the subject, footers, trailers, and the revert line', () => {
-  const wrapped = `fix: a\n\n${words(13)}\n${words(13)}.\n\n${words(20)}.\n- ${words(20)}\n  ${words(3)}.`;
-  assert.deepEqual(checkProse(wrapped, { commit: true }).map((finding) => finding.match(/\d+ words/)[0]), ['26 words']);
+  const wrapped = `fix: a\n\n${words(16)}\n${words(16)}.\n\n${words(20)}.\n- ${words(20)}\n  ${words(3)}.`;
+  assert.deepEqual(checkProse(wrapped, { commit: true }).map((finding) => finding.match(/\d+ words/)[0]), ['32 words']);
   assert.deepEqual(checkProse('fix: a\n\nIt runs in order\nto finish.', { commit: true }), ['"in order to" carries no fact']);
   const metadata = [
     'fix: it should simply work',

@@ -16,7 +16,7 @@
 //   Related issues, and the format and order of Follow-up tasks.
 // - A squash subject that matches the PR title.
 // - The prose of the PR description and of the checkpoint and squash message bodies. Each
-//   sentence has at most 25 words. The prose has none of the modals, contractions, semicolons,
+//   sentence has at most 30 words. The prose has none of the modals, contractions, semicolons,
 //   em dashes, present perfect forms, or filler words that the simple-english skill forbids.
 //   Code, URLs, HTML comments, and headings are not prose. Table rows skip only the sentence
 //   length.
@@ -41,7 +41,9 @@ const TRAILER_KEY = /^co-authored-by:/i;
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
 const PR_HEADINGS = ['What changed', 'Why', 'Related issues', 'Risks or limitations', 'Follow-up tasks'];
 const MAX_LINE = 72;
-const MAX_WORDS = 25;
+// The prose convention allows 30 words in a descriptive sentence and 25 in a procedural one.
+// The script cannot tell the two apart, so it uses the larger limit.
+const MAX_WORDS = 30;
 // Rules of the simple-english skill that a pattern can find. Each match is a finding.
 const PROSE_RULES = [
   [/\b(should|would|may|might|could)\b/gi, (word) => `"${word}" is a modal that simple-english forbids. Use can, will, or must`],

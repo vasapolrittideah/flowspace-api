@@ -1,6 +1,6 @@
 # Review roles in Codex
 
-Claude Code runs the test-engineer, code-reviewer, security-auditor, convention-reviewer, spec-reviewer, and migration-reviewer roles in Codex with `codex exec`, so a different model family checks the work. Codex does not read this file. Do not start the Claude subagents in [`.claude/agents/`](../agents/) for these roles.
+Claude Code runs the test-engineer, code-reviewer, security-auditor, convention-reviewer, spec-reviewer, migration-reviewer, and infra-reviewer roles in Codex with `codex exec`, so a different model family checks the work. Codex does not read this file. Do not start the Claude subagents in [`.claude/agents/`](../agents/) for these roles.
 
 The roles need Codex CLI 0.160.0 or later and a `codex login`. Do not use an MCP server for these roles, because Codex CLI 0.154.0 removed `codex mcp-server`.
 
@@ -12,6 +12,7 @@ The roles need Codex CLI 0.160.0 or later and a `codex login`. Do not use an MCP
 | convention-reviewer | Before you open or update a PR, and before you give a squash message. Run `git fetch origin main` first. |
 | spec-reviewer | Before you open or update a PR for a task of a module plan. Run it at the same time as convention-reviewer. |
 | migration-reviewer | When the change adds or changes a file under `services/*/db/migrations/`. Run it at the same time as code-reviewer. |
+| infra-reviewer | When the change adds or changes a file under `deploy/` or `.github/workflows/`, the `Tiltfile`, the `cluster:*` tasks in `Taskfile.yaml`, or a local operations script in `scripts/`, such as `scripts/*-local.sh`. Run it at the same time as code-reviewer. |
 
 ## Start a review
 

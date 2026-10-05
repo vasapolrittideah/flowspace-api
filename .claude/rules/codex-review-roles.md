@@ -1,6 +1,6 @@
 # Review roles in Codex
 
-Claude Code runs the test-engineer, code-reviewer, security-auditor, convention-reviewer, spec-reviewer, migration-reviewer, and infra-reviewer roles in Codex with `codex exec`, so a different model family checks the work. Codex does not read this file. Do not start the Claude subagents in [`.claude/agents/`](../agents/) for these roles.
+Claude Code runs the test-engineer, code-reviewer, security-auditor, convention-reviewer, spec-conformance-reviewer, planning-reviewer, migration-reviewer, and infra-reviewer roles in Codex with `codex exec`, so a different model family checks the work. Codex does not read this file. Do not start the Claude subagents in [`.claude/agents/`](../agents/) for these roles.
 
 The roles need Codex CLI 0.160.0 or later and a `codex login`. Do not use an MCP server for these roles, because Codex CLI 0.154.0 removed `codex mcp-server`.
 
@@ -10,7 +10,8 @@ The roles need Codex CLI 0.160.0 or later and a `codex login`. Do not use an MCP
 | code-reviewer | After each tested change and before each commit. |
 | security-auditor | When the change touches secrets, authentication, authorization, or input from outside the system. Run it at the same time as code-reviewer. |
 | convention-reviewer | Before you open or update a PR, and before you give a squash message. Run `git fetch origin main` first. |
-| spec-reviewer | Before you open or update a PR for a task of a module plan. Run it at the same time as convention-reviewer. |
+| spec-conformance-reviewer | Before you open or update a PR for a task of a module plan. Run it at the same time as convention-reviewer. |
+| planning-reviewer | Before you show a specification, a plan with its Issue drafts, or an ADR to the maintainer. Run it again before you open or update a PR that adds or changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, at the same time as convention-reviewer. For a plan PR, also give it the created Issues and the milestone. |
 | migration-reviewer | When the change adds or changes a file under `services/*/db/migrations/`. Run it at the same time as code-reviewer. |
 | infra-reviewer | When the change adds or changes a file under `deploy/` or `.github/workflows/`, the `Tiltfile`, the `cluster:*` tasks in `Taskfile.yaml`, or a local operations script in `scripts/`, such as `scripts/*-local.sh`. Run it at the same time as code-reviewer. |
 

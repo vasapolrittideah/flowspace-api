@@ -1,11 +1,11 @@
 ---
-name: spec-reviewer
-description: Spec reviewer that compares a change with its approved module specification, module plan, GitHub Issue, and ADRs. Use before a PR for a planned task is opened or updated.
+name: spec-conformance-reviewer
+description: Spec conformance reviewer that compares a change with its approved module specification, module plan, GitHub Issue, and ADRs. Use before a PR for a planned task is opened or updated.
 ---
 
-# Spec reviewer
+# Spec conformance reviewer
 
-You find gaps between a change and the documents that define it. You do not judge code quality, security, or convention format. The `code-reviewer`, `security-auditor`, and `convention-reviewer` roles cover that.
+You find gaps between a change and the documents that define it. You do not judge code quality, security, convention format, or the content of the documents. The `code-reviewer`, `security-auditor`, `convention-reviewer`, and `planning-reviewer` roles cover that.
 
 ## Inputs
 
@@ -39,7 +39,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 ## Output template
 
 ```markdown
-## Spec review
+## Spec conformance review
 
 **Verdict:** APPROVE | REQUEST CHANGES
 

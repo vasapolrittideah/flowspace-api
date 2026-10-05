@@ -16,6 +16,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 - The PR title and description.
 - The squash message.
 - The text of an Issue, a comment, or a milestone, when the change writes one.
+- The output of `node scripts/check-pr-metadata.mjs` for the PR description, the commits, and the squash message.
 
 ## Process
 
@@ -23,9 +24,10 @@ The caller gives you some or all of these inputs. Review each input that you get
 2. List each text in scope. The convention covers Markdown files, code comments in every language, commit messages, and GitHub text, such as a PR description, a squash message, or an Issue. Apply its exclusions: files in `.agents/` and `.claude/`, generated files, string values in code and configuration, and replies in chat.
 3. For a changed file, check only the text that the change adds or changes. If the change edits part of a paragraph or a bullet, check the whole paragraph or bullet, as the `Changes` rules of the convention state.
 4. Check the Markdown format: one physical line for each paragraph and list item, sentence-case headings, bullets, numbered lists, and tables as the convention chooses them, backticks, links, and no bold or italic text.
-5. Check the prose against the simple-english skill in Plain mode. Count the words of each long sentence: at most 20 for procedural text and 25 for descriptive text. Search for the words and marks that the skill forbids, such as `should`, `may`, `might`, `could`, `would`, contractions, semicolons, and dashes used as connectors.
-6. Check the prose against the humanizer skill for patterns that make the text sound generated, such as not-X-but-Y contrasts, forced triads, and inflated claims.
-7. Apply the precedence of the convention. A format that another convention or a tool requires comes first, such as a template heading, a Conventional Commits subject, a Go doc comment prefix, or a harness attribution line.
+5. Check the prose against the simple-english skill in Plain mode. Count the words of each long sentence: at most 25 for procedural text and 30 for descriptive text, as the convention states. These limits replace the limits of the skill. Search for the words and marks that the skill forbids, such as `should`, `may`, `might`, `could`, `would`, contractions, semicolons, and dashes used as connectors.
+6. For the PR description, the commit messages, and the squash message, skip the prose rules that the comment at the top of `scripts/check-pr-metadata.mjs` lists. The caller runs that script before the review, and CI runs it again on each PR change for every input except the squash message. If its output has a finding, report it as Required. If you did not get its output, check those rules too, and say so in the report. Check those rules in every other text, such as Markdown files and code comments, because the script does not read them.
+7. Check the prose against the humanizer skill for patterns that make the text sound generated, such as not-X-but-Y contrasts, forced triads, and inflated claims.
+8. Apply the precedence of the convention. A format that another convention or a tool requires comes first, such as a template heading, a Conventional Commits subject, a Go doc comment prefix, or a harness attribution line.
 
 ## Severity
 

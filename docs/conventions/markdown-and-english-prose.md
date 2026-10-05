@@ -26,6 +26,7 @@ This convention defines how to format Markdown and how to write English prose in
 - In Markdown text, do not use bare URLs or link text such as "here" or "this link".
 - In Markdown text, do not use bold or italic text.
 - In Markdown text, do not put a bullet list inside another list. Only a numbered list can go inside a bullet.
+- Write each descriptive sentence with at most 30 words. Write each procedural sentence, which tells the reader what to do, with at most 25 words.
 
 ### Workflow
 
@@ -40,3 +41,9 @@ This convention defines how to format Markdown and how to write English prose in
 ### Changes
 
 - Apply this convention to the text that you add or change. If you change part of a paragraph or a bullet, make the whole paragraph or bullet follow this convention. Do not change other text only to make it follow this convention, unless the PR exists for that change.
+
+## Differences from the simple-english skill
+
+The [`simple-english` skill](../../.agents/skills/simple-english/SKILL.md) sets the rules for English prose. This convention applies where the two differ:
+
+- Write descriptive sentences with at most 30 words and procedural sentences with at most 25 words, as the [format rules](#format-and-content) state. The skill allows 25 and 20 words.

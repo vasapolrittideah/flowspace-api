@@ -157,3 +157,40 @@ func testRefreshSessionRepository(t *testing.T, pool *pgxpool.Pool) {
 		}
 	}
 }
+
+// testProviderOnlyRefresh refreshes the session of an account without a
+// password hash, which a provider login creates.
+func testProviderOnlyRefresh(t *testing.T, pool *pgxpool.Pool) {
+	ctx := context.Background()
+	queries := identitysqlc.New(pool)
+	if _, err := queries.CreateProviderAccount(ctx, identitysqlc.CreateProviderAccountParams{
+		Subject: "provider-refresh-subject", EmailLocal: "provider-refresh", EmailDomain: "example.com", EmailVerified: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var hasPassword bool
+	if err := pool.QueryRow(ctx, `SELECT password_hash IS NOT NULL FROM identity_accounts WHERE subject = 'provider-refresh-subject'`).Scan(&hasPassword); err != nil || hasPassword {
+		t.Fatalf("provider-only account has password = %v, %v", hasPassword, err)
+	}
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		t.Fatal(err)
+	}
+	hash := sha256.Sum256(secret)
+	if _, err := queries.CreateSession(ctx, identitysqlc.CreateSessionParams{AccountSubject: "provider-refresh-subject", RefreshTokenHash: hash[:]}); err != nil {
+		t.Fatal(err)
+	}
+	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signer, err := token.NewSigner(privateKey, "refresh-key", "urn:flowspace:identity:local", "flowspace-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := app.NewSessionRefreshService(identitypostgres.NewSessionRefreshRepository(pool), signer)
+	result, err := service.RefreshSession(ctx, base64.RawURLEncoding.EncodeToString(secret))
+	if err != nil || result.AccessToken == "" || result.RefreshToken == "" {
+		t.Fatalf("provider-only refresh = %+v, %v", result, err)
+	}
+}

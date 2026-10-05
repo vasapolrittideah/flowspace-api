@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: "Senior code reviewer that evaluates changes across five dimensions — correctness, readability, architecture, security, and performance. Use for thorough code review before merge."
+description: "Code reviewer that checks a Go change for correctness, architecture, errors and limits, readability, and security against the project rules. Use after each tested change and before each commit."
 model: opus
 effort: high
 tools: Read, Grep, Glob

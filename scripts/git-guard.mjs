@@ -1,7 +1,10 @@
-// Claude Code PreToolUse hook for Bash. It blocks a `git commit` that has no Codex approval
-// for the staged tree, other commands that create commits, a `git push` to `main` or to a
-// branch whose pull request is merged or closed, `gh pr merge`, and a `gh pr create` or
-// `gh pr edit` without a convention-reviewer approval.
+// Claude Code runs this PreToolUse hook before each Bash command. The hook blocks these commands:
+// - `git commit` without a Codex approval for the staged tree, and other commands that create
+//   commits.
+// - `git push` to `main`, or to a branch whose pull request is merged or closed.
+// - `gh pr merge`.
+// - `gh pr create` and `gh pr edit` without the approvals of convention-reviewer and
+//   writing-reviewer.
 // It guards against forgotten steps, not against a deliberate bypass.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -368,7 +371,7 @@ export function decide({ command, cwd }, { run, exists, read }) {
       if (body.problem || (action === 'create' && !body.file)) {
         return {
           block: true,
-          reason: `Pass the PR description with --body-file, so that this hook can match it with the convention-reviewer approval${body.problem ? `; ${body.problem}` : ''}.`,
+          reason: `Pass the PR description with --body-file, so that this hook can match it with the reviewer approvals${body.problem ? `; ${body.problem}` : ''}.`,
         };
       }
       const tree = out(['rev-parse', 'HEAD^{tree}']);
@@ -377,23 +380,32 @@ export function decide({ command, cwd }, { run, exists, read }) {
         continue;
       }
       const common = resolve(git.dir, commonDir);
-      const needed = [stampPath(common, 'convention-reviewer', tree)];
+      let text;
       if (body.file) {
-        let text;
         try {
           text = read(resolve(git.dir, body.file));
         } catch {
           return { block: true, reason: `Cannot read the PR description file ${body.file}.` };
         }
-        needed.push(textStampPath(common, 'convention-reviewer', text));
       }
-      if (!needed.every(exists)) {
+      // Each role approves the tree of HEAD and the exact PR description. The hook requires
+      // writing-reviewer where the checkout has its role file, as it requires migration-reviewer
+      // for a staged migration.
+      const roles = ['convention-reviewer'];
+      const root = out(['rev-parse', '--show-toplevel']) ?? git.dir;
+      if (exists(join(root, '.codex/agents/writing-reviewer.toml'))) {
+        roles.push('writing-reviewer');
+      }
+      const missing = roles.filter(
+        (role) => !exists(stampPath(common, role, tree)) || (text !== undefined && !exists(textStampPath(common, role, text))),
+      );
+      if (missing.length > 0) {
         return {
           block: true,
           reason:
-            'No convention-reviewer approval for this branch and this PR description. Run ' +
-            '`node scripts/codex-review.mjs convention-reviewer ... --stamp-file <description-file>` and ' +
-            'pass the same file with --body-file after it prints `verdict: APPROVE`.',
+            `No approval for this branch and this PR description from: ${missing.join(', ')}. ` +
+            missing.map((role) => `Run \`node scripts/codex-review.mjs ${role} ... --stamp-file <description-file>\``).join(', and ') +
+            '. Pass the same file with --body-file after each prints `verdict: APPROVE`.',
         };
       }
     }

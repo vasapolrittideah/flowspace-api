@@ -1,6 +1,6 @@
 ---
 name: convention-reviewer
-description: "Convention reviewer that checks each changed artifact against the project conventions that apply to it. Use before a PR is opened or updated, and before a squash message is given."
+description: "Convention reviewer that checks each changed artifact against the project conventions that apply to it, except the Markdown and English prose convention. Use before a PR is opened or updated, and before a squash message is given."
 model: opus
 effort: high
 tools: Read, Grep, Glob

@@ -315,6 +315,89 @@ test('gh pr create and edit need a convention-reviewer approval for the tree and
   assert.equal(decideWith('cd sub && gh pr edit 12 --body-file pr.md', run, existing(treeStamp, textStamp)).block, true);
 });
 
+const WRITING_ROLE = '/repo/.codex/agents/writing-reviewer.toml';
+const PR_ROLES = ['convention-reviewer', 'writing-reviewer'];
+const prTreeStamps = (tree = TREE) => PR_ROLES.map((role) => stampPath(COMMON, role, tree));
+const prTextStamps = (text = FILES['/repo/pr.md']) => PR_ROLES.map((role) => textStampPath(COMMON, role, text));
+const PR_STAMPS = [...prTreeStamps(), ...prTextStamps()];
+
+test('with its role file, gh pr create and body edits also need the writing-reviewer approvals', () => {
+  const run = fakeGit({ headTree: TREE });
+  for (const command of ['gh pr create --base main --title "feat: x" --body-file pr.md', 'gh pr edit 12 --body-file pr.md']) {
+    // Only the complete set of the four stamps allows the command.
+    for (let mask = 0; mask < 16; mask += 1) {
+      const stamps = PR_STAMPS.filter((_, i) => mask & (1 << i));
+      assert.equal(decideWith(command, run, existing(WRITING_ROLE, ...stamps)).block, mask !== 15, `${command} with stamp set ${mask}`);
+    }
+    // Each role must approve this exact text, down to the last byte.
+    for (const role of PR_ROLES) {
+      const others = PR_STAMPS.filter((path) => path !== textStampPath(COMMON, role, FILES['/repo/pr.md']));
+      const older = textStampPath(COMMON, role, 'Approved description');
+      assert.equal(decideWith(command, run, existing(WRITING_ROLE, ...others, older)).block, true, `${command} with an older ${role} text`);
+    }
+  }
+});
+
+test('PR approvals of both reviewers cover the tree of HEAD, not the staged tree', () => {
+  const run = fakeGit({ headTree: 'tree-head' });
+  const command = 'gh pr edit 12 --body-file pr.md';
+  assert.equal(decideWith(command, run, existing(WRITING_ROLE, ...prTreeStamps('tree-head'), ...prTextStamps())).block, false);
+  assert.equal(decideWith(command, run, existing(WRITING_ROLE, ...PR_STAMPS)).block, true);
+  for (const role of PR_ROLES) {
+    const stamps = [...prTreeStamps('tree-head'), ...prTextStamps()].map((path) =>
+      path === stampPath(COMMON, role, 'tree-head') ? stampPath(COMMON, role, TREE) : path,
+    );
+    assert.equal(decideWith(command, run, existing(WRITING_ROLE, ...stamps)).block, true, `${role} approved the staged tree`);
+  }
+});
+
+test('with its role file, a label-only PR edit needs both tree approvals and no text approval', () => {
+  const run = fakeGit({ headTree: TREE });
+  const command = 'gh pr edit 12 --add-label type:docs';
+  assert.equal(decideWith(command, run, existing(WRITING_ROLE, ...prTreeStamps())).block, false);
+  assert.equal(decideWith(command, run, existing(WRITING_ROLE)).block, true);
+  for (const role of PR_ROLES) {
+    assert.equal(decideWith(command, run, existing(WRITING_ROLE, stampPath(COMMON, role, TREE), ...prTextStamps())).block, true, `only ${role}`);
+  }
+});
+
+test('a missing PR approval names each missing reviewer and its review command', () => {
+  const run = fakeGit({ headTree: TREE });
+  const command = 'gh pr create --title x --body-file pr.md';
+  const missing = (stamps) => decideWith(command, run, existing(WRITING_ROLE, ...stamps)).reason.match(/from: ([^.]*)\./)[1];
+  assert.equal(missing([]), 'convention-reviewer, writing-reviewer');
+  assert.equal(missing(PR_STAMPS.filter((path) => !path.includes('writing-reviewer'))), 'writing-reviewer');
+  assert.equal(missing(PR_STAMPS.filter((path) => !path.includes('convention-reviewer'))), 'convention-reviewer');
+  const mixed = [stampPath(COMMON, 'writing-reviewer', TREE), textStampPath(COMMON, 'convention-reviewer', FILES['/repo/pr.md'])];
+  assert.equal(missing(mixed), 'convention-reviewer, writing-reviewer');
+  const reason = decideWith(command, run, existing(WRITING_ROLE)).reason;
+  for (const role of PR_ROLES) {
+    assert.match(reason, new RegExp(`node scripts/codex-review\\.mjs ${role} \\.\\.\\. --stamp-file <description-file>`));
+  }
+});
+
+test('PR body and command rules still block with every approval in place', () => {
+  const run = fakeGit({ headTree: TREE });
+  const approved = existing(WRITING_ROLE, ...PR_STAMPS);
+  for (const command of ['gh pr create --title x --body "inline"', 'gh pr edit 12 -bunreviewed', 'gh pr create --title x --fill', 'gh pr create --title x']) {
+    const decision = decideWith(command, run, approved);
+    assert.equal(decision.block, true, command);
+    assert.match(decision.reason, /--body-file/, command);
+  }
+  assert.match(decideWith('gh pr edit 12 --body-file pr.md --body-file other.md', run, approved).reason, /more than one body file/);
+  for (const command of ['gh pr create --title x --body-file missing.md', 'gh pr edit 12 --body-file missing.md']) {
+    assert.match(decideWith(command, run, approved).reason, /Cannot read the PR description file missing\.md/, command);
+  }
+  assert.match(decideWith('cd sub && gh pr edit 12 --body-file pr.md', run, approved).reason, /Do not combine `cd`/);
+  assert.match(decideWith('git status && gh pr edit 12 --body-file pr.md', run, approved).reason, /as its own command/);
+  for (const command of ['gh pr merge 12 --squash', 'gh pr merge --auto --squash']) {
+    assert.match(decideWith(command, run, approved).reason, /maintainer merges/, command);
+  }
+  for (const command of ['gh pr edit 12 --body-file pr.md', 'gh pr edit 12 --body-file=pr.md', 'gh pr edit 12 -F pr.md', 'gh pr edit 12 -Fpr.md']) {
+    assert.equal(decideWith(command, run, approved).block, false, command);
+  }
+});
+
 test('gh pr is found after the repository option in either position', () => {
   assert.deepEqual(ghPr(['--repo', 'owner/repo', 'pr', 'merge', '12', '--squash']), { action: 'merge', args: ['12', '--squash'] });
   assert.deepEqual(ghPr(['-R', 'owner/repo', 'pr', 'create', '--body-file', 'pr.md']), { action: 'create', args: ['--body-file', 'pr.md'] });

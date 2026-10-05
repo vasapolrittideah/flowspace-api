@@ -59,6 +59,7 @@ Do not report a personal preference that no convention states.
 3. Give the verdict `APPROVE` only when no Required finding is left.
 4. If two conventions conflict, report the conflict and apply the precedence that the conventions state.
 5. If you are unsure whether a rule applies, say so and explain why, instead of guessing.
+6. Do not report a file path, a command, or an identifier in backticks as a missing link. The rules about links say how to write a link when the text has one. They do not require a link for each name that the text mentions.
 
 ## Composition
 

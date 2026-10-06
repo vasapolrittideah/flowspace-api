@@ -21,7 +21,7 @@ user → code-reviewer → report → user
 **Examples:**
 - "Review this PR" → `code-reviewer`
 - "Find security issues in `auth.ts`" → `security-auditor`
-- "What tests are missing for the checkout flow?" → `test-engineer`
+- "What tests are missing for the checkout flow?" → `test-reviewer`
 
 **Cost:** one round trip. The baseline you should always compare orchestrated patterns against.
 
@@ -52,7 +52,7 @@ Multiple personas operate on the same input concurrently, each producing an inde
 ```
                     ┌─→ code-reviewer    ─┐
 /ship → fan out  ───┼─→ security-auditor ─┤→ merge → go/no-go + rollback
-                    └─→ test-engineer    ─┘
+                    └─→ test-reviewer    ─┘
 ```
 
 **Use when:**
@@ -120,7 +120,7 @@ This catalog is harness-agnostic, but most readers will run it on Claude Code. H
 
 ### Where personas live
 
-Plugin subagents go in `agents/` at the plugin root. This repo is a plugin (`.claude-plugin/plugin.json`), so `agents/code-reviewer.md`, `agents/security-auditor.md`, and `agents/test-engineer.md` are auto-discovered when the plugin is enabled. No path configuration needed.
+Plugin subagents go in `agents/` at the plugin root. This repo is a plugin (`.claude-plugin/plugin.json`), so `agents/code-reviewer.md`, `agents/security-auditor.md`, and `agents/test-reviewer.md` are auto-discovered when the plugin is enabled. No path configuration needed.
 
 ### Subagents vs. Agent Teams
 
@@ -157,13 +157,13 @@ Before defining a custom subagent, check whether one of these covers the role:
 | `Plan` | Read-only research during plan mode. |
 | `general-purpose` | Multi-step tasks needing both exploration and modification. |
 
-Don't redefine these. Layer your specialist personas (code-reviewer, security-auditor, test-engineer) on top of them.
+Don't redefine these. Layer your specialist personas (code-reviewer, security-auditor, test-reviewer) on top of them.
 
 ### Frontmatter restrictions for plugin agents
 
 Plugin subagents do **not** support the `hooks`, `mcpServers`, or `permissionMode` frontmatter fields — these are silently ignored. If a future persona needs any of those, the user must copy the file into `.claude/agents/` or `~/.claude/agents/` instead.
 
-The fields that DO work in plugin agents are: `name`, `description`, `tools`, `disallowedTools`, `model`, `maxTurns`, `skills`, `memory`, `background`, `effort`, `isolation`, `color`, `initialPrompt`. Use `model` per-persona if you want to optimize cost (e.g. Haiku for `test-engineer` coverage scans, Sonnet for `code-reviewer`, Opus for `security-auditor`).
+The fields that DO work in plugin agents are: `name`, `description`, `tools`, `disallowedTools`, `model`, `maxTurns`, `skills`, `memory`, `background`, `effort`, `isolation`, `color`, `initialPrompt`. Use `model` per-persona if you want to optimize cost (e.g. Haiku for `test-reviewer` coverage scans, Sonnet for `code-reviewer`, Opus for `security-auditor`).
 
 ### Spawning multiple subagents in parallel
 
@@ -229,7 +229,7 @@ three teammates using the existing agent types:
                      in the checkout code path
   - security-auditor — investigate auth checks, session handling,
                        and any synchronous network calls added recently
-  - test-engineer  — propose tests that would distinguish between the
+  - test-reviewer  — propose tests that would distinguish between the
                      hypotheses and check coverage gaps in checkout
 
 Have them message each other directly to challenge each other's
@@ -245,7 +245,7 @@ The lead spawns three teammates referencing the existing persona names. The pers
 2. Teammates use `message` to send findings to each other directly. The lead doesn't have to relay.
 3. The shared task list shows who's investigating what — visible at any time with `Ctrl+T` (in-process mode) or in a tmux pane (split mode).
 4. When `code-reviewer` finds a `Promise.all` that should be sequential, it messages `security-auditor` to confirm the auth call isn't part of the race. `security-auditor` checks and replies — either confirming the race is the real issue or producing counter-evidence.
-5. `test-engineer` proposes a focused integration test for whichever theory is winning, which the team uses to verify before declaring consensus.
+5. `test-reviewer` proposes a focused integration test for whichever theory is winning, which the team uses to verify before declaring consensus.
 6. The lead synthesizes the converged finding and presents it to you.
 
 You can interrupt at any teammate by cycling with `Shift+Down` and typing — useful for redirecting an investigator who's gone down a wrong path.

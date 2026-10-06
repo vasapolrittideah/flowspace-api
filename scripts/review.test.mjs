@@ -27,7 +27,7 @@ import { args as codexArgs, sandboxArgs, sessionID } from './review-runners/code
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = join(ROOT, 'scripts/review.mjs');
 const ROLES = ['code-reviewer', 'contract-reviewer', 'convention-reviewer', 'infra-reviewer', 'migration-reviewer',
-  'planning-reviewer', 'security-auditor', 'spec-conformance-reviewer', 'test-engineer', 'writing-reviewer'];
+  'planning-reviewer', 'security-auditor', 'spec-conformance-reviewer', 'test-reviewer', 'writing-reviewer'];
 
 test('the role configuration gives every role a runner that loads and accepts its effort', async () => {
   const config = readFileSync(join(ROOT, CONFIG_PATH), 'utf8');

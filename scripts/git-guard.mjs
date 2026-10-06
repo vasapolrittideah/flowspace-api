@@ -1,7 +1,7 @@
 // Claude Code and Codex run this PreToolUse hook before each shell command. Both send the same
 // input, and both block the command on exit code 2. The hook enforces the rules that
 // the GitHub ruleset on main cannot enforce. The hook blocks these commands:
-// - `git commit` without a reviewer approval for the staged tree.
+// - `git commit` without the reviewer approvals for the staged tree.
 // - `gh pr merge`.
 // - `gh pr create` and `gh pr edit` without the approvals of convention-reviewer and
 //   writing-reviewer, and of planning-reviewer when the branch changes a planning artifact.
@@ -15,6 +15,8 @@ import { stampPath, textStampPath } from './review.mjs';
 
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
 const PLANNING_PATH = /^(docs\/specs\/|tasks\/|docs\/adr\/)/;
+// test-reviewer reviews handwritten Go code. Buf writes `gen/`, and sqlc writes each `sqlc/` directory.
+const TESTED_GO_PATH = /^(?!gen\/)(?!(?:.*\/)?sqlc\/).*\.go$/;
 const WRAPPERS = new Set(['command', 'exec', 'env', 'time', 'nohup', 'builtin']);
 const COMMIT_VALUE_OPTIONS = new Set(['-m', '-F', '-C', '-c', '-t', '--message', '--file', '--reuse-message',
   '--reedit-message', '--template', '--author', '--date', '--fixup', '--squash', '--trailer', '--cleanup']);
@@ -343,7 +345,11 @@ export function decide({ command, cwd }, { run, exists, read }) {
         continue;
       }
       const required = ['code-reviewer'];
-      const staged = (out(['diff', '--cached', '--name-only']) ?? '').split('\n');
+      // -z prints each path without the quotes that Git adds to unusual names, such as non-ASCII names.
+      const staged = (out(['diff', '--cached', '--name-only', '-z']) ?? '').split('\0');
+      if (staged.some((path) => TESTED_GO_PATH.test(path))) {
+        required.push('test-reviewer');
+      }
       if (staged.some((path) => MIGRATION_PATH.test(path))) {
         required.push('migration-reviewer');
       }

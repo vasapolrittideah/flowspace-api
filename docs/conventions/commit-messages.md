@@ -128,7 +128,7 @@ The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-
 | `events` | Published Protobuf event schemas | `contracts/events/` |
 | `codegen` | Code-generation configuration and tooling | `buf.yaml`, `buf.gen.yaml`, `buf.lock`, `sqlc.yaml`, `gen/`, and the `buf` and `sqlc` tasks in `Taskfile.yaml` |
 | `adr` | Architecture decision records | `docs/adr/` |
-| `agents` | Agent instructions, conventions, skills, commands, and configuration | `AGENTS.md`, `CLAUDE.md`, `docs/conventions/`, `.agents/`, `.claude/`, `skills-lock.json` |
+| `agents` | Agent instructions, conventions, skills, commands, and configuration | `AGENTS.md`, `CLAUDE.md`, `docs/conventions/`, `.agents/`, `.claude/`, `.codex/`, `skills-lock.json` |
 | `identity` | Accounts, authentication, email verification, and sessions | The service paths for `identity` |
 | `workspace` | Workspaces, memberships, invitations, roles, and authorization | The service paths for `workspace` |
 | `work` | Projects, tasks, assignments, status transitions, comments, activity history, and the event outbox | The service paths for `work` |

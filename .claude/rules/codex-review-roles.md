@@ -35,11 +35,9 @@ node scripts/codex-review.mjs <role> --out <scratchpad>/<name> --prompt-file <pr
 
 ## What the hook blocks
 
-The [`git-guard` hook](../../scripts/git-guard.mjs) runs before each Bash command and blocks these commands:
+The [`git-guard` hook](../../scripts/git-guard.mjs) runs before each Bash command. It enforces only the rules that the GitHub ruleset on `main` cannot enforce, and blocks these commands:
 
 - `git commit` without a stamp for the staged tree, as stated above. It must run as its own command, without `cd`, and without `-a`, `-i`, `-o`, `-p`, or paths.
-- `git cherry-pick`, `git revert`, and `git merge` without `--no-commit`, `git rebase`, `git am`, and `git pull` without `--ff-only`, because they create commits that skip the review. `--abort` is allowed, and so is a merge of `main` or `origin/main`, because its commits already passed review.
-- `git push` to `main`, or to a branch whose pull requests are all merged or closed. It must run as its own command.
 - `gh pr merge`, because the maintainer merges pull requests.
 - `gh pr create` and `gh pr edit` without a convention-reviewer stamp and a writing-reviewer stamp for the tree of `HEAD`. When the command passes a description, it must use `--body-file` with the same file that both reviews stamped. When the branch changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, the command also needs a planning-reviewer stamp for the tree of `HEAD`.
 

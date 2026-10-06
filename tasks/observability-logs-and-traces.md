@@ -2,7 +2,7 @@
 
 Module ID: `observability-logs-and-traces`
 
-Status: Approved
+Status: Complete
 
 ## Overview
 
@@ -76,9 +76,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Complete
 
-- [ ] Every success criterion in the approved specification passed its final check.
-- [ ] The full review diff contains no unrelated changes or secrets.
-- [ ] The module is ready for maintainer review.
+- [x] Every success criterion in the approved specification passed its final check.
+- [x] The full review diff contains no unrelated changes or secrets.
+- [x] The module is ready for maintainer review.
 
 ## Risks and controls
 

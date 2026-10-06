@@ -369,7 +369,7 @@ test('the block reason lists each missing reviewer once', () => {
 
 test('the planning check reads the branch diff, not the staged diff', () => {
   const stagedOnly = (cmd, args, cwd) =>
-    args.join(' ') === 'diff --cached --name-only' ? { status: 0, stdout: 'docs/specs/identity.md\n' } : planningGit({ paths: 'cmd/main.go\n' })(cmd, args, cwd);
+    args.join(' ') === 'diff --cached --name-only -z' ? { status: 0, stdout: 'docs/specs/identity.md\n' } : planningGit({ paths: 'cmd/main.go\n' })(cmd, args, cwd);
   assert.equal(decideWith(CREATE, stagedOnly, existing(...PR_STAMPS)).block, false);
 });
 

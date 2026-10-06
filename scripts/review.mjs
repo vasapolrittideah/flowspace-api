@@ -1,17 +1,29 @@
-// Runs one Codex review role and records an approval stamp for the staged tree.
+// Runs one review role and records an approval stamp for the staged tree.
+// .agents/review-roles.json gives the runner, model, and effort of each role. A runner is a
+// module in scripts/review-runners/ that turns the role settings into one command.
 // Usage:
-//   node scripts/codex-review.mjs <role> --out <prefix> --prompt-file <file> [--input <file>]
-//   node scripts/codex-review.mjs <role> --out <prefix> --prompt-file <file> --resume <session-id>
+//   node scripts/review.mjs <role> --out <prefix> --prompt-file <file> [--input <file>]
+//   node scripts/review.mjs <role> --out <prefix> --prompt-file <file> --resume <session-id>
 // Add --stamp-file <file> to also stamp the exact text of a file, such as a PR description.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { closeSync, copyFileSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+export const CONFIG_PATH = '.agents/review-roles.json';
+export const RUNNERS_DIR = 'scripts/review-runners';
+
+// Credentials in the home directory and local secrets in the repository. A read-only reviewer
+// can still read them, and the runner sends what it reads to the model. No review needs them.
+// Each runner must deny all of them.
+export const HOME_SECRETS = ['.ssh', '.gnupg', '.aws', '.azure', '.config/gcloud', '.config/gh', '.kube', '.docker',
+  '.netrc', '.npmrc', '.codex/auth.json', '.claude/.credentials.json'];
+export const WORKSPACE_SECRETS = ['**/.secrets', '**/.secrets/**', '**/.env', '**/.env.*'];
 
 export function stampPath(gitCommonDir, role, tree) {
-  return join(gitCommonDir, 'codex-reviews', role, tree);
+  return join(gitCommonDir, 'reviews', role, tree);
 }
 
 export function textStampPath(gitCommonDir, role, text) {
@@ -55,46 +67,53 @@ export function isApproved(report) {
   return verdicts.length === 1 && verdicts[0] === 'APPROVE';
 }
 
-export function roleSettings(toml) {
-  const model = toml.match(/^model\s*=\s*"([^"]+)"/m)?.[1];
-  const effort = toml.match(/^model_reasoning_effort\s*=\s*"([^"]+)"/m)?.[1];
-  if (!model || !effort) {
-    throw new Error('role file needs model and model_reasoning_effort');
+// Returns the runner, model, and effort of one role from the text of the role configuration.
+export function roleSettings(config, role) {
+  let roles;
+  try {
+    roles = JSON.parse(config);
+  } catch (error) {
+    throw new Error(`${CONFIG_PATH} is not valid JSON: ${error.message}`);
   }
-  return { model, effort };
-}
-
-export function sessionID(log) {
-  return log.match(/^session id:\s*(\S+)/m)?.[1];
-}
-
-// Credentials in the home directory and local secrets in the repository. A read-only sandbox
-// can still read them, and Codex sends what it reads to the model. No review needs them.
-const HOME_SECRETS = ['.ssh', '.gnupg', '.aws', '.azure', '.config/gcloud', '.config/gh', '.kube', '.docker',
-  '.netrc', '.npmrc', '.codex/auth.json'];
-const WORKSPACE_SECRETS = ['**/.secrets', '**/.secrets/**', '**/.env', '**/.env.*'];
-
-// Returns the Codex options for a sandbox that reads like `:read-only` but denies the secrets.
-// A denied directory also denies everything under it.
-export function sandboxArgs(home) {
-  const homeEntries = HOME_SECRETS.map((path) => `${JSON.stringify(join(home, path))}="deny"`);
-  const workspaceEntries = WORKSPACE_SECRETS.map((pattern) => `${JSON.stringify(pattern)}="deny"`);
-  const filesystem = [...homeEntries, `":workspace_roots"={${workspaceEntries.join(', ')}}`].join(', ');
-  return [
-    '-c',
-    'default_permissions="codex-review"',
-    '-c',
-    `permissions.codex-review={extends=":read-only", filesystem={${filesystem}}}`,
-  ];
-}
-
-export function codexArgs({ model, effort, report, prompt, resume, home }) {
-  // `codex exec resume` keeps none of the settings of the session, so both forms pass them all.
-  const settings = ['-m', model, '-c', `model_reasoning_effort="${effort}"`, ...sandboxArgs(home)];
-  if (resume) {
-    return ['exec', 'resume', resume, ...settings, '-o', report, prompt];
+  const settings = Object.hasOwn(roles ?? {}, role) ? roles[role] : undefined;
+  if (!settings) {
+    throw new Error(`${CONFIG_PATH} has no role ${role}`);
   }
-  return ['exec', ...settings, '-o', report, prompt];
+  for (const key of ['runner', 'model', 'effort']) {
+    if (typeof settings[key] !== 'string' || settings[key] === '') {
+      throw new Error(`${CONFIG_PATH} needs a ${key} for ${role}`);
+    }
+  }
+  const { runner, model, effort } = settings;
+  return { runner, model, effort };
+}
+
+// Returns the module path of a runner. The name is one plain word, so it cannot leave the
+// runners directory.
+export function runnerPath(root, name) {
+  if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+    throw new Error(`runner name ${JSON.stringify(name)} must use lowercase letters, digits, and hyphens`);
+  }
+  return join(root, RUNNERS_DIR, `${name}.mjs`);
+}
+
+// A runner exports the command to start, args() to build its arguments, and sessionID() to read
+// the session ID from its output. If it prints the report instead of writing the report file,
+// it also exports report() to read the report from its output.
+export async function loadRunner(path) {
+  let runner;
+  try {
+    runner = await import(pathToFileURL(path).href);
+  } catch (error) {
+    throw new Error(`cannot load runner ${path}: ${error.message}`);
+  }
+  if (typeof runner.command !== 'string' || typeof runner.args !== 'function' || typeof runner.sessionID !== 'function') {
+    throw new Error(`runner ${path} must export command, args(), and sessionID()`);
+  }
+  if (runner.report !== undefined && typeof runner.report !== 'function') {
+    throw new Error(`runner ${path} exports report, but it is not a function`);
+  }
+  return runner;
 }
 
 function parseArgs(argv) {
@@ -104,7 +123,7 @@ function parseArgs(argv) {
     options[rest[i].replace(/^--/, '')] = rest[i + 1];
   }
   if (!role || !options.out || !options['prompt-file']) {
-    throw new Error('usage: codex-review.mjs <role> --out <prefix> --prompt-file <file> [--input <file> | --resume <id>]');
+    throw new Error('usage: review.mjs <role> --out <prefix> --prompt-file <file> [--input <file> | --resume <id>]');
   }
   if (options.input && options.resume) {
     throw new Error('--input does not work with --resume, because resume ignores standard input');
@@ -123,7 +142,7 @@ function git(args, { cwd, env } = {}) {
 // Returns the staged tree. It reads a copy of the index, because `git write-tree` locks the
 // index, and two reviews that start at the same time would fail on index.lock.
 export function stagedTree(cwd = process.cwd()) {
-  const copy = join(tmpdir(), `codex-review-index-${process.pid}-${Date.now()}`);
+  const copy = join(tmpdir(), `review-index-${process.pid}-${Date.now()}`);
   copyFileSync(resolve(cwd, git(['rev-parse', '--git-path', 'index'], { cwd })), copy);
   try {
     return git(['write-tree'], { cwd, env: { GIT_INDEX_FILE: copy } });
@@ -132,10 +151,19 @@ export function stagedTree(cwd = process.cwd()) {
   }
 }
 
-function main() {
+function readOrEmpty(path) {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+async function main() {
   const options = parseArgs(process.argv.slice(2));
   const root = git(['rev-parse', '--show-toplevel']);
-  const settings = roleSettings(readFileSync(join(root, '.codex/agents', `${options.role}.toml`), 'utf8'));
+  const settings = roleSettings(readFileSync(join(root, CONFIG_PATH), 'utf8'), options.role);
+  const runner = await loadRunner(runnerPath(root, settings.runner));
   // The stamp covers the tree that is staged when the review starts. A later edit changes the tree.
   const tree = stagedTree();
   const head = git(['rev-parse', 'HEAD']);
@@ -143,6 +171,8 @@ function main() {
   const report = resolve(`${options.out}.md`);
   const logPath = resolve(`${options.out}.log`);
   mkdirSync(dirname(report), { recursive: true });
+  // A report from an earlier run with the same prefix must not approve this run.
+  rmSync(report, { force: true });
 
   const input = openSync(options.input ?? '/dev/null', 'r');
   const log = openSync(logPath, 'w');
@@ -153,41 +183,38 @@ function main() {
     headTree,
     text: stampText,
   });
-  const run = spawnSync('codex', codexArgs({ ...settings, report, prompt, resume: options.resume, home: homedir() }), {
-    cwd: root,
-    stdio: [input, log, log],
-  });
+  const commonDir = resolve(root, git(['rev-parse', '--git-common-dir']));
+  const gitDirs = [...new Set([git(['rev-parse', '--absolute-git-dir']), commonDir])];
+  const args = runner.args({ ...settings, report, prompt, resume: options.resume, home: homedir(), root, gitDirs });
+  const run = spawnSync(runner.command, args, { cwd: root, stdio: [input, log, log] });
   closeSync(input);
   closeSync(log);
 
-  const reportText = (() => {
-    try {
-      return readFileSync(report, 'utf8');
-    } catch {
-      return '';
-    }
-  })();
-  const approved = run.status === 0 && isApproved(reportText);
+  const logText = readOrEmpty(logPath);
+  if (runner.report) {
+    writeFileSync(report, runner.report(logText));
+  }
+  const approved = run.status === 0 && isApproved(readOrEmpty(report));
   if (approved) {
-    const commonDir = resolve(root, git(['rev-parse', '--git-common-dir']));
     const stamps = [stampPath(commonDir, options.role, tree)];
     if (stampText !== undefined) {
       stamps.push(textStampPath(commonDir, options.role, stampText));
     }
     for (const stamp of stamps) {
       mkdirSync(dirname(stamp), { recursive: true });
-      writeFileSync(stamp, `${report}\n`);
+      writeFileSync(stamp, `${settings.runner} ${settings.model} ${settings.effort}\n${report}\n`);
     }
   }
   process.stdout.write(
     [
-      `role: ${options.role} (${settings.model}, ${settings.effort})`,
-      `session id: ${sessionID(readFileSync(logPath, 'utf8')) ?? 'unknown'}`,
+      `role: ${options.role} (${settings.runner}, ${settings.model}, ${settings.effort})`,
+      `session id: ${runner.sessionID(logText) ?? 'unknown'}`,
       `verdict: ${approved ? 'APPROVE' : 'not approved'}`,
       `staged tree: ${tree}${approved ? ' (stamped)' : ''}`,
       ...(options['stamp-file'] ? [`stamp file: ${options['stamp-file']}${approved ? ' (stamped)' : ''}`] : []),
       `report: ${report}`,
       `log: ${logPath}`,
+      ...(run.error ? [`error: ${run.error.message}`] : []),
       '',
     ].join('\n'),
   );
@@ -195,10 +222,8 @@ function main() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  try {
-    main();
-  } catch (error) {
+  main().catch((error) => {
     process.stderr.write(`${error.message}\n`);
     process.exit(2);
-  }
+  });
 }

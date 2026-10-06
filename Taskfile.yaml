@@ -255,6 +255,7 @@ tasks:
       - node --test scripts/check-local-links.test.mjs
       - node --test scripts/check-pr-metadata.test.mjs
       - node --test scripts/git-guard.test.mjs
+      - node --test scripts/review.test.mjs
       - task: constraints:floor
       - task: format:check
       - task: secrets

@@ -65,6 +65,7 @@ GitHub login is optional in the same way. Create a GitHub OAuth app with the cal
 - [Technology stack](docs/technology-stack.md) lists selected tools and packages.
 - [Specifications](docs/specs/README.md) define module behavior.
 - [Architecture decisions](docs/adr/README.md) record accepted decisions.
+- [Agent workflow](docs/agent-workflow.md) explains how AI agents write and review changes.
 - [Constraints](CONSTRAINTS.md) define the project quality gates.
 
 ## Contributing

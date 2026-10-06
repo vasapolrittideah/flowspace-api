@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -35,6 +35,23 @@ test('the role configuration gives every role a runner that loads and accepts it
   for (const role of ROLES) {
     await roleRunner(ROOT, roleSettings(config, role));
   }
+});
+
+test('every role has its instructions in .agents/agents/ and no agent-specific wrapper', () => {
+  for (const role of ROLES) {
+    assert.ok(readFileSync(join(ROOT, '.agents/agents', `${role}.md`), 'utf8').length > 0, role);
+  }
+  assert.equal(existsSync(join(ROOT, '.claude/agents')), false);
+  assert.equal(existsSync(join(ROOT, '.codex/agents')), false);
+});
+
+test('Claude Code and AGENTS.md reach the same review roles rules', () => {
+  const rules = join(ROOT, '.agents/rules/review-roles.md');
+  const link = join(ROOT, '.claude/rules/review-roles.md');
+  assert.ok(lstatSync(link).isSymbolicLink());
+  assert.equal(realpathSync(link), realpathSync(rules));
+  assert.ok(readFileSync(join(ROOT, 'AGENTS.md'), 'utf8').includes('(.agents/rules/review-roles.md)'));
+  assert.equal(existsSync(join(ROOT, '.claude/rules/codex-review-roles.md')), false);
 });
 
 test('roleRunner rejects a runner that does not exist and an effort that the runner does not accept', async () => {

@@ -30,6 +30,10 @@ Keep each branch and PR limited to one reviewable change. Split unrelated change
 
 A worktree is a separate checkout of the repository. If tasks run at the same time, use separate worktrees.
 
+## Review roles
+
+A review role is an agent that checks one aspect of a change, such as the code or the conventions, before a commit or a PR. Read the [review roles rules](.agents/rules/review-roles.md) before the first commit of a task. Then run each review role that the rules name for the change.
+
 ## Conventions
 
 Read the matching convention before writing or updating an artifact. If a skill gives a different rule, template, or file path, follow the project convention and [`CONSTRAINTS.md`](CONSTRAINTS.md). For example, keep each port that the hexagonal convention requires, even when the port has only one adapter.

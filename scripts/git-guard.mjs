@@ -1,7 +1,6 @@
-// Claude Code runs this PreToolUse hook before each Bash command. The hook blocks these commands:
-// - `git commit` without a Codex approval for the staged tree, and other commands that create
-//   commits.
-// - `git push` to `main`, or to a branch whose pull request is merged or closed.
+// Claude Code runs this PreToolUse hook before each Bash command. It enforces the rules that
+// the GitHub ruleset on main cannot enforce. The hook blocks these commands:
+// - `git commit` without a Codex approval for the staged tree.
 // - `gh pr merge`.
 // - `gh pr create` and `gh pr edit` without the approvals of convention-reviewer and
 //   writing-reviewer, and of planning-reviewer when the branch changes a planning artifact.
@@ -20,11 +19,6 @@ const COMMIT_VALUE_OPTIONS = new Set(['-m', '-F', '-C', '-c', '-t', '--message',
   '--reedit-message', '--template', '--author', '--date', '--fixup', '--squash', '--trailer', '--cleanup']);
 const COMMIT_CONTENT_OPTIONS = new Set(['-a', '--all', '-i', '--include', '-o', '--only', '-p', '--patch',
   '--interactive', '--pathspec-from-file']);
-const PUSH_VALUE_OPTIONS = new Set(['-o', '--push-option', '--receive-pack', '--exec']);
-const MERGE_VALUE_OPTIONS = new Set(['-m', '-F', '--file', '-s', '--strategy', '-X', '--strategy-option']);
-// Commits on main already passed review, so merging main into a branch needs no new review.
-const REVIEWED_REFS = new Set(['main', 'origin/main']);
-const PROTECTED_BRANCH = 'main';
 
 // Splits a shell line into simple commands. Each command is a list of words without quotes.
 // Operators outside quotes end a command: ; & | ( ) { } and newlines. Comments and the bodies
@@ -120,7 +114,7 @@ export function shellCommands(line) {
 
 // Returns each git command in a shell line with its directory, subcommand, and arguments.
 // It follows `-C`. It does not follow `cd`, because a subshell limits the scope of `cd`,
-// so `decide` rejects a commit or a push that shares its line with `cd`.
+// so `decide` rejects a commit that shares its line with `cd`.
 export function gitCommands(line, cwd) {
   const found = [];
   for (const command of shellCommands(line)) {
@@ -192,97 +186,6 @@ export function commitContentProblem(args) {
   return undefined;
 }
 
-// Returns the branches that a `git push` sends. `all` is true for a push that names no
-// branch but sends many, such as --all, --mirror, or the matching refspec `:`.
-export function pushTargets(args, currentBranch) {
-  let remote;
-  let repoOption = false;
-  let all = false;
-  let deletes = false;
-  const refspecs = [];
-  for (let i = 0; i < args.length; i += 1) {
-    const arg = args[i];
-    if (arg === '--repo') {
-      repoOption = true;
-      i += 1;
-    } else if (arg.startsWith('--repo=')) {
-      repoOption = true;
-    } else if (PUSH_VALUE_OPTIONS.has(arg)) {
-      i += 1;
-    } else if (arg === '--all' || arg === '--mirror' || arg === '--branches') {
-      all = true;
-    } else if (arg === '--delete' || arg === '-d') {
-      deletes = true;
-    } else if (!arg.startsWith('-')) {
-      if (!repoOption && remote === undefined) {
-        remote = arg;
-      } else {
-        refspecs.push(arg);
-      }
-    }
-  }
-  if (refspecs.includes(':') || refspecs.includes('+:')) {
-    all = true;
-  }
-  if (refspecs.length === 0) {
-    return { all, deletes, branches: currentBranch ? [currentBranch] : [], deleted: [] };
-  }
-  const branches = [];
-  const deleted = [];
-  for (const refspec of refspecs) {
-    if (refspec.startsWith(':')) {
-      deleted.push(refspec.slice(1).replace(/^refs\/heads\//, ''));
-      continue;
-    }
-    let target = refspec.includes(':') ? refspec.split(':')[1] : refspec;
-    target = target.replace(/^\+/, '').replace(/^refs\/heads\//, '');
-    if (target === 'HEAD') {
-      target = currentBranch;
-    }
-    if (target && !target.startsWith('refs/tags/')) {
-      branches.push(target);
-    }
-  }
-  return { all, deletes, branches, deleted };
-}
-
-// Returns why a git command other than `git commit` can create a commit, or undefined.
-// Such a commit would skip the review that `git commit` needs.
-export function commitMakerProblem(sub, args) {
-  if (!['cherry-pick', 'revert', 'merge', 'rebase', 'am', 'pull'].includes(sub)) {
-    return undefined;
-  }
-  if (args.includes('--abort') || args.includes('--quit')) {
-    return undefined;
-  }
-  if (sub === 'pull') {
-    return args.includes('--ff-only') ? undefined : '`git pull` can create a merge commit. Use `git pull --ff-only`.';
-  }
-  if (sub === 'merge') {
-    if (args.includes('--no-commit') || args.includes('--squash') || args.includes('--ff-only')) {
-      return undefined;
-    }
-    const refs = [];
-    for (let i = 0; i < args.length; i += 1) {
-      if (MERGE_VALUE_OPTIONS.has(args[i])) {
-        i += 1;
-      } else if (!args[i].startsWith('-')) {
-        refs.push(args[i]);
-      }
-    }
-    if (refs.length > 0 && refs.every((ref) => REVIEWED_REFS.has(ref))) {
-      return undefined;
-    }
-  }
-  if ((sub === 'cherry-pick' || sub === 'revert') && (args.includes('--no-commit') || args.includes('-n'))) {
-    return undefined;
-  }
-  const alternative = ['cherry-pick', 'revert', 'merge'].includes(sub)
-    ? `Run \`git ${sub} --no-commit\`, review the staged change, and then run \`git commit\`.`
-    : 'Apply the change without it, review the staged change, and then run `git commit`.';
-  return `\`git ${sub}\` creates commits that no reviewer approved. ${alternative}`;
-}
-
 // Returns the action and the arguments of a `gh pr` command, or undefined. It skips the
 // repository option, which gh accepts before and after `pr`.
 export function ghPr(args) {
@@ -342,11 +245,11 @@ export function decide({ command, cwd }, { run, exists, read }) {
   const gits = gitCommands(command, cwd);
   const prOf = (git) => (git.sub === 'gh' ? ghPr(git.args) : undefined);
   const isPr = (git) => ['create', 'edit', 'merge'].includes(prOf(git)?.action);
-  const guarded = gits.filter((git) => git.sub === 'commit' || git.sub === 'push' || isPr(git));
+  const guarded = gits.filter((git) => git.sub === 'commit' || isPr(git));
   if (guarded.length > 0 && gits.some((git) => git.sub === 'cd')) {
     return {
       block: true,
-      reason: 'Do not combine `cd` with `git commit`, `git push`, or `gh pr`. Use `git -C <dir>` and run `gh` from the repository root.',
+      reason: 'Do not combine `cd` with `git commit` or `gh pr`. Use `git -C <dir>` and run `gh` from the repository root.',
     };
   }
   for (const git of gits) {
@@ -354,11 +257,6 @@ export function decide({ command, cwd }, { run, exists, read }) {
       const result = run('git', args, git.dir);
       return result.status === 0 ? result.stdout.trim() : undefined;
     };
-
-    const makerProblem = commitMakerProblem(git.sub, git.args);
-    if (makerProblem) {
-      return { block: true, reason: makerProblem };
-    }
 
     if (isPr(git)) {
       const { action, args: prArgs } = prOf(git);
@@ -426,10 +324,10 @@ export function decide({ command, cwd }, { run, exists, read }) {
       }
     }
 
-    if ((git.sub === 'commit' || git.sub === 'push') && gits.length > 1) {
+    if (git.sub === 'commit' && gits.length > 1) {
       return {
         block: true,
-        reason: `Run \`git ${git.sub}\` as its own command, so that it acts on the state that this hook checks.`,
+        reason: 'Run `git commit` as its own command, so that it acts on the state that this hook checks.',
       };
     }
 
@@ -468,35 +366,6 @@ export function decide({ command, cwd }, { run, exists, read }) {
             'Stage the change, run `node scripts/codex-review.mjs <role> ...` for each role, ' +
             'and commit only after it prints `verdict: APPROVE`. See .claude/rules/codex-review-roles.md.',
         };
-      }
-    }
-
-    if (git.sub === 'push') {
-      const targets = pushTargets(git.args, out(['rev-parse', '--abbrev-ref', 'HEAD']));
-      if (targets.all) {
-        return { block: true, reason: 'Push branches by name, so that this hook can check their pull requests.' };
-      }
-      if ([...targets.branches, ...targets.deleted].includes(PROTECTED_BRANCH)) {
-        return { block: true, reason: 'Do not push to main. Push a branch and open a pull request.' };
-      }
-      if (targets.deletes) {
-        continue;
-      }
-      for (const branch of targets.branches) {
-        const result = run('gh', ['pr', 'list', '--head', branch, '--state', 'all', '--json', 'number,state'], git.dir);
-        if (result.status !== 0) {
-          continue;
-        }
-        const prs = JSON.parse(result.stdout || '[]');
-        if (prs.length > 0 && !prs.some((pr) => pr.state === 'OPEN')) {
-          const list = prs.map((pr) => `#${pr.number} ${pr.state}`).join(', ');
-          return {
-            block: true,
-            reason:
-              `The pull request of branch ${branch} is not open (${list}). ` +
-              'Commits pushed now never reach main. Move them to a new branch from main and open a new PR.',
-          };
-        }
       }
     }
   }

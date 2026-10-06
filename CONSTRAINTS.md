@@ -46,5 +46,6 @@ None. The agreed metrics have runnable gates.
 | ID | Rule | Path | Reason | Owner | Expires |
 | --- | --- | --- | --- | --- | --- |
 | E1 | F3 | `scripts/git-guard.test.mjs` | Two assertions required `-s read-only` and `sandbox_mode="read-only"` for Codex reviews. With either option, Codex ignores the profile that denies reads of `.secrets/` and home credentials, so the assertions must go. New assertions require that profile. | @vasapolrittideah | 2026-11-03 |
+| E2 | F3 | `scripts/git-guard.test.mjs` | The hook no longer checks `git push`, or `git cherry-pick`, `git revert`, `git merge`, `git rebase`, `git am`, and `git pull`. The GitHub ruleset on `main` requires a pull request and status checks and blocks deletion and force pushes, so the tests of the removed checks must go. A new test proves that the hook allows these commands. | @vasapolrittideah | 2027-01-04 |
 
 Exceptions expire within 90 days because that is long enough to schedule a repair and short enough to keep the debt visible.

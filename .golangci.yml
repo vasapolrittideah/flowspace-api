@@ -57,20 +57,17 @@ linters:
     - nosprintfhostport
     - perfsprint
     - predeclared
-    - promlinter
     - protogetter
     - reassign
     - recvcheck
     - revive
     - rowserrcheck
-    - sloglint
     - spancheck
     - sqlclosecheck
     - staticcheck
     - tagalign
     - tagliatelle
     - testableexamples
-    - testifylint
     - thelper
     - tparallel
     - unconvert
@@ -81,7 +78,6 @@ linters:
     - usetesting
     - wastedassign
     - whitespace
-    - zerologlint
   settings:
     cyclop:
       max-complexity: 15

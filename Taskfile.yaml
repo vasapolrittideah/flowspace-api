@@ -76,6 +76,11 @@ tasks:
     cmds:
       - cd tests/smoke/bruno && npx --yes @usebruno/cli@{{.BRUNO_VERSION}} run --env local --noproxy {{.CLI_ARGS}}
 
+  smoke:observability:
+    desc: Check the logs and traces of known requests in the local cluster
+    cmds:
+      - sh scripts/smoke-observability-local.sh
+
   go:tidy:
     desc: Update Go module files
     cmds:

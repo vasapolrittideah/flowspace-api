@@ -14,6 +14,7 @@ import {
   isApproved,
   loadRunner,
   promptWithSnapshot,
+  roleRunner,
   roleSettings,
   runnerPath,
   stagedTree,
@@ -28,13 +29,26 @@ const SCRIPT = join(ROOT, 'scripts/review.mjs');
 const ROLES = ['code-reviewer', 'contract-reviewer', 'convention-reviewer', 'infra-reviewer', 'migration-reviewer',
   'planning-reviewer', 'security-auditor', 'spec-conformance-reviewer', 'test-engineer', 'writing-reviewer'];
 
-test('the role configuration gives every role a runner that loads', async () => {
+test('the role configuration gives every role a runner that loads and accepts its effort', async () => {
   const config = readFileSync(join(ROOT, CONFIG_PATH), 'utf8');
   assert.deepEqual(Object.keys(JSON.parse(config)).sort(), ROLES);
   for (const role of ROLES) {
-    const { runner } = roleSettings(config, role);
-    await loadRunner(runnerPath(ROOT, runner));
+    await roleRunner(ROOT, roleSettings(config, role));
   }
+});
+
+test('roleRunner rejects a runner that does not exist and an effort that the runner does not accept', async () => {
+  // The repository can gain runners, so this checks only the existing ones. The fixture repository
+  // below checks the exact list.
+  const missing = /names the runner no-such-runner, but scripts\/review-runners\/ has only: (.*)$/;
+  await assert.rejects(roleRunner(ROOT, { runner: 'no-such-runner', model: 'm', effort: 'high' }), (error) => {
+    const names = error.message.match(missing)?.[1].split(', ') ?? [];
+    return names.includes('claude') && names.includes('codex');
+  });
+  await assert.rejects(roleRunner(ROOT, { runner: 'claude', model: 'm', effort: 'ultra' }), /the claude runner does not accept the effort ultra\. Use one of: low, medium, high, xhigh, max/);
+  await assert.rejects(roleRunner(ROOT, { runner: 'codex', model: 'm', effort: 'minimal' }), /the codex runner does not accept the effort minimal/);
+  assert.equal((await roleRunner(ROOT, { runner: 'codex', model: 'm', effort: 'ultra' })).command, 'codex');
+  assert.equal((await roleRunner(ROOT, { runner: 'claude', model: 'm', effort: 'max' })).command, 'claude');
 });
 
 test('roleSettings reads one role and rejects an incomplete or unknown role', () => {
@@ -72,7 +86,13 @@ test('loadRunner rejects a missing module and a module without the runner export
     writeFileSync(join(dir, 'partial.mjs'), "export const command = 'x';\nexport function args() { return []; }\n");
     await assert.rejects(loadRunner(join(dir, 'partial.mjs')), /must export command, args\(\), and sessionID\(\)/);
     writeFileSync(join(dir, 'bad-report.mjs'), "export const command = 'x';\nexport const args = () => [];\nexport const sessionID = () => 'id';\nexport const report = 'r';\n");
-    await assert.rejects(loadRunner(join(dir, 'bad-report.mjs')), /report, but it is not a function/);
+    await assert.rejects(loadRunner(join(dir, 'bad-report.mjs')), /must export efforts/);
+    writeFileSync(join(dir, 'report.mjs'), "export const command = 'x';\nexport const efforts = ['high'];\nexport const args = () => [];\nexport const sessionID = () => 'id';\nexport const report = 'r';\n");
+    await assert.rejects(loadRunner(join(dir, 'report.mjs')), /report, but it is not a function/);
+    for (const [i, efforts] of ['[]', "'high'", '[1]'].entries()) {
+      writeFileSync(join(dir, `efforts-${i}.mjs`), `export const command = 'x';\nexport const efforts = ${efforts};\nexport const args = () => [];\nexport const sessionID = () => 'id';\n`);
+      await assert.rejects(loadRunner(join(dir, `efforts-${i}.mjs`)), /must export efforts/, efforts);
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -233,6 +253,7 @@ test('the Claude runner reads the report and session ID from its JSON result onl
 // `silent` writes nothing.
 const FAKE_RUNNER = `
 export const command = process.execPath;
+export const efforts = ['low', 'high'];
 export function args({ model, report, prompt }) {
   return ['-e', \`
 const fs = require('node:fs');
@@ -286,6 +307,7 @@ test('a review runs the runner of its role and stamps the tree and text only on 
     silent: { runner: 'fake', model: 'silent', effort: 'high' },
     printer: { runner: 'printer', model: 'print', effort: 'low' },
     missing: { runner: 'nope', model: 'approve', effort: 'high' },
+    badEffort: { runner: 'fake', model: 'approve', effort: 'max' },
   };
   const { repo, tree } = reviewRepo(roles);
   try {
@@ -315,13 +337,14 @@ test('a review runs the runner of its role and stamps the tree and text only on 
     assert.equal(readFileSync(join(repo, 'out/p.md'), 'utf8'), '**Verdict:** APPROVE');
     assert.deepEqual(reviewsOf(repo, 'printer'), [tree]);
 
-    for (const role of ['missing', 'unknown-role']) {
+    for (const role of ['missing', 'unknown-role', 'badEffort']) {
       const result = review(repo, role, 'out/x');
       assert.equal(result.status, 2, role);
       assert.equal(existsSync(join(repo, '.git/reviews', role)), false, role);
     }
     assert.match(review(repo, 'unknown-role', 'out/x').stderr, /no role unknown-role/);
-    assert.match(review(repo, 'missing', 'out/x').stderr, /cannot load runner/);
+    assert.match(review(repo, 'missing', 'out/x').stderr, /names the runner nope, but scripts\/review-runners\/ has only: fake, printer/);
+    assert.match(review(repo, 'badEffort', 'out/x').stderr, /the fake runner does not accept the effort max/);
   } finally {
     rmSync(repo, { recursive: true, force: true });
   }

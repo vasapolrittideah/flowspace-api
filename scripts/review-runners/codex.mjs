@@ -5,6 +5,9 @@ import { HOME_SECRETS, WORKSPACE_SECRETS } from '../review.mjs';
 
 export const command = 'codex';
 
+// The values of `model_reasoning_effort` in the Codex configuration reference.
+export const efforts = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
+
 // Returns the Codex options for a sandbox that reads like `:read-only` but denies the secrets.
 // A denied directory also denies everything under it.
 export function sandboxArgs(home) {

@@ -1,9 +1,9 @@
 {
-  "code-reviewer": { 
-      "runner": "codex",
-      "model": "gpt-6-astra",
-      "effort": "medium"
-    },
+  "code-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium"
+  },
   "contract-reviewer": {
     "runner": "codex",
     "model": "gpt-6-astra",

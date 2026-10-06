@@ -7,7 +7,7 @@
 // Add --stamp-file <file> to also stamp the exact text of a file, such as a PR description.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { closeSync, copyFileSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -97,9 +97,9 @@ export function runnerPath(root, name) {
   return join(root, RUNNERS_DIR, `${name}.mjs`);
 }
 
-// A runner exports the command to start, args() to build its arguments, and sessionID() to read
-// the session ID from its output. If it prints the report instead of writing the report file,
-// it also exports report() to read the report from its output.
+// A runner exports the command to start, the efforts that its CLI accepts, args() to build its
+// arguments, and sessionID() to read the session ID from its output. If it prints the report
+// instead of writing the report file, it also exports report() to read the report from its output.
 export async function loadRunner(path) {
   let runner;
   try {
@@ -110,8 +110,29 @@ export async function loadRunner(path) {
   if (typeof runner.command !== 'string' || typeof runner.args !== 'function' || typeof runner.sessionID !== 'function') {
     throw new Error(`runner ${path} must export command, args(), and sessionID()`);
   }
+  if (!Array.isArray(runner.efforts) || runner.efforts.length === 0 || !runner.efforts.every((value) => typeof value === 'string')) {
+    throw new Error(`runner ${path} must export efforts as a list of effort names`);
+  }
   if (runner.report !== undefined && typeof runner.report !== 'function') {
     throw new Error(`runner ${path} exports report, but it is not a function`);
+  }
+  return runner;
+}
+
+// Loads the runner of a role and makes sure that its CLI accepts the effort of the role. Some CLIs
+// ignore an unknown effort and run with their default, so the review would not run as configured.
+export async function roleRunner(root, settings) {
+  const path = runnerPath(root, settings.runner);
+  if (!existsSync(path)) {
+    const names = readdirSync(join(root, RUNNERS_DIR))
+      .filter((file) => file.endsWith('.mjs'))
+      .map((file) => file.slice(0, -'.mjs'.length))
+      .sort();
+    throw new Error(`${CONFIG_PATH} names the runner ${settings.runner}, but ${RUNNERS_DIR}/ has only: ${names.join(', ')}`);
+  }
+  const runner = await loadRunner(path);
+  if (!runner.efforts.includes(settings.effort)) {
+    throw new Error(`the ${settings.runner} runner does not accept the effort ${settings.effort}. Use one of: ${runner.efforts.join(', ')}`);
   }
   return runner;
 }
@@ -163,7 +184,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const root = git(['rev-parse', '--show-toplevel']);
   const settings = roleSettings(readFileSync(join(root, CONFIG_PATH), 'utf8'), options.role);
-  const runner = await loadRunner(runnerPath(root, settings.runner));
+  const runner = await roleRunner(root, settings);
   // The stamp covers the tree that is staged when the review starts. A later edit changes the tree.
   const tree = stagedTree();
   const head = git(['rev-parse', 'HEAD']);

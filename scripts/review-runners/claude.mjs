@@ -7,6 +7,9 @@ import { HOME_SECRETS, WORKSPACE_SECRETS } from '../review.mjs';
 
 export const command = 'claude';
 
+// The values that `claude --effort` accepts. The CLI ignores another value and uses its default.
+export const efforts = ['low', 'medium', 'high', 'xhigh', 'max'];
+
 export function settings({ home, root, gitDirs = [] }) {
   const homePaths = HOME_SECRETS.map((path) => join(home, path));
   // A permission rule that starts with `//` is an absolute path. A rule without a leading

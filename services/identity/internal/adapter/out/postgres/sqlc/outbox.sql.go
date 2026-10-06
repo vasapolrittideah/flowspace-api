@@ -29,30 +29,44 @@ SET claim_owner = $1,
 FROM next_event, identity_challenges AS challenge
 WHERE event.id = next_event.id
   AND challenge.id = event.challenge_id
-RETURNING event.id, event.challenge_id, challenge.purpose
+RETURNING event.id, event.challenge_id, challenge.purpose, event.traceparent, event.tracestate
 `
 
 type ClaimOutboxEventRow struct {
 	ID          pgtype.UUID
 	ChallengeID pgtype.UUID
 	Purpose     string
+	Traceparent pgtype.Text
+	Tracestate  pgtype.Text
 }
 
 func (q *Queries) ClaimOutboxEvent(ctx context.Context, claimOwner pgtype.Text) (ClaimOutboxEventRow, error) {
 	row := q.db.QueryRow(ctx, claimOutboxEvent, claimOwner)
 	var i ClaimOutboxEventRow
-	err := row.Scan(&i.ID, &i.ChallengeID, &i.Purpose)
+	err := row.Scan(
+		&i.ID,
+		&i.ChallengeID,
+		&i.Purpose,
+		&i.Traceparent,
+		&i.Tracestate,
+	)
 	return i, err
 }
 
 const createOutboxEvent = `-- name: CreateOutboxEvent :one
-INSERT INTO identity_outbox_events (challenge_id)
-VALUES ($1)
+INSERT INTO identity_outbox_events (challenge_id, traceparent, tracestate)
+VALUES ($1, $2, $3)
 RETURNING id
 `
 
-func (q *Queries) CreateOutboxEvent(ctx context.Context, challengeID pgtype.UUID) (pgtype.UUID, error) {
-	row := q.db.QueryRow(ctx, createOutboxEvent, challengeID)
+type CreateOutboxEventParams struct {
+	ChallengeID pgtype.UUID
+	Traceparent pgtype.Text
+	Tracestate  pgtype.Text
+}
+
+func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, createOutboxEvent, arg.ChallengeID, arg.Traceparent, arg.Tracestate)
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err

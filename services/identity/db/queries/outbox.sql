@@ -1,6 +1,6 @@
 -- name: CreateOutboxEvent :one
-INSERT INTO identity_outbox_events (challenge_id)
-VALUES (sqlc.arg(challenge_id))
+INSERT INTO identity_outbox_events (challenge_id, traceparent, tracestate)
+VALUES (sqlc.arg(challenge_id), sqlc.narg(traceparent), sqlc.narg(tracestate))
 RETURNING id;
 
 -- name: ClaimOutboxEvent :one
@@ -21,7 +21,7 @@ SET claim_owner = sqlc.arg(claim_owner),
 FROM next_event, identity_challenges AS challenge
 WHERE event.id = next_event.id
   AND challenge.id = event.challenge_id
-RETURNING event.id, event.challenge_id, challenge.purpose;
+RETURNING event.id, event.challenge_id, challenge.purpose, event.traceparent, event.tracestate;
 
 -- name: MarkOutboxPublished :execrows
 UPDATE identity_outbox_events

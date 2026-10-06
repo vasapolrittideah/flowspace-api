@@ -27,6 +27,7 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/testcontainers/testcontainers-go"
 	postgrescontainer "github.com/testcontainers/testcontainers-go/modules/postgres"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/peer"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
@@ -129,6 +130,93 @@ func TestIdentityRepository(t *testing.T) {
 	t.Run("password recovery treats provider accounts by their password credential", func(t *testing.T) {
 		testPasswordRecoveryForProviderAccounts(t, pool)
 	})
+	// This test delays the other pending events, so it runs last.
+	t.Run("outbox events keep the trace context of their transaction", func(t *testing.T) {
+		testOutboxTraceContext(t, pool)
+	})
+}
+
+// insertTracedOutboxEvent inserts an account, a challenge, and its outbox
+// event in one transaction with ctx, and returns the challenge ID.
+func insertTracedOutboxEvent(ctx context.Context, t *testing.T, pool *pgxpool.Pool, subject string) string {
+	t.Helper()
+	var challengeID string
+	err := identitypostgres.NewAccountRepository(pool).WithinTransaction(ctx, func(tx outbound.AccountTransaction) error {
+		if err := tx.CreateAccount(ctx, subject, subject+"@example.com", "$argon2id$test"); err != nil {
+			return err
+		}
+		var err error
+		if challengeID, err = tx.CreateChallenge(ctx, subject, subject+"@example.com", [32]byte{1}); err != nil {
+			return err
+		}
+		return tx.CreateOutboxEvent(ctx, challengeID)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return challengeID
+}
+
+// claimOnly claims the pending outbox event of challengeID after it delays
+// every other pending event.
+func claimOnly(ctx context.Context, t *testing.T, pool *pgxpool.Pool, challengeID string) outbound.OutboxEvent {
+	t.Helper()
+	if _, err := pool.Exec(ctx, `UPDATE identity_outbox_events SET next_attempt_at = statement_timestamp() + INTERVAL '1 hour'
+		WHERE published_at IS NULL AND challenge_id <> $1`, challengeID); err != nil {
+		t.Fatal(err)
+	}
+	event, ok, err := identitypostgres.NewOutboxRepository(pool).Claim(ctx, "trace-relay")
+	if err != nil || !ok || event.ChallengeID != challengeID {
+		t.Fatalf("claimed event = %+v, %v, %v", event, ok, err)
+	}
+	return event
+}
+
+func testOutboxTraceContext(t *testing.T, pool *pgxpool.Pool) {
+	traceID, _ := trace.TraceIDFromHex("4bf92f3577b34da6a3ce929d0e0e4736")
+	spanID, _ := trace.SpanIDFromHex("00f067aa0ba902b7")
+	state, err := trace.ParseTraceState("vendor=value")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name            string
+		span            trace.SpanContextConfig
+		wantTraceparent string
+		wantTracestate  string
+	}{
+		{
+			"sampled span with trace state",
+			trace.SpanContextConfig{TraceID: traceID, SpanID: spanID, TraceFlags: trace.FlagsSampled, TraceState: state},
+			"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", "vendor=value",
+		},
+		{
+			"unsampled span without trace state",
+			trace.SpanContextConfig{TraceID: traceID, SpanID: spanID},
+			"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00", "",
+		},
+		{"no valid span", trace.SpanContextConfig{}, "", ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := trace.ContextWithSpanContext(t.Context(), trace.NewSpanContext(test.span))
+			subject := "trace-" + strconv.Itoa(len(test.wantTraceparent)) + "-" + strconv.Itoa(len(test.wantTracestate))
+			challengeID := insertTracedOutboxEvent(ctx, t, pool, subject)
+
+			var traceparent, tracestate sql.NullString
+			if err := pool.QueryRow(ctx, `SELECT traceparent, tracestate FROM identity_outbox_events WHERE challenge_id = $1`, challengeID).
+				Scan(&traceparent, &tracestate); err != nil {
+				t.Fatal(err)
+			}
+			if traceparent.Valid != (test.wantTraceparent != "") || traceparent.String != test.wantTraceparent ||
+				tracestate.Valid != (test.wantTracestate != "") || tracestate.String != test.wantTracestate {
+				t.Fatalf("stored context = %v, %v", traceparent, tracestate)
+			}
+			event := claimOnly(t.Context(), t, pool, challengeID)
+			if event.Traceparent != test.wantTraceparent || event.Tracestate != test.wantTracestate {
+				t.Fatalf("claimed context = %q, %q", event.Traceparent, event.Tracestate)
+			}
+		})
+	}
 }
 
 func testActiveEmailUniqueness(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
@@ -214,7 +302,7 @@ func testSignupRollback(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := queries.CreateOutboxEvent(ctx, challenge.ID); err != nil {
+		if _, err := queries.CreateOutboxEvent(ctx, identitysqlc.CreateOutboxEventParams{ChallengeID: challenge.ID}); err != nil {
 			t.Fatal(err)
 		}
 		if err := tx.Rollback(ctx); err != nil {
@@ -277,10 +365,10 @@ func testSignupChallengeRecords(t *testing.T, ctx context.Context, pool *pgxpool
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := queries.CreateOutboxEvent(ctx, first.ID); err != nil {
+		if _, err := queries.CreateOutboxEvent(ctx, identitysqlc.CreateOutboxEventParams{ChallengeID: first.ID}); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := queries.CreateOutboxEvent(ctx, first.ID); err == nil {
+		if _, err := queries.CreateOutboxEvent(ctx, identitysqlc.CreateOutboxEventParams{ChallengeID: first.ID}); err == nil {
 			t.Fatal("duplicate outbox event for one challenge was accepted")
 		}
 		if changed, err := queries.DeleteChallengeDelivery(ctx, first.ID); err != nil || changed != 1 {
@@ -1145,7 +1233,7 @@ func testVerificationCodeResend(t *testing.T, ctx context.Context, pool *pgxpool
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := queries.CreateOutboxEvent(ctx, old.ID); err != nil {
+		if _, err := queries.CreateOutboxEvent(ctx, identitysqlc.CreateOutboxEventParams{ChallengeID: old.ID}); err != nil {
 			t.Fatal(err)
 		}
 		protector, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{3}, 32), 1)

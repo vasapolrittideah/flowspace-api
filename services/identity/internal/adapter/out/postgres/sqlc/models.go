@@ -56,6 +56,8 @@ type IdentityOutboxEvent struct {
 	ClaimOwner    pgtype.Text
 	ClaimedUntil  pgtype.Timestamptz
 	PublishedAt   pgtype.Timestamptz
+	Traceparent   pgtype.Text
+	Tracestate    pgtype.Text
 }
 
 type IdentityPasswordChangeNotice struct {

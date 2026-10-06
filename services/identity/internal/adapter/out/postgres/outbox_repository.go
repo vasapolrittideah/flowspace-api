@@ -34,6 +34,7 @@ func (r *OutboxRepository) Claim(ctx context.Context, owner string) (outbound.Ou
 	}
 	return outbound.OutboxEvent{
 		ID: uuid.UUID(row.ID.Bytes).String(), ChallengeID: uuid.UUID(row.ChallengeID.Bytes).String(), Purpose: row.Purpose,
+		Traceparent: row.Traceparent.String, Tracestate: row.Tracestate.String,
 	}, true, nil
 }
 

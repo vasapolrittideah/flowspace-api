@@ -7,7 +7,7 @@
 // It guards against forgotten steps, not against a deliberate bypass.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { stampPath, textStampPath } from './review.mjs';
@@ -287,20 +287,13 @@ export function decide({ command, cwd }, { run, exists, read }) {
           return { block: true, reason: `Cannot read the PR description file ${body.file}.` };
         }
       }
-      // Each role approves the tree of HEAD and the exact PR description. The hook requires
-      // writing-reviewer where the checkout has its role file, as it requires migration-reviewer
-      // for a staged migration.
-      const roles = ['convention-reviewer'];
-      const root = out(['rev-parse', '--show-toplevel']) ?? git.dir;
-      if (exists(join(root, '.codex/agents/writing-reviewer.toml'))) {
-        roles.push('writing-reviewer');
-      }
+      // Each role approves the tree of HEAD and the exact PR description.
+      const roles = ['convention-reviewer', 'writing-reviewer'];
       // planning-reviewer approves the tree of HEAD when the branch changes a planning
       // artifact. It does not review the PR description, so it needs no text stamp. If the
       // branch diff fails, the hook does not require it.
       const branchPaths = (out(['diff', '--name-only', 'origin/main...HEAD']) ?? '').split('\n');
-      const planning =
-        branchPaths.some((path) => PLANNING_PATH.test(path)) && exists(join(root, '.codex/agents/planning-reviewer.toml'));
+      const planning = branchPaths.some((path) => PLANNING_PATH.test(path));
       const missing = roles.filter(
         (role) => !exists(stampPath(common, role, tree)) || (text !== undefined && !exists(textStampPath(common, role, text))),
       );
@@ -350,11 +343,7 @@ export function decide({ command, cwd }, { run, exists, read }) {
       }
       const required = ['code-reviewer'];
       const staged = (out(['diff', '--cached', '--name-only']) ?? '').split('\n');
-      const root = out(['rev-parse', '--show-toplevel']) ?? git.dir;
-      if (
-        staged.some((path) => MIGRATION_PATH.test(path)) &&
-        exists(join(root, '.codex/agents/migration-reviewer.toml'))
-      ) {
+      if (staged.some((path) => MIGRATION_PATH.test(path))) {
         required.push('migration-reviewer');
       }
       const missing = required.filter((role) => !exists(stampPath(resolve(git.dir, commonDir), role, tree)));
@@ -364,7 +353,7 @@ export function decide({ command, cwd }, { run, exists, read }) {
           reason:
             `No reviewer approval for the staged tree ${tree} from: ${missing.join(', ')}. ` +
             'Stage the change, run `node scripts/review.mjs <role> ...` for each role, ' +
-            'and commit only after it prints `verdict: APPROVE`. See .claude/rules/codex-review-roles.md.',
+            'and commit only after it prints `verdict: APPROVE`. See .agents/rules/review-roles.md.',
         };
       }
     }

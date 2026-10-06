@@ -63,9 +63,9 @@ A runner is a module in `scripts/review-runners/` that starts one agent CLI for 
 
 To support another agent, a contributor adds files and changes no existing runner:
 
-1. Give the agent the repository instructions in `AGENTS.md`, if it does not read that file itself.
-2. Register `scripts/git-guard.mjs` as a hook that runs before each shell command, if the agent supports such hooks.
-3. Add `scripts/review-runners/<runner>.mjs`, if the agent will run review roles. The module exports the command, the efforts that the CLI accepts, `args()`, and `sessionID()`, as `scripts/review.mjs` describes. If the CLI prints the report instead of writing the report file, the module also exports `report()`.
+1. If the agent does not read `AGENTS.md` itself, give it the repository instructions in that file.
+2. If the agent supports hooks before shell commands, register `scripts/git-guard.mjs` to run before each shell command.
+3. If the agent will run review roles, add `scripts/review-runners/<runner>.mjs`. The module exports the command, the efforts that the CLI accepts, `args()`, and `sessionID()`, as `scripts/review.mjs` describes. If the CLI prints the report and does not write the report file, the module also exports `report()`.
 
 ## Approvals and gates
 
@@ -73,13 +73,13 @@ An approval stamp is a file that records that a reviewer approved one exact vers
 
 A reviewer of a PR description also approves its exact text. If the author agent passes the description file to the script with `--stamp-file`, the script also writes a stamp for the hash of that text.
 
-Claude Code and Codex both register the `git-guard` hook to run before each shell command. Codex runs it only after the user trusts it, as [Limits](#limits) states. The hook reads the stamps and blocks these commands:
+Claude Code and Codex both register the `git-guard` hook to run before each shell command. Codex runs it only after the user trusts it, as [Limits](#limits) states. The hook reads the stamps:
 
-- A commit, when the staged tree has no `code-reviewer` stamp. If the staged tree is the tree of `HEAD`, the hook allows the commit. A commit that only changes the message needs no new review.
-- A commit that changes a migration, when the staged tree has no `migration-reviewer` stamp.
-- `gh pr create` and `gh pr edit`, when the tree of `HEAD` has no `convention-reviewer` stamp or no `writing-reviewer` stamp. `gh pr create` must pass the description with `--body-file`. `gh pr edit` must use `--body-file` when it changes the description. Both roles must have a stamp for the exact text of that file.
-- `gh pr create` and `gh pr edit`, when the branch changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, and the tree of `HEAD` has no `planning-reviewer` stamp.
-- `gh pr merge`, because the maintainer merges each PR.
+- The hook blocks a commit when the staged tree has no `code-reviewer` stamp. If the staged tree is the tree of `HEAD`, the hook allows the commit. A commit that only changes the message needs no new review.
+- The hook blocks a commit that changes a migration when the staged tree has no `migration-reviewer` stamp.
+- The hook blocks `gh pr create` and `gh pr edit` when the tree of `HEAD` has no `convention-reviewer` stamp or no `writing-reviewer` stamp. `gh pr create` must pass the description with `--body-file`. `gh pr edit` must use `--body-file` when it changes the description. Both roles must have a stamp for the exact text of that file.
+- The hook blocks `gh pr create` and `gh pr edit` when the branch changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, and the tree of `HEAD` has no `planning-reviewer` stamp.
+- The hook blocks `gh pr merge` because the maintainer merges each PR.
 
 A script decides each gate, and an LLM does not. A reviewer gives a verdict, but only the stamp files and the hook decide whether a commit or a PR can continue. The hook finds forgotten steps. It does not stop a person or an agent that bypasses it on purpose.
 

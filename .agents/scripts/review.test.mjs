@@ -24,8 +24,8 @@ import {
 import * as claude from './review-runners/claude.mjs';
 import { args as codexArgs, sandboxArgs, sessionID } from './review-runners/codex.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SCRIPT = join(ROOT, 'scripts/review.mjs');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const SCRIPT = join(ROOT, '.agents/scripts/review.mjs');
 const ROLES = ['code-reviewer', 'contract-reviewer', 'convention-reviewer', 'infra-reviewer', 'migration-reviewer',
   'planning-reviewer', 'security-auditor', 'spec-conformance-reviewer', 'test-reviewer', 'writing-reviewer'];
 
@@ -57,7 +57,7 @@ test('Claude Code and AGENTS.md reach the same review roles rules', () => {
 test('roleRunner rejects a runner that does not exist and an effort that the runner does not accept', async () => {
   // The repository can gain runners, so this test makes sure that the existing runners appear in the
   // list. The test with the fixture repository below makes sure that the list contains exactly its runners.
-  const missing = /names the runner no-such-runner, but scripts\/review-runners\/ has only: (.*)$/;
+  const missing = /names the runner no-such-runner, but \.agents\/scripts\/review-runners\/ has only: (.*)$/;
   await assert.rejects(roleRunner(ROOT, { runner: 'no-such-runner', model: 'm', effort: 'high' }), (error) => {
     const names = error.message.match(missing)?.[1].split(', ') ?? [];
     return names.includes('claude') && names.includes('codex');
@@ -89,8 +89,8 @@ test('roleSettings reads one role and rejects an incomplete or unknown role', ()
 });
 
 test('runnerPath keeps the runner inside the runners directory', () => {
-  assert.equal(runnerPath('/repo', 'codex'), '/repo/scripts/review-runners/codex.mjs');
-  assert.equal(runnerPath('/repo', 'gemini-cli'), '/repo/scripts/review-runners/gemini-cli.mjs');
+  assert.equal(runnerPath('/repo', 'codex'), '/repo/.agents/scripts/review-runners/codex.mjs');
+  assert.equal(runnerPath('/repo', 'gemini-cli'), '/repo/.agents/scripts/review-runners/gemini-cli.mjs');
   for (const name of ['../codex', 'a/b', 'Codex', '', '.hidden', 'codex.mjs']) {
     assert.throws(() => runnerPath('/repo', name), /runner name/, name);
   }
@@ -294,10 +294,10 @@ export function report(log) {
 
 function reviewRepo(roles) {
   const { repo, git } = gitRepo('review-run-');
-  mkdirSync(join(repo, 'scripts/review-runners'), { recursive: true });
+  mkdirSync(join(repo, '.agents/scripts/review-runners'), { recursive: true });
   mkdirSync(join(repo, '.agents'), { recursive: true });
-  writeFileSync(join(repo, 'scripts/review-runners/fake.mjs'), FAKE_RUNNER);
-  writeFileSync(join(repo, 'scripts/review-runners/printer.mjs'), PRINT_RUNNER);
+  writeFileSync(join(repo, '.agents/scripts/review-runners/fake.mjs'), FAKE_RUNNER);
+  writeFileSync(join(repo, '.agents/scripts/review-runners/printer.mjs'), PRINT_RUNNER);
   writeFileSync(join(repo, '.agents/review-roles.json'), JSON.stringify(roles));
   writeFileSync(join(repo, 'prompt.md'), 'Review this.\n');
   writeFileSync(join(repo, 'pr.md'), 'Description\n');
@@ -360,7 +360,7 @@ test('a review runs the runner of its role and stamps the tree and text only on 
       assert.equal(existsSync(join(repo, '.git/reviews', role)), false, role);
     }
     assert.match(review(repo, 'unknown-role', 'out/x').stderr, /no role unknown-role/);
-    assert.match(review(repo, 'missing', 'out/x').stderr, /names the runner nope, but scripts\/review-runners\/ has only: fake, printer/);
+    assert.match(review(repo, 'missing', 'out/x').stderr, /names the runner nope, but \.agents\/scripts\/review-runners\/ has only: fake, printer/);
     assert.match(review(repo, 'badEffort', 'out/x').stderr, /the fake runner does not accept the effort max/);
   } finally {
     rmSync(repo, { recursive: true, force: true });

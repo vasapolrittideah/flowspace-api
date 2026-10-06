@@ -282,7 +282,7 @@ test('a missing PR approval names each missing reviewer and its review command',
   assert.equal(missing(mixed), 'convention-reviewer, writing-reviewer');
   const reason = decideWith(command, run, existing()).reason;
   for (const role of PR_ROLES) {
-    assert.match(reason, new RegExp(`node scripts/review\\.mjs ${role} \\.\\.\\. --stamp-file <description-file>`));
+    assert.match(reason, new RegExp(`node \\.agents/scripts/review\\.mjs ${role} \\.\\.\\. --stamp-file <description-file>`));
   }
 });
 
@@ -328,7 +328,7 @@ test('a branch that changes a planning artifact needs a planning-reviewer approv
       const decision = decideWith(command, run, existing(...PR_STAMPS));
       assert.equal(decision.block, true, `${command} with ${path}`);
       assert.match(decision.reason, /from: planning-reviewer\./, `${command} with ${path}`);
-      assert.match(decision.reason, /node scripts\/review\.mjs planning-reviewer \.\.\.`/);
+      assert.match(decision.reason, /node \.agents\/scripts\/review\.mjs planning-reviewer \.\.\.`/);
       assert.equal(decideWith(command, run, existing(...ALL_PR)).block, false, `${command} with ${path}`);
     }
   }
@@ -410,10 +410,10 @@ test('every body option is read, and only one body file counts', () => {
 });
 
 test('Claude Code and Codex both run this hook before each shell command', () => {
-  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
   for (const file of ['.claude/settings.json', '.codex/hooks.json']) {
     const entries = JSON.parse(readFileSync(join(root, file), 'utf8')).hooks.PreToolUse;
     const bash = entries.filter((entry) => entry.matcher === 'Bash').flatMap((entry) => entry.hooks);
-    assert.ok(bash.some((hook) => hook.type === 'command' && hook.command.includes('/scripts/git-guard.mjs')), file);
+    assert.ok(bash.some((hook) => hook.type === 'command' && hook.command.includes('/.agents/scripts/git-guard.mjs')), file);
   }
 });

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/scripts/git-guard.mjs\"",
+            "command": "node \"$(git rev-parse --show-toplevel)/.agents/scripts/git-guard.mjs\"",
             "statusMessage": "Checking review approvals",
             "timeout": 30
           }

@@ -1,7 +1,12 @@
 // Package requestid validates and generates request IDs.
 package requestid
 
-import "crypto/rand"
+import (
+	"context"
+	"crypto/rand"
+
+	"google.golang.org/grpc/metadata"
+)
 
 // Valid reports whether value is a request ID with 1 to 128 allowed ASCII bytes.
 func Valid(value string) bool {
@@ -24,4 +29,14 @@ func ValidOrNew(value string) string {
 		return value
 	}
 	return rand.Text()
+}
+
+// FromIncoming returns the x-request-id gRPC metadata of ctx when it holds
+// exactly one valid request ID. Otherwise it returns an empty string.
+func FromIncoming(ctx context.Context) string {
+	values := metadata.ValueFromIncomingContext(ctx, "x-request-id")
+	if len(values) == 1 && Valid(values[0]) {
+		return values[0]
+	}
+	return ""
 }

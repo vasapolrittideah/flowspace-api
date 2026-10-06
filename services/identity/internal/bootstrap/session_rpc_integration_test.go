@@ -21,12 +21,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/testcontainers/testcontainers-go"
 	postgrescontainer "github.com/testcontainers/testcontainers-go/modules/postgres"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
@@ -116,6 +119,7 @@ func TestIdentityPrivateSessionListener(t *testing.T) {
 	config.TokenIssuer, config.TokenAudience = "urn:flowspace:identity:local", "flowspace-api"
 	config.CodeVerifierKeyFile, config.DeliveryKeyFile = verifierFile, deliveryFile
 	config.OutboxReadyMaxPending = 10000
+	exporter := recordSpans(t)
 	core, logs := observer.New(zap.InfoLevel)
 	server, err := NewAPIServer(ctx, config, zap.New(core))
 	if err != nil {
@@ -156,6 +160,7 @@ func TestIdentityPrivateSessionListener(t *testing.T) {
 	if err != nil || !response.GetEmailVerified() {
 		t.Fatalf("current verification = %+v, %v", response, err)
 	}
+	testCorrelatedPrivateSessionCheck(ctx, t, private, request, logs, exporter)
 	for _, test := range []struct {
 		name    string
 		request *identityv1.CheckSessionRequest
@@ -197,8 +202,13 @@ func TestIdentityPrivateSessionListener(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = publicConnection.Close() }()
-	if _, err := identityv1.NewIdentityServiceClient(publicConnection).CheckSession(callCtx, request); status.Code(err) != codes.Unimplemented {
+	sessionLines := logs.FilterMessage("identity_session_check").Len()
+	publicCtx := metadata.AppendToOutgoingContext(callCtx, "traceparent", parentTraceparent, "x-request-id", "request-public")
+	if _, err := identityv1.NewIdentityServiceClient(publicConnection).CheckSession(publicCtx, request); status.Code(err) != codes.Unimplemented {
 		t.Fatalf("public gRPC CheckSession = %v", err)
+	}
+	if got := logs.FilterMessage("identity_session_check").Len(); got != sessionLines {
+		t.Fatalf("public CheckSession reached the session check: %d lines, want %d", got, sessionLines)
 	}
 	httpClient := &http.Client{Timeout: 3 * time.Second}
 	for path, want := range map[string]int{
@@ -214,6 +224,38 @@ func TestIdentityPrivateSessionListener(t *testing.T) {
 		if response.StatusCode != want {
 			t.Fatalf("%s = %d, want %d", path, response.StatusCode, want)
 		}
+	}
+}
+
+// testCorrelatedPrivateSessionCheck proves that a check over mutual TLS
+// continues the forwarded trace and writes the forwarded request ID.
+func testCorrelatedPrivateSessionCheck(ctx context.Context, t *testing.T, private identityv1.IdentityServiceClient,
+	request *identityv1.CheckSessionRequest, logs *observer.ObservedLogs, exporter *tracetest.InMemoryExporter,
+) {
+	t.Helper()
+	callCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	callCtx = metadata.AppendToOutgoingContext(callCtx, "traceparent", parentTraceparent, "x-request-id", "request-1")
+	response, err := private.CheckSession(callCtx, request)
+	if err != nil || !response.GetEmailVerified() {
+		t.Fatalf("correlated session = %+v, %v", response, err)
+	}
+	var continued []tracetest.SpanStub
+	for _, span := range exporter.GetSpans() {
+		if span.Parent.SpanID().String() == parentSpanID {
+			continued = append(continued, span)
+		}
+	}
+	if len(continued) != 1 || continued[0].Name != identityv1.IdentityService_CheckSession_FullMethodName ||
+		continued[0].SpanKind != trace.SpanKindServer || continued[0].Parent.TraceID().String() != parentTraceID {
+		t.Fatalf("continued spans = %+v", continued)
+	}
+	lines := logs.FilterMessage("identity_session_check").FilterField(zap.String("request_id", "request-1")).All()
+	if len(lines) != 1 {
+		t.Fatalf("identity_session_check lines with the request ID = %d", len(lines))
+	}
+	if fields := lines[0].ContextMap(); fields["trace_id"] != parentTraceID || fields["status"] != "OK" || fields["outcome"] != "success" {
+		t.Fatalf("identity_session_check = %v", fields)
 	}
 }
 

@@ -35,13 +35,13 @@ node scripts/review.mjs <role> --out <scratchpad>/<name> --prompt-file <prompt-f
 
 ## What the hook blocks
 
-In Claude Code, the [`git-guard` hook](../../scripts/git-guard.mjs) runs before each Bash command. It enforces only the rules that the GitHub ruleset on `main` cannot enforce, and blocks these commands:
+In Claude Code and Codex, the [`git-guard` hook](../../scripts/git-guard.mjs) runs before each shell command. `.claude/settings.json` and `.codex/hooks.json` register it. Codex runs the hook only after the user trusts it with `/hooks`, and it asks again after each change to `.codex/hooks.json`. The hook enforces only the rules that the GitHub ruleset on `main` cannot enforce, and blocks these commands:
 
 - `git commit` without a stamp for the staged tree, as stated above. It must run as its own command, without `cd`, and without `-a`, `-i`, `-o`, `-p`, or paths.
 - `gh pr merge`, because the maintainer merges pull requests.
 - `gh pr create` and `gh pr edit` without a convention-reviewer stamp and a writing-reviewer stamp for the tree of `HEAD`. When the command passes a description, it must use `--body-file` with the same file that both reviews stamped. When the branch changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, the command also needs a planning-reviewer stamp for the tree of `HEAD`.
 
-Other agents do not run this hook. An agent without the hook must follow the same rules, and must not commit or open a PR without the stamps that the hook requires.
+Other agents do not run this hook. An agent without the hook, or with a hook that it does not trust yet, must follow the same rules, and must not commit or open a PR without the stamps that the hook requires.
 
 ## Review loop
 

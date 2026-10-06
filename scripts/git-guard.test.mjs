@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { stampPath, textStampPath } from './review.mjs';
 import { commitContentProblem, decide, ghPr, gitCommands, prBody, shellCommands } from './git-guard.mjs';
@@ -378,4 +381,13 @@ test('every body option is read, and only one body file counts', () => {
   assert.equal(decideWith('gh pr edit 12 -bunreviewed', run, existing(treeStamp, textStamp)).block, true);
   assert.equal(decideWith('gh pr edit 12 --body-file pr.md --body-file other.md', run, existing(treeStamp, textStamp)).block, true);
   assert.equal(decideWith('gh pr edit 12 -Fpr.md', run, existing(treeStamp, textStamp)).block, false);
+});
+
+test('Claude Code and Codex both run this hook before each shell command', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  for (const file of ['.claude/settings.json', '.codex/hooks.json']) {
+    const entries = JSON.parse(readFileSync(join(root, file), 'utf8')).hooks.PreToolUse;
+    const bash = entries.filter((entry) => entry.matcher === 'Bash').flatMap((entry) => entry.hooks);
+    assert.ok(bash.some((hook) => hook.type === 'command' && hook.command.includes('/scripts/git-guard.mjs')), file);
+  }
 });

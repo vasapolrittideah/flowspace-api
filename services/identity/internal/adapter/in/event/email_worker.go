@@ -16,8 +16,14 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/logging"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
+)
+
+const (
+	deliveryOperation = "identity.email_delivery"
+	noticeOperation   = "identity.password_change_notice"
 )
 
 var (
@@ -88,12 +94,15 @@ func (w *EmailWorker) HandleRecord(ctx context.Context, record *kgo.Record) erro
 
 // DeliverPasswordChangeNotice sends one due notice and reports whether it found one.
 func (w *EmailWorker) DeliverPasswordChangeNotice(ctx context.Context) (bool, error) {
-	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, "identity.password_change_notice")
+	// A notice comes from a table row and not from an event record, so it
+	// starts a new root trace.
+	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, noticeOperation,
+		trace.WithSpanKind(trace.SpanKindConsumer), trace.WithNewRoot())
 	defer span.End()
 	found, err := w.repository.WithNextPasswordChangeNotice(ctx, w.sender.SendPasswordChangeNotice)
 	if err != nil {
 		span.SetStatus(codes.Error, "notice delivery failed")
-		w.logger.Warn("password_change_notice_failed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
+		w.logger.Warn("password_change_notice_failed", logging.TraceID(ctx), zap.String("operation", noticeOperation))
 		return found, ErrEmailDelivery
 	}
 	return found, nil
@@ -128,26 +137,27 @@ func (w *EmailWorker) RunOnce(ctx context.Context) (bool, error) {
 		}
 	}
 	ctx = (propagation.TraceContext{}).Extract(ctx, carrier)
-	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, "identity.email_delivery")
+	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, deliveryOperation, trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
+	traceID, operation := logging.TraceID(ctx), zap.String("operation", deliveryOperation)
 	if err := w.HandleRecord(ctx, records[0]); err != nil {
 		w.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
 			records[0].Topic: {records[0].Partition: {Epoch: records[0].LeaderEpoch, Offset: records[0].Offset}},
 		})
 		span.SetStatus(codes.Error, "delivery failed")
-		w.logger.Warn("email_delivery_failed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
+		w.logger.Warn("email_delivery_failed", traceID, operation)
 		return true, err
 	}
 	if err := w.client.CommitRecords(ctx, records[0]); err != nil {
 		span.SetStatus(codes.Error, "broker commit failed")
-		w.logger.Warn("email_delivery_commit_failed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
+		w.logger.Warn("email_delivery_commit_failed", traceID, operation)
 		return true, ErrDeliveryBroker
 	}
 	if !records[0].Timestamp.IsZero() {
-		w.logger.Info("email_delivery_processed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()),
+		w.logger.Info("email_delivery_processed", traceID, operation,
 			zap.Float64("record_age_seconds", max(0, time.Since(records[0].Timestamp).Seconds())))
 	} else {
-		w.logger.Info("email_delivery_processed", zap.String("trace_id", trace.SpanContextFromContext(ctx).TraceID().String()))
+		w.logger.Info("email_delivery_processed", traceID, operation)
 	}
 	return true, nil
 }

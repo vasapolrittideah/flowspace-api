@@ -38,8 +38,8 @@ test('the role configuration gives every role a runner that loads and accepts it
 });
 
 test('roleRunner rejects a runner that does not exist and an effort that the runner does not accept', async () => {
-  // The repository can gain runners, so this checks only the existing ones. The fixture repository
-  // below checks the exact list.
+  // The repository can gain runners, so this test makes sure that the existing runners appear in the
+  // list. The test with the fixture repository below makes sure that the list contains exactly its runners.
   const missing = /names the runner no-such-runner, but scripts\/review-runners\/ has only: (.*)$/;
   await assert.rejects(roleRunner(ROOT, { runner: 'no-such-runner', model: 'm', effort: 'high' }), (error) => {
     const names = error.message.match(missing)?.[1].split(', ') ?? [];

@@ -120,7 +120,7 @@ export async function loadRunner(path) {
 }
 
 // Loads the runner of a role and makes sure that its CLI accepts the effort of the role. Some CLIs
-// ignore an unknown effort and run with their default, so the review would not run as configured.
+// ignore an unknown effort and run with their default, so the review can run with a different effort.
 export async function roleRunner(root, settings) {
   const path = runnerPath(root, settings.runner);
   if (!existsSync(path)) {

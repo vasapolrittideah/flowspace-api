@@ -1,76 +1,140 @@
 # Flowspace API
 
-Flowspace is a work-management backend for learning how to build and operate distributed systems. The project uses Go services in one repository and one Go module.
+Flowspace is the backend of a work-management app. When it is complete, teams will use workspaces to share projects, tasks, comments, and notifications. The project is also a place to learn how to build and run distributed systems, so it runs on Kubernetes even on a laptop.
 
-## Current status
+## Project status
 
-The Workspace service can create a workspace and read a workspace that the caller belongs to. The local setup uses Keycloak for authentication while the planned Flowspace Identity service is built. Work and Notifications are also planned; their APIs are not available yet. See the [Workspace specification](docs/specs/workspace-creation-and-reading.md) for the available routes and request details.
+The project has four planned Go services in one repository:
 
-Local data is disposable, and the project is not ready for real user data.
+| Service | What it does | Status |
+| --- | --- | --- |
+| Identity | Sign-up, email verification, password login, sessions, password recovery, and Google or GitHub login | Available |
+| Workspace | Create a workspace and read a workspace that you belong to | Partly available |
+| Work | Projects, tasks, assignments, and comments | Planned |
+| Notifications | An in-app inbox for workspace activity | Planned |
+
+The [specification index](docs/specs/README.md) lists each module and its status. Local data is disposable. Do not put real user data in the project.
 
 ## Prerequisites
 
 The local setup runs on macOS. Install these tools before you start:
 
-- [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/), [k3d](https://k3d.io/stable/), [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/), [Helm](https://helm.sh/docs/intro/install/), and [Tilt](https://docs.tilt.dev/install.html) for the local Kubernetes environment.
-- [Go Task](https://taskfile.dev/docs/installation) for the repository commands.
-- [Node.js](https://nodejs.org/en/download) with [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/) for local password setup and Markdown checks.
-- [Go 1.27.1](https://go.dev/doc/install) for Go development and installation of the pinned repository tools.
+| Tool | Use |
+| --- | --- |
+| [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/) | Runs the local Kubernetes cluster. |
+| [k3d](https://k3d.io/stable/), [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/), and [Helm](https://helm.sh/docs/intro/install/) | Create and manage the local cluster. |
+| [kubeseal](https://github.com/bitnami-labs/sealed-secrets#kubeseal) and OpenSSL | Create the encrypted local secrets. |
+| [Tilt](https://docs.tilt.dev/install.html) | Builds and starts all services. |
+| [Go Task](https://taskfile.dev/docs/installation) | Runs the repository commands. |
+| [Go 1.27.1](https://go.dev/doc/install) | Builds the services and installs the pinned tools. |
+| [Node.js](https://nodejs.org/en/download) with npm | Creates local passwords and checks Markdown. |
 
-The first installation of the pinned tools and Markdown linter needs access to the Go and npm package registries.
+The first installation of the tools needs access to the Go and npm package registries.
 
-## Quick start
+## Set up the project
 
-For the first setup, start Docker Desktop, then run these commands from the repository root:
+Start Docker Desktop. Then run these commands from the repository root:
 
-```sh
-task tools:install
-task secrets:setup
-task cluster:create
-tilt up
-```
+1. Install the pinned tools into `bin/`:
 
-Tilt starts Keycloak, PostgreSQL, migrations, and the Workspace API. It forwards the Workspace API to `http://localhost:8081` and Keycloak to `http://localhost:8080`.
+   ```sh
+   task tools:install
+   ```
 
-Tilt also starts Adminer at `http://localhost:8083`. Opening that address connects to the Workspace database. Open `http://localhost:8083/?local=identity` to connect to the Identity database. Adminer reads the local database passwords from Kubernetes Secrets. Anyone who can reach the Adminer port can change local data.
+2. Create the local passwords and keys in `.secrets/`:
 
-After Tilt finishes starting the databases, run `sh scripts/check-adminer-autologin.sh` to check both connections.
+   ```sh
+   task secrets:setup
+   ```
 
-Tilt also starts Alloy, Loki, Tempo, and Grafana. The services send their spans to Alloy, and Tempo keeps them for 3 days. Alloy also reads the logs of the Flowspace pods, and Loki keeps them for 7 days. In Grafana, find the log lines of a request with a Loki query such as `{namespace="flowspace-local"} | json | request_id="<request ID>"`. Then open the trace from the `trace_id` link of a line. Tilt forwards Grafana to `http://localhost:3000` through the Kubernetes API, as `kubectl port-forward` does. Grafana has no route outside the cluster.
+3. Create the local cluster. Then select it:
 
-Sign in as `admin` with the password in `.secrets/grafana-admin-password`. The Grafana admin Secret in Git is sealed with the key of one cluster. After you create a new cluster, run `task observability:grafana-admin:setup` to seal the password again, and commit the changed manifest.
+   ```sh
+   task cluster:create
+   kubectl config use-context k3d-flowspace
+   ```
 
-To check that Tempo survives parallel trace searches and answers afterward, run `sh scripts/smoke-tempo-search-local.sh` while Tilt runs. The script sends Identity requests to create traces first.
+4. Create the encrypted secrets for your cluster:
 
-Google login is optional. To turn it on locally, create a Google OAuth web client with the redirect URI `http://localhost:8082/v1/provider-login-callbacks/google`. Save the client ID in `.secrets/identity-google-client-id` and the client secret in `.secrets/identity-google-client-secret`, without a trailing newline. Tilt then configures Identity for Google login. If either file is missing, Google login returns an unavailable error.
+   ```sh
+   task identity:session-tls:setup
+   task observability:grafana-admin:setup
+   ```
 
-GitHub login is optional in the same way. Create a GitHub OAuth app with the callback URL `http://localhost:8082/v1/provider-login-callbacks/github`. Save the client ID in `.secrets/identity-github-client-id` and the client secret in `.secrets/identity-github-client-secret`, without a trailing newline. If either file is missing, GitHub login returns an unavailable error.
+5. Start all services:
 
-## Development
+   ```sh
+   tilt up
+   ```
+
+The commands in step 4 change files under `deploy/`, because each cluster has its own encryption key. Send these files for review:
+
+1. Create a short-lived branch.
+2. Review the changed files.
+3. Commit the changed files.
+4. Open a pull request.
+
+Press the space bar in the Tilt terminal to open the Tilt dashboard. The setup is complete when all resources are green.
+
+If you delete the cluster and create it again, the steps are different. Follow the [rebuild procedure for local session TLS](docs/identity-internal-tls.md#rebuild-with-a-new-controller-key). Before you run `tilt up` in that procedure, run `task observability:grafana-admin:setup`.
+
+### Local addresses
+
+When Tilt runs, these addresses are available:
+
+| Address | Service |
+| --- | --- |
+| `http://localhost:8082` | Identity API |
+| `http://localhost:8081` | Workspace API |
+| `http://localhost:8080/auth/admin/` | Keycloak admin console, which the Workspace API uses for sign-in until it moves to Identity |
+| `http://localhost:8083` | Adminer for the Workspace database. Add `?local=identity` for the Identity database. |
+| `http://localhost:3000` | Grafana for logs and traces. Sign in as `admin` with the password in `.secrets/grafana-admin-password`. |
+
+To test the Identity API from start to end, follow the [Bruno smoke test instructions](tests/smoke/bruno/README.md).
+
+### Optional provider login
+
+Google and GitHub login are off by default. If a provider is not set up, its login returns an unavailable error.
+
+To turn on Google login:
+
+1. Create a Google OAuth web client with the redirect URI `http://localhost:8082/v1/provider-login-callbacks/google`.
+2. Save the client ID in `.secrets/identity-google-client-id`, without a trailing newline.
+3. Save the client secret in `.secrets/identity-google-client-secret`, without a trailing newline.
+
+To turn on GitHub login:
+
+1. Create a GitHub OAuth app with the callback URL `http://localhost:8082/v1/provider-login-callbacks/github`.
+2. Save the client ID in `.secrets/identity-github-client-id`, without a trailing newline.
+3. Save the client secret in `.secrets/identity-github-client-secret`, without a trailing newline.
+
+## Daily commands
 
 | Command | Purpose |
 | --- | --- |
-| `task` | List the available repository commands. |
-| `task tools:install` | Install pinned Go tools into `bin/`. |
+| `task` | List all repository commands. |
+| `task cluster:start` | Start the local cluster after you stop it. |
+| `task cluster:stop` | Stop the local cluster. |
 | `task go:build` | Compile all Go packages. |
 | `task go:test` | Run all Go tests. |
-| `task check:fast` | Run checks after an edit. |
-| `task check:task` | Run the local handoff checks. |
-| `task markdown:check` | Lint Markdown and check local links. |
+| `task check:fast` | Run the fast checks after an edit. |
+| `task check:task` | Run all local checks before a pull request. |
+| `task markdown:check` | Lint Markdown and find broken local links. |
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) describes the accepted system direction and open proposals.
-- [Project structure](docs/project-structure.md) explains file ownership and dependency boundaries.
-- [Technology stack](docs/technology-stack.md) lists selected tools and packages.
-- [Specifications](docs/specs/README.md) define module behavior.
-- [Architecture decisions](docs/adr/README.md) record accepted decisions.
+- [Architecture](docs/architecture.md) describes the product rules and the service boundaries.
+- [Project structure](docs/project-structure.md) explains where files go and which packages can depend on each other.
+- [Technology stack](docs/technology-stack.md) lists the selected tools and packages.
+- [Specifications](docs/specs/README.md) define the behavior of each module.
+- [Architecture decisions](docs/adr/README.md) record the accepted decisions and their reasons.
 - [Agent workflow](docs/agent-workflow.md) explains how AI agents write and review changes.
-- [Constraints](CONSTRAINTS.md) define the project quality gates.
 
 ## Contributing
 
-Read [AGENTS.md](AGENTS.md) and [CONSTRAINTS.md](CONSTRAINTS.md) before making changes. Work on a short-lived branch, run the relevant checks, and submit a pull request using the [PR convention](docs/conventions/pull-requests.md).
+1. Read [AGENTS.md](AGENTS.md) and [CONSTRAINTS.md](CONSTRAINTS.md) before you change the project.
+2. Make each change on a short-lived branch.
+3. Open a pull request, as the [pull request convention](docs/conventions/pull-requests.md) states.
 
 ## License
 

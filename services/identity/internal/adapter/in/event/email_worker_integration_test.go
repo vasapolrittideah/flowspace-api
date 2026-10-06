@@ -29,6 +29,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
@@ -46,6 +47,62 @@ import (
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
+
+// telemetryText joins the text that a log or span can carry. It leaves out
+// timestamps, trace IDs, and numeric values, because their random digits can
+// contain a six-digit code by chance.
+func telemetryText(logs *observer.ObservedLogs, spans tracetest.SpanStubs) string {
+	var text strings.Builder
+	for _, entry := range logs.All() {
+		text.WriteString(entry.Message + "\n")
+		for _, field := range entry.Context {
+			if field.Key == "trace_id" {
+				continue
+			}
+			text.WriteString(field.Key + "=" + field.String + "\n")
+			if field.Interface != nil {
+				fmt.Fprintf(&text, "%v\n", field.Interface)
+			}
+		}
+	}
+	writeAttributes := func(attributes []attribute.KeyValue) {
+		for _, kv := range attributes {
+			text.WriteString(string(kv.Key) + "\n")
+			if kv.Value.Type() == attribute.STRING || kv.Value.Type() == attribute.STRINGSLICE {
+				text.WriteString(kv.Value.Emit() + "\n")
+			}
+		}
+	}
+	for _, span := range spans {
+		text.WriteString(span.Name + "\n" + span.Status.Description + "\n")
+		writeAttributes(span.Attributes)
+		for _, event := range span.Events {
+			text.WriteString(event.Name + "\n")
+			writeAttributes(event.Attributes)
+		}
+		for _, link := range span.Links {
+			writeAttributes(link.Attributes)
+		}
+	}
+	return text.String()
+}
+
+func TestTelemetryTextSkipsRandomDigits(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	zap.New(core).Info("email_delivery_processed", zap.String("trace_id", "0123456789abcdef0123456789abcdef"),
+		zap.Float64("record_age_seconds", 0.123456), zap.Error(errors.New("to leak@example.com")))
+	spans := tracetest.SpanStubs{{
+		Name:       "identity.email_delivery",
+		Attributes: []attribute.KeyValue{attribute.Int("count", 123456), attribute.String("code", "654321")},
+	}}
+	text := telemetryText(logs, spans)
+	if strings.Contains(text, "123456") {
+		t.Fatal("telemetry text contains a trace ID or a numeric value")
+	}
+	if !strings.Contains(text, "leak@example.com") || !strings.Contains(text, "654321") {
+		t.Fatal("telemetry text misses a log error or a span attribute")
+	}
+}
 
 type crashAfterSendRepository struct{ outbound.DeliveryRepository }
 
@@ -387,7 +444,7 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 	if logs.Len() != 8 || workerSpans != 8 {
 		t.Fatalf("delivery telemetry records: logs=%d traces=%d, want 8 each", logs.Len(), workerSpans)
 	}
-	telemetry := fmt.Sprintf("%+v %+v", logs.All(), spans.GetSpans())
+	telemetry := telemetryText(logs, spans.GetSpans())
 	for _, secret := range []string{
 		"123456", "654321", "111111", "222222", "333333", "mail-outage@example.com",
 		"worker-crash@example.com", "stale@example.com", "recovery-current@example.com", "recovery-stale@example.com",

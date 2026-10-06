@@ -1,4 +1,5 @@
-// Claude Code runs this PreToolUse hook before each Bash command. It enforces the rules that
+// Claude Code and Codex run this PreToolUse hook before each shell command. Both send the same
+// input, and both block the command on exit code 2. The hook enforces the rules that
 // the GitHub ruleset on main cannot enforce. The hook blocks these commands:
 // - `git commit` without a reviewer approval for the staged tree.
 // - `gh pr merge`.

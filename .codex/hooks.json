@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/scripts/git-guard.mjs\"",
+            "statusMessage": "Checking review approvals",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

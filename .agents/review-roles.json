@@ -1,0 +1,52 @@
+{
+  "code-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium"
+  },
+  "contract-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium"
+  },
+  "convention-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6.1-sol",
+    "effort": "high"
+  },
+  "infra-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium"
+  },
+  "migration-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium"
+  },
+  "planning-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6.1-sol",
+    "effort": "high"
+  },
+  "security-auditor": {
+    "runner": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium"
+  },
+  "spec-conformance-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium"
+  },
+  "test-engineer": {
+    "runner": "codex",
+    "model": "gpt-6.1-sol",
+    "effort": "high"
+  },
+  "writing-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6.1-sol",
+    "effort": "high"
+  }
+}

@@ -10,17 +10,17 @@ The workflow uses three patterns from the article [Building effective agents](ht
 | --- | --- | --- |
 | Evaluator-optimizer | One LLM call generates a response, and another LLM call evaluates it and gives feedback in a loop. | The author agent writes a change. A reviewer reads the change and gives findings and a verdict. The author agent fixes the findings and sends the change to the same reviewer session again, for at most 3 rounds. |
 | Routing | The system classifies an input and sends it to a specialized follow-up task. | The author agent selects the reviewer roles from the changed files and the stage of the work. It follows a table in the review roles rule that names each role and when it runs. For example, a change under `services/*/db/migrations/` needs `migration-reviewer`. Some rows need judgment, such as whether a change touches authorization. The hook enforces only some rows, as [Approvals and gates](#approvals-and-gates) states. |
-| Parallelization by sectioning | The system splits a task into independent subtasks and runs them at the same time. | Reviewers that check different aspects of the same change run at the same time, such as `code-reviewer` and `security-auditor`, or `convention-reviewer` and `writing-reviewer`. |
+| Parallelization by sectioning | The system splits a task into independent subtasks and runs them at the same time. | Reviewers with different responsibilities run at the same time, such as `code-reviewer` and `security-auditor`, or `convention-reviewer` and `writing-reviewer`. |
 
 The author agent is the agent that writes the change. A reviewer is an agent that runs one review role. A reviewer can read files, but it cannot change them. Its report ends with a verdict, which is `APPROVE` or `REQUEST CHANGES`.
 
-The maintainer is the person who reviews and merges each pull request (PR). The maintainer also connects the steps of the work. The maintainer starts each step, such as a specification, a plan, or the next task, and checks its result before the next step starts.
+The maintainer is the person who reviews and merges each pull request (PR). The maintainer also connects the steps of the work. The maintainer starts each step, such as a specification, a plan, or the next task. Before the next step starts, the maintainer makes sure that its result is correct.
 
 ## Comparison with orchestrator-workers
 
-The same article also describes the orchestrator-workers pattern. In this pattern, a central LLM divides a task into subtasks while it works. It sends the subtasks to worker LLMs, and then it combines their results. The article states that the orchestrator selects the subtasks from the input, so the subtasks are not defined before the work starts. Its examples include coding tasks that change many files and search tasks that collect information from many sources.
+The same article also describes the orchestrator-workers pattern. In this pattern, a central LLM divides a task into subtasks while it works. It sends the subtasks to worker LLMs, and then it combines their results. The article states that the orchestrator selects the subtasks from the input, so it does not define them before the work starts. Its examples include coding tasks that change many files and search tasks that collect information from many sources.
 
-Flowspace does not use orchestrator-workers to write a change. The main difference is how the work is divided:
+Flowspace does not use orchestrator-workers to write a change. The main difference is how each workflow divides the work:
 
 | Aspect | Flowspace workflow | Orchestrator-workers |
 | --- | --- | --- |
@@ -57,11 +57,11 @@ Claude Code is the author agent. Codex runs each review role with `codex exec`. 
 
 An approval stamp is a file that records that a reviewer approved one exact version of the change. When a reviewer gives `APPROVE`, `scripts/codex-review.mjs` writes a stamp for the staged tree. The staged tree is the Git tree object of the files that `git add` prepared for the next commit. The script writes the stamp to `<git-common-dir>/codex-reviews/<role>/<tree>`, where `<git-common-dir>` is the Git directory that all worktrees of the repository share. A later edit gives a different tree, so the edit needs a new review.
 
-A reviewer that checks a PR description also approves its exact text. If the author agent passes the description file to the script with `--stamp-file`, the script also writes a stamp for the hash of that text.
+A reviewer of a PR description also approves its exact text. If the author agent passes the description file to the script with `--stamp-file`, the script also writes a stamp for the hash of that text.
 
 The `git-guard` hook reads the stamps and blocks these commands:
 
-- A commit, when the staged tree has no `code-reviewer` stamp. If the staged tree is the tree of `HEAD`, the hook allows the commit, because a commit that only changes the message needs no new review.
+- A commit, when the staged tree has no `code-reviewer` stamp. If the staged tree is the tree of `HEAD`, the hook allows the commit. A commit that only changes the message needs no new review.
 - A commit that changes a migration, when the staged tree has no `migration-reviewer` stamp.
 - `gh pr create` and `gh pr edit`, when the tree of `HEAD` has no `convention-reviewer` stamp or no `writing-reviewer` stamp. `gh pr create` must pass the description with `--body-file`. `gh pr edit` must use `--body-file` when it changes the description. Both roles must have a stamp for the exact text of that file.
 - `gh pr create` and `gh pr edit`, when the branch changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, and the tree of `HEAD` has no `planning-reviewer` stamp.
@@ -79,4 +79,4 @@ The current workflow has these limits:
 
 ## Sources
 
-- Erik Schluntz and Barry Zhang, [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents), Anthropic, December 19, 2024.
+Erik Schluntz and Barry Zhang, [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents), Anthropic, December 19, 2024.

@@ -20,7 +20,7 @@ export function sandboxArgs(home) {
 }
 
 export function args({ model, effort, report, prompt, resume, home }) {
-  // `codex exec resume` keeps none of the settings of the session, so both forms pass them all.
+  // `codex exec resume` keeps none of the session configuration, so both forms pass it all.
   const settings = ['-m', model, '-c', `model_reasoning_effort="${effort}"`, ...sandboxArgs(home)];
   if (resume) {
     return ['exec', 'resume', resume, ...settings, '-o', report, prompt];

@@ -1,6 +1,6 @@
 // Runs one review role and records an approval stamp for the staged tree.
 // .agents/review-roles.json gives the runner, model, and effort of each role. A runner is a
-// module in scripts/review-runners/ that turns the role settings into one command.
+// module in scripts/review-runners/ that turns the role configuration into one command.
 // Usage:
 //   node scripts/review.mjs <role> --out <prefix> --prompt-file <file> [--input <file>]
 //   node scripts/review.mjs <role> --out <prefix> --prompt-file <file> --resume <session-id>

@@ -19,13 +19,13 @@ export function settings({ home, root, gitDirs = [] }) {
     permissions: { deny: readRules },
     sandbox: {
       enabled: true,
-      // Without the sandbox, Bash could read the secrets, so the review must not start.
+      // Without the sandbox, Bash can read the secrets, so the review must not start.
       failIfUnavailable: true,
       allowUnsandboxedCommands: false,
       autoAllowBashIfSandboxed: true,
       filesystem: {
         denyRead: [...homePaths, ...WORKSPACE_SECRETS.map((pattern) => join(root, pattern))],
-        // A linked worktree keeps its Git directories outside the root. A write there could add
+        // A linked worktree keeps its Git directories outside the root. A write there can add
         // an approval stamp or move a ref, so the reviewer must not write to them either.
         denyWrite: [root, ...gitDirs],
       },
@@ -34,7 +34,7 @@ export function settings({ home, root, gitDirs = [] }) {
 }
 
 export function args({ model, effort, prompt, resume, home, root, gitDirs }) {
-  // --restricted ignores the user and project settings files, so their hooks and allow rules
+  // --restricted ignores the user and project configuration files, so their hooks and allow rules
   // cannot widen the review. A resumed session needs all options again.
   const options = [
     '-p',

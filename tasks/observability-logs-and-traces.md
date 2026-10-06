@@ -65,10 +65,10 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Correlation
 
-- [ ] Unit tests pass for span names, attributes, error status, parent context, and the `request_id`, `trace_id`, `operation`, `outcome`, `status`, and `duration` fields.
-- [ ] Docker integration tests show one trace from the outbox insert to email delivery.
-- [ ] No unit test finds a token, password, code, or email address in a log line or span.
-- [ ] A human reviews the migration, its rollback, and the propagated metadata.
+- [x] Unit tests pass for span names, attributes, error status, parent context, and the `request_id`, `trace_id`, `operation`, `outcome`, `status`, and `duration` fields.
+- [x] Docker integration tests show one trace from the outbox insert to email delivery.
+- [x] No unit test finds a token, password, code, or email address in a log line or span.
+- [x] A human reviews the migration, its rollback, and the propagated metadata. The maintainer reviewed and merged the propagated metadata in [#393](https://github.com/vasapolrittideah/flowspace-api/pull/393) and the migration and its rollback in [#406](https://github.com/vasapolrittideah/flowspace-api/pull/406).
 
 ### Phase 3: Completion checks
 

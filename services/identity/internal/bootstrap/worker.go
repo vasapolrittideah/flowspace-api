@@ -96,7 +96,7 @@ func NewWorker(ctx context.Context, config WorkerConfig, logger *zap.Logger) (*W
 	})
 	return &Worker{
 		pool: pool, producer: producer, consumer: consumer,
-		relay: outboundevent.NewOutboxRelay(postgres.NewOutboxRepository(pool), publisher.Publish, rand.Text()),
+		relay: outboundevent.NewOutboxRelay(postgres.NewOutboxRepository(pool), publisher.Publish, rand.Text(), logger),
 		group: config.DeliveryGroup, health: newHTTPServer(config.HealthAddress, health), logger: logger,
 	}, nil
 }
@@ -136,11 +136,9 @@ loop:
 			break loop
 		case <-ticker.C:
 			stepCtx, stop := context.WithTimeout(runCtx, requestTimeout)
-			_, err := w.relay.RunOnce(stepCtx)
+			// The relay logs a publish failure; the event stays queued for its next attempt.
+			_, _ = w.relay.RunOnce(stepCtx)
 			stop()
-			if err != nil {
-				w.logger.Warn("outbox_publish_failed")
-			}
 			// The email worker logs a notice failure; the notice stays queued for its next attempt.
 			stepCtx, stop = context.WithTimeout(runCtx, requestTimeout)
 			_, _ = w.consumer.DeliverPasswordChangeNotice(stepCtx)

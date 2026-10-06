@@ -22,6 +22,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	contractevents "github.com/vasapolrittideah/flowspace-api/contracts/events"
@@ -144,7 +145,7 @@ func TestOutboxRelayBrokerRecoveryAndReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if worked, err := event.NewOutboxRelay(repository, deadPublisher.Publish, "relay-down").RunOnce(ctx); !worked || err == nil {
+	if worked, err := event.NewOutboxRelay(repository, deadPublisher.Publish, "relay-down", zap.NewNop()).RunOnce(ctx); !worked || err == nil {
 		t.Fatalf("broker outage: worked=%v err=%v", worked, err)
 	}
 	var pending int
@@ -155,13 +156,13 @@ func TestOutboxRelayBrokerRecoveryAndReplay(t *testing.T) {
 		t.Fatal(err)
 	}
 	marked := false
-	if worked, err := event.NewOutboxRelay(failMarkRepository{repository, &marked}, publisher.Publish, "relay-crashed").RunOnce(ctx); !worked || err == nil || !marked {
+	if worked, err := event.NewOutboxRelay(failMarkRepository{repository, &marked}, publisher.Publish, "relay-crashed", zap.NewNop()).RunOnce(ctx); !worked || err == nil || !marked {
 		t.Fatalf("lost mark: worked=%v err=%v", worked, err)
 	}
 	if _, err := pool.Exec(ctx, `UPDATE identity_outbox_events SET claimed_until = statement_timestamp() - INTERVAL '1 second' WHERE id = $1`, eventID); err != nil {
 		t.Fatal(err)
 	}
-	if worked, err := event.NewOutboxRelay(repository, publisher.Publish, "relay-restarted").RunOnce(ctx); !worked || err != nil {
+	if worked, err := event.NewOutboxRelay(repository, publisher.Publish, "relay-restarted", zap.NewNop()).RunOnce(ctx); !worked || err != nil {
 		t.Fatalf("relay restart: worked=%v err=%v", worked, err)
 	}
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_outbox_events WHERE id = $1 AND published_at IS NOT NULL`, eventID).Scan(&pending); err != nil || pending != 1 {

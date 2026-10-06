@@ -9,7 +9,13 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/proto"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
@@ -167,6 +173,50 @@ func TestEmailWorkerStopsWhenStartupCleanupFails(t *testing.T) {
 func newEmailWorkerFixture(t *testing.T) (*identityevent.EmailWorker, *deliveryRepository, *capturingSender, *kgo.Record) {
 	t.Helper()
 	return newEmailWorkerFixtureForPurpose(t, string(domain.PurposeVerifyEmail))
+}
+
+func TestPasswordChangeNoticeStartsANewConsumerTrace(t *testing.T) {
+	exporter := tracetest.NewInMemoryExporter()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	previous := otel.GetTracerProvider()
+	otel.SetTracerProvider(provider)
+	t.Cleanup(func() {
+		otel.SetTracerProvider(previous)
+		_ = provider.Shutdown(context.Background())
+	})
+	core, logs := observer.New(zap.InfoLevel)
+	repository := &deliveryRepository{notices: []string{"Recipient@example.com"}}
+	sender := &capturingSender{noticeErr: errors.New("smtp refused Recipient@example.com")}
+	worker, err := identityevent.NewEmailWorker("127.0.0.1:1", "identity-email", "identity-mail-test", repository, nil, sender, zap.New(core))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer worker.Close()
+	// The caller span must not become the parent of a notice.
+	callerTrace, _ := trace.TraceIDFromHex("0af7651916cd43dd8448eb211c80319c")
+	callerSpan, _ := trace.SpanIDFromHex("b7ad6b7169203331")
+	caller := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID: callerTrace, SpanID: callerSpan, TraceFlags: trace.FlagsSampled,
+	}))
+
+	if _, err := worker.DeliverPasswordChangeNotice(caller); !errors.Is(err, identityevent.ErrEmailDelivery) {
+		t.Fatalf("failed notice = %v", err)
+	}
+
+	spans := exporter.GetSpans()
+	if len(spans) != 1 || spans[0].Name != "identity.password_change_notice" || spans[0].SpanKind != trace.SpanKindConsumer ||
+		spans[0].Parent.IsValid() || spans[0].Status.Code != otelcodes.Error {
+		t.Fatalf("notice spans = %+v", spans)
+	}
+	lines := logs.FilterMessage("password_change_notice_failed").All()
+	if len(lines) != 1 {
+		t.Fatalf("notice logs = %v", logs.All())
+	}
+	fields := lines[0].ContextMap()
+	if len(fields) != 2 || fields["trace_id"] != spans[0].SpanContext.TraceID().String() ||
+		fields["operation"] != "identity.password_change_notice" {
+		t.Fatalf("password_change_notice_failed = %v", fields)
+	}
 }
 
 func newEmailWorkerFixtureForPurpose(t *testing.T, purpose string) (*identityevent.EmailWorker, *deliveryRepository, *capturingSender, *kgo.Record) {

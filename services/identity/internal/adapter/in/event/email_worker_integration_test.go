@@ -5,6 +5,8 @@ package event_test
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -32,6 +34,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -42,6 +45,7 @@ import (
 	outboxevent "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/event"
 	identitypostgres "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
 	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
@@ -477,7 +481,99 @@ func TestEmailWorkerMailpitOutageCrashReplayAndStaleEvents(t *testing.T) {
 		Scan(&passwordless, &verified); err != nil || !passwordless || verified {
 		t.Fatalf("delivery retry changed the provider-only account: passwordless=%t verified=%t error=%v", passwordless, verified, err)
 	}
+	testTraceFromSignupToDelivery(ctx, t, pool, protector, publisher, newWorker, sender, logger, logs, spans)
 	testPasswordChangeNotice(ctx, t, pool, newWorker, mailSender, sender, deadSender, mailURL, mailbox().Total)
+}
+
+// spansNamed returns the recorded spans with name, in the order they ended.
+func spansNamed(spans *tracetest.InMemoryExporter, name string) []tracetest.SpanStub {
+	var named []tracetest.SpanStub
+	for _, span := range spans.GetSpans() {
+		if span.Name == name {
+			named = append(named, span)
+		}
+	}
+	return named
+}
+
+// assertDeliveryContinuesRelay makes sure that the last delivery span is a
+// consumer child of the last producer span of the relay, and that its
+// email_delivery_processed line has its trace ID. It returns the relay span.
+func assertDeliveryContinuesRelay(t *testing.T, logs *observer.ObservedLogs, spans *tracetest.InMemoryExporter) tracetest.SpanStub {
+	t.Helper()
+	published, delivered := spansNamed(spans, "identity.outbox_publish"), spansNamed(spans, "identity.email_delivery")
+	relaySpan, deliverySpan := published[len(published)-1], delivered[len(delivered)-1]
+	if relaySpan.SpanKind != trace.SpanKindProducer || deliverySpan.SpanKind != trace.SpanKindConsumer ||
+		deliverySpan.Parent.SpanID() != relaySpan.SpanContext.SpanID() || deliverySpan.SpanContext.TraceID() != relaySpan.SpanContext.TraceID() {
+		t.Fatalf("relay span = %+v, delivery span = %+v", relaySpan, deliverySpan)
+	}
+	processed := logs.FilterMessage("email_delivery_processed").All()
+	fields := processed[len(processed)-1].ContextMap()
+	if fields["trace_id"] != deliverySpan.SpanContext.TraceID().String() || fields["operation"] != "identity.email_delivery" {
+		t.Fatalf("email_delivery_processed = %v", fields)
+	}
+	return relaySpan
+}
+
+// testTraceFromSignupToDelivery proves that a signup request, the outbox
+// publish, and the email delivery share one trace, and that a signup outside
+// a request span gets a new root trace in the relay.
+func testTraceFromSignupToDelivery(ctx context.Context, t *testing.T, pool *pgxpool.Pool, protector outbound.DeliveryProtector,
+	publisher *outboxevent.Publisher, newWorker func(outbound.DeliveryRepository, outbound.EmailSender) *identityevent.EmailWorker,
+	sender outbound.EmailSender, logger *zap.Logger, logs *observer.ObservedLogs, spans *tracetest.InMemoryExporter,
+) {
+	t.Helper()
+	// Earlier steps published their events without the relay.
+	if _, err := pool.Exec(ctx, `UPDATE identity_outbox_events SET published_at = statement_timestamp() WHERE published_at IS NULL`); err != nil {
+		t.Fatal(err)
+	}
+	_, signingKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signer, err := token.NewSigner(signingKey, "trace-test", "urn:flowspace:identity:local", "flowspace-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	signup := app.NewSignupService(identitypostgres.NewAccountRepository(pool), signer, protector,
+		func(context.Context, string) error { return nil }, func(context.Context, string) (bool, error) { return false, nil },
+		bytes.Repeat([]byte{2}, 32))
+	relay := outboxevent.NewOutboxRelay(identitypostgres.NewOutboxRepository(pool), publisher.Publish, "trace-relay", logger)
+	deliver := func(signupCtx context.Context, email string) tracetest.SpanStub {
+		t.Helper()
+		if _, err := signup.CreateAccount(signupCtx, inbound.CreateAccountInput{
+			Email: email, Password: "correct horse battery staple", Source: "192.0.2.10",
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if worked, err := relay.RunOnce(ctx); !worked || err != nil {
+			t.Fatalf("relay = %v, %v", worked, err)
+		}
+		worker := newWorker(identitypostgres.NewDeliveryRepository(pool), sender)
+		defer worker.Close()
+		if worked, err := worker.RunOnce(ctx); !worked || err != nil {
+			t.Fatalf("worker = %v, %v", worked, err)
+		}
+		return assertDeliveryContinuesRelay(t, logs, spans)
+	}
+
+	requestCtx, request := otel.Tracer("test").Start(ctx, "POST /v1/accounts", trace.WithSpanKind(trace.SpanKindServer))
+	relaySpan := deliver(requestCtx, "Traced-Signup@example.com")
+	request.End()
+	if relaySpan.Parent.SpanID() != request.SpanContext().SpanID() || relaySpan.SpanContext.TraceID() != request.SpanContext().TraceID() {
+		t.Fatalf("relay parent = %v, request = %v", relaySpan.Parent, request.SpanContext())
+	}
+
+	rootSpan := deliver(ctx, "Untraced-Signup@example.com")
+	if rootSpan.Parent.IsValid() || rootSpan.SpanContext.TraceID() == request.SpanContext().TraceID() {
+		t.Fatalf("relay span without stored context = %+v", rootSpan)
+	}
+	telemetry := telemetryText(logs, spans.GetSpans())
+	for _, secret := range []string{"Traced-Signup@example.com", "Untraced-Signup@example.com", "correct horse battery staple"} {
+		if strings.Contains(telemetry, secret) {
+			t.Fatal("trace telemetry contains signup secrets")
+		}
+	}
 }
 
 func testPasswordChangeNotice(ctx context.Context, t *testing.T, pool *pgxpool.Pool,

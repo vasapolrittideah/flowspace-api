@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
@@ -148,7 +149,16 @@ func (t *accountTransaction) CreateOutboxEvent(ctx context.Context, challengeID 
 	if err != nil {
 		return err
 	}
-	_, err = t.queries.CreateOutboxEvent(ctx, id)
+	// The relay continues the stored context. Without a valid span, the
+	// propagator writes nothing, and both columns stay NULL.
+	carrier := propagation.MapCarrier{}
+	propagation.TraceContext{}.Inject(ctx, carrier)
+	traceparent, tracestate := carrier.Get("traceparent"), carrier.Get("tracestate")
+	_, err = t.queries.CreateOutboxEvent(ctx, sqlc.CreateOutboxEventParams{
+		ChallengeID: id,
+		Traceparent: pgtype.Text{String: traceparent, Valid: traceparent != ""},
+		Tracestate:  pgtype.Text{String: tracestate, Valid: tracestate != ""},
+	})
 	return err
 }
 

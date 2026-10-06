@@ -8,12 +8,12 @@ import test from 'node:test';
 import { createHash } from 'node:crypto';
 
 import { codexArgs, isApproved, promptWithSnapshot, roleSettings, sandboxArgs, sessionID, stagedTree, stampPath, textStampPath } from './codex-review.mjs';
-import { commitContentProblem, commitMakerProblem, decide, ghPr, gitCommands, prBody, pushTargets, shellCommands } from './git-guard.mjs';
+import { commitContentProblem, decide, ghPr, gitCommands, prBody, shellCommands } from './git-guard.mjs';
 
 const COMMON = '/repo/.git';
 const TREE = 'tree-staged';
 
-function fakeGit({ staged = 'cmd/main.go', headTree = 'tree-head', prs = {}, ghStatus = 0 } = {}) {
+function fakeGit({ staged = 'cmd/main.go', headTree = 'tree-head' } = {}) {
   const outputs = {
     'write-tree': TREE,
     'rev-parse --git-common-dir': COMMON,
@@ -25,9 +25,6 @@ function fakeGit({ staged = 'cmd/main.go', headTree = 'tree-head', prs = {}, ghS
   const calls = [];
   const run = (cmd, args, cwd) => {
     calls.push({ cmd, args, cwd });
-    if (cmd === 'gh') {
-      return { status: ghStatus, stdout: JSON.stringify(prs[args[3]] ?? []) };
-    }
     const key = args.join(' ');
     return key in outputs ? { status: 0, stdout: `${outputs[key]}\n` } : { status: 1, stdout: '' };
   };
@@ -100,9 +97,14 @@ test('commits that can include unstaged changes are blocked before any check', (
     'git commit --only --file m.txt',
     'git commit -am"fix bug"',
     'git \\\ncommit -a -m fix',
+    'git commit -i --file m.txt',
+    'git commit -p --file m.txt',
+    'git commit --patch --file m.txt',
+    'git commit --pathspec-from-file=paths.txt --file m.txt',
   ]) {
     assert.equal(decideWith(command, run, existing(STAMP)).block, true, command);
   }
+  assert.deepEqual(run.calls, []);
   assert.equal(commitContentProblem(['-m', 'subject with -a', '--amend']), undefined);
   assert.equal(commitContentProblem(['-mfix']), undefined);
   assert.equal(commitContentProblem(['-s', '--file', 'm.txt']), undefined);
@@ -110,12 +112,32 @@ test('commits that can include unstaged changes are blocked before any check', (
   assert.equal(commitContentProblem(['-sm', 'Fix issue', 'cmd/main.go']), 'it names paths');
 });
 
-test('a commit or a push that shares its line with cd is blocked', () => {
+test('a commit that shares its line with cd or another git command is blocked', () => {
   const decision = decideWith('(cd ../other && pwd); git commit -m fix', fakeGit(), existing(STAMP));
   assert.equal(decision.block, true);
   assert.match(decision.reason, /git -C/);
-  assert.equal(decideWith('cd ../other && git push origin feat/x').block, true);
+  assert.equal(decideWith('git push origin feat/x && git commit -m fix', fakeGit(), existing(STAMP)).block, true);
+  assert.equal(decideWith('git cherry-pick abc && git commit -m fix', fakeGit(), existing(STAMP)).block, true);
   assert.equal(decideWith('cd ../other && git status').block, false);
+});
+
+test('push and other git commands that create commits are not checked', () => {
+  for (const command of [
+    'git push origin main',
+    'git push --all origin',
+    'git switch x && git push origin HEAD',
+    'cd ../other && git push origin feat/x',
+    'git cherry-pick abc123',
+    'git revert abc123',
+    'git merge feat/other',
+    'git rebase origin/main',
+    'git am patch.mbox',
+    'git pull',
+  ]) {
+    const run = fakeGit();
+    assert.deepEqual(decideWith(command, run), { block: false }, command);
+    assert.deepEqual(run.calls, [], command);
+  }
 });
 
 test('here-document bodies are data, not commands', () => {
@@ -125,10 +147,9 @@ test('here-document bodies are data, not commands', () => {
 });
 
 test('a here-document operator inside quotes or a comment hides no command', () => {
-  const merged = fakeGit({ prs: { 'feat/current': [{ number: 1, state: 'MERGED' }] } });
   assert.equal(decideWith("echo 'Example: <<EOF'\ngit commit -m fix").block, true);
   assert.equal(decideWith('echo "<<EOF"\ngit commit -m fix').block, true);
-  assert.equal(decideWith('# see <<EOF\ngit push origin feat/current', merged).block, true);
+  assert.equal(decideWith('# see <<EOF\ngit commit -m fix').block, true);
   assert.equal(decideWith('echo $((1<<2))\ngit commit -m fix').block, true);
 });
 
@@ -146,58 +167,6 @@ test('a staged migration also needs migration-reviewer when the role exists', ()
   const migration = stampPath(COMMON, 'migration-reviewer', TREE);
   assert.equal(decideWith('git commit', run, existing(STAMP, role, migration)).block, false);
   assert.equal(decideWith('git commit', run, existing(STAMP)).block, false);
-});
-
-test('push to a branch whose only PR is merged is blocked', () => {
-  const run = fakeGit({ prs: { 'feat/current': [{ number: 361, state: 'MERGED' }] } });
-  const decision = decideWith('git push -u origin feat/current', run);
-  assert.equal(decision.block, true);
-  assert.match(decision.reason, /#361 MERGED/);
-});
-
-test('push checks every branch that it sends', () => {
-  const run = fakeGit({
-    prs: { open: [{ number: 1, state: 'OPEN' }], merged: [{ number: 2, state: 'MERGED' }] },
-  });
-  const decision = decideWith('git push origin open merged', run);
-  assert.equal(decision.block, true);
-  assert.match(decision.reason, /merged/);
-});
-
-test('push is allowed with an open PR, no PR, no answer from gh, or a delete', () => {
-  const merged = { 'feat/current': [{ number: 1, state: 'MERGED' }] };
-  assert.equal(decideWith('git push origin HEAD:feat/current', fakeGit({ prs: { 'feat/current': [{ number: 1, state: 'MERGED' }, { number: 2, state: 'OPEN' }] } })).block, false);
-  assert.equal(decideWith('git push origin HEAD:feat/current', fakeGit()).block, false);
-  assert.equal(decideWith('git push origin HEAD:feat/current', fakeGit({ prs: merged, ghStatus: 1 })).block, false);
-  assert.equal(decideWith('git push --delete origin feat/current', fakeGit({ prs: merged })).block, false);
-  assert.equal(decideWith('git push origin :feat/current', fakeGit({ prs: merged })).block, false);
-});
-
-test('push with --all, --mirror, or the matching refspec is blocked', () => {
-  assert.equal(decideWith('git push --all origin').block, true);
-  assert.equal(decideWith('git push --mirror origin').block, true);
-  assert.equal(decideWith('git push origin :').block, true);
-});
-
-test('push that shares its line with another git command is blocked', () => {
-  const run = fakeGit({ prs: { 'feat/current': [{ number: 1, state: 'OPEN' }] } });
-  const decision = decideWith('git switch merged-branch && git push origin HEAD', run);
-  assert.equal(decision.block, true);
-  assert.match(decision.reason, /git push/);
-});
-
-test('push option values do not hide a branch or fake a delete', () => {
-  const run = fakeGit({ prs: { merged: [{ number: 2, state: 'MERGED' }] } });
-  assert.equal(decideWith('git push --repo origin merged', run).block, true);
-  assert.equal(decideWith('git push -o --delete origin merged', run).block, true);
-});
-
-test('pushTargets reads every refspec and skips option values', () => {
-  assert.deepEqual(pushTargets(['-u', 'origin', 'feat/x'], 'main').branches, ['feat/x']);
-  assert.deepEqual(pushTargets(['--force-with-lease=feat/x:abc', 'origin', 'HEAD:refs/heads/feat/x'], 'main').branches, ['feat/x']);
-  assert.deepEqual(pushTargets(['-o', 'notify=none', 'origin', 'HEAD'], 'feat/y').branches, ['feat/y']);
-  assert.deepEqual(pushTargets(['origin', 'a', '+b:c', 'refs/tags/v1'], 'main').branches, ['a', 'c']);
-  assert.deepEqual(pushTargets([], 'feat/y').branches, ['feat/y']);
 });
 
 test('codex-review helpers read role settings, verdicts, and session IDs', () => {
@@ -240,49 +209,6 @@ test('codexArgs uses the secret-denying read-only profile for a start and a resu
   const resume = codexArgs({ ...base, resume: 'id-1' });
   assert.deepEqual(resume.slice(0, 3), ['exec', 'resume', 'id-1']);
   assert.ok(sandboxArgs('/home/a "b"').join(' ').includes('"/home/a \\"b\\"/.ssh"="deny"'));
-});
-
-test('push to main is blocked in every form', () => {
-  const onMain = (cmd, args, cwd) =>
-    args.join(' ') === 'rev-parse --abbrev-ref HEAD' ? { status: 0, stdout: 'main\n' } : fakeGit()(cmd, args, cwd);
-  for (const command of ['git push origin main', 'git push origin HEAD:main', 'git push origin HEAD:refs/heads/main', 'git push --delete origin main', 'git push origin :main']) {
-    assert.equal(decideWith(command).block, true, command);
-  }
-  assert.equal(decideWith('git push origin HEAD', onMain).block, true);
-  assert.equal(decideWith('git push', onMain).block, true);
-});
-
-test('commands that create commits without git commit are blocked', () => {
-  for (const command of [
-    'git cherry-pick abc123',
-    'git revert abc123',
-    'git rebase origin/main',
-    'git rebase --continue',
-    'git am patch.mbox',
-    'git pull',
-    'git pull --rebase origin main',
-    'git merge feat/other',
-    'git merge -m "main" feat/other',
-    'git merge --continue',
-  ]) {
-    assert.equal(decideWith(command).block, true, command);
-  }
-  for (const command of [
-    'git cherry-pick --no-commit abc123',
-    'git cherry-pick -n abc123',
-    'git revert --no-commit abc123',
-    'git rebase --abort',
-    'git cherry-pick --abort',
-    'git pull --ff-only',
-    'git merge origin/main',
-    'git merge -m "Merge main" origin/main',
-    'git merge --no-commit feat/other',
-    'git merge --ff-only feat/other',
-    'git merge --abort',
-  ]) {
-    assert.equal(decideWith(command).block, false, command);
-  }
-  assert.match(commitMakerProblem('cherry-pick', ['abc']), /--no-commit/);
 });
 
 test('gh pr merge is always blocked', () => {

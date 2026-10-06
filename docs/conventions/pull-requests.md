@@ -57,7 +57,9 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 - Write each material compatibility effect, unresolved failure, local check that did not run, security risk, and remaining limit.
 - For each unresolved failure, state the cause and link the CI run or the output that shows it. For each local check that did not run, state the reason.
-- Before the PR is open, no CI run exists to link. In that case, put the local output that shows the failure in a code block under its bullet. After the first CI run finishes, replace the output with a link to that run.
+- Show the evidence for each unresolved failure with these steps:
+  1. Before the PR opens, put the local output that shows the failure in a code block under its bullet, because no CI run exists for the PR.
+  2. After the first CI run finishes, replace the output with a link to that run.
 - When a limitation has follow-up work, describe the limitation and refer to `Follow-up tasks` instead of repeating the work.
 - If there is nothing to report, write `n/a`.
 - Do not copy the Govulncheck counts of vulnerabilities in required modules that the code does not call. Do not paste routine logs or describe failed attempts that the PR resolved.

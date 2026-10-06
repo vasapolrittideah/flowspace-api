@@ -311,8 +311,8 @@ export function decide({ command, cwd }, { run, exists, read }) {
             missing
               .map((role) =>
                 role === 'planning-reviewer'
-                  ? 'Run `node scripts/review.mjs planning-reviewer ...`'
-                  : `Run \`node scripts/review.mjs ${role} ... --stamp-file <description-file>\``,
+                  ? 'Run `node .agents/scripts/review.mjs planning-reviewer ...`'
+                  : `Run \`node .agents/scripts/review.mjs ${role} ... --stamp-file <description-file>\``,
               )
               .join(', and ') +
             '. Pass the same file with --body-file after each prints `verdict: APPROVE`.',
@@ -359,7 +359,7 @@ export function decide({ command, cwd }, { run, exists, read }) {
           block: true,
           reason:
             `No reviewer approval for the staged tree ${tree} from: ${missing.join(', ')}. ` +
-            'Stage the change, run `node scripts/review.mjs <role> ...` for each role, ' +
+            'Stage the change, run `node .agents/scripts/review.mjs <role> ...` for each role, ' +
             'and commit only after it prints `verdict: APPROVE`. See .agents/rules/review-roles.md.',
         };
       }

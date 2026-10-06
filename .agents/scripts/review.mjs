@@ -1,9 +1,9 @@
 // Runs one review role and records an approval stamp for the staged tree.
 // .agents/review-roles.json gives the runner, model, and effort of each role. A runner is a
-// module in scripts/review-runners/ that turns the role configuration into one command.
+// module in .agents/scripts/review-runners/ that turns the role configuration into one command.
 // Usage:
-//   node scripts/review.mjs <role> --out <prefix> --prompt-file <file> [--input <file>]
-//   node scripts/review.mjs <role> --out <prefix> --prompt-file <file> --resume <session-id>
+//   node .agents/scripts/review.mjs <role> --out <prefix> --prompt-file <file> [--input <file>]
+//   node .agents/scripts/review.mjs <role> --out <prefix> --prompt-file <file> --resume <session-id>
 // Add --stamp-file <file> to also stamp the exact text of a file, such as a PR description.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -13,7 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const CONFIG_PATH = '.agents/review-roles.json';
-export const RUNNERS_DIR = 'scripts/review-runners';
+export const RUNNERS_DIR = '.agents/scripts/review-runners';
 
 // Credentials in the home directory and local secrets in the repository. A read-only reviewer
 // can still read them, and the runner sends what it reads to the model. No review needs them.

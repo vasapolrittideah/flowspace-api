@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/git-guard.mjs\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/.agents/scripts/git-guard.mjs\""
           }
         ]
       }

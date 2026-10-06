@@ -49,27 +49,27 @@ Claude Code and Codex can each be the author agent. Each review role can run in 
 | `.claude/rules/review-roles.md` | Claude Code | A symbolic link to `.agents/rules/review-roles.md`, so that Claude Code loads the rules |
 | `.claude/commands/`, `.claude/references/` | Claude Code | Symbolic links to the shared directories in `.agents/` |
 | `.claude/skills/` | Claude Code | A directory with one symbolic link for each skill in `.agents/skills/` |
-| `.claude/settings.json` | Claude Code | The hook that runs `scripts/git-guard.mjs` before each shell command |
-| `.codex/hooks.json` | Codex | The hook that runs `scripts/git-guard.mjs` before each shell command |
-| `scripts/review.mjs` | All agents | The script that runs one review role and records its approval |
-| `scripts/review-runners/<runner>.mjs` | One runner each | The module that starts the CLI of one agent in a read-only mode that denies secrets |
-| `scripts/git-guard.mjs` | Claude Code and Codex | The hook script that blocks a commit or a PR without the required approvals |
+| `.claude/settings.json` | Claude Code | The hook that runs `.agents/scripts/git-guard.mjs` before each shell command |
+| `.codex/hooks.json` | Codex | The hook that runs `.agents/scripts/git-guard.mjs` before each shell command |
+| `.agents/scripts/review.mjs` | All agents | The script that runs one review role and records its approval |
+| `.agents/scripts/review-runners/<runner>.mjs` | One runner each | The module that starts the CLI of one agent in a read-only mode that denies secrets |
+| `.agents/scripts/git-guard.mjs` | Claude Code and Codex | The hook script that blocks a commit or a PR without the required approvals |
 
 ## Review roles and runners
 
-A runner is a module in `scripts/review-runners/` that starts one agent CLI for a review. The `codex` runner starts `codex exec`, and the `claude` runner starts `claude -p`. Each runner gives the reviewer read access to the repository. It denies reads of home credentials and local secrets, and it denies writes to the repository and to its Git directories.
+A runner is a module in `.agents/scripts/review-runners/` that starts one agent CLI for a review. The `codex` runner starts `codex exec`, and the `claude` runner starts `claude -p`. Each runner gives the reviewer read access to the repository. It denies reads of home credentials and local secrets, and it denies writes to the repository and to its Git directories.
 
-`.agents/review-roles.json` gives each role an entry with its runner, model, and effort. To move a role to another agent or model, the maintainer changes only that entry. Before a review starts, `scripts/review.mjs` stops when the runner does not exist or does not accept the effort. The CLI of each runner rejects a model that it does not know, so the script does not make sure that model names are valid.
+`.agents/review-roles.json` gives each role an entry with its runner, model, and effort. To move a role to another agent or model, the maintainer changes only that entry. Before a review starts, `.agents/scripts/review.mjs` stops when the runner does not exist or does not accept the effort. The CLI of each runner rejects a model that it does not know, so the script does not make sure that model names are valid.
 
 To support another agent, a contributor adds files and changes no existing runner:
 
 1. If the agent does not read `AGENTS.md` itself, give it the repository instructions in that file.
-2. If the agent supports hooks before shell commands, register `scripts/git-guard.mjs` to run before each shell command.
-3. If the agent will run review roles, add `scripts/review-runners/<runner>.mjs`. The module exports the command, the efforts that the CLI accepts, `args()`, and `sessionID()`, as `scripts/review.mjs` describes. If the CLI prints the report and does not write the report file, the module also exports `report()`.
+2. If the agent supports hooks before shell commands, register `.agents/scripts/git-guard.mjs` to run before each shell command.
+3. If the agent will run review roles, add `.agents/scripts/review-runners/<runner>.mjs`. The module exports the command, the efforts that the CLI accepts, `args()`, and `sessionID()`, as `.agents/scripts/review.mjs` describes. If the CLI prints the report and does not write the report file, the module also exports `report()`.
 
 ## Approvals and gates
 
-An approval stamp is a file that records that a reviewer approved one exact version of the change. When a reviewer gives `APPROVE`, `scripts/review.mjs` writes a stamp for the staged tree. The staged tree is the Git tree object of the files that `git add` prepared for the next commit. The script writes the stamp to `<git-common-dir>/reviews/<role>/<tree>`, where `<git-common-dir>` is the Git directory that all worktrees of the repository share. A later edit gives a different tree, so the edit needs a new review.
+An approval stamp is a file that records that a reviewer approved one exact version of the change. When a reviewer gives `APPROVE`, `.agents/scripts/review.mjs` writes a stamp for the staged tree. The staged tree is the Git tree object of the files that `git add` prepared for the next commit. The script writes the stamp to `<git-common-dir>/reviews/<role>/<tree>`, where `<git-common-dir>` is the Git directory that all worktrees of the repository share. A later edit gives a different tree, so the edit needs a new review.
 
 A reviewer of a PR description also approves its exact text. If the author agent passes the description file to the script with `--stamp-file`, the script also writes a stamp for the hash of that text.
 

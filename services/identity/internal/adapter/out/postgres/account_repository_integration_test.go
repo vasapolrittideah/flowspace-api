@@ -185,10 +185,16 @@ func testOutboxTraceContext(t *testing.T, pool *pgxpool.Pool) {
 		wantTraceparent string
 		wantTracestate  string
 	}{
-		{"sampled span with trace state", trace.SpanContextConfig{TraceID: traceID, SpanID: spanID, TraceFlags: trace.FlagsSampled, TraceState: state},
-			"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", "vendor=value"},
-		{"unsampled span without trace state", trace.SpanContextConfig{TraceID: traceID, SpanID: spanID},
-			"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00", ""},
+		{
+			"sampled span with trace state",
+			trace.SpanContextConfig{TraceID: traceID, SpanID: spanID, TraceFlags: trace.FlagsSampled, TraceState: state},
+			"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", "vendor=value",
+		},
+		{
+			"unsampled span without trace state",
+			trace.SpanContextConfig{TraceID: traceID, SpanID: spanID},
+			"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00", "",
+		},
 		{"no valid span", trace.SpanContextConfig{}, "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {

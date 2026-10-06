@@ -39,7 +39,7 @@
     "model": "gpt-6-astra",
     "effort": "medium"
   },
-  "test-engineer": {
+  "test-reviewer": {
     "runner": "codex",
     "model": "gpt-6.1-sol",
     "effort": "high"

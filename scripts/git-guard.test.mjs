@@ -10,14 +10,14 @@ import { commitContentProblem, decide, ghPr, gitCommands, prBody, shellCommands 
 const COMMON = '/repo/.git';
 const TREE = 'tree-staged';
 
-function fakeGit({ staged = 'cmd/main.go', headTree = 'tree-head' } = {}) {
+function fakeGit({ staged = 'README.md', headTree = 'tree-head' } = {}) {
   const outputs = {
     'write-tree': TREE,
     'rev-parse --git-common-dir': COMMON,
     'rev-parse HEAD^{tree}': headTree,
     'rev-parse --show-toplevel': '/repo',
     'rev-parse --abbrev-ref HEAD': 'feat/current',
-    'diff --cached --name-only': staged,
+    'diff --cached --name-only -z': staged.split('\n').join('\0'),
   };
   const calls = [];
   const run = (cmd, args, cwd) => {
@@ -34,6 +34,7 @@ function existing(...paths) {
 }
 
 const STAMP = stampPath(COMMON, 'code-reviewer', TREE);
+const TEST_STAMP = stampPath(COMMON, 'test-reviewer', TREE);
 const FILES = { '/repo/pr.md': 'Approved description\n' };
 const read = (path) => {
   if (!(path in FILES)) {
@@ -72,6 +73,31 @@ test('commit without a code-reviewer stamp is blocked', () => {
 
 test('commit with a stamp for the staged tree is allowed', () => {
   assert.equal(decideWith('git commit --file m.txt', fakeGit(), existing(STAMP)).block, false);
+});
+
+test('a staged Go file also needs test-reviewer, except generated code', () => {
+  const run = fakeGit({ staged: 'cmd/main.go' });
+  const blocked = decideWith('git commit --file m.txt', run, existing(STAMP));
+  assert.equal(blocked.block, true);
+  assert.match(blocked.reason, /test-reviewer/);
+  assert.doesNotMatch(blocked.reason, /code-reviewer/);
+  assert.equal(decideWith('git commit --file m.txt', run, existing(STAMP, TEST_STAMP)).block, false);
+  assert.equal(decideWith('git commit --file m.txt', run, existing(TEST_STAMP)).block, true);
+  const old = stampPath(COMMON, 'test-reviewer', 'tree-old');
+  assert.equal(decideWith('git commit --file m.txt', run, existing(STAMP, old)).block, true);
+
+  for (const staged of [
+    'README.md',
+    'scripts/git-guard.mjs',
+    'gen/go/flowspace/identity/v1/identity.pb.go',
+    'services/identity/internal/adapter/out/postgres/sqlc/queries.sql.go',
+    'sqlc/queries.sql.go',
+  ]) {
+    assert.equal(decideWith('git commit --file m.txt', fakeGit({ staged }), existing(STAMP)).block, false, staged);
+  }
+  for (const staged of ['services/identity/internal/app/login.go', 'internal/authn/verify_test.go', 'internal/café.go', 'README.md\ncmd/main.go']) {
+    assert.equal(decideWith('git commit --file m.txt', fakeGit({ staged }), existing(STAMP)).block, true, staged);
+  }
 });
 
 test('a stamp for an older tree does not allow the commit', () => {

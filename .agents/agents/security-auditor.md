@@ -97,5 +97,5 @@ The caller gives you some or all of these inputs. Review each input that you get
 ## Composition
 
 - **Invoke directly when:** a change touches secrets, authentication, authorization, or input from outside the system. Run it at the same time as `code-reviewer`.
-- **Invoke via:** `/ship`, together with `code-reviewer` and `test-engineer`.
+- **Invoke via:** `/ship`, together with `code-reviewer` and `test-reviewer`.
 - **Do not invoke from another persona.** If a change needs an infrastructure or contract review, recommend that role in your report.

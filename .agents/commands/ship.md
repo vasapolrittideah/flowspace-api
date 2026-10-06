@@ -14,7 +14,7 @@ Dispatch each persona by tool name:
 
 1. **`code-reviewer`** — Run a five-axis review (correctness, readability, architecture, security, performance) on the staged changes or recent commits. Output the standard review template.
 2. **`security-auditor`** — Run a vulnerability and threat-model pass. Check OWASP Top 10, secrets handling, auth/authz, dependency CVEs. Output the standard audit report.
-3. **`test-engineer`** — Analyze test coverage for the change. Identify gaps in happy path, edge cases, error paths, and concurrency scenarios. Output the standard coverage analysis.
+3. **`test-reviewer`** — Review the tests of the change. Identify behavior that no test proves, such as edge cases, error paths, and concurrency scenarios, and tests that would not fail if the code broke. Output the standard test review.
 
 If subagents are unavailable in the current CLI version, invoke each persona's system prompt sequentially in the main context and treat their outputs as if returned in parallel — the merge phase still works.
 
@@ -23,7 +23,7 @@ Constraints (from CLI's subagent model):
 - Do not let one persona delegate to another — keep the fan-out flat.
 - For richer multi-agent collaboration where teammates talk to each other instead of just reporting back, see `references/orchestration-patterns.md`.
 
-**Persona resolution.** If you've defined your own `code-reviewer`, `security-auditor`, or `test-engineer` in `agents/` or your global configuration, those take precedence over this plugin's versions — `/ship` picks up your customizations automatically. This is intentional: plugin subagents sit at the bottom of the CLI's scope priority table, so user-level definitions win by design.
+**Persona resolution.** If you've defined your own `code-reviewer`, `security-auditor`, or `test-reviewer` in `agents/` or your global configuration, those take precedence over this plugin's versions — `/ship` picks up your customizations automatically. This is intentional: plugin subagents sit at the bottom of the CLI's scope priority table, so user-level definitions win by design.
 
 ## Phase B — Merge in main context
 
@@ -60,7 +60,7 @@ Produce a single output:
 ### Specialist reports (full)
 - [code-reviewer report]
 - [security-auditor report]
-- [test-engineer report]
+- [test-reviewer report]
 ```
 
 ## Rules

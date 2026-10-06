@@ -136,7 +136,7 @@ loop:
 			break loop
 		case <-ticker.C:
 			stepCtx, stop := context.WithTimeout(runCtx, requestTimeout)
-			// The relay logs a publish failure; the event stays queued for its next attempt.
+			// The relay logs a publish failure. The event stays queued for its next attempt.
 			_, _ = w.relay.RunOnce(stepCtx)
 			stop()
 			// The email worker logs a notice failure; the notice stays queued for its next attempt.

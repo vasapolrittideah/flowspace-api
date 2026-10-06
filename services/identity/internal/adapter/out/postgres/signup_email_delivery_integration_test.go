@@ -8,6 +8,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -37,14 +38,39 @@ import (
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-// recordingEmailSender keeps the address and the code of each sent email.
-type recordingEmailSender struct{ sent []string }
+// recordingEmailSender keeps the address and the code of each email. While
+// fail is true, it refuses each email.
+type recordingEmailSender struct {
+	sent []string
+	fail bool
+}
 
 func (s *recordingEmailSender) Send(_ context.Context, email, code, _ string) error {
 	s.sent = append(s.sent, email, code)
+	if s.fail {
+		return errors.New("smtp refused")
+	}
 	return nil
+}
+
+// cancelingDeliveryRepository calls cancel after each delivery when cancel
+// is set, so that the worker cannot commit the record.
+type cancelingDeliveryRepository struct {
+	outbound.DeliveryRepository
+	cancel context.CancelFunc
+}
+
+func (r *cancelingDeliveryRepository) WithCurrentDelivery(ctx context.Context, challengeID, purpose string,
+	send func(context.Context, outbound.CurrentDelivery) error,
+) error {
+	err := r.DeliveryRepository.WithCurrentDelivery(ctx, challengeID, purpose, send)
+	if r.cancel != nil {
+		r.cancel()
+	}
+	return err
 }
 
 func (s *recordingEmailSender) SendPasswordChangeNotice(context.Context, string) error { return nil }
@@ -196,6 +222,53 @@ func assertNoSecrets(t *testing.T, logs *observer.ObservedLogs, spans *tracetest
 	}
 }
 
+// assertDeliveryLine makes sure that the last message line has the trace ID
+// of the last delivery span and the delivery operation.
+func assertDeliveryLine(t *testing.T, logs *observer.ObservedLogs, spans *tracetest.InMemoryExporter, message string) {
+	t.Helper()
+	lines := logs.FilterMessage(message).All()
+	if len(lines) == 0 {
+		t.Fatalf("no %s line", message)
+	}
+	fields := lines[len(lines)-1].ContextMap()
+	if fields["trace_id"] != lastSpanNamed(t, spans, "identity.email_delivery").SpanContext.TraceID().String() ||
+		fields["operation"] != "identity.email_delivery" {
+		t.Fatalf("%s = %v", message, fields)
+	}
+}
+
+// testDeliveryFailureLines makes sure that the failure lines of the worker
+// have the trace ID of their delivery span and the delivery operation.
+func testDeliveryFailureLines(ctx context.Context, t *testing.T, signup *app.SignupService, relay *outboundevent.OutboxRelay,
+	worker *inboundevent.EmailWorker, sender *recordingEmailSender, deliveries *cancelingDeliveryRepository,
+	logs *observer.ObservedLogs, spans *tracetest.InMemoryExporter,
+) {
+	t.Helper()
+	if _, err := signup.CreateAccount(ctx, inbound.CreateAccountInput{
+		Email: "Failing-Signup@example.com", Password: "correct horse battery staple", Source: "192.0.2.10",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if worked, err := relay.RunOnce(ctx); !worked || err != nil {
+		t.Fatalf("relay = %v, %v", worked, err)
+	}
+	sender.fail = true
+	if worked, err := worker.RunOnce(ctx); !worked || !errors.Is(err, inboundevent.ErrEmailDelivery) {
+		t.Fatalf("refused email = %v, %v", worked, err)
+	}
+	assertDeliveryLine(t, logs, spans, "email_delivery_failed")
+
+	sender.fail = false
+	commitCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	deliveries.cancel = cancel
+	if worked, err := worker.RunOnce(commitCtx); !worked || !errors.Is(err, inboundevent.ErrDeliveryBroker) {
+		t.Fatalf("lost commit = %v, %v", worked, err)
+	}
+	assertDeliveryLine(t, logs, spans, "email_delivery_commit_failed")
+	deliveries.cancel = nil
+}
+
 // TestSignupEmailDeliveryTrace proves that a signup request, the outbox
 // publish, and the email delivery share one trace, and that a signup outside
 // a request span gets a new root trace in the relay.
@@ -230,8 +303,8 @@ func TestSignupEmailDeliveryTrace(t *testing.T) {
 		bytes.Repeat([]byte{2}, 32))
 	relay := outboundevent.NewOutboxRelay(identitypostgres.NewOutboxRepository(pool), publisher.Publish, "trace-relay", logger)
 	sender := &recordingEmailSender{}
-	worker, err := inboundevent.NewEmailWorker(seed, topic, "identity-signup-delivery-group",
-		identitypostgres.NewDeliveryRepository(pool), protector, sender, logger)
+	deliveries := &cancelingDeliveryRepository{DeliveryRepository: identitypostgres.NewDeliveryRepository(pool)}
+	worker, err := inboundevent.NewEmailWorker(seed, topic, "identity-signup-delivery-group", deliveries, protector, sender, logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,8 +336,9 @@ func TestSignupEmailDeliveryTrace(t *testing.T) {
 		t.Fatalf("relay span without stored context = %+v", rootSpan)
 	}
 
-	if len(sender.sent) != 4 {
-		t.Fatalf("sent emails = %d, want 2", len(sender.sent)/2)
+	testDeliveryFailureLines(ctx, t, signup, relay, worker, sender, deliveries, logs, spans)
+	if len(sender.sent) != 8 {
+		t.Fatalf("send attempts = %d, want 4", len(sender.sent)/2)
 	}
 	// sender.sent holds both addresses and both codes.
 	assertNoSecrets(t, logs, spans, append([]string{"correct horse battery staple"}, sender.sent...))

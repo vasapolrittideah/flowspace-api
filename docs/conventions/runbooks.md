@@ -4,7 +4,7 @@ This convention defines the file and format of one runbook in `docs/runbooks/`. 
 
 ## Template
 
-A runbook has a title, an alert line, a severity line, `Meaning`, `First checks`, `Resolution`, and `Escalation`.
+A runbook has a title, an alert line, a severity line, [Meaning](#meaning), [First checks](#first-checks), [Resolution](#resolution), and [Escalation](#escalation).
 
 ```markdown
 # Runbook: <rule title>
@@ -94,12 +94,12 @@ Severity: <severity label value>
 
 The [`observability-and-instrumentation` skill](../../.agents/skills/observability-and-instrumentation/SKILL.md) gives a short runbook with three labeled lines. This convention applies where the two differ:
 
-- Write the lines and sections of the [template](#template), including a `Resolution` section for the common causes. The skill writes three bold labels: `Means`, `First check`, and `Escalate to`.
+- Write the lines and sections of the [Template](#template), including a [Resolution](#resolution) section for the common causes. The skill writes three bold labels: `Means`, `First check`, and `Escalate to`.
 - End with a GitHub Issue as the next action, as the [escalation rules](#escalation) state. The skill escalates to an on-call channel or rotation.
 
 ## Examples
 
-These first sentences of a `Meaning` section state the symptom before the condition:
+These first sentences of a [Meaning](#meaning) section state the symptom before the condition:
 
 ```markdown
 ## Meaning

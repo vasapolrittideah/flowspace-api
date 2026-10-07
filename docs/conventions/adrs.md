@@ -4,7 +4,7 @@ This convention defines the file, format, and status of one architecture decisio
 
 ## Template
 
-A record has a title, a date line, a status line, `Context`, `Decision`, `Alternatives Considered`, `Consequences`, and `Sources`.
+A record has a title, a date line, a status line, [Context](#context), [Decision](#decision), [Alternatives Considered](#alternatives-considered), [Consequences](#consequences), and [Sources](#sources).
 
 ```markdown
 # ADR-<NNNN>: <decision that the record accepts>
@@ -93,7 +93,7 @@ Status: <current state of the decision>
 
 - Write one bullet for each external document.
 - Use the document title as the link text.
-- Do not list repository documents. Link to them in `Context` or `Decision`.
+- Do not list repository documents. Link to them in [Context](#context) or [Decision](#decision).
 
 ## Rules
 
@@ -104,7 +104,7 @@ Status: <current state of the decision>
 
 ### Format and content
 
-- Use the sections through `Consequences` in the template order. Add `Sources` only when the decision depends on external documents.
+- Use the sections through [Consequences](#consequences) in the template order. Add [Sources](#sources) only when the decision depends on external documents.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a record.
 
 ### Workflow

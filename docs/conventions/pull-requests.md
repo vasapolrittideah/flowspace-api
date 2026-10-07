@@ -60,7 +60,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - Show the evidence for each unresolved failure with these steps:
   1. Before the PR opens, put the local output that shows the failure in a code block under its bullet, because no CI run exists for the PR.
   2. After the first CI run finishes, replace the output with a link to that run.
-- When a limitation has follow-up work, describe the limitation and refer to `Follow-up tasks` instead of repeating the work.
+- When a limitation has follow-up work, describe the limitation and refer to [Follow-up tasks](#follow-up-tasks) instead of repeating the work.
 - If there is nothing to report, write `n/a`.
 - Do not copy the Govulncheck counts of vulnerabilities in required modules that the code does not call. Do not paste routine logs or describe failed attempts that the PR resolved.
 
@@ -80,7 +80,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 - Start the description from the [PR template](../../.github/pull_request_template.md), and complete every section.
 - Delete the HTML comments of the template. If a section has content, replace its `n/a`.
-- If the agent harness gives an attribution line for PR descriptions, put it at the end of the description, after `Follow-up tasks`.
+- If the agent harness gives an attribution line for PR descriptions, put it at the end of the description, after [Follow-up tasks](#follow-up-tasks).
 
 ### Workflow
 
@@ -89,11 +89,11 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - For a behavior fix, add a focused regression test.
 - For a contract or generator change, run `task buf -- lint`, `task buf -- breaking`, and `task buf -- generate` for Protobuf, or `task sqlc -- generate` for SQL. Commit the generated output with the source change. The `Contract checks` CI job checks the same results again.
 - For a documentation-only change, make sure that the facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
-- Before you open or update a PR, run `task check:task`, `task git:diff:check`, and each command in the `Verification` list of each related Issue. If Markdown changes, also run `task markdown:check`. Add a focused check when it proves behavior that these commands do not cover.
+- Before you open or update a PR, run `task check:task`, `task git:diff:check`, and each command in the [Verification](github-issues.md#verification) list of each related Issue. If Markdown changes, also run `task markdown:check`. Add a focused check when it proves behavior that these commands do not cover.
 - Before you open or update a PR, run `node scripts/check-pr-metadata.mjs --title "<title>" --labels "<label>,<label>" --body-file <description-file>`. Fix each finding. The script checks the branch name and the checkpoint commits, and the title, labels, and description that you give it. The rules that need no judgment come from this convention, the [branch name convention](branch-names.md), the [commit message convention](commit-messages.md), and the [label convention](github-labels.md). They also come from the `simple-english` skill that the [Markdown and English prose convention](markdown-and-english-prose.md) requires. The [PR metadata workflow](../../.github/workflows/pr-metadata.yml) runs the same check after each change to the PR.
 - Before you open or update a PR, inspect the complete PR diff with the same exclusions as for a commit.
 - Open the PR as a normal PR, not as a draft.
-- After each push, wait for the [CI checks](../../.github/workflows/ci.yml) to finish. If the job log shows that a failure comes from the runner, the network, or an external service, such as a registry timeout, rerun the failed job once. If it fails again, state the cause and link the run in `Risks or limitations`. Fix every other failure in the PR.
+- After each push, wait for the [CI checks](../../.github/workflows/ci.yml) to finish. If the job log shows that a failure comes from the runner, the network, or an external service, such as a registry timeout, rerun the failed job once. If it fails again, state the cause and link the run in [Risks or limitations](#risks-or-limitations). Fix every other failure in the PR.
 - Tell the maintainer that the PR is ready only after it meets every condition of a ready PR. If the PR cannot become ready, tell the maintainer which condition fails and why. Tell the maintainer in the chat, or in a PR comment if the session has no chat.
 - When the work changes, update the title, the description, and the labels before you tell the maintainer that the PR is ready again.
 - Before a review comment exists, you can amend or rebase commits and push them with `git push --force-with-lease`. After a review comment exists, add new commits. If the PR has merge conflicts or needs a change that is on `main`, merge `main` into the branch.
@@ -118,10 +118,10 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 A PR that completes the final Prove task of a module plan also records the evidence that CI does not keep. GitHub shows the PR on the Issue, so the Issue needs no comment.
 
-- At the end of `What changed`, write the sentence "The specification is `<status>` and the plan is `<status>`." with the statuses after the merge.
+- At the end of [What changed](#what-changed), write the sentence "The specification is `<status>` and the plan is `<status>`." with the statuses after the merge.
 - After that sentence, write the local checks table.
-- If a test proves a success criterion only in part, such as with a fake provider instead of a real one, state in `Risks or limitations` why the module can still close.
-- If an item of the Issue fails or does not run, state the gap in `Risks or limitations`, and use `Refs` instead of `Closes` for the Issue.
+- If a test proves a success criterion only in part, such as with a fake provider instead of a real one, state in [Risks or limitations](#risks-or-limitations) why the module can still close.
+- If an item of the Issue fails or does not run, state the gap in [Risks or limitations](#risks-or-limitations), and use `Refs` instead of `Closes` for the Issue.
 
 The evidence has a local checks table.
 

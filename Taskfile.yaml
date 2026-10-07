@@ -232,6 +232,7 @@ tasks:
       - task: identity:session-tls:test
       - task: identity:signing-key:test
       - task: observability:grafana-admin:test
+      - task: secrets:local-test
       - task: lint
       - task: coverage
       - task: vuln

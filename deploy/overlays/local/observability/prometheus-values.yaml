@@ -1,0 +1,61 @@
+# Values for the prometheus-community/prometheus chart. Prometheus runs one
+# replica that accepts remote writes from Alloy and scrapes no target itself.
+# It keeps metrics for 7 days or 4GB on a 5Gi node-local volume (ADR-0038).
+# The size limit bounds the disk use, because the local-path provisioner does
+# not enforce the volume size.
+rbac:
+  create: false
+serviceAccounts:
+  server:
+    create: true
+configmapReload:
+  prometheus:
+    enabled: false
+server:
+  automountServiceAccountToken: false
+  # The chart default web.enable-lifecycle allows a client to stop Prometheus
+  # over HTTP, so this list replaces it.
+  extraFlags:
+    - web.enable-remote-write-receiver
+  retention: 7d
+  retentionSize: 4GB
+  persistentVolume:
+    enabled: true
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+# Alloy does all collection, so every default scrape job is off.
+scrapeConfigs:
+  prometheus:
+    enabled: false
+  kubernetes-api-servers:
+    enabled: false
+  kubernetes-nodes:
+    enabled: false
+  kubernetes-nodes-cadvisor:
+    enabled: false
+  kubernetes-service-endpoints:
+    enabled: false
+  kubernetes-service-endpoints-slow:
+    enabled: false
+  prometheus-pushgateway:
+    enabled: false
+  kubernetes-services:
+    enabled: false
+  kubernetes-pods:
+    enabled: false
+  kubernetes-pods-slow:
+    enabled: false
+alertmanager:
+  enabled: false
+kube-state-metrics:
+  enabled: false
+prometheus-node-exporter:
+  enabled: false
+prometheus-pushgateway:
+  enabled: false

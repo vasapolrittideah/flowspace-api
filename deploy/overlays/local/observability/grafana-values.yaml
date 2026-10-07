@@ -47,6 +47,11 @@ datasources:
               matcherRegex: '"trace_id":"([0-9a-f]{32})"'
               datasourceUid: tempo
               url: "$${__value.raw}"
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server
 # Grafana 13 registers its API groups at startup, which needs about one CPU
 # for a few minutes. The startup probe keeps the liveness probe from
 # restarting it during that time.

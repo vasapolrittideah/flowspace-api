@@ -248,6 +248,7 @@ k8s_resource('identity-worker', resource_deps=['identity-migrate', 'identity-sec
 
 helm_repo('grafana', 'https://grafana.github.io/helm-charts', resource_name='grafana-chart-repo', labels='observability')
 helm_repo('grafana-community', 'https://grafana-community.github.io/helm-charts', resource_name='grafana-community-chart-repo', labels='observability')
+helm_repo('prometheus-community', 'https://prometheus-community.github.io/helm-charts', resource_name='prometheus-community-chart-repo', labels='observability')
 k8s_yaml(kustomize('deploy/overlays/local/observability'))
 k8s_resource(new_name='grafana-admin', objects=['grafana-admin:sealedsecret'], resource_deps=['sealed-secrets'], labels='observability')
 helm_resource(
@@ -269,12 +270,21 @@ helm_resource(
     labels='observability',
 )
 helm_resource(
+    'prometheus',
+    'prometheus-community/prometheus',
+    namespace='flowspace-local',
+    deps=['deploy/overlays/local/observability/prometheus-values.yaml'],
+    flags=['--version=29.35.0', '--values=deploy/overlays/local/observability/prometheus-values.yaml', '--create-namespace'],
+    resource_deps=['prometheus-community-chart-repo'],
+    labels='observability',
+)
+helm_resource(
     'alloy',
     'grafana/alloy',
     namespace='flowspace-local',
     deps=['deploy/overlays/local/observability/alloy-values.yaml'],
     flags=['--version=1.13.0', '--values=deploy/overlays/local/observability/alloy-values.yaml', '--create-namespace'],
-    resource_deps=['grafana-chart-repo', 'tempo', 'loki'],
+    resource_deps=['grafana-chart-repo', 'tempo', 'loki', 'prometheus'],
     labels='observability',
 )
 # Tilt forwards Grafana through the Kubernetes API, as kubectl port-forward
@@ -285,7 +295,7 @@ helm_resource(
     namespace='flowspace-local',
     deps=['deploy/overlays/local/observability/grafana-values.yaml'],
     flags=['--version=13.2.7', '--values=deploy/overlays/local/observability/grafana-values.yaml', '--create-namespace'],
-    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo', 'loki'],
+    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo', 'loki', 'prometheus'],
     port_forwards=[port_forward(3000, 3000, name='Grafana')],
     labels='observability',
 )

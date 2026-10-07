@@ -1,6 +1,6 @@
 # GitHub milestone conventions
 
-This convention defines the GitHub milestone of one approved module plan. A milestone groups the Issues of the plan on GitHub. The [module plan convention](module-plans.md) defines a module plan and its Task list.
+This convention defines the GitHub milestone of one approved module plan. A milestone groups the Issues of the plan on GitHub. The [Module plan](module-plans.md) convention defines a module plan and its Task list.
 
 ## Template
 

@@ -32,7 +32,7 @@ A worktree is a separate checkout of the repository. If tasks run at the same ti
 
 ## Review roles
 
-A review role is an agent that checks one aspect of a change, such as the code or the conventions, before a commit or a PR. Read the [review roles rules](.agents/rules/review-roles.md) before the first commit of a task. Then run each review role that the rules name for the change.
+A review role is an agent that checks one aspect of a change, such as the code or the conventions, before a commit or a PR. Read the [Review roles](.agents/rules/review-roles.md) rules before the first commit of a task. Then run each review role that the rules name for the change.
 
 ## Conventions
 

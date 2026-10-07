@@ -139,7 +139,7 @@ When Mailpit is unavailable, `Email delivery fails` can fire, but Grafana cannot
 Always do these actions:
 
 - Provision rules, the contact point, and the notification policy from files in the `local` overlay.
-- Start the [First checks](../conventions/runbooks.md#first-checks) of the `Worker metrics are missing` runbook with a check that Alloy and Prometheus still receive metrics, and then check the `identity-worker` pod.
+- Start the [First checks](../conventions/runbooks.md#first-checks) of the `Worker metrics are missing` runbook with a check that Alloy and Prometheus still receive metrics. Then inspect the `identity-worker` pod.
 - Write each runbook from a real check in the local cluster, and run its first query before the change merges.
 - In the change that adds the first runbook, replace the [Examples section of the runbook conventions](../conventions/runbooks.md#examples) with a link to that runbook.
 

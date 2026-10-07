@@ -86,7 +86,7 @@ Status: <current state of the specification>
 - If a shape is not in the contract shapes table, name its heading with a plural noun phrase, and search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns. The first specification that uses a heading sets its columns.
 - If no specification has the heading, make the first column the name of the item, add one column for each property that a consumer reads, in the order that the consumer uses them, and end with a `Meaning` column when a property name does not state its meaning.
 - Add a new shape to the contract shapes table only when one of its columns needs a rule that the steps above do not give, such as a fixed set of values or a required format. Add the shape to the contract shapes table in a separate PR of this convention. List that PR in [Follow-up tasks](pull-requests.md#follow-up-tasks) of the specification PR.
-- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table except Configuration, then the other shapes in alphabetical order of their headings, and then Configuration.
+- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table except [Configuration](#contract-shapes), then the other shapes in alphabetical order of their headings, and then [Configuration](#contract-shapes).
 - Keep the rows of [Methods](#methods) and [Method requirements](#method-requirements) in the same RPC order.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in [Behavior](#behavior).
@@ -162,7 +162,7 @@ Status: <current state of the specification>
 - Write the behavior in `###` subsections. Put the subsections for the topics of the capability first, and name each with a noun phrase, such as `### Correlation`.
 - After the topic subsections, add these shared subsections in this order when they apply: `### Security and abuse`, `### Data and compatibility`, and `### Diagnostics`.
 - If the capability changes a schema or a stored format, state the migration, its effect on running older code, and its rollback under `### Data and compatibility`.
-- Under `### Diagnostics`, list the values that logs, traces, metrics, and errors must never contain. Name the log events and fields in the [Contract](#contract) section, not in Diagnostics.
+- Under `### Diagnostics`, list the values that logs, traces, metrics, and errors must never contain. Name the log events and fields in the [Contract](#contract) section instead of that subsection.
 - Do not restate the five-second request cap of [ADR-0010](../adr/0010-cap-ordinary-unary-requests-at-five-seconds.md) unless the capability has an exception.
 - Do not repeat the contract.
 
@@ -256,7 +256,7 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 - Start planning only after the approval PR merges, as the [status rules](#status-and-approval) state. The skill continues to planning after a human reviews the specification.
 - Review a change to the contract, behavior, or success criteria of an `Approved` or `Implemented` specification as a new approval. The skill updates a specification when a decision or the scope changes.
 - Check that the specification has the sections of the [template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
-- Name the sections `Implementation boundaries` and `Assumptions and open questions`, and write user stories as Given, When, Then outcomes in [Success criteria](#success-criteria). The skill names them `Boundaries` and `Open Questions`, and puts user stories in [Objective](#objective).
+- Name the sections `Implementation boundaries` and `Assumptions and open questions`. Write user stories as Given, When, Then outcomes in [Success criteria](#success-criteria). The skill names the sections [Boundaries and Open Questions](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify) and puts user stories in its [Objective section](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify).
 
 ## Reference
 

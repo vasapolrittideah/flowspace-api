@@ -105,8 +105,8 @@ alloy:
       }
 
       // The exporter turns dots into underscores and adds the unit and
-      // _total suffixes. target_info would copy the resource into one more
-      // series that no dashboard reads.
+      // _total suffixes. If enabled, target_info copies the resource into
+      // one more series that no dashboard reads.
       otelcol.exporter.prometheus "prometheus" {
         include_target_info = false
         forward_to          = [prometheus.remote_write.prometheus.receiver]

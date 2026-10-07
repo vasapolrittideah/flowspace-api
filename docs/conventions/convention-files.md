@@ -89,7 +89,7 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 
 ### Special cases
 
-- If a procedure or format applies only to some artifacts of the kind, such as the [final Prove task PR](pull-requests.md#final-prove-task-pr) in the pull request convention, add one section for that situation. Put a procedure that applies to every artifact of the kind under [Workflow](#workflow) in the [Rules section](#rules-section).
+- If a procedure or format applies only to some artifacts of the kind, such as the [Final Prove task PR](pull-requests.md#final-prove-task-pr) in the pull request convention, add one section for that situation. Put a procedure that applies to every artifact of the kind under [Workflow](#workflow) in the [Rules section](#rules-section).
 - Name the situation in the heading as a noun phrase.
 - Start with paragraphs that state when the situation applies and the procedure to follow.
 - If rules apply to the whole situation, write them as bullets after the paragraphs.

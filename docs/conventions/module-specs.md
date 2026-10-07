@@ -86,7 +86,7 @@ Status: <current state of the specification>
 - If a shape is not in the contract shapes table, name its heading with a plural noun phrase, and search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns. The first specification that uses a heading sets its columns.
 - If no specification has the heading, make the first column the name of the item, add one column for each property that a consumer reads, in the order that the consumer uses them, and end with a `Meaning` column when a property name does not state its meaning.
 - Add a new shape to the contract shapes table only when one of its columns needs a rule that the steps above do not give, such as a fixed set of values or a required format. Add the shape to the contract shapes table in a separate PR of this convention. List that PR in [Follow-up tasks](pull-requests.md#follow-up-tasks) of the specification PR.
-- Put the subsections in this order: the RPC and event tables, then the shapes in the order of the contract shapes table except [Configuration](#contract-shapes), then the other shapes in alphabetical order of their headings, and then [Configuration](#contract-shapes).
+- Put the subsections in this order: the RPC and event tables, then the shapes in the order of [Contract shapes](#contract-shapes) except the shape whose heading is `### Configuration`, then the other shapes in alphabetical order of their headings, and then the subsection with that heading.
 - Keep the rows of [Methods](#methods) and [Method requirements](#method-requirements) in the same RPC order.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
 - Do not add a column for rate limits, deadlines, caching, or other conditional rules. State them in [Behavior](#behavior).
@@ -110,7 +110,7 @@ Status: <current state of the specification>
 | --- | --- |
 | `RPC` | The RPC name in backticks, as in [Methods](#methods). |
 | `Authentication` | One [authentication value](#method-requirement-values). Add an ADR link only when the value comes from an exception or a capability-specific decision, such as `Service mTLS` under ADR-0036. |
-| `Retry` | One [retry value](#method-requirement-values). Add the ADR link for `Rejects Idempotency-Key`. If the value depends on a condition, state the condition in [Behavior](#behavior). |
+| `Retry` | One retry value from [Method requirement values](#method-requirement-values). Add the ADR link for `Rejects Idempotency-Key`. If the value depends on a condition, state the condition in [Behavior](#behavior). |
 
 #### HTTP-only endpoints
 
@@ -249,14 +249,14 @@ Status: <current state of the specification>
 The [`spec-driven-development` skill](../../.agents/skills/spec-driven-development/SKILL.md) gives a generic format and workflow. This convention applies where the two differ:
 
 - Keep commands, the technology stack, the project structure, and code style out of the specification. The [technology stack](../technology-stack.md), the [project structure](../project-structure.md), the code conventions, and the [constraints](../../CONSTRAINTS.md) apply to all modules, and Issue verification steps name the commands. The skill lists them in each specification.
-- Keep only the risks and their [test levels](#test-levels) in [Testing strategy](#testing-strategy). The skill also lists the test framework, the test locations, and the coverage.
+- Keep only the risks and their [Test levels](#test-levels) in [Testing strategy](#testing-strategy). The skill also lists the test framework, the test locations, and the coverage.
 - Save the specification as `docs/specs/<module-id>.md`. The skill saves it as `SPEC-<module-id>.md` at the project root.
 - Use the `Planned` rows of the [specification index](../specs/README.md) as the capability map, as the [workflow rules](#workflow) state. The skill saves the map as a file at the project root.
 - Write each module ID as `<service-or-area>-<capability>`. The skill uses short module IDs, such as `identity`.
 - Start planning only after the approval PR merges, as the [status rules](#status-and-approval) state. The skill continues to planning after a human reviews the specification.
 - Review a change to the contract, behavior, or success criteria of an `Approved` or `Implemented` specification as a new approval. The skill updates a specification when a decision or the scope changes.
 - Check that the specification has the sections of the [template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
-- Name the sections `Implementation boundaries` and `Assumptions and open questions`. Write user stories as Given, When, Then outcomes in [Success criteria](#success-criteria). The template in [Phase 1: Specify](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify) of the skill names them `Boundaries` and `Open Questions`, and puts user stories in its Objective section.
+- Name the sections `Implementation boundaries` and `Assumptions and open questions`. Write user stories as Given, When, Then outcomes in [Success criteria](#success-criteria). The template in [Phase 1: Specify](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify) of the skill names them `## Boundaries` and `## Open Questions`. It puts user stories under `## Objective`.
 
 ## Reference
 

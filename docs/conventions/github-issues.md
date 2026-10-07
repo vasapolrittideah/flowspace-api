@@ -1,6 +1,6 @@
 # GitHub Issue conventions
 
-This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes. A module is one capability that the [module specification](module-specs.md) convention defines, and a module plan lists the tasks of one module, as the [module plan](module-plans.md) convention defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
+This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes. A module is one capability that the [Module specification](module-specs.md) convention defines, and a module plan lists the tasks of one module, as the [Module plan](module-plans.md) convention defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
 
 ## Template
 
@@ -114,7 +114,7 @@ The [`planning-and-task-breakdown` skill](../../.agents/skills/planning-and-task
 - Write the task as a GitHub Issue with the [Issue template](#template). The skill writes `Description`, `Acceptance criteria`, and other fields as bold labels in a `## Task` section.
 - Record dependencies as native `Blocked by` relationships, as the [link rules](#links-and-tracking) state. The skill lists them in a `Dependencies` field.
 - Omit an estimated scope. The skill sizes each task by its number of files.
-- End [Verification](#verification) with the fixed items in the [Verification rules](#verification). The skill uses `Tests pass`, `Build succeeds`, and `Manual check` labels.
+- End [Verification](#verification) with the fixed items in the [Verification](#verification) rules. The skill uses `Tests pass`, `Build succeeds`, and `Manual check` labels.
 
 ## Examples
 

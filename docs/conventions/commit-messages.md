@@ -56,15 +56,14 @@ Co-authored-by: <co-author name> <co-author email>
 - If a checkpoint subject matches the PR title, apply the checkpoint body rule above. This also applies to the only commit of a PR. Do not omit the body only because the squash commit can have no body. The squash body leaves out text that only reviewers need, such as the tests that the step adds.
 - In a squash commit, write for a later reader of the `main` history. Choose the body with these steps, and stop after the first match:
   1. If the main change only adds a document or changes its status, omit the body. Examples include a specification, plan, or ADR. The document on `main` holds its content.
-  2. If the main change edits an existing rule in a document, write only the reason or trade-off. Include only what the changed files do not state. If the files state the reason, omit the body.
-  3. Describe the lasting effects on `main` that the subject and the diff do not state: changed behavior, compatibility or migration effects, and important decisions or trade-offs. If there are none, omit the body.
-- In a squash commit, take the content of the body from the final [What changed](pull-requests.md#what-changed) and [Why](pull-requests.md#why) sections of the PR. Make sure that the final diff supports each sentence.
+  2. If the main change edits an existing rule in a document, write only the reason or trade-off from the [Why](pull-requests.md#why) section of the PR. Include only what the changed files do not state. If the files state the reason, omit the body.
+  3. Describe the lasting effects on `main` that the subject and the diff do not state. Take changed behavior and compatibility or migration effects from [What changed](pull-requests.md#what-changed), and important decisions or trade-offs from [Why](pull-requests.md#why). If there are none, omit the body.
+- In a squash commit, rewrite the points that the steps above select in plain text for a reader of `main`. Use the final version of the PR description. Do not copy sentences from it. Make sure that the final diff supports each sentence.
 - Do not split code or trailers. A line that holds one of them can be longer than 72 characters.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
 - Do not refer to the commit, the writer, or the time of writing, such as "This commit adds", "I", "we", "now", or "currently". State each change directly. The `This reverts commit <full SHA>.` line of a revert commit is an exception.
-- In a squash commit, do not copy the whole PR description, because the subject links the PR.
 - In a squash commit, do not include verification details, lists of added tests, or specification or plan status changes.
-- In a squash commit, do not copy text that only reviewers need, such as merge order, review notes, checks that did not run, or follow-up tasks.
+- In a squash commit, do not include text that only reviewers need, such as merge order, review notes, checks that did not run, or follow-up tasks.
 
 ### Issue footers
 
@@ -90,7 +89,7 @@ Co-authored-by: <co-author name> <co-author email>
 ## Rules
 
 - Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/), and write the parts in the order shown in the template.
-- Write the whole message as plain text, including text that you copy from a PR description. Do not use backticks, Markdown links, or URLs. Name a file by its path, and refer to an Issue or a pull request by its number, such as `#123`.
+- Write the whole message as plain text, including text that comes from a PR description. Do not use backticks, Markdown links, or URLs. Name a file by its path, and refer to an Issue or a pull request by its number, such as `#123`.
 - If a message has more than one line, write it to a file outside the working tree, and pass the file with `git commit --file <message-file>` in its own command.
 - Apply a change of this convention to new commits only. Do not rewrite commits on `main` to follow it.
 

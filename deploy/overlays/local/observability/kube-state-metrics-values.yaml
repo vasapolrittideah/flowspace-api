@@ -1,0 +1,21 @@
+# Values for the prometheus-community/kube-state-metrics chart. One replica
+# reports only the restart count of each container in the Flowspace
+# namespace (ADR-0038). Alloy scrapes it and drops any other family.
+collectors:
+  - pods
+namespaces: flowspace-local
+metricAllowlist:
+  - kube_pod_container_status_restarts_total
+# A Role in the Flowspace namespace replaces the default ClusterRole, so
+# kube-state-metrics cannot read pods in other namespaces.
+rbac:
+  useClusterRole: false
+# Alloy scrapes kube-state-metrics, so the chart adds no scrape annotation.
+prometheusScrape: false
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi

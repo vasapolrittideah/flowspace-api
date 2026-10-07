@@ -1,7 +1,8 @@
 # Values for the grafana/alloy chart. Alloy receives OTLP over gRPC from
 # Flowspace pods, sends the spans to Tempo, and writes the metrics to
 # Prometheus. It also reads the logs of Flowspace pods through the Kubernetes
-# API and sends them to Loki.
+# API and sends them to Loki, and it scrapes the cluster and telemetry stack
+# metrics that ADR-0038 names into Prometheus.
 crds:
   create: false
 alloy:
@@ -118,6 +119,103 @@ alloy:
         }
       }
 
+      // Each scrape keeps only the metric names that the dashboards read, so
+      // Prometheus stores no series that nobody reads. The job label names
+      // the component.
+      discovery.kubernetes "nodes" {
+        role = "node"
+      }
+
+      // The kubelet reports the used and total bytes of each volume. Its
+      // serving certificate is self-signed, so Alloy does not verify it.
+      prometheus.scrape "kubelet" {
+        targets           = discovery.kubernetes.nodes.targets
+        job_name          = "kubelet"
+        scheme            = "https"
+        scrape_interval   = "30s"
+        bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          insecure_skip_verify = true
+        }
+        forward_to = [prometheus.relabel.kubelet.receiver]
+      }
+
+      prometheus.relabel "kubelet" {
+        rule {
+          source_labels = ["__name__"]
+          regex         = "kubelet_volume_stats_(used|capacity)_bytes"
+          action        = "keep"
+        }
+        forward_to = [prometheus.remote_write.prometheus.receiver]
+      }
+
+      prometheus.scrape "kube_state_metrics" {
+        targets         = [{"__address__" = "kube-state-metrics:8080"}]
+        job_name        = "kube-state-metrics"
+        scrape_interval = "30s"
+        forward_to      = [prometheus.relabel.kube_state_metrics.receiver]
+      }
+
+      prometheus.relabel "kube_state_metrics" {
+        rule {
+          source_labels = ["__name__"]
+          regex         = "kube_pod_container_status_restarts_total"
+          action        = "keep"
+        }
+        // A pod uid changes with each new pod, and the specification names
+        // only the namespace, pod, and container labels.
+        rule {
+          regex  = "uid"
+          action = "labeldrop"
+        }
+        forward_to = [prometheus.remote_write.prometheus.receiver]
+      }
+
+      prometheus.exporter.self "alloy" {}
+
+      prometheus.scrape "alloy" {
+        targets         = prometheus.exporter.self.alloy.targets
+        job_name        = "alloy"
+        scrape_interval = "30s"
+        forward_to      = [prometheus.relabel.alloy.receiver]
+      }
+
+      prometheus.relabel "alloy" {
+        rule {
+          source_labels = ["__name__"]
+          regex         = "otelcol_receiver_refused_(spans|metric_points)_total|otelcol_exporter_send_failed_spans_total|prometheus_remote_storage_samples_failed_total|loki_write_dropped_entries_total"
+          action        = "keep"
+        }
+        // The self exporter names its target integrations/self.
+        rule {
+          target_label = "job"
+          replacement  = "alloy"
+        }
+        forward_to = [prometheus.remote_write.prometheus.receiver]
+      }
+
+      prometheus.scrape "stores" {
+        targets = [
+          {"__address__" = "loki:3100", "job" = "loki"},
+          {"__address__" = "tempo:3200", "job" = "tempo"},
+          {"__address__" = "prometheus-server:80", "job" = "prometheus"},
+        ]
+        scrape_interval = "30s"
+        forward_to      = [prometheus.relabel.stores.receiver]
+      }
+
+      // Each store keeps only its own names, because Loki also reports
+      // Prometheus WAL metrics. Prometheus counts each remote write in
+      // prometheus_http_requests_total, so only the write handler stays.
+      prometheus.relabel "stores" {
+        rule {
+          source_labels = ["job", "__name__", "handler"]
+          regex         = "loki;loki_discarded_samples_total;.*|tempo;tempo_discarded_spans_total;.*|prometheus;prometheus_tsdb_(storage_blocks_bytes|head_chunks_storage_size_bytes|wal_storage_size_bytes);.*|prometheus;prometheus_http_requests_total;/api/v1/write"
+          action        = "keep"
+        }
+        forward_to = [prometheus.remote_write.prometheus.receiver]
+      }
+
       otelcol.exporter.otlp "tempo" {
         client {
           endpoint = "tempo:4317"
@@ -151,4 +249,6 @@ rbac:
     - apiGroups: [""]
       resources: ["pods", "pods/log"]
       verbs: ["get", "list", "watch"]
+  # The chart cannot add a ClusterRole to these Roles, so alloy-rbac.yaml
+  # in this overlay lets Alloy read the kubelet metrics.
   clusterRules: []

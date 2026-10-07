@@ -279,12 +279,21 @@ helm_resource(
     labels='observability',
 )
 helm_resource(
+    'kube-state-metrics',
+    'prometheus-community/kube-state-metrics',
+    namespace='flowspace-local',
+    deps=['deploy/overlays/local/observability/kube-state-metrics-values.yaml'],
+    flags=['--version=8.6.0', '--values=deploy/overlays/local/observability/kube-state-metrics-values.yaml', '--create-namespace'],
+    resource_deps=['prometheus-community-chart-repo'],
+    labels='observability',
+)
+helm_resource(
     'alloy',
     'grafana/alloy',
     namespace='flowspace-local',
     deps=['deploy/overlays/local/observability/alloy-values.yaml'],
     flags=['--version=1.13.0', '--values=deploy/overlays/local/observability/alloy-values.yaml', '--create-namespace'],
-    resource_deps=['grafana-chart-repo', 'tempo', 'loki', 'prometheus'],
+    resource_deps=['grafana-chart-repo', 'tempo', 'loki', 'prometheus', 'kube-state-metrics'],
     labels='observability',
 )
 # Tilt forwards Grafana through the Kubernetes API, as kubectl port-forward

@@ -1,0 +1,26 @@
+# Alloy finds the nodes and reads the kubelet metrics. It cannot use
+# nodes/proxy, which allows any kubelet API call (ADR-0038).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: alloy-kubelet-metrics
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes/metrics"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alloy-kubelet-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: alloy-kubelet-metrics
+subjects:
+  - kind: ServiceAccount
+    name: alloy
+    namespace: flowspace-local

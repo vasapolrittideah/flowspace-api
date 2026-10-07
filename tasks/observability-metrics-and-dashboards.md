@@ -8,7 +8,7 @@ Status: Approved
 
 Send metrics from `identity-api`, `identity-worker`, and `workspace-api` through Alloy to one Prometheus replica in the `local` cluster, and show them in three Grafana dashboards. A developer sees which service returns errors or answers slowly, whether emails wait in the outbox or the broker, and whether the telemetry stack is near full or drops data.
 
-The plan follows [the approved specification](../docs/specs/observability-metrics-and-dashboards.md). This module depends on [Observability logs and traces](observability-logs-and-traces.md), because it uses the OTLP exporter configuration, the request middleware, Alloy, and Grafana that the logs and traces tasks add. Each task that needs that work is blocked by the Issue that delivers it.
+The plan follows the approved [Observability metrics and dashboards](../docs/specs/observability-metrics-and-dashboards.md) specification. This module depends on [Observability logs and traces](observability-logs-and-traces.md), because it uses the OTLP exporter configuration, the request middleware, Alloy, and Grafana that the logs and traces tasks add. Each task that needs that work is blocked by the Issue that delivers it.
 
 ## Architecture decisions
 

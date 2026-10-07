@@ -8,7 +8,7 @@ Status: Complete
 
 Send the logs and traces of `identity-api`, `identity-worker`, and `workspace-api` to Loki and Tempo in the `local` cluster, and show them together in Grafana. A developer starts from a request ID or a trace ID and follows one request through Workspace, the Identity session check, the outbox relay, and the email worker.
 
-The plan follows the [Observability logs and traces](../docs/specs/observability-logs-and-traces.md) specification. No capability map includes this module. The [Observability metrics and dashboards](../docs/specs/observability-metrics-and-dashboards.md) specification depends on this module, so this module comes first.
+The plan follows [the approved specification](../docs/specs/observability-logs-and-traces.md). No capability map includes this module. The [Observability metrics and dashboards](../docs/specs/observability-metrics-and-dashboards.md) specification depends on this module, so this module comes first.
 
 ## Architecture decisions
 

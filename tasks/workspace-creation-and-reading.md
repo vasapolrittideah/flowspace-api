@@ -10,7 +10,7 @@ Completion record: [PR #79](https://github.com/vasapolrittideah/flowspace-api/pu
 
 Build `CreateWorkspace` and `GetWorkspace` for authenticated users. Creation stores one owner and supports safe retries for 24 hours. Reading requires Workspace-owned membership data.
 
-The plan follows the [Workspace creation and reading](../docs/specs/workspace-creation-and-reading.md) specification. No capability map includes this module.
+The plan follows [the approved specification](../docs/specs/workspace-creation-and-reading.md). No capability map includes this module.
 
 ## Architecture decisions
 

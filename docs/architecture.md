@@ -4,7 +4,7 @@ Status: accepted direction with implementation proposals still open.
 
 Updated: 2026-09-23.
 
-This document defines product rules, service boundaries, cross-service behavior, and learning evidence. Accepted rationale lives in the [Architecture Decision Records](adr/README.md) index; replaceable tools live in the [Technology stack](technology-stack.md).
+This document defines product rules, service boundaries, cross-service behavior, and learning evidence. Accepted rationale lives in the [Architecture Decision Records](adr/README.md) index. Replaceable tools live in the [Technology stack](technology-stack.md).
 
 ## Goal and constraints
 

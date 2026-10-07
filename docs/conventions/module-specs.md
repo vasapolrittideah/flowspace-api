@@ -1,6 +1,6 @@
 # Module specification conventions
 
-This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [Specifications](../specs/README.md) index lists every module. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. A material risk is a failure that would break a success criterion or allow a threat in a threat model.
+This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [Specifications](../specs/README.md) index lists every module. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. A material risk is a failure that can break a success criterion or allow a threat in a threat model.
 
 ## Template
 
@@ -211,7 +211,7 @@ Status: <current state of the specification>
 ### Format and content
 
 - Use the sections through [Success criteria](#success-criteria) in the template order. Add [Assumptions and open questions](#assumptions-and-open-questions) only when the specification has an assumption or an open question.
-- Put a check that a capability must pass before Flowspace stops using disposable data in the `Before real teams` list in the [Observability and recovery](../architecture.md#observability-and-recovery) section of the architecture, not in the specification.
+- Put a check that a capability must pass before Flowspace stops using disposable data in the "Before real teams" list in the [Observability and recovery](../architecture.md#observability-and-recovery) section of the architecture, not in the specification.
 - Put implementation locations and commands in the plan and its Issues. Repeat a project-wide rule only when it changes observable behavior or completion criteria.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a specification.
 
@@ -255,7 +255,7 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 - Write each module ID as `<service-or-area>-<capability>`. The skill uses short module IDs, such as `identity`.
 - Start planning only after the approval PR merges, as the [Status and approval](#status-and-approval) rules state. The skill continues to planning after a human reviews the specification.
 - Review a change to the contract, behavior, or success criteria of an `Approved` or `Implemented` specification as a new approval. The skill updates a specification when a decision or the scope changes.
-- Check that the specification has the sections of the [Template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
+- Make sure that the specification has the sections of the [Template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
 - Name the sections `Implementation boundaries` and `Assumptions and open questions`. Write user stories as Given, When, Then outcomes in [Success criteria](#success-criteria). The template in [Phase 1: Specify](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify) of the skill names them `## Boundaries` and `## Open Questions`. It puts user stories under `## Objective`.
 
 ## Reference

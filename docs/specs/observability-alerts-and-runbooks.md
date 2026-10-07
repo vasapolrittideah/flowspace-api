@@ -71,7 +71,7 @@ The Grafana root URL `http://localhost:3000` is the local address of the Grafana
 
 ### Runbooks
 
-Each rule has one runbook in `docs/runbooks/` that follows the [runbook conventions](../conventions/runbooks.md).
+Each rule has one runbook in `docs/runbooks/` that follows the [Runbook](../conventions/runbooks.md) conventions.
 
 | Rule title | Runbook file |
 | --- | --- |

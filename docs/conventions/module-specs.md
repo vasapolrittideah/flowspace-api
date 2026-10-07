@@ -251,7 +251,7 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 - Keep commands, the technology stack, the project structure, and code style out of the specification. The [technology stack](../technology-stack.md), the [project structure](../project-structure.md), the code conventions, and the [constraints](../../CONSTRAINTS.md) apply to all modules, and Issue verification steps name the commands. The skill lists them in each specification.
 - Keep only the risks and their [Test levels](#test-levels) in [Testing strategy](#testing-strategy). The skill also lists the test framework, the test locations, and the coverage.
 - Save the specification as `docs/specs/<module-id>.md`. The skill saves it as `SPEC-<module-id>.md` at the project root.
-- Use the `Planned` rows of the [specification index](../specs/README.md) as the capability map, as the [workflow rules](#workflow) state. The skill saves the map as a file at the project root.
+- Use the `Planned` rows of the [Specifications](../specs/README.md) index as the capability map, as the [Workflow](#workflow) rules state. The skill saves the map as a file at the project root.
 - Write each module ID as `<service-or-area>-<capability>`. The skill uses short module IDs, such as `identity`.
 - Start planning only after the approval PR merges, as the [status rules](#status-and-approval) state. The skill continues to planning after a human reviews the specification.
 - Review a change to the contract, behavior, or success criteria of an `Approved` or `Implemented` specification as a new approval. The skill updates a specification when a decision or the scope changes.

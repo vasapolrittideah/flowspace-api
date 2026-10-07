@@ -130,7 +130,7 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 
 ### Format and content
 
-- Follow the [Markdown and English prose conventions](markdown-and-english-prose.md) in each convention file.
+- Follow the [Markdown and English prose](markdown-and-english-prose.md) conventions in each convention file.
 - Start each bullet with a verb, such as "Write", "Put", "Use", "Link", or "Omit". If the rule has a condition or applies to one place, state the condition or the place first, such as "In the index, use the record number". Apply this rule to every bullet outside code blocks. This rule does not cover the items of a numbered list inside a bullet.
 - If a rule applies steps in order or by precedence, put a numbered list inside its bullet.
 - Give each bullet one main point, as the [Markdown rules](markdown-and-english-prose.md#format-and-content) define. Keep the condition, reason, and exception of the point in the same bullet.

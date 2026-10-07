@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/vasapolrittideah/flowspace-api/internal/logging"
+	"github.com/vasapolrittideah/flowspace-api/internal/metrics"
 	"github.com/vasapolrittideah/flowspace-api/internal/tracing"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/bootstrap"
 )
@@ -24,7 +25,8 @@ func run(logger *zap.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	stopTracing := tracing.Start(ctx, logger, service, os.Getenv("ENVIRONMENT"))
-	defer stopTracing()
+	stopTelemetry := metrics.Start(ctx, service, os.Getenv("ENVIRONMENT"), stopTracing)
+	defer stopTelemetry()
 
 	config, err := bootstrap.LoadConfig()
 	if err != nil {

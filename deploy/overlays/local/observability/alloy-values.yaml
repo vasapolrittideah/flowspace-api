@@ -1,6 +1,7 @@
 # Values for the grafana/alloy chart. Alloy receives OTLP over gRPC from
-# Flowspace pods and sends the spans to Tempo. It also reads the logs of
-# Flowspace pods through the Kubernetes API and sends them to Loki.
+# Flowspace pods, sends the spans to Tempo, and writes the metrics to
+# Prometheus. It also reads the logs of Flowspace pods through the Kubernetes
+# API and sends them to Loki.
 crds:
   create: false
 alloy:
@@ -67,7 +68,8 @@ alloy:
           endpoint = "0.0.0.0:4317"
         }
         output {
-          traces = [otelcol.processor.memory_limiter.default.input]
+          traces  = [otelcol.processor.memory_limiter.default.input]
+          metrics = [otelcol.processor.memory_limiter.default.input]
         }
       }
 
@@ -81,7 +83,38 @@ alloy:
         limit          = "320MiB"
         spike_limit    = "64MiB"
         output {
-          traces = [otelcol.exporter.otlp.tempo.input]
+          traces  = [otelcol.exporter.otlp.tempo.input]
+          metrics = [otelcol.processor.transform.service_labels.input]
+        }
+      }
+
+      // Each service series carries the service and environment labels of
+      // the specification, from the same resource values as the spans.
+      otelcol.processor.transform "service_labels" {
+        error_mode = "ignore"
+        metric_statements {
+          context    = "datapoint"
+          statements = [
+            `set(attributes["service"], resource.attributes["service.name"])`,
+            `set(attributes["environment"], resource.attributes["deployment.environment.name"])`,
+          ]
+        }
+        output {
+          metrics = [otelcol.exporter.prometheus.prometheus.input]
+        }
+      }
+
+      // The exporter turns dots into underscores and adds the unit and
+      // _total suffixes. If enabled, target_info copies the resource into
+      // one more series that no dashboard reads.
+      otelcol.exporter.prometheus "prometheus" {
+        include_target_info = false
+        forward_to          = [prometheus.remote_write.prometheus.receiver]
+      }
+
+      prometheus.remote_write "prometheus" {
+        endpoint {
+          url = "http://prometheus-server/api/v1/write"
         }
       }
 

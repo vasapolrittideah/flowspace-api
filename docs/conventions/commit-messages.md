@@ -59,7 +59,7 @@ Co-authored-by: <co-author name> <co-author email>
   2. If the main change edits an existing rule in a document, write only the reason or trade-off. Include only what the changed files do not state. If the files state the reason, omit the body.
   3. Describe the lasting effects on `main` that the subject and the diff do not state: changed behavior, compatibility or migration effects, and important decisions or trade-offs. If there are none, omit the body.
 - In a squash commit, take the content of the body from the final [What changed](pull-requests.md#what-changed) and [Why](pull-requests.md#why) sections of the PR. Make sure that the final diff supports each sentence.
-- Do not split URLs, code, or trailers. A line that holds one of them can be longer than 72 characters.
+- Do not split code or trailers. A line that holds one of them can be longer than 72 characters.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
 - Do not refer to the commit, the writer, or the time of writing, such as "This commit adds", "I", "we", "now", or "currently". State each change directly. The `This reverts commit <full SHA>.` line of a revert commit is an exception.
 - In a squash commit, do not copy the whole PR description, because the subject links the PR.
@@ -90,6 +90,7 @@ Co-authored-by: <co-author name> <co-author email>
 ## Rules
 
 - Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/), and write the parts in the order shown in the template.
+- Write the whole message as plain text, including text that you copy from a PR description. Do not use backticks, Markdown links, or URLs. Name a file by its path, and refer to an Issue or a pull request by its number, such as `#123`.
 - If a message has more than one line, write it to a file outside the working tree, and pass the file with `git commit --file <message-file>` in its own command.
 - Apply a change of this convention to new commits only. Do not rewrite commits on `main` to follow it.
 

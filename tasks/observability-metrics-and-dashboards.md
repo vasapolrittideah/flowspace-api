@@ -17,7 +17,7 @@ The plan follows the approved [Observability metrics and dashboards](../docs/spe
 - The shared `postgrespool` package owns the four database pool instruments, because it owns the pool. One callback reads `pgxpool.Stat` at each export.
 - The request middleware that the logs and traces tasks change records each HTTP and gRPC server duration with the same route, method, and status values as its server span. The services do not add `otelhttp` or `otelgrpc` metrics, so each request has one recorded duration and one source of label values.
 - The Identity worker reads the outbox age and the consumer lag in observable gauge callbacks, with a 5-second limit for each measurement. The callbacks replace the `identity_outbox_age` and `identity_broker_lag` info lines and keep the two `unavailable` warning lines.
-- Prometheus and kube-state-metrics run in the `flowspace-local` namespace from pinned upstream Helm charts of the `prometheus-community` repository. Tilt applies them with the other telemetry components. Their values files, network policies, and the Alloy RBAC change live in `deploy/overlays/local/observability/`.
+- Prometheus and kube-state-metrics run in the `flowspace-local` namespace from pinned upstream Helm charts of the `prometheus-community` repository. Tilt applies them with the other telemetry components. Their values files, network policies, and the Alloy RBAC change live in `deploy/overlays/local/observability/`. After the first full run on 2026-10-07, Prometheus used 4m of CPU and 139Mi of memory, and kube-state-metrics used 2m of CPU and 16Mi of memory.
 - The Prometheus chart runs only the server. Its values turn off Alertmanager, the Pushgateway, the node exporter, the bundled kube-state-metrics, and every scrape job, because Alloy does all collection.
 - Alloy scrapes these exact metric names, and the dashboards query them. The task that adds the scrapes makes sure that each name exists in the pinned chart versions, and it corrects this list if a name differs.
 
@@ -25,10 +25,12 @@ The plan follows the approved [Observability metrics and dashboards](../docs/spe
 | --- | --- |
 | Container restart count | `kube_pod_container_status_restarts_total` |
 | Used and total bytes of each volume | `kubelet_volume_stats_used_bytes`, `kubelet_volume_stats_capacity_bytes` |
-| Spans and metric points that Alloy refuses or fails to send | `otelcol_receiver_refused_spans_ratio_total`, `otelcol_receiver_refused_metric_points_ratio_total`, `otelcol_exporter_send_failed_spans_ratio_total`, `prometheus_remote_storage_samples_failed_total` |
+| Spans and metric points that Alloy refuses or fails to send | `otelcol_receiver_refused_spans_total`, `otelcol_receiver_refused_metric_points_total`, `otelcol_exporter_send_failed_spans_total`, `prometheus_remote_storage_samples_failed_total` |
 | Log entries that Alloy drops or fails to send | `loki_write_dropped_entries_total` |
 | Storage size of the Prometheus database | `prometheus_tsdb_storage_blocks_bytes`, `prometheus_tsdb_head_chunks_storage_size_bytes`, `prometheus_tsdb_wal_storage_size_bytes` |
 | Ingestion failures of Loki, Tempo, and Prometheus | `loki_discarded_samples_total`, `tempo_discarded_spans_total`, `prometheus_http_requests_total` for the `/api/v1/write` handler with a status other than 2xx |
+
+Alloy v1.20.0 names the OpenTelemetry Collector counters without `_ratio`. A counter with labels, such as `otelcol_exporter_send_failed_spans_total`, `loki_discarded_samples_total`, and `tempo_discarded_spans_total`, has no series until its first increment.
 
 - Git holds the dashboards as JSON files in `deploy/overlays/local/observability/dashboards/`. Kustomize puts them in a ConfigMap, and the Grafana chart loads that ConfigMap into the `Flowspace` folder.
 - The tunnel and the `staging` and `production` overlays do not change.
@@ -74,11 +76,11 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Checkpoint: Export and storage
 
 - [ ] Unit tests show that each process starts, serves, and stops on time with metric export, without an endpoint and with an unreachable endpoint.
-- [ ] Unit tests pass for the names, units, attributes, and values of the database pool metrics.
-- [ ] Tilt brings up Prometheus and kube-state-metrics with limits, and Prometheus has one replica, a bound 5Gi volume, and a retention of 7 days and 4GB.
-- [ ] Prometheus has series from all three processes, and its only kube-state-metrics series are container restarts in the Flowspace namespace.
-- [ ] The plan records the measured CPU and memory use of Prometheus and kube-state-metrics after the first full run.
-- [ ] A human reviews the chart choices, the turned-off chart parts, the Alloy RBAC change, and the network policies.
+- [x] Unit tests pass for the names, units, attributes, and values of the database pool metrics.
+- [x] Tilt brings up Prometheus and kube-state-metrics with limits, and Prometheus has one replica, a bound `5Gi` volume, and a retention of 7 days and `4GB`.
+- [x] Prometheus has series from all three processes, and its only kube-state-metrics series are container restarts in the Flowspace namespace.
+- [x] The plan records the measured CPU and memory use of Prometheus and kube-state-metrics after the first full run.
+- [x] A human reviews the chart choices, the turned-off chart parts, the Alloy RBAC change, and the network policies.
 
 ### Phase 2: Service metrics
 

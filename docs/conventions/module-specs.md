@@ -1,6 +1,6 @@
 # Module specification conventions
 
-This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [specification index](../specs/README.md) lists every module. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. A material risk is a failure that would break a success criterion or allow a threat in a threat model.
+This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [Specifications](../specs/README.md) index lists every module. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. A material risk is a failure that would break a success criterion or allow a threat in a threat model.
 
 ## Template
 
@@ -57,7 +57,7 @@ Status: <current state of the specification>
 
 ### Status line
 
-- Write one [status value](#status-values) other than `Planned`, without a final period.
+- Write one value from [Status values](#status-values) other than `Planned`, without a final period.
 - Write the same status as the `Status` column of the index.
 
 ### Objective
@@ -81,7 +81,7 @@ Status: <current state of the specification>
 - If the contract has RPCs, start it with "Use package `flowspace.<service>.v1` and service `<Service>`." If it has events but no RPCs, start it with "Use package `flowspace.<service>.v1`."
 - If a shape has fewer than two named items, such as fields, labels, or panels, write it as a paragraph directly under `## Contract`, before the subsections.
 - For RPCs and events, write these tables in this order, each under a `###` heading with its name: `Methods`, `Method requirements`, `HTTP-only endpoints`, `Resource fields`, `Published events`, and `Errors`. Omit a table that has no rows.
-- For each other shape, write a `###` subsection with a table that has one row for each named item. If the shape is in the [contract shapes](#contract-shapes) table, use its heading and all of its columns in that order.
+- For each other shape, write a `###` subsection with a table that has one row for each named item. If the shape is in the [Contract shapes](#contract-shapes) table, use its heading and all of its columns in that order.
 - If a consumer reads a property that the contract shapes table does not list, add a column for it after the listed columns. If the table has a `Meaning` column, put the new column before `Meaning`.
 - If a shape is not in the contract shapes table, name its heading with a plural noun phrase, and search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns. The first specification that uses a heading sets its columns.
 - If no specification has the heading, make the first column the name of the item, add one column for each property that a consumer reads, in the order that the consumer uses them, and end with a `Meaning` column when a property name does not state its meaning.
@@ -109,7 +109,7 @@ Status: <current state of the specification>
 | Column | How to write |
 | --- | --- |
 | `RPC` | The RPC name in backticks, as in [Methods](#methods). |
-| `Authentication` | One [authentication value](#method-requirement-values). Add an ADR link only when the value comes from an exception or a capability-specific decision, such as `Service mTLS` under ADR-0036. |
+| `Authentication` | One authentication value from [Method requirement values](#method-requirement-values). Add an ADR link only when the value comes from an exception or a capability-specific decision, such as `Service mTLS` under ADR-0036. |
 | `Retry` | One retry value from [Method requirement values](#method-requirement-values). Add the ADR link for `Rejects Idempotency-Key`. If the value depends on a condition, state the condition in [Behavior](#behavior). |
 
 #### HTTP-only endpoints
@@ -121,7 +121,7 @@ Status: <current state of the specification>
 | --- | --- |
 | `Endpoint` | A short name, such as "Provider callback". |
 | `Public HTTP route` | The HTTP method and path in backticks, as in [Methods](#methods). |
-| `Authentication` | One [authentication value](#method-requirement-values). |
+| `Authentication` | One authentication value from [Method requirement values](#method-requirement-values). |
 | `Request` | The query parameters, headers, or body fields that the endpoint reads, in backticks. |
 | `Response` | What the endpoint returns, such as a redirect or a page, and the values that it contains. |
 
@@ -168,9 +168,9 @@ Status: <current state of the specification>
 
 ### Testing strategy
 
-- Write the testing strategy as the [testing table](#testing-table).
+- Write the testing strategy as the [Testing table](#testing-table).
 - Do not repeat each success criterion.
-- Do not list commands. Commands belong in the verification steps of each [Issue](github-issues.md#template).
+- Do not list commands. Commands belong in the verification steps of each Issue, as its [Template](github-issues.md#template) shows.
 
 #### Testing table
 
@@ -178,15 +178,15 @@ Status: <current state of the specification>
 
 | Column | How to write |
 | --- | --- |
-| `Risk` | The failure that the tests must prevent, in one short phrase, such as "A wrong-purpose code verifies an email". In Identity specifications, add the [threat IDs](../security/identity-threat-model.md) in parentheses, such as "(ID-T03, ID-T19)". |
-| `Test level` | One of the [test levels](#test-levels). If two levels prove the risk, write both, separated by a comma. |
+| `Risk` | The failure that the tests must prevent, in one short phrase, such as "A wrong-purpose code verifies an email". In Identity specifications, add the [Identity threat model](../security/identity-threat-model.md) IDs in parentheses, such as "(ID-T03, ID-T19)". |
+| `Test level` | One of the [Test levels](#test-levels). If two levels prove the risk, write both, separated by a comma. |
 
 ### Implementation boundaries
 
 - Write up to three bullet lists, in this order, each after its own sentence: "Always do these actions:", "Ask the maintainer before these actions:", and "Never do these actions:". Omit a list that has no items, and its sentence.
 - Start each item with a verb, such as "Change the outbox schema." Start each item of the last list with "Do not", such as "Do not read another service's database."
 - Do not repeat system rules from [Behavior](#behavior).
-- Do not repeat a rule from the [constraints](../../CONSTRAINTS.md) or from another convention, such as the rule that a schema change needs a new migration file.
+- Do not repeat a rule from the [Constraints](../../CONSTRAINTS.md) or from another convention, such as the rule that a schema change needs a new migration file.
 - Do not put plan work in this section, such as a measurement to record in the plan.
 
 ### Success criteria
@@ -194,12 +194,12 @@ Status: <current state of the specification>
 - Write a numbered list. Write each item as `Given <state>, When <action>, Then <result>.`, with `Given`, `When`, and `Then` capitalized.
 - Refer to a criterion by its number, such as "criterion 2". Do not add IDs, such as `SC-01`.
 - If the list has more than 20 items, propose a split into several modules to the maintainer before approval.
-- Do not add a success criterion for the repository checks. The [constraints](../../CONSTRAINTS.md) apply to every change.
+- Do not add a success criterion for the repository checks. The [Constraints](../../CONSTRAINTS.md) apply to every change.
 
 ### Assumptions and open questions
 
 - Write one bullet for each assumption or open question.
-- Resolve or remove each item before approval, as the [status rules](#status-and-approval) state.
+- Resolve or remove each item before approval, as the [Status and approval](#status-and-approval) rules state.
 
 ## Rules
 
@@ -211,7 +211,7 @@ Status: <current state of the specification>
 ### Format and content
 
 - Use the sections through [Success criteria](#success-criteria) in the template order. Add [Assumptions and open questions](#assumptions-and-open-questions) only when the specification has an assumption or an open question.
-- Put a check that a capability must pass before Flowspace stops using disposable data in the `Before real teams` list of the [architecture](../architecture.md#observability-and-recovery), not in the specification.
+- Put a check that a capability must pass before Flowspace stops using disposable data in the `Before real teams` list in the [Observability and recovery](../architecture.md#observability-and-recovery) section of the architecture, not in the specification.
 - Put implementation locations and commands in the plan and its Issues. Repeat a project-wide rule only when it changes observable behavior or completion criteria.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a specification.
 
@@ -248,14 +248,14 @@ Status: <current state of the specification>
 
 The [`spec-driven-development` skill](../../.agents/skills/spec-driven-development/SKILL.md) gives a generic format and workflow. This convention applies where the two differ:
 
-- Keep commands, the technology stack, the project structure, and code style out of the specification. The [technology stack](../technology-stack.md), the [project structure](../project-structure.md), the code conventions, and the [constraints](../../CONSTRAINTS.md) apply to all modules, and Issue verification steps name the commands. The skill lists them in each specification.
+- Keep commands, the technology stack, the project structure, and code style out of the specification. The [Technology stack](../technology-stack.md), the [Project structure](../project-structure.md), the code conventions, and the [Constraints](../../CONSTRAINTS.md) apply to all modules, and Issue verification steps name the commands. The skill lists them in each specification.
 - Keep only the risks and their [Test levels](#test-levels) in [Testing strategy](#testing-strategy). The skill also lists the test framework, the test locations, and the coverage.
 - Save the specification as `docs/specs/<module-id>.md`. The skill saves it as `SPEC-<module-id>.md` at the project root.
 - Use the `Planned` rows of the [Specifications](../specs/README.md) index as the capability map, as the [Workflow](#workflow) rules state. The skill saves the map as a file at the project root.
 - Write each module ID as `<service-or-area>-<capability>`. The skill uses short module IDs, such as `identity`.
-- Start planning only after the approval PR merges, as the [status rules](#status-and-approval) state. The skill continues to planning after a human reviews the specification.
+- Start planning only after the approval PR merges, as the [Status and approval](#status-and-approval) rules state. The skill continues to planning after a human reviews the specification.
 - Review a change to the contract, behavior, or success criteria of an `Approved` or `Implemented` specification as a new approval. The skill updates a specification when a decision or the scope changes.
-- Check that the specification has the sections of the [template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
+- Check that the specification has the sections of the [Template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
 - Name the sections `Implementation boundaries` and `Assumptions and open questions`. Write user stories as Given, When, Then outcomes in [Success criteria](#success-criteria). The template in [Phase 1: Specify](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify) of the skill names them `## Boundaries` and `## Open Questions`. It puts user stories under `## Objective`.
 
 ## Reference

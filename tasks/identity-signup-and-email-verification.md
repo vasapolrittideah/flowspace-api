@@ -6,7 +6,7 @@ Status: Complete.
 
 ## Overview
 
-Build account signup, email verification, and recovery of an unverified address through an account claim. The [approved specification](../docs/specs/identity-signup-and-email-verification.md) defines this flow. Signup returns one session and token pair after a database commit. The account, first challenge, and email outbox record commit together. An Identity worker sends the email after an outbox relay publishes a delivery request through Redpanda. Broker or Mailpit failure delays delivery without changing a committed signup result.
+Build account signup, email verification, and recovery of an unverified address through an account claim. The [Identity signup and email verification](../docs/specs/identity-signup-and-email-verification.md) specification defines this flow. Signup returns one session and token pair after a database commit. The account, first challenge, and email outbox record commit together. An Identity worker sends the email after an outbox relay publishes a delivery request through Redpanda. Broker or Mailpit failure delays delivery without changing a committed signup result.
 
 The first clients use disposable data. Password login, refresh, logout, provider login, password reset, and real email delivery belong to other capabilities.
 

@@ -6,7 +6,7 @@ Status: Accepted
 
 ## Context
 
-[ADR-0028](0028-telemetry-is-vendor-neutral-and-correlated.md), [ADR-0029](0029-the-observability-stack-is-self-hosted.md), and [ADR-0030](0030-telemetry-is-bounded-and-non-blocking.md) set the telemetry direction but leave collection paths, storage modes, retention, and sampling open. The [architecture](../architecture.md#open-proposals) keeps these items as open proposals until an ADR accepts them.
+[ADR-0028](0028-telemetry-is-vendor-neutral-and-correlated.md), [ADR-0029](0029-the-observability-stack-is-self-hosted.md), and [ADR-0030](0030-telemetry-is-bounded-and-non-blocking.md) set the telemetry direction but leave collection paths, storage modes, retention, and sampling open. The [Open proposals](../architecture.md#open-proposals) section of the architecture keeps these items until an ADR accepts them.
 
 Identity and Workspace already write JSON logs to standard output and extract W3C trace context from HTTP requests. Identity also creates spans and carries trace context through event headers. No exporter sends these spans anywhere, so the SDK drops them. The current sampler keeps 10% of root traces, so a developer often cannot find the trace for one test request.
 

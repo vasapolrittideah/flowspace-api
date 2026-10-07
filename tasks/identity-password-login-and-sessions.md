@@ -6,7 +6,7 @@ Status: Complete.
 
 ## Overview
 
-Add password login, refresh, logout, signing-key overlap, and live session checks to the existing Identity service. The [approved specification](../docs/specs/identity-password-login-and-sessions.md) defines the behavior. Signup and account claim already issue the first session and token pair; this plan extends that shared session lifecycle.
+Add password login, refresh, logout, signing-key overlap, and live session checks to the existing Identity service. The [Identity password login and sessions](../docs/specs/identity-password-login-and-sessions.md) specification defines the behavior. Signup and account claim already issue the first session and token pair; this plan extends that shared session lifecycle.
 
 ## Architecture decisions
 

@@ -1,6 +1,6 @@
 # Branch name conventions
 
-This convention defines the name of a short-lived branch that holds one reviewable change outside `main`. The [agent instructions](../../AGENTS.md) define when to create a branch and how it reaches `main` through a pull request (PR).
+This convention defines the name of a short-lived branch that holds one reviewable change outside `main`. The [Repository instructions](../../AGENTS.md) define when to create a branch and how it reaches `main` through a pull request (PR).
 
 ## Template
 
@@ -12,7 +12,7 @@ A branch name has a type and a short description.
 
 ### Type
 
-- Use the [commit type](commit-messages.md#types) of the PR title, such as `docs` for `docs(agents): ...`.
+- Use the commit type of the PR title, from [Types](commit-messages.md#types), such as `docs` for `docs(agents): ...`.
 - Do not add the scope of the PR title.
 
 ### Short description

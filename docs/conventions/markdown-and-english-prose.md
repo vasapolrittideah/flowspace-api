@@ -48,4 +48,4 @@ This convention defines how to format Markdown and how to write English prose in
 
 The [`simple-english` skill](../../.agents/skills/simple-english/SKILL.md) sets the rules for English prose, but this convention applies where the two differ.
 
-- Use the sentence guidance in the [format rules](#format-and-content). The skill treats its sentence limits as maximums.
+- Use the sentence guidance in the [Format and content](#format-and-content) rules. The skill treats its sentence limits as maximums.

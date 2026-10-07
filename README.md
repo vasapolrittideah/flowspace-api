@@ -13,7 +13,7 @@ The project has four planned Go services in one repository:
 | Work | Projects, tasks, assignments, and comments | Planned |
 | Notifications | An in-app inbox for workspace activity | Planned |
 
-The [specification index](docs/specs/README.md) lists each module and its status. Local data is disposable. Do not put real user data in the project.
+The [Specifications](docs/specs/README.md) index lists each module and its status. Local data is disposable. Do not put real user data in the project.
 
 ## Prerequisites
 
@@ -76,7 +76,7 @@ The commands in step 4 change files under `deploy/`, because each cluster has it
 
 Press the space bar in the Tilt terminal to open the Tilt dashboard. The setup is complete when all resources are green.
 
-If you delete the cluster and create it again, the steps are different. Follow the [rebuild procedure for local session TLS](docs/identity-internal-tls.md#rebuild-with-a-new-controller-key). Before you run `tilt up` in that procedure, run `task observability:grafana-admin:setup`.
+If you delete the cluster and create it again, the steps are different. Follow the [Rebuild with a new controller key](docs/identity-internal-tls.md#rebuild-with-a-new-controller-key) procedure. Before you run `tilt up` in that procedure, run `task observability:grafana-admin:setup`.
 
 ### Local addresses
 
@@ -90,7 +90,7 @@ When Tilt runs, these addresses are available:
 | `http://localhost:8083` | Adminer for the Workspace database. Add `?local=identity` for the Identity database. |
 | `http://localhost:3000` | Grafana for logs and traces. Sign in as `admin` with the password in `.secrets/grafana-admin-password`. |
 
-To test the Identity API from start to end, follow the [Bruno smoke test instructions](tests/smoke/bruno/README.md).
+To test the Identity API from start to end, follow the [Identity Bruno smoke tests](tests/smoke/bruno/README.md) instructions.
 
 ### Optional provider login
 
@@ -127,12 +127,12 @@ To turn on GitHub login:
 - [Project structure](docs/project-structure.md) explains where files go and which packages can depend on each other.
 - [Technology stack](docs/technology-stack.md) lists the selected tools and packages.
 - [Specifications](docs/specs/README.md) define the behavior of each module.
-- [Architecture decisions](docs/adr/README.md) record the accepted decisions and their reasons.
+- [Architecture Decision Records](docs/adr/README.md) record the accepted decisions and their reasons.
 - [Agent workflow](docs/agent-workflow.md) explains how AI agents write and review changes.
 
 ## Contributing
 
-1. Read [AGENTS.md](AGENTS.md) and [CONSTRAINTS.md](CONSTRAINTS.md) before you change the project.
+1. Read [`AGENTS.md`](AGENTS.md) and [`CONSTRAINTS.md`](CONSTRAINTS.md) before you change the project.
 2. Make each change on a short-lived branch.
 3. Open a pull request, as the [Pull request](docs/conventions/pull-requests.md) convention states.
 

@@ -1,6 +1,6 @@
 # Runbook conventions
 
-This convention defines the file and format of one runbook in `docs/runbooks/`. A runbook tells a developer what an alert means and what to do when it fires. The rule title is the `title` field of the provisioned Grafana alert rule. The [alerts and runbooks specification](../specs/observability-alerts-and-runbooks.md) lists the alert rules and their runbooks.
+This convention defines the file and format of one runbook in `docs/runbooks/`. A runbook tells a developer what an alert means and what to do when it fires. The rule title is the `title` field of the provisioned Grafana alert rule. The [Observability alerts and runbooks](../specs/observability-alerts-and-runbooks.md) specification lists the alert rules and their runbooks.
 
 ## Template
 

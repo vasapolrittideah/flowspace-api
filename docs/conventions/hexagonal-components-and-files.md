@@ -1,6 +1,6 @@
 # Hexagonal component and file conventions
 
-This convention names and groups the handwritten Go components and files inside each service. The [project structure](../project-structure.md) defines their responsibilities, locations, dependency direction, and the bootstrap composition root. [ADR-0003](../adr/0003-hexagonal-layers-inside-each-service.md) explains the Go architecture. A capability is a task that the service performs. A transaction groups database changes that must commit or roll back together. A scenario test checks one capability across several production files.
+This convention names and groups the handwritten Go components and files inside each service. The [Project structure](../project-structure.md) defines their responsibilities, locations, dependency direction, and the bootstrap composition root. [ADR-0003](../adr/0003-hexagonal-layers-inside-each-service.md) explains the Go architecture. A capability is a task that the service performs. A transaction groups database changes that must commit or roll back together. A scenario test checks one capability across several production files.
 
 ## Rules
 

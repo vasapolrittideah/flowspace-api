@@ -2,7 +2,7 @@
 
 The collection creates disposable accounts against the local Identity API. It reads verification and claim codes from local Mailpit. It then tests password login, refresh-token replay, logout for one or all sessions, and password recovery. The recovery steps read the reset code and the password-change notice from Mailpit.
 
-The provider login steps start Google and GitHub logins and check the authorization URLs. They also check that wrong-route, denied, and replayed callbacks and invalid handoff proofs issue no handoff code or session. These steps need both Google and GitHub client files in `.secrets/`, as the [README](../../../README.md) explains. They do not sign in to a real provider account.
+The provider login steps start Google and GitHub logins and check the authorization URLs. They also check that wrong-route, denied, and replayed callbacks and invalid handoff proofs issue no handoff code or session. These steps need both Google and GitHub client files in `.secrets/`, as the [Flowspace API](../../../README.md) README explains. They do not sign in to a real provider account.
 
 Start these port forwards in separate terminals:
 

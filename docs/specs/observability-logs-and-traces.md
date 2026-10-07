@@ -130,7 +130,7 @@ Apply these rules in each process:
 - Write the same `trace_id` in the log line and in the span of one request.
 - Send `tracestate` in gRPC metadata and record headers only when the context has one. Identity reads the `CheckSession` metadata on its internal listener.
 - Write the request ID that Workspace forwards on the Identity `identity_session_check` line.
-- Keep the request ID rules of the [architecture](../architecture.md#observability-and-recovery). Do not replace a valid request ID with a trace ID.
+- Keep the request ID rules in the [Observability and recovery](../architecture.md#observability-and-recovery) section of the architecture. Do not replace a valid request ID with a trace ID.
 
 ### Context in the outbox
 

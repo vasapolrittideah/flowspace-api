@@ -1,6 +1,6 @@
 # Commit message conventions
 
-This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. The [agent instructions](../../AGENTS.md) define checkpoint commits and squash merges. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention. The subject line is the first line of the message, which holds the type, the scope, and the description. The main change of a commit is the change that the commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. Instrumentation is code that emits logs, metrics, or traces. A footer or a trailer is a `Key: value` line at the end of the message that Git and GitHub read, such as an Issue footer or a co-author trailer.
+This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. The [Repository instructions](../../AGENTS.md) define checkpoint commits and squash merges. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention. The subject line is the first line of the message, which holds the type, the scope, and the description. The main change of a commit is the change that the commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. Instrumentation is code that emits logs, metrics, or traces. A footer or a trailer is a `Key: value` line at the end of the message that Git and GitHub read, such as an Issue footer or a co-author trailer.
 
 ## Template
 
@@ -19,7 +19,7 @@ Co-authored-by: <co-author name> <co-author email>
 
 ### Type
 
-- Use one of the [types](#types).
+- Use one of the [Types](#types).
 - Use the type of the main change.
 - If the commit reverts an earlier commit, use `revert`.
 - If a change only edits Markdown agent instructions, conventions, skills, or commands, use `docs`. If it changes code or configuration for agents, such as a script or a hook, use the type of that change.
@@ -31,7 +31,7 @@ Co-authored-by: <co-author name> <co-author email>
 
 - Choose the scope with these steps, and stop after the first match:
   1. If the main change adds or changes instrumentation in more than one service, use `observability`.
-  2. Use the first scope in the [scope table](#scopes) whose `Paths` column covers all of the main change. A row can cover a whole path or one part of a file, such as a task in `Taskfile.yaml`.
+  2. Use the first scope in the [Scopes](#scopes) table whose `Paths` column covers all of the main change. A row can cover a whole path or one part of a file, such as a task in `Taskfile.yaml`.
   3. If no row covers all of the main change, omit the scope.
 - Read the service paths in the scope table as these paths, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service.
 - If a PR adds a service, add its scope and paths to the scope table in the same PR. A new shared package needs no new scope, because `shared` covers every package under root `internal/`.
@@ -99,7 +99,7 @@ Co-authored-by: <co-author name> <co-author email>
 The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-versioning/SKILL.md) gives a generic commit message format. This convention applies where the two differ:
 
 - Add the scope after the type when a row of the scope table covers the main change, as the [Scope](#scope) rules state. The skill writes `<type>: <description>` without a scope.
-- Use the eleven [types](#types) of this convention. The skill lists six types and has no `perf`, `build`, `ci`, `style`, or `revert` type.
+- Use the eleven [Types](#types) of this convention. The skill lists six types and has no `perf`, `build`, `ci`, `style`, or `revert` type.
 - In a checkpoint commit, explain what the step changes when the subject does not, as the [Body](#body) rules state. The skill explains only why a change was made.
 - Write a checkpoint commit for each tested step on the branch, and write a squash message for the merge of the PR. The skill advises against squashing commits.
 

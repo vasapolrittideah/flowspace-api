@@ -49,7 +49,7 @@ type APIServer struct {
 	internal       *http.Server
 	session        *grpc.Server
 	sessionAddress string
-	pool           *pgxpool.Pool
+	pool           *postgrespool.Pool
 	logger         *zap.Logger
 }
 
@@ -97,9 +97,9 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 		pool.Close()
 		return nil, errors.New("identity schema unavailable")
 	}
-	accountRepo := postgres.NewAccountRepository(pool)
-	limits := app.NewLimitService(postgres.NewLimitRepository(pool))
-	providerLogin := app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), limits.ProviderLoginStart, limits.ProviderCallback,
+	accountRepo := postgres.NewAccountRepository(pool.Pool)
+	limits := app.NewLimitService(postgres.NewLimitRepository(pool.Pool))
+	providerLogin := app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool.Pool), limits.ProviderLoginStart, limits.ProviderCallback,
 		verifierKey, providerLoginClients(ctx, config)).WithSessions(accountRepo, signer, protector, limits.ProviderSessionFailure)
 	checkPassword := hibp.NewPasswordChecker(&http.Client{Timeout: 4 * time.Second}).Compromised
 	handler := httptransport.NewIdentityHandler(
@@ -120,11 +120,11 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 			limits.AccountWrongCode, checkPassword, verifierKey)).
 		WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
 		WithProviderLogin(providerLogin).
-		WithRefreshSession(app.NewSessionRefreshService(postgres.NewSessionRefreshRepository(pool), signer)).
-		WithCurrentSessionLogout(app.NewCurrentSessionLogoutService(postgres.NewSessionRepository(pool))).
+		WithRefreshSession(app.NewSessionRefreshService(postgres.NewSessionRefreshRepository(pool.Pool), signer)).
+		WithCurrentSessionLogout(app.NewCurrentSessionLogoutService(postgres.NewSessionRepository(pool.Pool))).
 		WithAllSessionLogout(app.NewAllSessionLogoutService(accountRepo))
 	callback := httptransport.NewProviderCallbackHandler(providerLogin, trusted)
-	public, session, err := newIdentityRPCHandlers(ctx, config, pool, handler, callback, logger, trusted)
+	public, session, err := newIdentityRPCHandlers(ctx, config, pool.Pool, handler, callback, logger, trusted)
 	if err != nil {
 		pool.Close()
 		return nil, err

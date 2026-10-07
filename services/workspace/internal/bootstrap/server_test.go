@@ -32,6 +32,7 @@ import (
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
 	"github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1/workspacev1connect"
 	sharedconfig "github.com/vasapolrittideah/flowspace-api/internal/config"
+	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 	httptransport "github.com/vasapolrittideah/flowspace-api/services/workspace/internal/adapter/in/http"
 	"github.com/vasapolrittideah/flowspace-api/services/workspace/internal/domain"
@@ -66,7 +67,7 @@ func TestServerRunLogsListening(t *testing.T) {
 	server := &Server{
 		httpServer: &http.Server{Addr: "localhost:-1", ReadHeaderTimeout: serverTimeout},
 		logger:     zap.New(core),
-		pool:       pool,
+		pool:       &postgrespool.Pool{Pool: pool},
 	}
 
 	if err := server.Run(ctx); err == nil {

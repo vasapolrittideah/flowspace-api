@@ -74,7 +74,7 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 
 - Write only bullets in this section.
 - Put the rules for the file, location, numbering, and life cycle of the artifact here. Also put the rules that cover more than one part here.
-- Include exactly one bullet that states how existing artifacts follow a change to the convention. Choose one of these approaches: update every existing artifact in the same PR, or apply the change only to new artifacts and to artifacts that a later PR changes. Put the bullet under `Changes` when the section has `###` headings. Other bullets under `Changes` can cover changes to an artifact after it exists.
+- Include exactly one bullet that states how existing artifacts follow a change to the convention. Choose one of these approaches: update every existing artifact in the same PR, or apply the change only to new artifacts and to artifacts that a later PR changes. Put the bullet under [Changes](#changes) when the section has `###` headings. Other bullets under [Changes](#changes) can cover changes to an artifact after it exists.
 - If the section has more than five bullets, group them under `###` headings. Use only these headings, in this order, and omit a heading that has no bullets:
   1. `Naming and location` for the name, number, and location of the artifact.
   2. `Format and content` for the sections and fields of the artifact and the rules that cover several parts.
@@ -89,7 +89,7 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 
 ### Special cases
 
-- If a procedure or format applies only to some artifacts of the kind, such as the [final Prove task PR](pull-requests.md#final-prove-task-pr) in the pull request convention, add one section for that situation. Put a procedure that applies to every artifact of the kind under `Workflow` in the Rules section.
+- If a procedure or format applies only to some artifacts of the kind, such as the [Final Prove task PR](pull-requests.md#final-prove-task-pr) in the pull request convention, add one section for that situation. Put a procedure that applies to every artifact of the kind under [Workflow](#workflow) in the [Rules section](#rules-section).
 - Name the situation in the heading as a noun phrase.
 - Start with paragraphs that state when the situation applies and the procedure to follow.
 - If rules apply to the whole situation, write them as bullets after the paragraphs.

@@ -4,7 +4,7 @@ This convention defines the file, the format, and the status of one module plan 
 
 ## Template
 
-A plan has a title, a module ID, a status line, `Overview`, `Architecture decisions`, `Dependency graph`, `Task list`, and `Risks and controls`.
+A plan has a title, a module ID, a status line, [Overview](#overview), [Architecture decisions](#architecture-decisions), [Dependency graph](#dependency-graph), [Task list](#task-list), and [Risks and controls](#risks-and-controls).
 
 ````markdown
 # Implementation plan: <capability name>
@@ -137,5 +137,5 @@ The [`planning-and-task-breakdown` skill](../../.agents/skills/planning-and-task
 
 - Save each plan as `tasks/<module-id>.md`, so a new plan does not replace the plan of another module. The skill saves one plan as `tasks/plan.md`.
 - Hold the tasks in GitHub Issues and their status in the GitHub Project, and keep only Issue drafts in `tasks/.todo.md`. The skill keeps the task list in `tasks/todo.md`.
-- Record task dependencies as native `Blocked by` relationships, and show the order of work in `Dependency graph`. The skill lists the dependencies of each task in the task.
+- Record task dependencies as native `Blocked by` relationships, and show the order of work in [Dependency graph](#dependency-graph). The skill lists the dependencies of each task in the task.
 - Omit an `Open Questions` section, because the specification resolves its open questions before approval. The skill adds one.

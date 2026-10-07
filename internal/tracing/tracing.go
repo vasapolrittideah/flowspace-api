@@ -57,10 +57,7 @@ func newExporter(ctx context.Context) sdktrace.SpanExporter {
 
 func newProvider(exporter sdktrace.SpanExporter, service, environment string) *sdktrace.TracerProvider {
 	options := []sdktrace.TracerProviderOption{
-		sdktrace.WithResource(resource.NewSchemaless(
-			semconv.ServiceName(service),
-			semconv.DeploymentEnvironmentNameKey.String(environment),
-		)),
+		sdktrace.WithResource(Resource(service, environment)),
 	}
 	if exporter != nil {
 		// The batch processor drops new spans when its queue is full, so a
@@ -71,6 +68,14 @@ func newProvider(exporter sdktrace.SpanExporter, service, environment string) *s
 		))
 	}
 	return sdktrace.NewTracerProvider(options...)
+}
+
+// Resource identifies a Flowspace process in its spans and metrics.
+func Resource(service, environment string) *resource.Resource {
+	return resource.NewSchemaless(
+		semconv.ServiceName(service),
+		semconv.DeploymentEnvironmentNameKey.String(environment),
+	)
 }
 
 // flush drops the spans that it cannot export before the timeout.

@@ -1,6 +1,6 @@
 # GitHub Issue conventions
 
-This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes. A module is one capability that the [module specification convention](module-specs.md) defines, and a module plan lists the tasks of one module, as the [module plan convention](module-plans.md) defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
+This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes. A module is one capability that the [module specification](module-specs.md) convention defines, and a module plan lists the tasks of one module, as the [module plan](module-plans.md) convention defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
 
 ## Template
 

@@ -256,7 +256,7 @@ The [`spec-driven-development` skill](../../.agents/skills/spec-driven-developme
 - Start planning only after the approval PR merges, as the [status rules](#status-and-approval) state. The skill continues to planning after a human reviews the specification.
 - Review a change to the contract, behavior, or success criteria of an `Approved` or `Implemented` specification as a new approval. The skill updates a specification when a decision or the scope changes.
 - Check that the specification has the sections of the [template](#template). Do not add a section to pass the check of the skill, which looks for its six core areas.
-- Name the sections `Implementation boundaries` and `Assumptions and open questions`. Write user stories as Given, When, Then outcomes in [Success criteria](#success-criteria). The skill names the sections [Boundaries and Open Questions](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify) and puts user stories in its [Objective section](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify).
+- Name the sections `Implementation boundaries` and `Assumptions and open questions`. Write user stories as Given, When, Then outcomes in [Success criteria](#success-criteria). The template in [Phase 1: Specify](../../.agents/skills/spec-driven-development/SKILL.md#phase-1-specify) of the skill names them `Boundaries` and `Open Questions`, and puts user stories in its Objective section.
 
 ## Reference
 

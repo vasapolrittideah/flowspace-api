@@ -6,7 +6,7 @@ Status: Complete.
 
 ## Overview
 
-Add a public recovery-code request and a password reset for an existing verified password account. The [approved specification](../docs/specs/identity-password-recovery.md) defines eligibility, limits, atomic revocation, delivery, and failure behavior. The first clients use API requests and disposable data.
+Add a public recovery-code request and a password reset for an existing verified password account. The [Identity password recovery](../docs/specs/identity-password-recovery.md) specification defines eligibility, limits, atomic revocation, delivery, and failure behavior. The first clients use API requests and disposable data.
 
 ## Architecture decisions
 

@@ -12,7 +12,7 @@ Identity defines one counter for session checks, but no meter provider exports i
 
 The local-path provisioner in k3d creates `local` persistent volumes on the host filesystem. The kubelet reports their usage, but the provisioner does not enforce the requested size. Each volume reports the usage of the whole host filesystem.
 
-[ADR-0037](0037-local-logs-and-traces-use-disposable-single-host-stores.md) decides local logs and traces and leaves metric collection open. The [architecture](../architecture.md#open-proposals) lists it as an open proposal.
+[ADR-0037](0037-local-logs-and-traces-use-disposable-single-host-stores.md) decides local logs and traces and leaves metric collection open. The [Open proposals](../architecture.md#open-proposals) section of the architecture lists it.
 
 ## Decision
 

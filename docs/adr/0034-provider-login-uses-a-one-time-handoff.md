@@ -42,4 +42,4 @@ The provider callback is a small HTTP adapter. It accepts the provider response,
 
 - API-client users copy a short-lived code from the callback page. A later web client needs its own reviewed token-handling design.
 - A lost response can leave an attempt or session that the client did not observe. Attempts expire, while sessions follow the normal expiry and logout rules.
-- The [provider-login spec](../specs/identity-provider-login.md) defines expiry, proof checks, email handling, limits, and tests for this handoff.
+- The [Identity provider login](../specs/identity-provider-login.md) specification defines expiry, proof checks, email handling, limits, and tests for this handoff.

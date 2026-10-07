@@ -32,7 +32,7 @@ Flowspace does not use orchestrator-workers to write a change. The main differen
 
 If workers write code, they can also change the same files at the same time. This risk applies to coding tasks, and the article does not use it to define the pattern.
 
-Flowspace keeps one author agent for each change, because each PR holds one reviewable change. Independent tasks can still run at the same time. In that case, each task uses its own author agent, its own branch, and its own worktree, as the [agent instructions](../AGENTS.md#git-workflow) state. Each task then goes through the same review loop.
+Flowspace keeps one author agent for each change, because each PR holds one reviewable change. Independent tasks can still run at the same time. In that case, each task uses its own author agent, its own branch, and its own worktree, as the [Git workflow](../AGENTS.md#git-workflow) section of the repository instructions states. Each task then goes through the same review loop.
 
 ## Agents and files
 

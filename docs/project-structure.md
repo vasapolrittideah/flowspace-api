@@ -4,7 +4,7 @@ Status: accepted direction with implementation details still open.
 
 Updated: 2026-09-23.
 
-This document defines where backend code belongs and which dependency directions are allowed. It applies the service boundaries from the [architecture](architecture.md), the repository layout from [ADR-0002](adr/0002-one-repository-and-one-go-module.md), and the tools in the [technology stack](technology-stack.md).
+This document defines where backend code belongs and which dependency directions are allowed. It applies the service boundaries from the [Architecture](architecture.md), the repository layout from [ADR-0002](adr/0002-one-repository-and-one-go-module.md), and the tools in the [Technology stack](technology-stack.md).
 
 ## Principles
 

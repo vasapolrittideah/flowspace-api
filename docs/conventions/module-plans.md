@@ -57,7 +57,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Status line
 
-- Write `Draft`, `Approved`, or `Complete`, without a final period, as the [status rules](#status-and-approval) state.
+- Write `Draft`, `Approved`, or `Complete`, without a final period, as the [Status and approval](#status-and-approval) rules state.
 
 ### Overview
 
@@ -116,8 +116,8 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Workflow
 
 - Write a plan only for a specification with the `Approved` status.
-- Write the plan with the `Draft` status, and write each task as an Issue draft in `tasks/.todo.md` with the [Issue template](github-issues.md#template). Show the plan and the drafts to the maintainer in the chat.
-- When the maintainer agrees with the plan in the chat, create or reuse the milestone of the plan, as the [milestone rules](github-milestones.md) state. Then create one Issue from each draft, as the Issue convention states. This agreement does not approve the plan.
+- Write the plan with the `Draft` status, and write each task as an Issue draft in `tasks/.todo.md` with the [Template](github-issues.md#template). Show the plan and the drafts to the maintainer in the chat.
+- When the maintainer agrees with the plan in the chat, create or reuse the milestone of the plan, as the [GitHub milestone](github-milestones.md) conventions state. Then create one Issue from each draft, as the Issue convention states. This agreement does not approve the plan.
 - After every Issue appears in the GitHub Project with the `Todo` status and in the milestone, replace each task title with its Issue link, add the fixed sentence of the task list, delete `tasks/.todo.md`, and change the status to `Approved`.
 - Open one PR with the approved plan and the title `docs(<scope, if any>): approve <capability> plan`. Write the capability name in lowercase, except for names and abbreviations.
 

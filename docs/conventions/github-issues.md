@@ -77,7 +77,7 @@ Module ID: `<module ID, if any>`
 
 - Write one Issue for each task.
 - Before you create an Issue for a module plan, compare its title, body, and planned blockers with the approved specification and the module plan.
-- After you create an Issue, apply the [Issue labels](github-labels.md), and add the Issue to the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) with the `Todo` status.
+- After you create an Issue, apply the labels that the [GitHub label](github-labels.md) conventions state, and add the Issue to the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) with the `Todo` status.
 - When you start a task, set the Project status of its Issue to `In Progress`. After the Issue closes, make sure that its status is `Done`.
 - Before you tell the maintainer that the PR is ready, or that it cannot become ready, check each passed item in [Acceptance criteria](#acceptance-criteria) and [Verification](#verification). Leave each gap unchecked.
 - If an ordinary task has a gap, let its PR close the Issue. The PR states the gap in [Risks or limitations](pull-requests.md#risks-or-limitations) and the remaining work in [Follow-up tasks](pull-requests.md#follow-up-tasks). A gap in the final Prove task keeps the Issue open, as the [Final Prove task](#final-prove-task) rules state.
@@ -86,7 +86,7 @@ Module ID: `<module ID, if any>`
 ### Links and tracking
 
 - Record each blocking Issue as one native GitHub `Blocked by` relationship. Use these relationships as the dependency list, and do not list blocking Issues in the body.
-- If the Issue belongs to a module plan, assign the milestone of the plan, as the [milestone rules](github-milestones.md) state.
+- If the Issue belongs to a module plan, assign the milestone of the plan, as the [GitHub milestone](github-milestones.md) conventions state.
 
 ### Changes
 
@@ -95,7 +95,7 @@ Module ID: `<module ID, if any>`
 
 ## Final Prove task
 
-The final Prove task checks the approved specification through tests and review. Its Issue uses the [Issue template](#template), and its PR records the evidence that CI does not keep, as the [Prove task PR rules](pull-requests.md#final-prove-task-pr) state.
+The final Prove task checks the approved specification through tests and review. Its Issue uses the [Template](#template), and its PR records the evidence that CI does not keep, as the [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state.
 
 - Title the Issue `Prove <capability> against its specification`, with the capability name from the title of the specification.
 - In [Description](#description), name the final test scope and each cross-service check that another Issue owns. Link to that Issue instead of repeating its work.
@@ -105,14 +105,14 @@ The final Prove task checks the approved specification through tests and review.
 - In [Verification](#verification), add one item for each integration, smoke, contract, and generation check that applies to the module.
 - In [Files likely touched](#files-likely-touched), include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and the likely test paths.
 - When every item passes, mark the specification `Implemented` and the plan `Complete` in the PR of the task.
-- If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Prove task PR rules](pull-requests.md#final-prove-task-pr) state how the PR refers to the Issue.
+- If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state how the PR refers to the Issue.
 
 ## Differences from the planning-and-task-breakdown skill
 
 The [`planning-and-task-breakdown` skill](../../.agents/skills/planning-and-task-breakdown/SKILL.md) gives each task a structure for a task list or a tracker. This convention applies where the two differ:
 
-- Write the task as a GitHub Issue with the [Issue template](#template). The skill writes `Description`, `Acceptance criteria`, and other fields as bold labels in a `## Task` section.
-- Record dependencies as native `Blocked by` relationships, as the [link rules](#links-and-tracking) state. The skill lists them in a `Dependencies` field.
+- Write the task as a GitHub Issue with the [Template](#template). The skill writes `Description`, `Acceptance criteria`, and other fields as bold labels in a `## Task` section.
+- Record dependencies as native `Blocked by` relationships, as the [Links and tracking](#links-and-tracking) rules state. The skill lists them in a `Dependencies` field.
 - Omit an estimated scope. The skill sizes each task by its number of files.
 - End [Verification](#verification) with the fixed items in the [Verification](#verification) rules. The skill uses `Tests pass`, `Build succeeds`, and `Manual check` labels.
 

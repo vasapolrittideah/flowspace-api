@@ -8,7 +8,7 @@ Status: Approved
 
 Tell developers who run Flowspace in the `local` cluster when users or event delivery feel a failure, and tell them what to do next. Grafana evaluates eight alert rules against Prometheus and sends each notification as an email to Mailpit. Each rule links to one runbook in `docs/runbooks/`.
 
-The plan follows [the approved specification](../docs/specs/observability-alerts-and-runbooks.md). This module depends on [Observability metrics and dashboards](observability-metrics-and-dashboards.md), because the rules read its metrics and the runbooks start from its dashboards. It also uses the Grafana that [Observability logs and traces](observability-logs-and-traces.md) adds. Each task that needs that work is blocked by the Issue that delivers it.
+The plan follows the approved [Observability alerts and runbooks](../docs/specs/observability-alerts-and-runbooks.md) specification. This module depends on [Observability metrics and dashboards](observability-metrics-and-dashboards.md), because the rules read its metrics and the runbooks start from its dashboards. It also uses the Grafana that [Observability logs and traces](observability-logs-and-traces.md) adds. Each task that needs that work is blocked by the Issue that delivers it.
 
 ## Architecture decisions
 

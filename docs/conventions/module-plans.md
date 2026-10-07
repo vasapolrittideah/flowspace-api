@@ -62,7 +62,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 ### Overview
 
 - Write the overview as paragraphs. Start with the outcome of the module.
-- Include the sentence "The plan follows the approved specification.", and link "the approved specification" to the specification file.
+- Include the sentence `The plan follows the approved <capability name> specification.`, and link the capability name to the specification file.
 
 ### Architecture decisions
 

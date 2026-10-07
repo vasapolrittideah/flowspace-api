@@ -30,7 +30,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ### Title
 
-- Use only the [subject line format](commit-messages.md#template) of a commit message, with the same [types](commit-messages.md#types) and [scopes](commit-messages.md#scopes).
+- Use only the subject line of the commit message [Template](commit-messages.md#template), with the same [Types](commit-messages.md#types) and [Scopes](commit-messages.md#scopes).
 - Describe the result, not the branch or the changed files.
 - Do not include a body or footer.
 
@@ -70,7 +70,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - If the work has an open Issue, write `- #<issue-number>: <remaining work>.` If the work has no open Issue, write `- <remaining work>.`, such as `- Rename the hexagonal convention file.`
 - Write the remaining work as one sentence that names the work. GitHub shows only the number of an Issue, so the sentence must name the work.
 - Put the bullets with an Issue first, in ascending Issue number. Then put the bullets without an Issue.
-- Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [Issue convention](github-issues.md) states. If the maintainer does not approve it, or the session has no chat, write the work without an Issue number.
+- Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [GitHub Issue](github-issues.md) convention states. If the maintainer does not approve it, or the session has no chat, write the work without an Issue number.
 - If the PR leaves no work for later, write `n/a`.
 - Do not put `Closes`, `Fixes`, or `Resolves` before the Issue number. GitHub would close the Issue when the PR merges.
 
@@ -84,7 +84,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ### Workflow
 
-- Follow the [agent instructions](../../AGENTS.md) for the branch, the PR, and merge authority.
+- Follow the [Repository instructions](../../AGENTS.md) for the branch, the PR, and merge authority.
 - Keep changes that belong to another task out of your commits, and keep them in the working tree. Inspect the staged diff before each commit, and exclude unrelated changes, secrets, local environment files, and unwanted build output.
 - For a behavior fix, add a focused regression test.
 - For a contract or generator change, run `task buf -- lint`, `task buf -- breaking`, and `task buf -- generate` for Protobuf, or `task sqlc -- generate` for SQL. Commit the generated output with the source change. The `Contract checks` CI job checks the same results again.
@@ -107,7 +107,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ### Links and tracking
 
-- Follow the [label rules](github-labels.md).
+- Follow the [GitHub label](github-labels.md) conventions.
 - Do not set an assignee or a reviewer, and do not add the PR to a GitHub Project.
 
 ### Changes
@@ -151,7 +151,7 @@ The evidence has a local checks table.
 
 The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-versioning/SKILL.md) gives a change summary for review. This convention applies where the two differ:
 
-- Write the description in the sections of the [template](#template), and state the result before the changes. The skill writes a summary with `CHANGES MADE`, `THINGS I DIDN'T TOUCH`, and `POTENTIAL CONCERNS`.
+- Write the description in the sections of the [Template](#template), and state the result before the changes. The skill writes a summary with `CHANGES MADE`, `THINGS I DIDN'T TOUCH`, and `POTENTIAL CONCERNS`.
 - Do not list every changed file, as the [What changed](#what-changed) rules state. The skill names each changed file.
 
 ## Examples

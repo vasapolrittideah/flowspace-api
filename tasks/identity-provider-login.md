@@ -6,7 +6,7 @@ Status: Complete.
 
 ## Overview
 
-Add Google and GitHub login for API clients using the one-time browser handoff in the [approved specification](../docs/specs/identity-provider-login.md). Identity creates a session for a known provider link or creates a provider-only account when a new provider identity has an unused verified email. The first release uses disposable data.
+Add Google and GitHub login for API clients using the one-time browser handoff in the [Identity provider login](../docs/specs/identity-provider-login.md) specification. Identity creates a session for a known provider link or creates a provider-only account when a new provider identity has an unused verified email. The first release uses disposable data.
 
 ## Architecture decisions
 

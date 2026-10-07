@@ -16,7 +16,7 @@ The first clients use disposable data. Before real users join, Identity will sup
 
 Identity enforces the documented email uniqueness rule in one database transaction. If a client repeats `CreateAccount` after a lost response, the retry creates an account if the first attempt did not commit. If the first attempt committed, the retry returns `AlreadyExists` without tokens. The user recovers the session through password login after that capability exists. Until login exists, this failure case is limited to disposable data.
 
-If an email owner does not know the password of a pending unverified account, Identity offers a separate email-code claim. A valid claim creates a new subject and verified account, revokes the old account's sessions, and issues one new session. A lost claim response is also recovered through password login. The [signup and email verification spec](../specs/identity-signup-and-email-verification.md) defines the public contract and limits.
+If an email owner does not know the password of a pending unverified account, Identity offers a separate email-code claim. A valid claim creates a new subject and verified account, revokes the old account's sessions, and issues one new session. A lost claim response is also recovered through password login. The [Identity signup and email verification](../specs/identity-signup-and-email-verification.md) specification defines the public contract and limits.
 
 ## Alternatives Considered
 

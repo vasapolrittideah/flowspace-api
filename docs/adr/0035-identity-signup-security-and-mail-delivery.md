@@ -6,7 +6,7 @@ Status: Accepted
 
 ## Context
 
-[ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) requires signed access tokens and live session checks. The [session specification](../specs/identity-password-login-and-sessions.md) fixes a ten-minute access-token lifetime, a 30-day idle session limit, and a 90-day absolute session limit, but leaves signing details open. The [signup specification](../specs/identity-signup-and-email-verification.md) fixes password and code limits but leaves the blocklist source, source-address trust, and queued-code protection open.
+[ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) requires signed access tokens and live session checks. The [Identity password login and sessions](../specs/identity-password-login-and-sessions.md) specification fixes a ten-minute access-token lifetime, a 30-day idle session limit, and a 90-day absolute session limit, but leaves signing details open. The [Identity signup and email verification](../specs/identity-signup-and-email-verification.md) specification fixes password and code limits but leaves the blocklist source, source-address trust, and queued-code protection open.
 
 Signup must commit a code delivery request with the account. A retry may run after the worker sends mail but before it records success. The broker must not become another store for codes or email addresses.
 

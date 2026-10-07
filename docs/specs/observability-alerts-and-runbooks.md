@@ -57,7 +57,7 @@ An error status is an HTTP 5xx status or a gRPC code that `observability-logs-an
 | --- | --- |
 | `summary` | One sentence with the rule title and the value that fired it, such as the error percentage |
 | `runbook_url` | The GitHub URL of the runbook on `main` |
-| `dashboard_url` | The full Grafana URL of the dashboard that shows the symptom, `http://localhost:3000/d/<dashboard UID>`, with a UID from the [dashboards](observability-metrics-and-dashboards.md#dashboards) of `observability-metrics-and-dashboards`, such as `http://localhost:3000/d/flowspace-service-health` |
+| `dashboard_url` | The full Grafana URL of the dashboard that shows the symptom, `http://localhost:3000/d/<dashboard UID>`, with a UID from the [Dashboards](observability-metrics-and-dashboards.md#dashboards) section of `observability-metrics-and-dashboards`, such as `http://localhost:3000/d/flowspace-service-health` |
 
 The Grafana root URL `http://localhost:3000` is the local address of the Grafana port forward.
 

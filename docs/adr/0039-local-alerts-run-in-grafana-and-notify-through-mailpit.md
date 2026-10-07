@@ -10,7 +10,7 @@ Developers see failures in the dashboards only while they look at them. The proj
 
 [ADR-0038](0038-local-metrics-reach-a-single-host-prometheus-through-alloy.md) stores local metrics in Prometheus, and [ADR-0037](0037-local-logs-and-traces-use-disposable-single-host-stores.md) runs Grafana without a persistent volume. Mailpit already captures Identity email in the `local` cluster, and only `identity-worker` can connect to its SMTP port. The `local` environment has no on-call person, no paging service, and no budget for one.
 
-ADR-0037 and ADR-0038 leave alert routing open, and the [architecture](../architecture.md#open-proposals) lists it as an open proposal.
+ADR-0037 and ADR-0038 leave alert routing open, and the [Open proposals](../architecture.md#open-proposals) section of the architecture lists it.
 
 ## Decision
 

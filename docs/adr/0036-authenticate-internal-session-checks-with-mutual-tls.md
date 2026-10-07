@@ -6,7 +6,7 @@ Status: Accepted
 
 ## Context
 
-[ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) requires each protected service to ask Identity for live session state on every protected request. The [session specification](../specs/identity-password-login-and-sessions.md) requires an authenticated caller for `CheckSession` but leaves the method open. A public client must not call this method with a subject and session ID of its choice.
+[ADR-0031](0031-flowspace-owns-authentication-and-revocable-sessions.md) requires each protected service to ask Identity for live session state on every protected request. The [Identity password login and sessions](../specs/identity-password-login-and-sessions.md) specification requires an authenticated caller for `CheckSession` but leaves the method open. A public client must not call this method with a subject and session ID of its choice.
 
 Identity now serves public gRPC on port 8080. Its separate internal listener serves health checks and public signing keys on port 8081 without TLS. Kubernetes NetworkPolicy can restrict connections, but it does not authenticate callers or encrypt traffic. The first release has no service mesh or certificate service.
 

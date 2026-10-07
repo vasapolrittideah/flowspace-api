@@ -41,8 +41,8 @@ const body = (sections = {}) =>
 
 test('reads every type and scope from the commit message convention', () => {
   assert.equal(rules.types.size, 11);
-  assert.equal(rules.scopes.size, 19);
-  assert.deepEqual([...rules.sharedScopes].sort(), ['authn', 'config', 'logging', 'postgrespool', 'requestid', 'tracing']);
+  assert.equal(rules.scopes.size, 13);
+  assert.ok(rules.scopes.has('shared'));
   assert.ok(rules.labels.has('area:shared'));
 });
 
@@ -72,6 +72,7 @@ test('rejects malformed subjects', () => {
   const findings = (subject) => checkSubject(subject, rules).findings;
   assert.equal(findings('feature(identity): add login').length, 1);
   assert.equal(findings('feat(identity,workspace): add login').length, 1);
+  assert.deepEqual(findings('fix(authn): reject expired tokens'), ['scope "authn" is not in the scope table']);
   assert.equal(findings('feat(): add login').length, 1);
   assert.equal(findings('feat(identity) add login').length, 1);
   assert.equal(findings('feat(identity): Add login').length, 1);
@@ -155,7 +156,7 @@ test('rejects message structure, footer, and trailer errors', () => {
 test('checks labels against the title', () => {
   const labels = (list, title, migration = false) => checkLabels(list, checkSubject(title, rules), rules, { migration });
   assert.deepEqual(labels(['type:feat', 'area:identity'], 'feat(identity): add login'), []);
-  assert.deepEqual(labels(['type:fix', 'area:shared'], 'fix(authn): reject expired tokens'), []);
+  assert.deepEqual(labels(['type:fix', 'area:shared'], 'fix(shared): reject expired tokens'), []);
   assert.deepEqual(labels(['type:refactor', 'area:shared'], 'refactor(shared): move clocks'), []);
   assert.deepEqual(labels(['type:ci'], 'ci: add checks'), []);
   assert.deepEqual(labels(['type:ci', 'area:infra', 'area:agents'], 'ci: add checks'), []);
@@ -168,7 +169,7 @@ test('checks labels against the title', () => {
   assert.deepEqual(labels(['type:fix', 'area:identity'], 'feat(identity): add login'), ['apply exactly one type label, type:feat']);
   assert.deepEqual(labels(['type:feat'], 'feat(identity): add login'), ['apply only the area label area:identity']);
   assert.deepEqual(labels(['type:feat', 'area:identity', 'area:infra'], 'feat(identity): add login'), ['apply only the area label area:identity']);
-  assert.deepEqual(labels(['type:fix', 'area:authn'], 'fix(authn): reject expired tokens'), [
+  assert.deepEqual(labels(['type:fix', 'area:authn'], 'fix(shared): reject expired tokens'), [
     'label "area:authn" is not in .github/labels.json',
     'apply only the area label area:shared',
   ]);

@@ -31,11 +31,10 @@ Co-authored-by: <co-author name> <co-author email>
 
 - Choose the scope with these steps, and stop after the first match:
   1. If the main change adds or changes instrumentation in more than one service, use `observability`.
-  2. If the main change has files in more than one shared package under root `internal/`, use `shared`.
-  3. Use the first scope in the [scope table](#scopes) whose `Paths` column covers all of the main change. A row can cover a whole path or one part of a file, such as a task in `Taskfile.yaml`.
-  4. If no row covers all of the main change, omit the scope.
+  2. Use the first scope in the [scope table](#scopes) whose `Paths` column covers all of the main change. A row can cover a whole path or one part of a file, such as a task in `Taskfile.yaml`.
+  3. If no row covers all of the main change, omit the scope.
 - Read the service paths in the scope table as these paths, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service.
-- If a PR adds a service or a shared package, add its scope and paths to the scope table in the same PR.
+- If a PR adds a service, add its scope and paths to the scope table in the same PR. A new shared package needs no new scope, because `shared` covers every package under root `internal/`.
 - Do not combine scope names.
 
 ### Description
@@ -134,13 +133,7 @@ The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-
 | `work` | Projects, tasks, assignments, status transitions, comments, activity history, and the event outbox | The service paths for `work` |
 | `notifications` | In-app notification inbox, read state, and event deduplication | The service paths for `notifications` |
 | `observability` | Telemetry stack, dashboards, alert rules, and observability specifications, plans, and runbooks | `docs/specs/observability-*`, `tasks/observability-*`, `docs/runbooks/`, and the configuration of the telemetry stack under `deploy/` |
-| `authn` | Shared access token and live session verification | `internal/authn/` |
-| `config` | Shared environment configuration | `internal/config/` |
-| `logging` | Shared structured logging | `internal/logging/` |
-| `postgrespool` | Shared PostgreSQL startup connections | `internal/postgrespool/` |
-| `requestid` | Shared request ID validation and generation | `internal/requestid/` |
-| `tracing` | Shared span export and trace context propagation | `internal/tracing/` |
-| `shared` | Changes spanning several shared Go packages | Several packages under `internal/` |
+| `shared` | Shared technical Go packages | `internal/` |
 | `infra` | Infrastructure and deployment configuration | `deploy/`, `Tiltfile`, and the `cluster:*` tasks in `Taskfile.yaml` |
 | `deps` | Dependency updates | `go.mod`, `go.sum`, `renovate.json` |
 

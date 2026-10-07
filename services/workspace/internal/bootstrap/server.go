@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -39,7 +38,7 @@ const (
 type Server struct {
 	httpServer *http.Server
 	logger     *zap.Logger
-	pool       *pgxpool.Pool
+	pool       *postgrespool.Pool
 	verifier   *identity.TokenVerifier
 }
 
@@ -75,7 +74,7 @@ func NewServer(ctx context.Context, config Config, logger *zap.Logger) (*Server,
 			_ = verifier.Close()
 		}
 	}()
-	workspaceRepository := postgres.NewWorkspaceRepository(pool)
+	workspaceRepository := postgres.NewWorkspaceRepository(pool.Pool)
 	workspaceService := app.NewWorkspaceService(workspaceRepository)
 	handler, err := newHandler(ctx, httptransport.NewWorkspaceHandler(workspaceService, verifier, logger))
 	if err != nil {

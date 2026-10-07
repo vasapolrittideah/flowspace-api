@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
@@ -23,7 +22,7 @@ import (
 )
 
 type Worker struct {
-	pool     *pgxpool.Pool
+	pool     *postgrespool.Pool
 	producer *kgo.Client
 	consumer *inboundevent.EmailWorker
 	relay    *outboundevent.OutboxRelay
@@ -77,7 +76,7 @@ func NewWorker(ctx context.Context, config WorkerConfig, logger *zap.Logger) (*W
 		return nil, errors.New("schema registry unavailable")
 	}
 	consumer, err := inboundevent.NewEmailWorker(config.BrokerAddress, config.DeliveryTopic, config.DeliveryGroup,
-		postgres.NewDeliveryRepository(pool), opener, sender, logger, brokerOptions[1:]...)
+		postgres.NewDeliveryRepository(pool.Pool), opener, sender, logger, brokerOptions[1:]...)
 	if err != nil {
 		producer.Close()
 		pool.Close()
@@ -96,7 +95,7 @@ func NewWorker(ctx context.Context, config WorkerConfig, logger *zap.Logger) (*W
 	})
 	return &Worker{
 		pool: pool, producer: producer, consumer: consumer,
-		relay: outboundevent.NewOutboxRelay(postgres.NewOutboxRepository(pool), publisher.Publish, rand.Text(), logger),
+		relay: outboundevent.NewOutboxRelay(postgres.NewOutboxRepository(pool.Pool), publisher.Publish, rand.Text(), logger),
 		group: config.DeliveryGroup, health: newHTTPServer(config.HealthAddress, health), logger: logger,
 	}, nil
 }
@@ -106,7 +105,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	defer w.producer.Close()
 	defer w.consumer.Close()
 	cleanupCtx, cleanupCancel := context.WithTimeout(ctx, requestTimeout)
-	err := postgres.NewDeliveryRepository(w.pool).PurgeTerminal(cleanupCtx)
+	err := postgres.NewDeliveryRepository(w.pool.Pool).PurgeTerminal(cleanupCtx)
 	cleanupCancel()
 	if err != nil {
 		return errors.New("delivery cleanup failed")
@@ -184,7 +183,7 @@ func (w *Worker) runEmail(ctx context.Context) {
 func (w *Worker) purgeProviderAttempts(ctx context.Context) {
 	purgeCtx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
-	if err := postgres.NewProviderAttemptRepository(w.pool).PurgeExpired(purgeCtx); err != nil {
+	if err := postgres.NewProviderAttemptRepository(w.pool.Pool).PurgeExpired(purgeCtx); err != nil {
 		w.logger.Warn("provider_attempt_purge_failed")
 	}
 }

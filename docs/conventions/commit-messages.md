@@ -61,6 +61,7 @@ Co-authored-by: <co-author name> <co-author email>
 - In a squash commit, take the content of the body from the final `What changed` and `Why` sections of the PR. Make sure that the final diff supports each sentence.
 - Do not split URLs, code, or trailers. A line that holds one of them can be longer than 72 characters.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
+- Do not refer to the commit, the writer, or the time of writing, such as "This commit adds", "I", "we", "now", or "currently". State each change directly. The `This reverts commit <full SHA>.` line of a revert commit is an exception.
 - In a squash commit, do not copy the whole PR description, because the subject links the PR.
 - In a squash commit, do not include verification details, lists of added tests, or specification or plan status changes.
 - In a squash commit, do not copy text that only reviewers need, such as merge order, review notes, checks that did not run, or follow-up tasks.

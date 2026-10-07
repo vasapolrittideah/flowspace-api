@@ -58,7 +58,7 @@ Co-authored-by: <co-author name> <co-author email>
   1. If the main change only adds a document or changes its status, omit the body. Examples include a specification, plan, or ADR. The document on `main` holds its content.
   2. If the main change edits an existing rule in a document, write only the reason or trade-off. Include only what the changed files do not state. If the files state the reason, omit the body.
   3. Describe the lasting effects on `main` that the subject and the diff do not state: changed behavior, compatibility or migration effects, and important decisions or trade-offs. If there are none, omit the body.
-- In a squash commit, take the content of the body from the final `What changed` and `Why` sections of the PR. Make sure that the final diff supports each sentence.
+- In a squash commit, take the content of the body from the final [What changed](pull-requests.md#what-changed) and [Why](pull-requests.md#why) sections of the PR. Make sure that the final diff supports each sentence.
 - Do not split URLs, code, or trailers. A line that holds one of them can be longer than 72 characters.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
 - Do not refer to the commit, the writer, or the time of writing, such as "This commit adds", "I", "we", "now", or "currently". State each change directly. The `This reverts commit <full SHA>.` line of a revert commit is an exception.
@@ -73,10 +73,10 @@ Co-authored-by: <co-author name> <co-author email>
 - Put `Closes` footers before `Refs` footers, and order each group by ascending Issue number.
 - Use `Closes` only in a squash commit. GitHub closes the Issue when the commit reaches `main`.
 - If a checkpoint commit belongs to an Issue, add a `Refs` footer for it.
-- In a squash commit, copy the PR's `Related issues` as footers: `Closes` for each Issue it completes and `Refs` for each Issue that stays open.
+- In a squash commit, copy the PR's [Related issues](pull-requests.md#related-issues) as footers: `Closes` for each Issue it completes and `Refs` for each Issue that stays open.
 - In the squash commit of a PR whose main change is a module plan, omit the `Refs` footers, because the plan links each of its Issues. Keep each `Closes` footer.
 - Do not leave blank lines between Issue footers or add a period at the end.
-- Do not add Issues from `Follow-up tasks`.
+- Do not add Issues from [Follow-up tasks](pull-requests.md#follow-up-tasks).
 
 ### Co-author trailers
 
@@ -250,7 +250,7 @@ docs(observability): approve observability metrics and dashboards spec
 Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
-A squash commit that adds an ADR has no body, even when the ADR supersedes an earlier record. The new record states the reason in its `Context` and `Decision` sections, and the earlier record only changes its status:
+A squash commit that adds an ADR has no body, even when the ADR supersedes an earlier record. The new record states the reason in its [Context](adrs.md#context) and [Decision](adrs.md#decision) sections, and the earlier record only changes its status:
 
 ```text
 docs(adr): record local alert routing

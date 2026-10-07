@@ -12,7 +12,7 @@ This convention defines which labels to apply to GitHub Issues and pull requests
 - If a PR title has no scope, apply the area label of each row in the [scope table](commit-messages.md#scopes) whose `Paths` column covers part of the main change. If no row covers any part of the main change, apply no area label.
 - Apply `breaking` when the PR title has `!`.
 - Apply `migration` when the work adds or changes a file under `services/*/db/migrations/`.
-- For an Issue, apply the labels that the PR of the task will have. Choose them from the main change that the `Description` and `Files likely touched` of the Issue plan.
+- For an Issue, apply the labels that the PR of the task will have. Choose them from the main change that the [Description](github-issues.md#description) and [Files likely touched](github-issues.md#files-likely-touched) of the Issue plan.
 - If a PR adds a scope to the scope table, add an area label with the same name to `.github/labels.json` in the same PR.
 
 ### Changes

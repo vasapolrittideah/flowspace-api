@@ -42,7 +42,7 @@ Co-authored-by: <co-author name> <co-author email>
 - Keep the whole subject line at most 72 characters. Do not count the `(#<number>)` suffix and its leading space, which GitHub adds to a squash commit.
 - Start the description with a lowercase verb in the imperative mood, such as `add` or `reject`.
 - Name the specific change, such as `reject task updates based on an outdated version`. If you use a general verb, such as `update`, give it a specific object, such as `update Go to 1.25`.
-- If the commit reverts an earlier commit, use the scope and the description of the reverted commit. Do not copy its `!`. Add `!` only when the revert itself breaks callers, as the [type rules](#type) state.
+- If the commit reverts an earlier commit, use the scope and the description of the reverted commit. Do not copy its `!`. Add `!` only when the revert itself breaks callers, as the [Type](#type) rules state.
 - Do not end the description with a period.
 - Do not write a description that names no change, such as `misc` or `fix things`.
 
@@ -97,9 +97,9 @@ Co-authored-by: <co-author name> <co-author email>
 
 The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-versioning/SKILL.md) gives a generic commit message format. This convention applies where the two differ:
 
-- Add the scope after the type when a row of the scope table covers the main change, as the [scope rules](#scope) state. The skill writes `<type>: <description>` without a scope.
+- Add the scope after the type when a row of the scope table covers the main change, as the [Scope](#scope) rules state. The skill writes `<type>: <description>` without a scope.
 - Use the eleven [types](#types) of this convention. The skill lists six types and has no `perf`, `build`, `ci`, `style`, or `revert` type.
-- In a checkpoint commit, explain what the step changes when the subject does not, as the [body rules](#body) state. The skill explains only why a change was made.
+- In a checkpoint commit, explain what the step changes when the subject does not, as the [Body](#body) rules state. The skill explains only why a change was made.
 - Write a checkpoint commit for each tested step on the branch, and write a squash message for the merge of the PR. The skill advises against squashing commits.
 
 ## Reference

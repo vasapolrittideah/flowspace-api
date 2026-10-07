@@ -134,7 +134,7 @@ To turn on GitHub login:
 
 1. Read [AGENTS.md](AGENTS.md) and [CONSTRAINTS.md](CONSTRAINTS.md) before you change the project.
 2. Make each change on a short-lived branch.
-3. Open a pull request, as the [pull request convention](docs/conventions/pull-requests.md) states.
+3. Open a pull request, as the [Pull request](docs/conventions/pull-requests.md) convention states.
 
 ## License
 

@@ -30,7 +30,7 @@ A branch name has a type and a short description.
 
 The [`git-workflow-and-versioning` skill](../../.agents/skills/git-workflow-and-versioning/SKILL.md) gives branch prefixes for common kinds of change. This convention applies where the two differ:
 
-- Use the commit type `feat` for a new feature, as the [type rules](#type) state. The skill uses `feature/`.
+- Use the commit type `feat` for a new feature, as the [Type](#type) rules state. The skill uses `feature/`.
 
 ## Examples
 

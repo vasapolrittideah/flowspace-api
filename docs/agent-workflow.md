@@ -1,6 +1,6 @@
 # Agent workflow
 
-This document explains how AI agents write and review changes in Flowspace. An agent is an AI coding tool, such as Claude Code or Codex, that reads files and runs commands. The [review roles rules](../.agents/rules/review-roles.md) give the commands and the order that an agent follows. This document explains the structure of the workflow and the reasons for it.
+This document explains how AI agents write and review changes in Flowspace. An agent is an AI coding tool, such as Claude Code or Codex, that reads files and runs commands. The [Review roles](../.agents/rules/review-roles.md) rules give the commands and the order that an agent follows. This document explains the structure of the workflow and the reasons for it.
 
 ## Workflow pattern
 

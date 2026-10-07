@@ -1,6 +1,6 @@
 # Module plan conventions
 
-This convention defines the file, the format, and the status of one module plan in `tasks/`. A module plan breaks an approved [module specification](module-specs.md) into tasks, and each task becomes one GitHub Issue, as the [GitHub Issue convention](github-issues.md) defines. A phase is a group of tasks. A checkpoint lists the outcomes that a reviewer checks after the tasks of a phase are done.
+This convention defines the file, the format, and the status of one module plan in `tasks/`. The [Module specification](module-specs.md) convention defines a module specification. A module plan breaks an approved module specification into tasks. Each task becomes one GitHub Issue, as the [GitHub Issue](github-issues.md) convention defines. A phase is a group of tasks. A checkpoint lists the outcomes that a reviewer checks after the tasks of a phase are done.
 
 ## Template
 

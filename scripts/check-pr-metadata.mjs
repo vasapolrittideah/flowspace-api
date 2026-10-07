@@ -77,8 +77,6 @@ export function loadRules(root) {
   return {
     types: new Set(types.map((row) => row.code)),
     scopes: new Set(scopes.map((row) => row.code)),
-    // A scope of one shared package, such as `authn`, takes the `area:shared` label.
-    sharedScopes: new Set(scopes.filter((row) => /^`internal\/[^`/]+\/`$/.test(row.cells[2])).map((row) => row.code)),
     labels: new Set(JSON.parse(readFileSync(`${root}/.github/labels.json`, 'utf8')).map((label) => label.name)),
   };
 }
@@ -211,7 +209,7 @@ export function checkLabels(labels, subject, rules, { migration }) {
     findings.push(`apply exactly one type label, type:${subject.type}`);
   }
   if (subject.scope !== undefined) {
-    const area = `area:${rules.sharedScopes.has(subject.scope) ? 'shared' : subject.scope}`;
+    const area = `area:${subject.scope}`;
     const areas = labels.filter((label) => label.startsWith('area:'));
     if (areas.length !== 1 || areas[0] !== area) {
       findings.push(`apply only the area label ${area}`);

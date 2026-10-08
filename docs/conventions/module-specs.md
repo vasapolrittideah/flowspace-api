@@ -1,6 +1,8 @@
 # Module specification conventions
 
-This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [Specifications](../specs/README.md) index lists every module. A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. A material risk is a failure that can break a success criterion or allow a threat in a threat model.
+This convention defines the file, the format, and the status of one module specification in `docs/specs/`. A module is one capability that can be tested on its own, and its specification states what the capability does. The [Specifications](../specs/README.md) index lists every module.
+
+A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. A shape is a name, a route, a field, or a value that a consumer can read. A condition states when an effect happens, or why. A material risk is a failure that can break a success criterion or allow a threat in a threat model.
 
 ## Template
 

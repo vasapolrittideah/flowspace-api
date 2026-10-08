@@ -1,6 +1,8 @@
 # SQL file conventions
 
-This convention names and groups the SQL query files and migration files inside each service. A query file holds the queries that sqlc turns into Go methods. A migration file holds one schema change that goose applies. [ADR-0014](../adr/0014-relational-data-uses-explicit-sql.md) explains the SQL decision. The [Hexagonal component and file](hexagonal-components-and-files.md) conventions define a capability and a transaction.
+This convention names and groups the SQL query files and migration files inside each service. [ADR-0014](../adr/0014-relational-data-uses-explicit-sql.md) explains the SQL decision.
+
+A query file holds the queries that sqlc turns into Go methods. A migration file holds one schema change that goose applies. The [Hexagonal component and file](hexagonal-components-and-files.md) conventions define a capability and a transaction.
 
 ## Rules
 

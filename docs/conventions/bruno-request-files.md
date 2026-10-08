@@ -1,6 +1,8 @@
 # Bruno request file conventions
 
-This convention defines the file name and the request name of each Bruno request file in `tests/smoke/bruno/`. A request file is a `.bru` file that sends one HTTP request and tests the response. The request name is the `name` value in the `meta` block of the file. The run position is the `seq` value in the same block. The [Project structure](../project-structure.md) defines the purpose of the collection.
+This convention defines the file name and the request name of each Bruno request file in `tests/smoke/bruno/`. The [Project structure](../project-structure.md) defines the purpose of the collection.
+
+A request file is a `.bru` file that sends one HTTP request and tests the response. The request name is the `name` value in the `meta` block of the file. The run position is the `seq` value in the same block.
 
 ## Template
 

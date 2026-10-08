@@ -1,6 +1,8 @@
 # Convention file conventions
 
-This convention defines the file, sections, and wording of each convention file in `docs/conventions/`. A convention file tells agents and developers how to write one kind of artifact. An artifact is an item that the project makes many times, such as a commit message or a module specification. A part is one piece of the artifact format, such as a heading, a labeled line, or a section. A skill is a set of agent instructions in `.agents/skills/`.
+This convention defines the file, sections, and wording of each convention file in `docs/conventions/`. A convention file tells agents and developers how to write one kind of artifact.
+
+An artifact is an item that the project makes many times, such as a commit message or a module specification. A part is one piece of the artifact format, such as a heading, a labeled line, or a section. A skill is a set of agent instructions in `.agents/skills/`.
 
 ## Template
 
@@ -79,7 +81,7 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 - If the section has more than five bullets, group them under `###` headings. Use only these headings, in this order, and omit a heading that has no bullets:
   1. `Naming and location` for the name, number, and location of the artifact.
   2. `Format and content` for the sections and fields of the artifact and the rules that cover several parts.
-  3. `Workflow` for the steps to create, review, and check the artifact, and how many artifacts to write.
+  3. `Workflow` for the steps to create and review the artifact and to make sure that it follows its convention, and how many artifacts to write.
   4. `Links and tracking` for the indexes, tables, links, labels, milestones, and GitHub relationships that must match the artifact.
   5. `Status and approval` for the status values of the artifact and its approval.
   6. `Changes` for changes to an artifact after it exists, and for how existing artifacts follow a change to the convention.
@@ -154,4 +156,4 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 
 ### Changes
 
-- Apply a change of this convention only to new convention files and to convention files that a later PR changes for any reason. In that PR, make the whole changed file follow this convention. This includes the file name and the row in the agent instructions. If the PR renames the file, update every link to the file in the same PR. A PR that only updates the links to a renamed file or heading in another convention file does not count as a change of that file.
+- Apply a change of this convention only to new convention files and to convention files that a later PR changes for any reason. In that PR, make the whole changed file follow this convention. This includes the file name and the row in the agent instructions. If the PR renames the file, update every link to the file in the same PR. A PR that only updates the links to a renamed file or heading in another convention file does not count as a change of that file. The same applies to a PR that only applies one changed rule of this convention to other convention files.

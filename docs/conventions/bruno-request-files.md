@@ -41,7 +41,7 @@ These request names and file names follow the convention:
 | `Reject current session after all-session logout` | `23-reject-current-session-after-all-session-logout.bru` |
 | `Reject GitHub state on the Google callback` | `40-reject-github-state-on-the-google-callback.bru` |
 
-This request name does not follow the convention, because it is a noun phrase. It does not tell the reader whether the API must accept or refuse the request:
+This request name does not follow the convention, because its noun phrase does not show whether the API must accept or refuse the request:
 
 | Request name | File name |
 | --- | --- |

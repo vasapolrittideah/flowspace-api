@@ -4,7 +4,7 @@ This convention defines how to write a pull request (PR), how to prepare it for 
 
 ## Template
 
-A PR has a title, What changed, Why, Related issues, Risks or limitations, and Follow-up tasks.
+A PR has a title, What changed, Why, Related issues, Risks or limitations, Follow-up tasks, and an attribution line.
 
 ```markdown
 ## What changed
@@ -26,6 +26,8 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 ## Follow-up tasks
 
 <work that the PR leaves for later>
+
+<attribution line, if any>
 ```
 
 ### Title
@@ -72,7 +74,11 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - Put the bullets with an Issue first, in ascending Issue number. Then put the bullets without an Issue.
 - Before you create an Issue for the work, ask the maintainer. If the maintainer approves, create the Issue as the [GitHub Issue](github-issues.md) convention states. If the maintainer does not approve it, or the session has no chat, write the work without an Issue number.
 - If the PR leaves no work for later, write `n/a`.
-- Do not put `Closes`, `Fixes`, or `Resolves` before the Issue number. GitHub would close the Issue when the PR merges.
+- Do not put `Closes`, `Fixes`, or `Resolves` before the Issue number. GitHub closes the Issue when the PR merges.
+
+### Attribution line
+
+- If the agent harness gives an attribution line for PR descriptions, put it at the end of the description, after [Follow-up tasks](#follow-up-tasks).
 
 ## Rules
 
@@ -80,14 +86,13 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 - Start the description from the [PR template](../../.github/pull_request_template.md), and complete every section.
 - Delete the HTML comments of the template. If a section has content, replace its `n/a`.
-- If the agent harness gives an attribution line for PR descriptions, put it at the end of the description, after [Follow-up tasks](#follow-up-tasks).
 - Do not copy CI results or measurements, such as coverage or reachable vulnerabilities, into the description.
 - Do not put the squash message in the description.
 
 ### Workflow
 
 - Follow the [Repository instructions](../../AGENTS.md) for the branch, the PR, and merge authority.
-- Keep changes that belong to another task out of your commits, and keep them in the working tree. Inspect the staged diff before each commit, and exclude unrelated changes, secrets, local environment files, and unwanted build output.
+- Keep changes that belong to another task out of your commits, and keep them in the working tree. Before each commit, inspect the staged diff. Exclude unrelated changes, secrets, local environment files, and unwanted build output.
 - For a behavior fix, add a focused regression test.
 - For a contract or generator change, run `task buf -- lint`, `task buf -- breaking`, and `task buf -- generate` for Protobuf, or `task sqlc -- generate` for SQL. Commit the generated output with the source change. The `Contract checks` CI job checks the same results again.
 - For a documentation-only change, make sure that the facts, examples, links, and formatting are correct. Application tests are unnecessary unless executable behavior changes.
@@ -97,8 +102,8 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 - Open the PR as a normal PR, not as a draft.
 - After each push, wait for the [CI checks](../../.github/workflows/ci.yml) to finish. If the job log shows that a failure comes from the runner, the network, or an external service, such as a registry timeout, rerun the failed job once. If it fails again, state the cause and link the run in [Risks or limitations](#risks-or-limitations). Fix every other failure in the PR.
 - Before you write each squash message, read the [Commit message](commit-messages.md) convention again from `main`, because it can change while a PR is open.
-- Write the squash message as the commit message convention states for a squash commit. Use the current PR title as the subject. Before you give it, run `node scripts/check-pr-metadata.mjs --title "<title>" --squash-file <message-file>`, and fix each finding.
-- Give the exact squash message in the chat before you tell the maintainer that the PR is ready. If the session has no chat, post the squash message as a PR comment. When the PR changes, give the updated squash message.
+- Write the squash message as the commit message convention states for a squash commit. Use the current PR title as the subject. Before you give it, run `node scripts/check-pr-metadata.mjs --title "<title>" --squash-file <message-file>`. Fix each finding.
+- Before you tell the maintainer that the PR is ready, give the exact squash message in the chat. If the session has no chat, post the squash message as a PR comment. When the PR changes, give the updated squash message.
 - Do not weaken a command or hide a failure.
 
 ### Links and tracking
@@ -108,7 +113,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, and F
 
 ### Status and approval
 
-- Tell the maintainer that the PR is ready only after it meets every condition of a ready PR. If the PR cannot become ready, tell the maintainer which condition fails and why. Tell the maintainer in the chat, or in a PR comment if the session has no chat.
+- Only after the PR meets every condition of a ready PR, tell the maintainer that it is ready. If the PR cannot become ready, tell the maintainer which condition fails and why. If the session has a chat, tell the maintainer there. If the session has no chat, tell the maintainer in a PR comment. A subagent of an automatic build reports to the dispatcher instead, as the [Automatic build PR](#automatic-build-pr) rules state.
 
 ### Changes
 
@@ -153,10 +158,10 @@ The evidence has a local checks table.
 
 ## Automatic build PR
 
-These rules apply to each PR that an automatic build opens or changes, as [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. A subagent writes and updates the PR without a chat, so it posts in agent comments what the [Workflow](#workflow) rules give in the chat. Each agent comment follows the [Automatic build](github-issues.md#automatic-build) rules of the GitHub Issue convention. The maintainer merges a parent PR before its stacked PR, because a stacked PR that merges first lands on the parent branch and does not close its Issue.
+These rules apply to each PR that an automatic build opens or changes, as [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. A subagent writes and updates the PR without a chat. It posts the squash message in an agent comment, and it reports the ready state to the dispatcher, which tells the maintainer in its chat. Each agent comment follows the [Automatic build](github-issues.md#automatic-build) rules of the GitHub Issue convention. The maintainer merges a parent PR before its stacked PR, because a stacked PR that merges first lands on the parent branch and does not close its Issue.
 
 - In a stacked PR, write the description as [Stacked PR description](#stacked-pr-description) states.
-- Post the squash message in one [Squash message comment](#squash-message-comment). When the squash message, the ready state, or a review session changes, edit this comment. Do not post a new one.
+- Post the squash message in one [Squash message comment](#squash-message-comment). When the squash message or a review session changes, edit this comment. Do not post a new one.
 - When the maintainer gives feedback on the PR in the chat of a running dispatcher, record it in a [Maintainer feedback comment](#maintainer-feedback-comment).
 - After the push, answer each requested change in a [Requested change reply](#requested-change-reply). If the PR does not make the change, stop the build as the [Automatic build](github-issues.md#automatic-build) rules of the GitHub Issue convention state, so that the maintainer decides.
 - After a restack, run the tests and the review roles on the new tree before the push, because a stamp approves only one exact tree. When `git patch-id --verbatim` of the PR diff does not change, resume the sessions of the `review-sessions` line, and tell each reviewer that only the base changed.
@@ -186,13 +191,11 @@ Stacked on #<parent PR number>. Merge #<parent PR number> first.
 
 ### Squash message comment
 
-The squash message comment gives the maintainer the squash message and the ready state. It has a marker, a ready state, a paste notice, a squash message block, a review sessions line, and an attribution line.
+The squash message comment gives the maintainer the squash message in the same format on each PR. It has a marker, a paste notice, a squash message block, a review sessions line, and an attribution line.
 
 ````markdown
 <!-- squash-message -->
-<ready state of the PR>
-
-Paste this squash message when you squash merge this PR.
+Squash message for the maintainer. Paste it when you squash merge this PR.
 
 <details>
 <summary>Squash message</summary>
@@ -212,13 +215,9 @@ Paste this squash message when you squash merge this PR.
 
 - Write `<!-- squash-message -->`.
 
-#### Ready state
-
-- Write that the PR is ready, or name the condition of a ready PR that fails and why.
-
 #### Paste notice
 
-- Write the fixed sentence of the template.
+- Write the fixed sentences of the template, and add no other text.
 
 #### Squash message block
 

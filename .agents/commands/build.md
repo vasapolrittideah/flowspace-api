@@ -108,7 +108,7 @@ A subagent of the [Automatic mode](#automatic-mode) follows this command with th
 2. Create the branch as step 2 of [Implement](#implement) states, but from `origin/<branch of the parent PR>` for a stacked Issue. Then add the branch to the start comment.
 3. Open the PR with the branch of the parent PR as the base, for a stacked Issue, and start its description with the stack line of the Automatic build PR rules.
 4. In step 4 of [Open the PR](#open-the-pr), post the squash message comment instead of a message in the chat.
-5. Report the PR to the dispatcher, and stop.
+5. Report the PR and whether it is ready to the dispatcher, and stop. If the PR cannot become ready, name the condition that fails and why.
 
 ### Work on a PR
 
@@ -119,4 +119,4 @@ A subagent of the [Automatic mode](#automatic-mode) follows this command with th
 5. Push the branch. After a restack, use `git push --force-with-lease`.
 6. After the push, answer each requested change with a `<!-- requested-change-reply -->` comment that names its commit.
 7. Wait for CI, update the checked items of the Issue as step 3 of [Open the PR](#open-the-pr) states, and edit the squash message comment when the message changes.
-8. Report the result to the dispatcher, and stop.
+8. Report the result and whether the PR is ready to the dispatcher, and stop.

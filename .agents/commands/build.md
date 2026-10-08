@@ -112,7 +112,7 @@ A subagent of the [Automatic mode](#automatic-mode) follows this command with th
 
 ### Work on a PR
 
-1. Check out the branch of the PR.
+1. Check out the branch of the PR. If the PR has an active stop notice, edit it as the [Automatic build PR](../../docs/conventions/pull-requests.md#automatic-build-pr) rules state.
 2. Restack a stacked PR before other work. If the parent PR merged, run `git rebase --onto origin/main "$(git merge-base HEAD <last head of the parent PR>)"`. The merge base is the commit of the parent branch where the child branch started, also when the parent PR got commits before its merge. If the parent PR has new commits, run `git rebase origin/<branch of the parent PR>`. Then run the tests and the review roles on the new tree, as the Automatic build PR rules state.
 3. Fix a merge conflict, a failed check, and each requested change, in that order, and combine the fixes in one push. For a stacked PR, resolve a conflict in the restack. For other PRs, merge `main` into the branch, as the [Changes](../../docs/conventions/pull-requests.md#changes) rules of the Pull request conventions state.
 4. Before you fix a failed check, compare the failure with the diff. If the job log shows a failure of the runner, the network, or an external service, rerun the failed job once. If the failure is in code that the diff does not change, run `git merge-base --is-ancestor origin/main HEAD`, and update the base when the command fails.

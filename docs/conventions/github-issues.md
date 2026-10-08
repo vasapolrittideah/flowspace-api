@@ -118,7 +118,7 @@ These rules apply to each Issue that an automatic build starts, and to each agen
 - Start each agent comment with a marker, such as `<!-- automatic-build -->`. End the comment with the attribution line `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 - Write each agent comment in English, as the [Markdown and English prose](markdown-and-english-prose.md) conventions state.
 - Before the subagent of an Issue starts, set the Project status of the Issue to `In Progress`, and add a [Start comment](#start-comment). Add a new start comment for each start.
-- When the build of an Issue stops, add a [Stop comment](#stop-comment), and set the Project status to `Needs human`. If the branch of the start comment has no open PR, also change the marker of the start comment to `<!-- automatic-build-ended -->`.
+- When the build of an Issue stops, add a [Stop comment](#stop-comment), and set the Project status to `Needs human`. If the branch of the start comment has no open PR, also change the marker of the start comment to `<!-- automatic-build-ended -->`. If the branch has an open PR, also add a [Stop notice](pull-requests.md#stop-notice) to the PR.
 - After the maintainer answers the stop comment, set the Project status according to the PR state. If the Issue has no open PR, set the status to `Todo`, so that a later run starts the Issue again. If the PR is open, set the status to `In Progress`, so that a later run continues the work on that PR.
 
 ### Start comment

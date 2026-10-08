@@ -62,16 +62,22 @@ This file defines each term that has a narrower or different meaning in Flowspac
 
 | Term | Meaning |
 | --- | --- |
+| approval stamp | A file that records that a reviewer approved 1 exact version of a change, such as a staged tree or the text of a PR description. |
 | area label | An `area:*` label that names a repository area. |
+| author agent | The agent that writes a change. |
 | change that breaks callers | A change that `buf breaking` reports, or that removes or changes the meaning of a field, a route, or an event that callers use. |
 | checkpoint commit | A commit on a branch that records 1 tested work step. |
 | main change | The change that a commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. |
+| maintainer | The person who reviews and merges each PR. |
 | material | Of a risk or an effect of a PR: able to change the decision to merge, or in need of an action after the merge. |
 | ready | Of a PR: the local checks that the [Workflow](docs/conventions/pull-requests.md#workflow) rules of the pull request convention name and CI pass, and the title, description, and labels match the final work. |
 | review comment | A comment or a review on a PR in GitHub. Feedback in the chat is not a review comment. |
-| review role | An agent that checks 1 aspect of a change, such as the code or the conventions, before a commit or a PR. The [Review roles](.agents/rules/review-roles.md) rules list the roles. |
+| review role | A check of 1 aspect of a change, such as the code or the conventions, that a reviewer runs before a commit or a PR. The [Review roles](.agents/rules/review-roles.md) rules list the roles. |
+| reviewer | An agent that runs 1 review role. |
+| runner | A module in `.agents/scripts/review-runners/` that starts the CLI of 1 agent for a review. |
 | service paths | The paths of a service, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service. |
 | squash message | The commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. |
+| staged tree | The Git tree object of the files that `git add` prepared for the next commit. |
 | type label | A `type:*` label that names the type of a change. |
 | work for later | Work that a PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. |
 

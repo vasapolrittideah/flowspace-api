@@ -1,6 +1,6 @@
 # Agent workflow
 
-This document explains how AI agents write and review changes in Flowspace. An agent is an AI coding tool, such as Claude Code or Codex, that reads files and runs commands. The [Review roles](../.agents/rules/review-roles.md) rules give the commands and the order that an agent follows. This document explains the structure of the workflow and the reasons for it.
+This document explains how AI coding agents, such as Claude Code or Codex, write and review changes in Flowspace. The [Review roles](../.agents/rules/review-roles.md) rules give the commands and the order that an agent follows. This document explains the structure of the workflow and the reasons for it.
 
 ## Workflow pattern
 
@@ -12,9 +12,9 @@ The workflow uses three patterns from the article [Building effective agents](ht
 | Routing | The system classifies an input and sends it to a specialized follow-up task. | The author agent selects the reviewer roles from the changed files and the stage of the work. It follows a table in the review roles rules that names each role and when it runs. For example, a change under `services/*/db/migrations/` needs `migration-reviewer`. Some rows need judgment, such as whether a change touches authorization. The hook enforces only some rows, as [Approvals and gates](#approvals-and-gates) states. |
 | Parallelization by sectioning | The system splits a task into independent subtasks and runs them at the same time. | Reviewers with different responsibilities run at the same time, such as `code-reviewer` and `security-auditor`, or `convention-reviewer` and `writing-reviewer`. |
 
-The author agent is the agent that writes the change. A reviewer is an agent that runs one review role. A reviewer can read files, but it cannot change them. Its report ends with a verdict, which is `APPROVE` or `REQUEST CHANGES`.
+A reviewer can read files, but it cannot change them. Its report ends with a verdict, which is `APPROVE` or `REQUEST CHANGES`.
 
-The maintainer is the person who reviews and merges each pull request (PR). The maintainer also connects the steps of the work. The maintainer starts each step, such as a specification, a plan, or the next task. Before the next step starts, the maintainer makes sure that its result is correct. [Automatic builds](#automatic-builds) start the next tasks of approved plans without a request for each task, but the maintainer still starts each run.
+The maintainer connects the steps of the work. The maintainer starts each step, such as a specification, a plan, or the next task. Before the next step starts, the maintainer makes sure that its result is correct. [Automatic builds](#automatic-builds) start the next tasks of approved plans without a request for each task, but the maintainer still starts each run.
 
 ## Comparison with orchestrator-workers
 
@@ -32,7 +32,7 @@ Flowspace does not use orchestrator-workers to write a change. The main differen
 
 If workers write code, they can also change the same files at the same time. This risk applies to coding tasks, and the article does not use it to define the pattern.
 
-Flowspace keeps one author agent for each change, because each PR holds one reviewable change. Independent tasks can still run at the same time. In that case, each task uses its own author agent, its own branch, and its own worktree, as the [Git workflow](../AGENTS.md#git-workflow) section of the repository instructions states. Each task then goes through the same review loop.
+Flowspace keeps 1 author agent for each change, because each pull request (PR) holds 1 reviewable change. Independent tasks can still run at the same time. In that case, each task uses its own author agent, its own branch, and its own worktree, as the [Git workflow](../AGENTS.md#git-workflow) section of the repository instructions states. Each task then goes through the same review loop.
 
 ## Automatic builds
 
@@ -65,7 +65,7 @@ Claude Code and Codex can each be the author agent. Each review role can run in 
 
 ## Review roles and runners
 
-A runner is a module in `.agents/scripts/review-runners/` that starts one agent CLI for a review. The `codex` runner starts `codex exec`, and the `claude` runner starts `claude -p`. Each runner gives the reviewer read access to the repository. It denies reads of home credentials and local secrets, and it denies writes to the repository and to its Git directories.
+The runners are in `.agents/scripts/review-runners/`. The `codex` runner starts `codex exec`, and the `claude` runner starts `claude -p`. Each runner gives the reviewer read access to the repository. It denies reads of home credentials and local secrets, and it denies writes to the repository and to its Git directories.
 
 `.agents/review-roles.json` gives each role an entry with its runner, model, and effort. To move a role to another agent or model, the maintainer changes only that entry. Before a review starts, `.agents/scripts/review.mjs` stops when the runner does not exist or does not accept the effort. The CLI of each runner rejects a model that it does not know, so the script does not make sure that model names are valid.
 
@@ -77,7 +77,7 @@ To support another agent, a contributor adds files and changes no existing runne
 
 ## Approvals and gates
 
-An approval stamp is a file that records that a reviewer approved one exact version of the change. When a reviewer gives `APPROVE`, `.agents/scripts/review.mjs` writes a stamp for the staged tree. The staged tree is the Git tree object of the files that `git add` prepared for the next commit. The script writes the stamp to `<git-common-dir>/reviews/<role>/<tree>`, where `<git-common-dir>` is the Git directory that all worktrees of the repository share. A later edit gives a different tree, so the edit needs a new review.
+When a reviewer gives `APPROVE`, `.agents/scripts/review.mjs` writes an approval stamp for the staged tree. The script writes the stamp to `<git-common-dir>/reviews/<role>/<tree>`, where `<git-common-dir>` is the Git directory that all worktrees of the repository share. A later edit gives a different tree, so the edit needs a new review.
 
 A reviewer of a PR description also approves its exact text. If the author agent passes the description file to the script with `--stamp-file`, the script also writes a stamp for the hash of that text.
 

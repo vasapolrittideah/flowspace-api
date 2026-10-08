@@ -4,15 +4,11 @@ Follow these repository instructions for every task. Before making changes, read
 
 ## Delivery authority
 
-A pull request (PR) proposes changes for review. A squash merge combines all commits in a PR into one commit.
-
-- Prepare and test changes on a branch, then submit them for review through a PR.
+- Prepare and test changes on a branch, then submit them for review through a pull request (PR).
 - Do not push directly to `main`, merge a PR, or enable auto-merge.
 - The maintainer reviews and squash merges each PR.
 
 ## Git workflow
-
-The working tree contains local repository files and changes. A branch holds changes outside `main`. A checkpoint commit records one tested work step. A diff shows the changes between two versions.
 
 1. Inspect the working tree and read the relevant project documents.
 2. Preserve work that is outside the task, as the [pull request workflow](docs/conventions/pull-requests.md#workflow) states.
@@ -28,11 +24,11 @@ The working tree contains local repository files and changes. A branch holds cha
 
 Keep each branch and PR limited to one reviewable change. Split unrelated changes into separate PRs.
 
-A worktree is a separate checkout of the repository. If tasks run at the same time, use separate worktrees.
+If tasks run at the same time, use a separate worktree for each task.
 
 ## Review roles
 
-A review role is an agent that checks one aspect of a change, such as the code or the conventions, before a commit or a PR. Read the [Review roles](.agents/rules/review-roles.md) rules before the first commit of a task. Then run each review role that the rules name for the change.
+Read the [Review roles](.agents/rules/review-roles.md) rules before the first commit of a task. Then run each review role that the rules name for the change.
 
 ## Conventions
 

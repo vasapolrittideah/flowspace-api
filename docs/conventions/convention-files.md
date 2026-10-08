@@ -44,10 +44,11 @@ A convention file has a title, a scope, a template, rules, special cases, differ
 
 ### Scope
 
-- Write one paragraph that starts with "This convention". State the artifact and what the convention controls, such as its format, name, or life cycle.
+- Write one or more paragraphs. Start the first paragraph with "This convention", and state in it the artifact and what the convention controls, such as its format, name, or life cycle.
+- If the scope covers several ideas, start a new paragraph for each idea. Examples include the terms of the convention and the documents that own its purpose. Follow the [Format and content](markdown-and-english-prose.md#format-and-content) rules.
 - If the artifact has a fixed location, name the location, such as `docs/adr/`.
-- Define each term of the convention that has a narrower or different meaning in the project than in general English, such as "artifact" in this convention. Do not define a term that the Markdown rules or a document linked in this paragraph already define.
-- If another document owns the purpose of the artifact or the decision behind the convention, link to that document in this paragraph.
+- Define each term of the convention that has a narrower or different meaning in the project than in general English, such as "artifact" in this convention. Do not define a term that the Markdown rules or a document linked in the scope already define.
+- If another document owns the purpose of the artifact or the decision behind the convention, link to that document in the scope.
 - Do not define terms in other sections.
 
 ### Template section

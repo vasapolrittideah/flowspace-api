@@ -1,16 +1,26 @@
 # GitHub Issue conventions
 
-This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes.
+This convention defines the format and life cycle of the GitHub Issue for 1 task.
 
-A module is one capability that the [Module specification](module-specs.md) convention defines, and a module plan lists the tasks of one module, as the [Module plan](module-plans.md) convention defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
+A task is 1 piece of work that 1 PR completes.
 
-An automatic build is a run of `/build auto`, in which a dispatcher agent starts one subagent for each ready Issue, as [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. An agent comment is a comment that an agent posts on an Issue or a PR. A marker is an HTML comment that starts an agent comment and names its kind. Agents post with the account of the maintainer, so a marker tells an agent comment apart from a comment of the maintainer.
+The [Module specification](module-specs.md) and [Module plan](module-plans.md) conventions define a module and a module plan.
+
+The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task.
+
+A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
+
+An automatic build is a run of `/build auto`, in which a dispatcher agent starts 1 subagent for each ready Issue. [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) and [ADR-0041](../adr/0041-maintainers-answer-automatic-builds-in-the-chat.md) state the decisions for automatic builds.
+
+An agent comment is a comment that an agent posts on an Issue or a PR. A marker is an HTML comment that starts an agent comment and names its kind. Agents post with the account of the maintainer, so a marker tells an agent comment apart from a comment of the maintainer.
 
 ## Template
 
-An Issue has a title, a module ID, Description, Acceptance criteria, Verification, and Files likely touched.
+An Issue has a title, a module ID, [Description](#description), [Acceptance criteria](#acceptance-criteria), [Verification](#verification), and [Files likely touched](#files-likely-touched).
 
 ```markdown
+<Issue title>
+
 Module ID: `<module ID, if any>`
 
 ## Description
@@ -39,8 +49,8 @@ Module ID: `<module ID, if any>`
 
 ### Module ID
 
-- Copy the module ID from the approved specification.
 - If the Issue does not belong to a module plan, omit the line.
+- Copy the module ID from the approved specification.
 
 ### Description
 
@@ -49,25 +59,26 @@ Module ID: `<module ID, if any>`
 
 ### Acceptance criteria
 
-- Write at least one `- [ ]` item.
+- Write at least 1 `- [ ]` item.
 - State each outcome as a fact in the present tense, such as "The Identity `identity_session_check` line has the same request ID and trace ID as the Workspace request."
 - If the task delivers a success criterion of the specification, write an item for that criterion.
 
 ### Verification
 
 - Write each check as a `- [ ]` item.
-- Start a command check with `Run`, the command in backticks, and `to check`, and then state the behavior that the command checks. Start a manual check with its action, such as "Stop Alloy with `kubectl scale`".
-- Keep the inspection of a command's output in the same item as the command when they form one check. Put each separate manual check in its own item.
+- Start a command check with "Run", the command in backticks, and "to check", and then state the behavior that the command checks.
+- Start a manual check with its action, such as "Stop Alloy with `kubectl scale`".
+- If the task changes no Markdown file, omit the `task markdown:check` item.
+- Keep the inspection of a command's output in the same item as the command when they form 1 check. Put each separate manual check in its own item.
 - Put the checks of the task first. Then end the list with these items, in this order, with this exact text:
   1. Run `task check:task` to check formatting, lint, tests, coverage, and vulnerabilities.
   2. Run `task git:diff:check` to check whitespace in the diff.
   3. Run `task markdown:check` to check changed Markdown.
   4. Review the CI results on the PR.
-- If the task changes no Markdown file, omit the `task markdown:check` item.
 
 ### Files likely touched
 
-- Write one item for each path that the task likely changes.
+- Write 1 item for each path that the task likely changes.
 - For generated output, list only its folder, with a trailing slash, followed by `(generated output)`, such as `` `gen/go/flowspace/identity/v1/` (generated output) ``.
 - Do not list generated file names.
 
@@ -76,25 +87,31 @@ Module ID: `<module ID, if any>`
 ### Format and content
 
 - Use the body fields in the template order, with the same spelling and capitalization.
-- Do not post a comment with the results of a task. The PR description records them. The comments of an [Automatic build](#automatic-build) record the run, not the results.
+- Start each agent comment with a marker, such as `<!-- automatic-build -->`.
+- End each agent comment with the attribution line `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
+- Write each agent comment in English, as the [Markdown and English prose](markdown-and-english-prose.md) conventions state.
+- Do not add an estimated scope to an Issue.
 
 ### Workflow
 
-- Write one Issue for each task.
+- Write 1 Issue for each task.
 - Before you create an Issue for a module plan, compare its title, body, and planned blockers with the approved specification and the module plan.
 - Before you tell the maintainer that the PR is ready, or that it cannot become ready, check each passed item in [Acceptance criteria](#acceptance-criteria) and [Verification](#verification). Leave each gap unchecked.
+- Do not post a comment with the results of a task. The PR description records them. The comments of an [Automatic build](#automatic-build) record the run, not the results.
 
 ### Links and tracking
 
-- After you create an Issue, apply the labels that the [GitHub label](github-labels.md) conventions state, and add the Issue to the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4).
-- Record each blocking Issue as one native GitHub `Blocked by` relationship. Use these relationships as the dependency list, and do not list blocking Issues in the body.
+- After you create an Issue, apply the labels that the [GitHub label](github-labels.md) conventions state.
+- After you create an Issue, add it to the [flowspace-api](https://github.com/users/vasapolrittideah/projects/4) GitHub Project.
+- Record each blocking Issue as 1 native GitHub `Blocked by` relationship. Use these relationships as the dependency list, and do not list blocking Issues in the body.
 - If the Issue belongs to a module plan, assign the milestone of the plan, as the [GitHub milestone](github-milestones.md) conventions state.
 
 ### Status and approval
 
 - After you create an Issue, set its Project status to `Todo`.
-- When you start a task, set the Project status of its Issue to `In Progress`. After the Issue closes, make sure that its status is `Done`.
-- If an ordinary task has a gap, let its PR close the Issue. The PR states the gap in [Risks or limitations](pull-requests.md#risks-or-limitations) and the remaining work in [Follow-up tasks](pull-requests.md#follow-up-tasks). A gap in the final Prove task keeps the Issue open, as the [Final Prove task](#final-prove-task) rules state.
+- When you start a task, set the Project status of its Issue to `In Progress`.
+- After the Issue closes, make sure that its status is `Done`.
+- If an ordinary task has a gap, let its PR close the Issue, and record the gap as the [Risks or limitations](pull-requests.md#risks-or-limitations) and [Follow-up tasks](pull-requests.md#follow-up-tasks) rules state. A gap in the final Prove task keeps the Issue open, as the [Final Prove task](#final-prove-task) rules state.
 
 ### Changes
 
@@ -103,24 +120,70 @@ Module ID: `<module ID, if any>`
 
 ## Final Prove task
 
-The final Prove task checks the approved specification through tests and review. Its Issue uses the [Template](#template), and its PR records the evidence that CI does not keep, as the [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state.
+The final Prove task checks the approved specification through tests and review. Its PR records the evidence that CI does not keep, as the [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state.
 
-- Title the Issue `Prove <capability> against its specification`, with the capability name from the title of the specification.
-- In [Description](#description), name the final test scope and each cross-service check that another Issue owns. Link to that Issue instead of repeating its work.
-- In [Acceptance criteria](#acceptance-criteria), require a test, or a local check that the PR description records, for each success criterion of the specification and for each threat ID in its [Testing strategy](module-specs.md#testing-strategy).
-- In [Acceptance criteria](#acceptance-criteria), add an item for each public, private, failure, and cross-service path that the module has.
-- If the module has public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` that run against a running service, and add a `task smoke:bruno` item to [Verification](#verification).
-- In [Verification](#verification), add one item for each integration, smoke, contract, and generation check that applies to the module.
-- In [Files likely touched](#files-likely-touched), include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and the likely test paths.
-- When every item passes, mark the specification `Implemented` and the plan `Complete` in the PR of the task.
+- When every item passes, change the statuses of the specification and the plan in the PR of the task, as the [Status and approval](module-specs.md#status-and-approval) rules of the module specification convention and the [Status and approval](module-plans.md#status-and-approval) rules of the module plan convention state.
 - If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state how the PR refers to the Issue.
+
+The Issue of the final Prove task has a title, a module ID, [Description](#description), [Acceptance criteria](#acceptance-criteria), [Verification](#verification), and [Files likely touched](#files-likely-touched).
+
+```markdown
+Prove <capability name> against its specification
+
+Module ID: `<module ID>`
+
+## Description
+
+<final test scope and cross-service checks>
+
+## Acceptance criteria
+
+- [ ] <test or local check that proves a part of the specification>
+
+## Verification
+
+- [ ] <check that applies to the module>
+
+## Files likely touched
+
+- `<specification, plan, or test path>`
+```
+
+### Final Prove title
+
+- Use the capability name from the title of the specification.
+
+### Final Prove module ID
+
+- Follow the [Module ID](#module-id) rules.
+
+### Final Prove description
+
+- Name the final test scope and each cross-service check that another Issue owns. Link to that Issue instead of repeating its work.
+- Follow the other [Description](#description) rules.
+
+### Final Prove acceptance criteria
+
+- Require a test, or a local check that the PR description records, for each success criterion of the specification and for each threat ID in its [Testing strategy](module-specs.md#testing-strategy).
+- Add an item for each public, private, failure, and cross-service path that the module has.
+- If the module has public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` that run against a running service.
+- Follow the other [Acceptance criteria](#acceptance-criteria) rules.
+
+### Final Prove verification
+
+- If the module has public REST routes, add a `task smoke:bruno` item.
+- Add 1 item for each integration, smoke, contract, and generation check that applies to the module.
+- Follow the other [Verification](#verification) rules.
+
+### Final Prove files likely touched
+
+- Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and the likely test paths.
+- Follow the other [Files likely touched](#files-likely-touched) rules.
 
 ## Automatic build
 
-These rules apply to each Issue that an automatic build starts, and to each agent comment. The [Automatic mode](../../.agents/commands/build.md#automatic-mode) section of the build command gives the steps of the run.
+These rules apply to each Issue that an automatic build starts. The [Automatic mode](../../.agents/commands/build.md#automatic-mode) section of the build command gives the steps of the run. Each agent comment follows the [Format and content](#format-and-content) rules.
 
-- Start each agent comment with a marker, such as `<!-- automatic-build -->`. End the comment with the attribution line `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
-- Write each agent comment in English, as the [Markdown and English prose](markdown-and-english-prose.md) conventions state.
 - Before the subagent of an Issue starts, set the Project status of the Issue to `In Progress`, and add a [Start comment](#start-comment). Add a new start comment for each start.
 - When the build of an Issue stops, add a [Stop comment](#stop-comment), and set the Project status to `Needs human`. If the branch of the start comment has no open PR, also change the marker of the start comment to `<!-- automatic-build-ended -->`. If the branch has an open PR, also convert the PR to a draft with `gh pr ready --undo`, so that GitHub blocks its merge.
 - When the maintainer answers a stop in the chat, record the answer with these steps, as [ADR-0041](../adr/0041-maintainers-answer-automatic-builds-in-the-chat.md) states:
@@ -129,7 +192,7 @@ These rules apply to each Issue that an automatic build starts, and to each agen
 
 ### Start comment
 
-The start comment shows that an automatic build works on the Issue. It has a marker, a notice, a branch line, and an attribution line.
+A start comment has a marker, a notice, a branch line, and an attribution line. It shows that an automatic build works on the Issue.
 
 ```markdown
 <!-- automatic-build -->
@@ -159,7 +222,7 @@ Branch: <branch name, if any>
 
 ### Stop comment
 
-The stop comment tells the maintainer why the build stopped, and it keeps the answer for a later run. It has a marker, a reason line, a question, an answer line, and an attribution line.
+A stop comment has a marker, a reason line, a question, an answer line, and an attribution line. It tells the maintainer why the build stopped, and it keeps the answer for a later run.
 
 ```markdown
 <!-- automatic-build-stop -->
@@ -178,12 +241,12 @@ Answer: <answer of the maintainer, if any>
 
 #### Reason line
 
-- State the step that stopped and the cause in one sentence.
 - When the specification or the plan must change, write exactly `Reason: specification or plan change`.
+- State the step that stopped and the cause in 1 sentence.
 
 #### Question
 
-- Ask one question that the maintainer can answer in the chat.
+- Ask 1 question that the maintainer can answer in the chat.
 
 #### Answer line
 
@@ -196,13 +259,15 @@ Answer: <answer of the maintainer, if any>
 
 ## Differences from the planning-and-task-breakdown skill
 
-The [`planning-and-task-breakdown` skill](../../.agents/skills/planning-and-task-breakdown/SKILL.md) gives each task a structure for a task list or a tracker. This convention applies where the two differ:
+The [Planning and Task Breakdown](../../.agents/skills/planning-and-task-breakdown/SKILL.md) skill gives each task a structure for a task list or a tracker, but this convention applies where the skill and this convention differ:
 
-- Write the task as a GitHub Issue with the [Template](#template). The skill writes `Description`, `Acceptance criteria`, and other fields as bold labels in a `## Task` section.
-- Record dependencies as native `Blocked by` relationships, as the [Links and tracking](#links-and-tracking) rules state. The skill lists them in a `Dependencies` field.
-- Omit an estimated scope. The skill sizes each task by its number of files.
-- End [Verification](#verification) with the fixed items in the [Verification](#verification) rules. The skill uses `Tests pass`, `Build succeeds`, and `Manual check` labels.
+- Follow the [Template](#template) and the [Workflow](#workflow) rules. The skill writes `Description`, `Acceptance criteria`, and other fields as bold labels in a `## Task` section.
+- Follow the dependency rules in [Links and tracking](#links-and-tracking). The skill lists the dependencies in a `Dependencies` field.
+- Follow the [Format and content](#format-and-content) rules for the estimated scope. The skill sizes each task by its number of files.
+- Follow the [Verification](#verification) rules. The skill uses the "Tests pass", "Build succeeds", and "Manual check" labels.
 
 ## Examples
 
-[Issue #303](https://github.com/vasapolrittideah/flowspace-api/issues/303) shows an ordinary task Issue that follows this convention.
+This Issue is an ordinary task Issue that follows this convention:
+
+[Issue #303](https://github.com/vasapolrittideah/flowspace-api/issues/303)

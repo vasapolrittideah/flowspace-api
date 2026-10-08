@@ -11,7 +11,7 @@ The work starts from one module with an `Approved` plan. It implements one task,
 1. If `$ARGUMENTS` is `auto`, follow [Automatic mode](#automatic-mode) instead of this command. Otherwise, use `$ARGUMENTS` as the module ID. If it is empty, use the only plan in `tasks/` with the `Approved` status. If there is no such plan, or there is more than one, stop and ask for the module ID.
 2. Run `gh auth status --active --hostname github.com` and `gh api user --jq .login`. If either reports a connection or DNS error, retry both outside the sandbox with the current credentials. If GitHub rejects the credentials after a successful connection, ask the maintainer to run `gh auth login -h github.com -p https -w`, and stop.
 3. Make sure that the active token has the `project` scope. If it does not, ask the maintainer to run `gh auth refresh -h github.com -s project`, and stop.
-4. For each closed Issue of the plan, make sure that its Project status is `Done`, as the [Issue workflow](../../docs/conventions/github-issues.md#workflow) states. If the plan is `Complete`, close its milestone as the [milestone workflow](../../docs/conventions/github-milestones.md#workflow) states, and stop.
+4. For each closed Issue of the plan, make sure that its Project status is `Done`, as the [Issue status rules](../../docs/conventions/github-issues.md#status-and-approval) state. If the plan is `Complete`, close its milestone as the [milestone workflow](../../docs/conventions/github-milestones.md#workflow) states, and stop.
 5. If `docs/specs/<module-id>.md` is not `Approved`, the plan is not `Approved`, or `tasks/.todo.md` exists, stop.
 6. Select the first open Issue in the order of the plan whose blockers are all closed. Read the blockers with `gh api repos/{owner}/{repo}/issues/<issue-number>/dependencies/blocked_by`. If no Issue is ready, report the blockers and stop.
 
@@ -20,7 +20,7 @@ The work starts from one module with an `Approved` plan. It implements one task,
 1. Run `git status --porcelain`, and preserve work outside the task.
 2. Create a branch from `main`, as the [branch name conventions](../../docs/conventions/branch-names.md) state.
 3. Set the Project status of the Issue to `In Progress`:
-   1. Read the owner and the number of the project from the link in the [Issue workflow](../../docs/conventions/github-issues.md#workflow). Run `gh project view <project-number> --owner <owner> --format json` to get the project ID.
+   1. Read the owner and the number of the project from the link in the [Issue link rules](../../docs/conventions/github-issues.md#links-and-tracking). Run `gh project view <project-number> --owner <owner> --format json` to get the project ID.
    2. Run `gh project item-list <project-number> --owner <owner> --format json --limit 1000` to get the Project item ID of the Issue. If the Issue is absent, stop.
    3. Run `gh project field-list <project-number> --owner <owner> --format json` to get the ID of the `Status` field and of its `In Progress` option.
    4. Run `gh project item-edit --id <project-item-id> --project-id <project-id> --field-id <status-field-id> --single-select-option-id <in-progress-option-id>`.

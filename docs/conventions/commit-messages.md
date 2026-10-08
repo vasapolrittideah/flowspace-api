@@ -1,10 +1,8 @@
 # Commit message conventions
 
-This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`.
+This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention.
 
 The [Repository instructions](../../AGENTS.md) define checkpoint commits and squash merges.
-
-Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention.
 
 ## Template
 

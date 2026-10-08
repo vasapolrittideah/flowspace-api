@@ -43,11 +43,12 @@ A convention file has a [Title](#title), a [Scope](#scope), a [Template section]
 
 ### Scope
 
-- Write 1 or more paragraphs. Start the first paragraph with "This convention", and state in it the artifact and what the convention controls, such as its format, name, or life cycle.
-- Follow the [Format and content](markdown-and-english-prose.md#format-and-content) rules for the paragraphs of the scope. Examples of separate ideas include what the convention controls and the documents that own its purpose.
-- If the artifact has a fixed location, name the location, such as `docs/adr/`.
-- If another document owns the purpose of the artifact or the decision behind the convention, link to that document in the scope.
+- Write the scope as 1 or 2 paragraphs.
+- Start the first paragraph with "This convention", and state in it the artifact and what the convention controls, such as its format, name, or life cycle.
+- If the artifact has a fixed location, name the location in the first paragraph, such as `docs/adr/`.
+- If another document owns the purpose of the artifact or the decision behind the convention, link to that document in the second paragraph. If no such document exists, omit the second paragraph.
 - Follow the [Glossary entry](glossary-entries.md) conventions for the terms of the convention.
+- Do not add other paragraphs to the scope.
 
 ### Template section
 

@@ -2,10 +2,6 @@
 
 This convention defines the fields and life cycle of the GitHub milestone for 1 approved module plan.
 
-A milestone groups the Issues of the plan on GitHub.
-
-The [Module plan](module-plans.md) convention defines a module plan and its [Task list](module-plans.md#task-list). The [GitHub Issue](github-issues.md) convention defines the final Prove task.
-
 ## Template
 
 A milestone has a title, a due date, and a description, which are fields of the milestone form on GitHub.

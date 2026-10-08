@@ -2,12 +2,6 @@
 
 This convention defines the file, the format, and the status of 1 module plan in `tasks/`.
 
-The [Module specification](module-specs.md) convention defines a module specification.
-
-A module plan breaks an approved module specification into tasks. Each task becomes 1 GitHub Issue, as the [GitHub Issue](github-issues.md) convention defines.
-
-A phase is a group of tasks. A checkpoint lists the outcomes of a phase. After the tasks of the phase are done, a reviewer makes sure that each outcome holds.
-
 ## Template
 
 A plan has a title, a module ID, a status line, [Overview](#overview), [Architecture decisions](#architecture-decisions), [Dependency graph](#dependency-graph), [Task list](#task-list), and [Risks and controls](#risks-and-controls).
@@ -99,7 +93,7 @@ flowchart TD
 
 #### Risks table
 
-- Write 1 row for each material risk, as the [Module specification](module-specs.md) convention defines a material risk.
+- Write 1 row for each material risk.
 - Write the columns in this order.
 
 | Column | How to write |

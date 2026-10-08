@@ -1,22 +1,8 @@
 # Commit message conventions
 
-This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`.
+This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention.
 
 The [Repository instructions](../../AGENTS.md) define checkpoint commits and squash merges.
-
-Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention.
-
-The subject line is the first line of the message, which holds the type, the scope, the breaking marker, and the description.
-
-The main change of a commit is the change that the commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it.
-
-A change breaks callers when `buf breaking` reports it, or when it removes or changes the meaning of a field, a route, or an event that callers use.
-
-Instrumentation is code that emits logs, metrics, or traces.
-
-The service paths of a service are these paths, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service.
-
-A footer or a trailer is a `Key: value` line at the end of the message that Git and GitHub read, such as an Issue footer or a co-author trailer.
 
 ## Template
 

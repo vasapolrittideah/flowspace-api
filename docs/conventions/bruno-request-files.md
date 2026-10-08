@@ -4,8 +4,6 @@ This convention defines the file name and the request name of each Bruno request
 
 The [Project structure](../project-structure.md) defines the purpose of the collection.
 
-A request file is a `.bru` file that sends 1 HTTP request and tests the response. The request name is the `name` value in the `meta` block of the file. The run position is the `seq` value in the same block.
-
 ## Template
 
 A file name has a run position and a request name.

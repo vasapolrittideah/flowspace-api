@@ -2,8 +2,6 @@
 
 This convention defines the file, format, and status of 1 architecture decision record (ADR) in `docs/adr/`.
 
-A record is 1 ADR. The index is the table of records in the [Architecture Decision Records](../adr/README.md) file. A slug is a short form of the title in the file name of a record.
-
 The [Architecture Decision Records](../adr/README.md) file states the purpose of a record.
 
 ## Template

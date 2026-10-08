@@ -2,17 +2,7 @@
 
 This convention defines the format and life cycle of the GitHub Issue for 1 task.
 
-A task is 1 piece of work that 1 PR completes.
-
-The [Module specification](module-specs.md) and [Module plan](module-plans.md) conventions define a module and a module plan.
-
-The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task.
-
-A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
-
-An automatic build is a run of `/build auto`, in which a dispatcher agent starts 1 subagent for each ready Issue. [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) and [ADR-0041](../adr/0041-maintainers-answer-automatic-builds-in-the-chat.md) state the decisions for automatic builds.
-
-An agent comment is a comment that an agent posts on an Issue or a PR. A marker is an HTML comment that starts an agent comment and names its kind. Agents post with the account of the maintainer, so a marker tells an agent comment apart from a comment of the maintainer.
+[ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) and [ADR-0041](../adr/0041-maintainers-answer-automatic-builds-in-the-chat.md) state the decisions for automatic builds.
 
 ## Template
 

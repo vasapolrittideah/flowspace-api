@@ -2,10 +2,6 @@
 
 This convention defines how to format Markdown and how to write English prose in the text that the project writes. The text covers only Markdown files, code comments in every language including Protobuf, commit messages, and GitHub text. It excludes files in `.agents/` and `.claude/`, generated files, string values in code and configuration, and replies in chat.
 
-GitHub text is the text of Issues, pull requests, comments, and milestones on GitHub. Markdown text is the text of Markdown files and GitHub text. A generated file is a file that a tool writes, such as the files under `gen/`.
-
-Hard wrapping is the insertion of manual line breaks inside a paragraph or a list item. A tool directive is a comment that a tool reads, such as `//go:build` or `//go:generate`.
-
 ## Rules
 
 ### Format and content

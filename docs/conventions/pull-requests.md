@@ -2,7 +2,7 @@
 
 This convention defines how to write a pull request (PR), how to prepare it for review, and how to write its squash message.
 
-The [Repository instructions](../../AGENTS.md) define a PR and who merges it.
+The [Repository instructions](../../AGENTS.md) state who merges a PR.
 
 ## Template
 

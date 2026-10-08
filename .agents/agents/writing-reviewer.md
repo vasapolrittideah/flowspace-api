@@ -20,7 +20,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md`, the Markdown and English prose convention, `.agents/skills/simple-english/SKILL.md`, `.agents/skills/simple-english/references/rule-catalog.md`, and `.agents/skills/humanizer/SKILL.md`.
+1. Read `AGENTS.md`, `GLOSSARY.md`, the Markdown and English prose convention, `.agents/skills/simple-english/SKILL.md`, `.agents/skills/simple-english/references/rule-catalog.md`, and `.agents/skills/humanizer/SKILL.md`.
 2. List each text in scope. The convention covers Markdown files, code comments in every language, commit messages, and GitHub text, such as a PR description, a squash message, or an Issue. Apply its exclusions: files in `.agents/` and `.claude/`, generated files, string values in code and configuration, and replies in chat.
 3. For a changed file, check only the text that the change adds or changes. If the change edits part of a paragraph or a bullet, check the whole paragraph or bullet, as the `Changes` rules of the convention state.
 4. Check the Markdown format: one physical line for each paragraph and list item, sentence-case headings, bullets, numbered lists, and tables as the convention chooses them, backticks, links, and no bold or italic text.

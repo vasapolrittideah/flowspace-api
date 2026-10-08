@@ -21,7 +21,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md` and `CONSTRAINTS.md`. Read the `Testing strategy` of the specification when the change belongs to one, and the test levels in `docs/conventions/module-specs.md`.
+1. Read `AGENTS.md`, `CONSTRAINTS.md`, and `GLOSSARY.md`. Read the `Testing strategy` of the specification when the change belongs to one, and the test levels in `docs/conventions/module-specs.md`.
 2. Read the changed code to list the behaviors that a caller can see: results, errors, limits, and side effects. Read the existing tests around the change, so that you can compare the new tests with their patterns.
 3. Match each behavior to a test that proves it. A behavior that the code handles and no test proves is a gap.
 4. Compare the tests with the test plan of the author. Report a planned case that has no test, and a behavior that neither the plan nor the tests cover.

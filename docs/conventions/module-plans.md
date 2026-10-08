@@ -6,7 +6,7 @@ The [Module specification](module-specs.md) convention defines a module specific
 
 A module plan breaks an approved module specification into tasks. Each task becomes 1 GitHub Issue, as the [GitHub Issue](github-issues.md) convention defines.
 
-A phase is a group of tasks. A checkpoint lists the outcomes that a reviewer checks after the tasks of a phase are done.
+A phase is a group of tasks. A checkpoint lists the outcomes of a phase. After the tasks of the phase are done, a reviewer makes sure that each outcome holds.
 
 ## Template
 

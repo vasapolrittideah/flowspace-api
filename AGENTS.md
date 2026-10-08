@@ -52,7 +52,7 @@ The groups below follow the order of the work, from planning to delivery.
 | Work | Convention |
 | --- | --- |
 | Writing or updating architecture decision records in `docs/adr/` | [Architecture decision records](docs/conventions/adrs.md) |
-| Writing or updating module specifications in `docs/specs/<module-id>.md` | [Module specs](docs/conventions/module-specs.md) |
+| Writing or updating module specifications in `docs/specs/<module-id>.md` | [Module specifications](docs/conventions/module-specs.md) |
 | Writing or updating module plans in `tasks/<module-id>.md` and tracking tasks | [Module plans](docs/conventions/module-plans.md) |
 | Creating or updating GitHub milestones | [GitHub milestones](docs/conventions/github-milestones.md) |
 | Drafting Issues in `tasks/.todo.md` or creating or updating GitHub Issues | [GitHub Issues](docs/conventions/github-issues.md) |

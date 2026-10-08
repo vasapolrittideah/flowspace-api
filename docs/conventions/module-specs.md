@@ -158,10 +158,11 @@ Never do these actions:
 
 ### Contract
 
+- Put each condition in [Behavior](#behavior).
 - If the contract has RPCs, start it with "Use package `flowspace.<service name>.v1` and service `<service name in Pascal case>`." If it has events but no RPCs, start it with "Use package `flowspace.<service name>.v1`."
 - If a shape has fewer than 2 named items, such as fields, labels, or panels, write it as a paragraph directly under `## Contract`, before the subsections.
 - Write each shape that a consumer reads.
-- For RPCs and events, write these tables, each under a `###` heading with its name. Omit a table that has no rows.
+- For RPCs and events, omit a table that has no rows. Write the remaining tables in this order, each under a `###` heading with its name:
   1. [Methods](#methods)
   2. [Method requirements](#method-requirements)
   3. [HTTP-only endpoints](#http-only-endpoints)
@@ -171,7 +172,7 @@ Never do these actions:
 - For each other shape, write a `###` subsection with a table that has 1 row for each named item.
 - Choose the heading and the columns of each other shape with these steps, and stop after the first match:
   1. If the shape is in the [Contract shapes](#contract-shapes) table, use its heading and all of its columns in that order.
-  2. Name the heading with a plural noun phrase, and search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns.
+  2. Name the heading with a plural noun phrase. Search the `###` headings in `docs/specs/` for the same heading. If another specification has it, copy its columns.
   3. Write the columns in the order of the next rule. The first specification that uses a heading sets its columns.
 - For a heading that no specification has, write the columns in this order:
   1. The name of the item.
@@ -184,8 +185,7 @@ Never do these actions:
   3. The other shapes, in alphabetical order of their headings.
   4. The subsection whose heading is `### Configuration`.
 - Keep the rows of [Methods](#methods) and [Method requirements](#method-requirements) in the same RPC order.
-- Put each condition in [Behavior](#behavior).
-- Add a new shape to the [Contract shapes](#contract-shapes) table only when any of its columns needs a rule that the steps above do not give, such as a fixed set of values or a required format. Add it with these steps:
+- Only when any column of a new shape needs a rule that the steps above do not give, such as a fixed set of values or a required format, add the shape to the [Contract shapes](#contract-shapes) table. Add it with these steps:
   1. Add the shape in a separate PR of this convention.
   2. List that PR in [Follow-up tasks](pull-requests.md#follow-up-tasks) of the specification PR.
 - Do not explain the mechanics of Protobuf, REST, versions, or errors again.
@@ -227,7 +227,7 @@ Never do these actions:
 
 #### Resource fields
 
-- Write 1 table for each resource that a method returns, and put the resource name in the sentence before the table.
+- Write 1 table for each resource that a method returns. Put the resource name in the sentence before the table.
 - Write 1 row for each field.
 
 | Column | How to write |
@@ -351,7 +351,7 @@ Never do these actions:
 
 ### Implementation boundaries
 
-- Write up to 3 bullet lists, each after its own sentence, and omit a list that has no items and its sentence. Write the lists in this order:
+- Write up to 3 bullet lists, each after its own sentence. Omit a list that has no items, and its sentence. Write the lists in this order:
   1. "Always do these actions:"
   2. "Ask the maintainer before these actions:"
   3. "Never do these actions:"
@@ -369,7 +369,7 @@ Never do these actions:
 
 ### Assumptions and open questions
 
-- Add this section only when the specification has an assumption or an open question.
+- Only when the specification has an assumption or an open question, add this section.
 - Write 1 bullet for each assumption or open question.
 - Before the status changes to `Approved`, resolve or remove each item, or remove the section.
 
@@ -386,7 +386,7 @@ Never do these actions:
 - Use the sections in the template order.
 - Put a check that a capability must pass before Flowspace stops using disposable data in the "Before real teams" list in the [Observability and recovery](../architecture.md#observability-and-recovery) section of the architecture, not in the specification.
 - Put implementation locations and commands in the plan and its Issues.
-- Repeat a project-wide rule only when it changes observable behavior or completion criteria.
+- Only when a project-wide rule changes observable behavior or completion criteria, repeat the rule.
 - Do not describe commands, the technology stack, the project structure, or code style. The [Technology stack](../technology-stack.md), the [Project structure](../project-structure.md), the code conventions, and the [Constraints](../../CONSTRAINTS.md) apply to all modules.
 - Do not add other top-level sections. Add a new section to this convention before you use it in a specification.
 
@@ -412,7 +412,7 @@ Never do these actions:
 - While the specification or the index has the `Draft` status, expect the `Lint Markdown` CI job to fail, so that GitHub blocks the merge. When every other check passes, tell the maintainer that the PR is ready for review.
 - Let only the maintainer approve a specification. The approval is the merge of the PR that adds the specification, or that changes its contract, behavior, or success criteria, with the `Approved` status.
 - When the maintainer asks for approval in the chat or in a review comment, change the status to `Approved` in the specification and in the index in 1 commit. Do not change it before the maintainer asks.
-- Write the specification of a module only after the specification of each module in its `Depends on` column is `Approved` or `Implemented`. A specification can then use the approved contract of each dependency.
+- Only after the specification of each module in its `Depends on` column is `Approved` or `Implemented`, write the specification of a module. A specification can then use the approved contract of each dependency.
 - Start planning only from an `Approved` specification.
 - Change the status to `Implemented` in the PR that proves the last success criterion.
 
@@ -422,7 +422,7 @@ Never do these actions:
 - If a change to an `Approved` or `Implemented` specification affects its contract, behavior, or success criteria, follow these steps:
   1. Set its status to `Draft` in the PR of the change.
   2. Follow the [Status and approval](#status-and-approval) rules. An `Implemented` specification becomes `Approved` again, because the changed behavior is not implemented yet.
-- Keep the status when a change only corrects wording or only applies a new version of this convention.
+- If a change only corrects wording or only applies a new version of this convention, keep the status.
 - Apply a change of this convention only to new specifications and to specifications that a later PR changes. In that PR, convert the whole specification to the current template.
 - Do not rename a module ID after it appears in the index.
 

@@ -9,7 +9,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -24,6 +26,7 @@ import (
 const (
 	deliveryOperation = "identity.email_delivery"
 	noticeOperation   = "identity.password_change_notice"
+	noticeKind        = "password-change-notice"
 )
 
 var (
@@ -38,6 +41,7 @@ type EmailWorker struct {
 	opener     outbound.DeliveryOpener
 	sender     outbound.EmailSender
 	logger     *zap.Logger
+	deliveries metric.Int64Counter
 }
 
 func NewEmailWorker(broker, topic, group string, repository outbound.DeliveryRepository, opener outbound.DeliveryOpener, sender outbound.EmailSender, logger *zap.Logger, options ...kgo.Opt) (*EmailWorker, error) {
@@ -48,36 +52,51 @@ func NewEmailWorker(broker, topic, group string, repository outbound.DeliveryRep
 	if err != nil {
 		return nil, err
 	}
-	return &EmailWorker{client: client, repository: repository, opener: opener, sender: sender, logger: logger}, nil
+	deliveries, err := otel.Meter("flowspace/identity/email-worker").Int64Counter("identity.email.deliveries",
+		metric.WithUnit("{delivery}"), metric.WithDescription("Email delivery attempts by kind and outcome"))
+	if err != nil {
+		client.Close()
+		return nil, err
+	}
+	return &EmailWorker{client: client, repository: repository, opener: opener, sender: sender, logger: logger, deliveries: deliveries}, nil
 }
 
 func (w *EmailWorker) Close() { w.client.Close() }
 
 func (w *EmailWorker) HandleRecord(ctx context.Context, record *kgo.Record) error {
+	_, err := w.handleRecord(ctx, record)
+	return err
+}
+
+// handleRecord returns the code purpose when it tries a current delivery, or
+// an empty kind when the record sends no email.
+func (w *EmailWorker) handleRecord(ctx context.Context, record *kgo.Record) (string, error) {
 	if record == nil {
-		return ErrInvalidDeliveryEvent
+		return "", ErrInvalidDeliveryEvent
 	}
 	header := &sr.ConfluentHeader{}
 	schemaID, payload, err := header.DecodeID(record.Value)
 	if err != nil || schemaID < 1 {
-		return ErrInvalidDeliveryEvent
+		return "", ErrInvalidDeliveryEvent
 	}
 	_, payload, err = header.DecodeIndex(payload, 1)
 	if err != nil {
-		return ErrInvalidDeliveryEvent
+		return "", ErrInvalidDeliveryEvent
 	}
 	var request identityv1.EmailDeliveryRequested
 	if err := proto.Unmarshal(payload, &request); err != nil {
-		return ErrInvalidDeliveryEvent
+		return "", ErrInvalidDeliveryEvent
 	}
 	if _, err := uuid.Parse(request.GetEventId()); err != nil {
-		return ErrInvalidDeliveryEvent
+		return "", ErrInvalidDeliveryEvent
 	}
 	if _, err := uuid.Parse(request.GetChallengeId()); err != nil || string(record.Key) != request.GetEventId() ||
 		!validDeliveryPurpose(request.GetPurpose()) {
-		return ErrInvalidDeliveryEvent
+		return "", ErrInvalidDeliveryEvent
 	}
+	kind := ""
 	if err := w.repository.WithCurrentDelivery(ctx, request.GetChallengeId(), request.GetPurpose(), func(ctx context.Context, current outbound.CurrentDelivery) error {
+		kind = request.GetPurpose()
 		address, code, err := w.opener.Open(request.GetChallengeId(), request.GetPurpose(), current.Subject, current.Material)
 		if err != nil || address != current.Email {
 			return ErrEmailDelivery
@@ -87,9 +106,9 @@ func (w *EmailWorker) HandleRecord(ctx context.Context, record *kgo.Record) erro
 		}
 		return nil
 	}); err != nil {
-		return ErrEmailDelivery
+		return kind, ErrEmailDelivery
 	}
-	return nil
+	return kind, nil
 }
 
 // DeliverPasswordChangeNotice sends one due notice and reports whether it found one.
@@ -99,13 +118,30 @@ func (w *EmailWorker) DeliverPasswordChangeNotice(ctx context.Context) (bool, er
 	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, noticeOperation,
 		trace.WithSpanKind(trace.SpanKindConsumer), trace.WithNewRoot())
 	defer span.End()
-	found, err := w.repository.WithNextPasswordChangeNotice(ctx, w.sender.SendPasswordChangeNotice)
+	attempted := false
+	found, err := w.repository.WithNextPasswordChangeNotice(ctx, func(ctx context.Context, email string) error {
+		attempted = true
+		return w.sender.SendPasswordChangeNotice(ctx, email)
+	})
 	if err != nil {
+		if attempted {
+			w.countDelivery(ctx, noticeKind, "failed")
+		}
 		span.SetStatus(codes.Error, "notice delivery failed")
 		w.logger.Warn("password_change_notice_failed", logging.TraceID(ctx), zap.String("operation", noticeOperation))
 		return found, ErrEmailDelivery
 	}
+	if attempted {
+		w.countDelivery(ctx, noticeKind, "delivered")
+	}
 	return found, nil
+}
+
+// countDelivery adds one delivery attempt. An empty kind means that the worker did not try to send an email.
+func (w *EmailWorker) countDelivery(ctx context.Context, kind, outcome string) {
+	if kind != "" {
+		w.deliveries.Add(ctx, 1, metric.WithAttributes(attribute.String("identity.email.kind", kind), attribute.String("outcome", outcome)))
+	}
 }
 
 func validDeliveryPurpose(purpose string) bool {
@@ -130,8 +166,12 @@ func (w *EmailWorker) RunOnce(ctx context.Context) (bool, error) {
 	if len(records) == 0 {
 		return false, nil
 	}
+	return true, w.processRecord(ctx, records[0], w.client.CommitRecords)
+}
+
+func (w *EmailWorker) processRecord(ctx context.Context, record *kgo.Record, commit func(context.Context, ...*kgo.Record) error) error {
 	carrier := propagation.MapCarrier{}
-	for _, header := range records[0].Headers {
+	for _, header := range record.Headers {
 		if header.Key == "traceparent" || header.Key == "tracestate" {
 			carrier.Set(header.Key, string(header.Value))
 		}
@@ -140,26 +180,30 @@ func (w *EmailWorker) RunOnce(ctx context.Context) (bool, error) {
 	ctx, span := otel.Tracer("flowspace/identity/email-worker").Start(ctx, deliveryOperation, trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 	traceID, operation := logging.TraceID(ctx), zap.String("operation", deliveryOperation)
-	if err := w.HandleRecord(ctx, records[0]); err != nil {
+	kind, err := w.handleRecord(ctx, record)
+	if err != nil {
+		w.countDelivery(ctx, kind, "failed")
 		w.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
-			records[0].Topic: {records[0].Partition: {Epoch: records[0].LeaderEpoch, Offset: records[0].Offset}},
+			record.Topic: {record.Partition: {Epoch: record.LeaderEpoch, Offset: record.Offset}},
 		})
 		span.SetStatus(codes.Error, "delivery failed")
 		w.logger.Warn("email_delivery_failed", traceID, operation)
-		return true, err
+		return err
 	}
-	if err := w.client.CommitRecords(ctx, records[0]); err != nil {
+	if err := commit(ctx, record); err != nil {
+		w.countDelivery(ctx, kind, "commit_failed")
 		span.SetStatus(codes.Error, "broker commit failed")
 		w.logger.Warn("email_delivery_commit_failed", traceID, operation)
-		return true, ErrDeliveryBroker
+		return ErrDeliveryBroker
 	}
-	if !records[0].Timestamp.IsZero() {
+	if !record.Timestamp.IsZero() {
 		w.logger.Info("email_delivery_processed", traceID, operation,
-			zap.Float64("record_age_seconds", max(0, time.Since(records[0].Timestamp).Seconds())))
+			zap.Float64("record_age_seconds", max(0, time.Since(record.Timestamp).Seconds())))
 	} else {
 		w.logger.Info("email_delivery_processed", traceID, operation)
 	}
-	return true, nil
+	w.countDelivery(ctx, kind, "delivered")
+	return nil
 }
 
 func (w *EmailWorker) Run(ctx context.Context) error {

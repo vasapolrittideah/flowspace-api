@@ -80,7 +80,7 @@ Co-authored-by: <co-author name, if any> <<co-author email>>
 - In a squash commit, do not copy sentences from the PR description.
 - In a squash commit, make sure that the final diff supports each sentence.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
-- Do not refer to the commit, the writer, or the time of writing, such as "This commit adds", "I", "we", "now", or "currently". State each change directly. The first line of the body of a [revert commit](#commits-that-revert-a-commit) is an exception.
+- Do not refer to the commit, the writer, or the time of writing, such as "This commit adds", "I", "we", "now", or "currently". State each change directly. The required first body line in [Commits that revert a commit](#commits-that-revert-a-commit) is an exception.
 - In a squash commit, do not include verification details, lists of added tests, or specification or plan status changes.
 - In a squash commit, do not include text that only reviewers need, such as merge order, review notes, checks that did not run, or follow-up tasks.
 
@@ -128,11 +128,11 @@ Co-authored-by: <co-author name, if any> <<co-author email>>
 
 ## Commits that revert a commit
 
-A revert commit undoes an earlier commit. Follow these rules for each revert commit, including the squash commit of a PR that reverts a commit.
+Follow these rules for each commit that reverts an earlier commit, including the squash commit of a PR that reverts a commit.
 
-- Use the `revert` type.
-- Use the scope and the description of the reverted commit.
 - Start the body with `This reverts commit <full SHA>.` Then give the reason in a new paragraph.
+- Use the scope and the description of the reverted commit.
+- Use the `revert` type.
 - Do not copy the breaking marker of the reverted commit. Add the marker only when the revert itself breaks callers, as the [Breaking marker](#breaking-marker) rules state.
 
 ## Differences from the git-workflow-and-versioning skill
@@ -141,7 +141,7 @@ This convention applies where it differs from the [Git Workflow and Versioning](
 
 - Follow the [Scope](#scope) rules. The skill writes `<type>: <description>` without a scope.
 - Follow the [Body](#body) rules for checkpoint commits. The skill explains only why a change was made.
-- Follow the [Git workflow](../../AGENTS.md#git-workflow) of the repository instructions, which writes a checkpoint commit for each tested step and a squash message for the merge of the PR. The skill advises against squashing commits.
+- Follow the [Git workflow](../../AGENTS.md#git-workflow) of the repository instructions. The skill advises against squashing commits.
 - Follow the [Type](#type) rules. The skill lists 6 types and has no `perf`, `build`, `ci`, `style`, or `revert` type.
 
 ## Reference
@@ -233,7 +233,7 @@ This subject uses the `codegen` scope for code-generation configuration:
 build(codegen): configure Buf to generate ConnectRPC clients
 ```
 
-This subject has no scope, because no row of the Scopes table covers the CI workflow:
+This subject has no scope, because no row of the [Scopes](#scopes) table covers the CI workflow:
 
 ```text
 ci: add pull request title validation

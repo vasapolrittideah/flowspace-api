@@ -109,7 +109,8 @@ Module ID: `<module ID, if any>`
 ### Status and approval
 
 - After you create an Issue, set its Project status to `Todo`.
-- When you start a task, set the Project status of its Issue to `In Progress`. After the Issue closes, make sure that its status is `Done`.
+- When you start a task, set the Project status of its Issue to `In Progress`.
+- After the Issue closes, make sure that its status is `Done`.
 - If an ordinary task has a gap, let its PR close the Issue, and record the gap as the [Risks or limitations](pull-requests.md#risks-or-limitations) and [Follow-up tasks](pull-requests.md#follow-up-tasks) rules state. A gap in the final Prove task keeps the Issue open, as the [Final Prove task](#final-prove-task) rules state.
 
 ### Changes
@@ -124,7 +125,7 @@ The final Prove task checks the approved specification through tests and review.
 - When every item passes, change the statuses of the specification and the plan in the PR of the task, as the [Status and approval](module-specs.md#status-and-approval) rules of the module specification convention and the [Status and approval](module-plans.md#status-and-approval) rules of the module plan convention state.
 - If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state how the PR refers to the Issue.
 
-The Issue of the final Prove task has a title, a module ID, a description, acceptance criteria, verification, and files likely touched.
+The Issue of the final Prove task has a title, a module ID, [Description](#description), [Acceptance criteria](#acceptance-criteria), [Verification](#verification), and [Files likely touched](#files-likely-touched).
 
 ```markdown
 Prove <capability name> against its specification

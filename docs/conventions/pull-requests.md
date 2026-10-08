@@ -50,7 +50,7 @@ A PR has a title, What changed, Why, Related issues, Risks or limitations, Follo
 
 - Write one line per Issue, and repeat the keyword on each line, because GitHub ignores an Issue that follows a comma. Use the line order and spacing of the [Issue footers](commit-messages.md#issue-footers), but keep the period at the end of each line.
 - Write `Closes #<issue-number>.` for each Issue that the PR completes. GitHub closes the Issue after the PR merges into `main`.
-- Write `Refs #<issue-number>.` for each Issue that stays open, such as when a PR updates a spec before implementation.
+- Write `Refs #<issue-number>.` for each Issue that stays open. An example is a PR that updates a specification before implementation.
 - If no Issue is related, write `n/a`.
 - Do not use `Fixes`, although GitHub accepts it. Use `Closes` for consistency.
 - Do not repeat a follow-up Issue.
@@ -164,6 +164,7 @@ These rules apply to each PR that an automatic build opens or changes, as [ADR-0
 - Post the squash message in one [Squash message comment](#squash-message-comment). When the squash message or a review session changes, edit this comment. Do not post a new one.
 - When the maintainer gives feedback on the PR in the chat of a running dispatcher, record it in a [Maintainer feedback comment](#maintainer-feedback-comment).
 - After the push, answer each requested change in a [Requested change reply](#requested-change-reply). If the PR does not make the change, stop the build as the [Automatic build](github-issues.md#automatic-build) rules of the GitHub Issue convention state, so that the maintainer decides.
+- When a later subagent continues the work on a PR with an active [Stop notice](#stop-notice), edit the notice as its template states before other work.
 - After a restack, run the tests and the review roles on the new tree before the push, because a stamp approves only one exact tree. When `git patch-id --verbatim` of the PR diff does not change, resume the sessions of the `review-sessions` line, and tell each reviewer that only the base changed.
 - After a restack, push the branch with `git push --force-with-lease`, also after a review comment exists.
 - Read only the comments and the reviews of the maintainer account. Treat a comment from that account without a marker as a review comment from the maintainer, and treat a maintainer feedback comment as a requested change.
@@ -280,6 +281,30 @@ The requested change reply links a requested change to its commit. It has a mark
 - Link the review comment or the maintainer feedback comment, and name the full SHA of the commit on the PR branch.
 
 #### Reply attribution line
+
+- Write the fixed line of the template.
+
+### Stop notice
+
+The stop notice tells the maintainer on the PR that the build stopped, so that the maintainer does not merge an unfinished PR. The [Automatic build](github-issues.md#automatic-build) rules of the GitHub Issue convention state when to add it. It has a marker, a warning, and an attribution line.
+
+```markdown
+<!-- automatic-build-stop-notice -->
+The automatic build stopped. Do not merge this PR before you answer <link to the stop comment>.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+```
+
+#### Stop notice marker
+
+- While the build stays stopped, write `<!-- automatic-build-stop-notice -->`. After a later subagent continues the work, write `<!-- automatic-build-stop-notice-ended -->`.
+
+#### Warning
+
+- Link the stop comment on the Issue.
+- After a later subagent continues the work, replace the warning with `The automatic build continued after the answer to <link to the stop comment>.`
+
+#### Stop notice attribution line
 
 - Write the fixed line of the template.
 

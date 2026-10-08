@@ -1,6 +1,10 @@
 # GitHub Issue conventions
 
-This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes. A module is one capability that the [Module specification](module-specs.md) convention defines, and a module plan lists the tasks of one module, as the [Module plan](module-plans.md) convention defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run. An automatic build is a run of `/build auto`, in which a dispatcher agent starts one subagent for each ready Issue, as [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. An agent comment is a comment that an agent posts on an Issue or a PR. A marker is an HTML comment that starts an agent comment and names its kind. Agents post with the account of the maintainer, so a marker tells an agent comment apart from a comment of the maintainer.
+This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes.
+
+A module is one capability that the [Module specification](module-specs.md) convention defines, and a module plan lists the tasks of one module, as the [Module plan](module-plans.md) convention defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
+
+An automatic build is a run of `/build auto`, in which a dispatcher agent starts one subagent for each ready Issue, as [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. An agent comment is a comment that an agent posts on an Issue or a PR. A marker is an HTML comment that starts an agent comment and names its kind. Agents post with the account of the maintainer, so a marker tells an agent comment apart from a comment of the maintainer.
 
 ## Template
 

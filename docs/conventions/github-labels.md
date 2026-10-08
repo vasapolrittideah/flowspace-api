@@ -1,6 +1,8 @@
 # GitHub label conventions
 
-This convention defines which labels to apply to GitHub Issues and pull requests (PRs). [`.github/labels.json`](../../.github/labels.json) lists every label, and the `Sync labels` workflow makes the labels on GitHub match the file after a change to it reaches `main`. A type label is a `type:*` label that names the type of a change. An area label is an `area:*` label that names a repository area. The [Commit message](commit-messages.md) convention defines the type, the scope, the main change, and a change that breaks callers.
+This convention defines which labels to apply to GitHub Issues and pull requests (PRs). [`.github/labels.json`](../../.github/labels.json) lists every label, and the `Sync labels` workflow makes the labels on GitHub match the file after a change to it reaches `main`.
+
+A type label is a `type:*` label that names the type of a change. An area label is an `area:*` label that names a repository area. The [Commit message](commit-messages.md) convention defines the type, the scope, the main change, and a change that breaks callers.
 
 ## Rules
 

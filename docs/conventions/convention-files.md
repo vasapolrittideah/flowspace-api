@@ -6,7 +6,7 @@ An artifact is an item that the project makes many times, such as a commit messa
 
 ## Template
 
-A convention file has a title, a scope, a [Template section](#template-section), a [Rules section](#rules-section), [Special cases](#special-cases), [Differences from the skill](#differences-from-the-skill), [Reference](#reference), and [Examples](#examples).
+A convention file has a [Title](#title), a [Scope](#scope), a [Template section](#template-section), a [Rules section](#rules-section), [Special cases](#special-cases), [Differences from the skill](#differences-from-the-skill), [Reference](#reference), and [Examples](#examples).
 
 ```markdown
 # <topic> conventions

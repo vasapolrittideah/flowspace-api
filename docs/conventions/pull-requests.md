@@ -168,7 +168,7 @@ A PR has a title, [What changed](#what-changed), [Why](#why), [Related issues](#
 
 ## Contract or generator change PR
 
-These rules apply to a PR that changes a contract or the configuration of a code generator. The `Contract checks` CI job checks the same results again.
+These rules apply to a PR with a contract or generator change. The `Contract checks` CI job checks the same results again.
 
 - Before you open or update the PR, follow these steps:
   1. Run `task buf -- lint`, `task buf -- breaking`, and `task buf -- generate` for Protobuf, or `task sqlc -- generate` for SQL.
@@ -214,8 +214,11 @@ The specification is `<specification status>` and the plan is `<plan status>`.
 
 ## Automatic build PR
 
-These rules apply to each PR that an automatic build opens or changes, as [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. A subagent writes and updates the PR without a chat. It posts the squash message in an agent comment, and it reports the ready state to the dispatcher, which tells the maintainer in its chat. Each agent comment follows the [Automatic build](github-issues.md#automatic-build) rules of the GitHub Issue convention. The maintainer merges a parent PR before its stacked PR, because a stacked PR that merges first lands on the parent branch and does not close its Issue.
+These rules apply to each PR that an automatic build opens or changes, as [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states.
 
+A subagent writes and updates the PR without a chat. It posts the squash message in an agent comment, and it reports the ready state to the dispatcher, which tells the maintainer in its chat.
+
+- For each agent comment, follow the [Automatic build](github-issues.md#automatic-build) rules of the GitHub Issue convention.
 - In a stacked PR, write the description as [Stacked PR description](#stacked-pr-description) states.
 - Post the squash message in 1 [Squash message comment](#squash-message-comment). When the squash message or a review session changes, edit this comment. Do not post a new one.
 - After the push, edit each maintainer feedback comment that the push completes, and add its `Done in` line. If the PR does not make the change, stop the build as the [Automatic build](github-issues.md#automatic-build) rules of the GitHub Issue convention state, so that the maintainer decides.
@@ -243,7 +246,9 @@ These rules apply after a restack.
 
 ### Stacked PR description
 
-The description of a stacked PR names its parent PR before the template sections. It has a stack line and the template sections.
+The description of a stacked PR names its parent PR before the template sections, because the maintainer merges a parent PR before its stacked PR. A stacked PR that merges first lands on the parent branch and does not close its Issue.
+
+The description has a stack line and the template sections.
 
 ```markdown
 Stacked on #<parent PR number>. Merge #<parent PR number> first.

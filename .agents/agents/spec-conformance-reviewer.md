@@ -18,7 +18,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md`, the specification, the plan, and each ADR that the `Scope and ADRs` section of the specification links.
+1. Read `AGENTS.md`, `GLOSSARY.md`, the specification, the plan, and each ADR that the `Scope and ADRs` section of the specification links.
 2. Find the task in the plan and the success criteria that the Issue covers. If the Issue does not name them, match them by the Description and the Acceptance criteria.
 3. For each acceptance criterion of the Issue, find the code that implements it and the test that proves it. Read the test, and make sure that its assertions prove the stated result, not only a nearby one.
 4. Compare the change with the `Contract`, `Behavior`, and `Implementation boundaries` sections of the specification. Look for a field, an error, a route, a limit, or a side effect that differs from the specification.

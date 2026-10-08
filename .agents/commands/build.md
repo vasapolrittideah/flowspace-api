@@ -64,6 +64,7 @@ A PR from an automatic build is an open PR whose head branch an active start com
 - GitHub reports a merge conflict.
 - A required check failed.
 - A requested change is open, as the [Automatic build PR](../../docs/conventions/pull-requests.md#automatic-build-pr) rules define.
+- It is a draft, because its build stopped and the maintainer answered the stop.
 
 A ready Issue is an open Issue with the `Todo` status in a plan that step 3 of [Start the run](#start-the-run) reads, with all blockers closed. An Issue with one open blocker and all other blockers closed is also ready when the open blocker has an open PR from an automatic build with the `main` base. The subagent of that Issue stacks its PR on the PR of the blocker.
 
@@ -86,12 +87,12 @@ Start each subagent with the Agent tool, with `isolation: "worktree"` and `run_i
 
 ### Relay feedback from the chat
 
-While the subagents work, the maintainer can give feedback on a PR in the chat. Send the feedback to the subagent of that PR with `SendMessage`, and record it in a `<!-- maintainer-feedback -->` comment, as the Automatic build PR rules state. If no subagent works on that PR, record the comment only. A later run starts a subagent for the requested change.
+While the subagents work, the maintainer can give feedback on a PR or answer a stop in the chat. Send the feedback to the subagent of that PR with `SendMessage`, and record it in a `<!-- maintainer-feedback -->` comment, as the Automatic build PR rules state. If no subagent works on that PR, record the comment only. A later run starts a subagent for the requested change. Record an answer to a stop as the [Automatic build](../../docs/conventions/github-issues.md#automatic-build) rules state.
 
 ### End the run
 
 1. Wait for each subagent to finish.
-2. Report each PR and each Issue of the run with its result: ready, fixed, stopped with its reason, or not started with its reason.
+2. Report each PR and each Issue of the run with its result: ready, fixed, stopped with its reason and its question, or not started with its reason.
 3. Remove the lock directory.
 
 ## Automatic build subagent
@@ -112,11 +113,11 @@ A subagent of the [Automatic mode](#automatic-mode) follows this command with th
 
 ### Work on a PR
 
-1. Check out the branch of the PR. If the PR has an active stop notice, edit it as the [Automatic build PR](../../docs/conventions/pull-requests.md#automatic-build-pr) rules state.
+1. Check out the branch of the PR. If the PR is a draft, read the answer in the last stop comment of its Issue, and do the work that the answer asks for in the next steps.
 2. Restack a stacked PR before other work. If the parent PR merged, run `git rebase --onto origin/main "$(git merge-base HEAD <last head of the parent PR>)"`. The merge base is the commit of the parent branch where the child branch started, also when the parent PR got commits before its merge. If the parent PR has new commits, run `git rebase origin/<branch of the parent PR>`. Then run the tests and the review roles on the new tree, as the Automatic build PR rules state.
 3. Fix a merge conflict, a failed check, and each requested change, in that order, and combine the fixes in one push. For a stacked PR, resolve a conflict in the restack. For other PRs, merge `main` into the branch, as the [Changes](../../docs/conventions/pull-requests.md#changes) rules of the Pull request conventions state.
 4. Before you fix a failed check, compare the failure with the diff. If the job log shows a failure of the runner, the network, or an external service, rerun the failed job once. If the failure is in code that the diff does not change, run `git merge-base --is-ancestor origin/main HEAD`, and update the base when the command fails.
 5. Push the branch. After a restack, use `git push --force-with-lease`.
-6. After the push, answer each requested change with a `<!-- requested-change-reply -->` comment that names its commit.
-7. Wait for CI, update the checked items of the Issue as step 3 of [Open the PR](#open-the-pr) states, and edit the squash message comment when the message changes.
+6. After the push, add the `Done in` line to each maintainer feedback comment that the push completes.
+7. Wait for CI, update the checked items of the Issue as step 3 of [Open the PR](#open-the-pr) states, and edit the squash message comment when the message changes. If the PR is a draft, run `gh pr ready` after CI passes.
 8. Report the result and whether the PR is ready to the dispatcher, and stop.

@@ -1,4 +1,4 @@
-package event_test
+package event
 
 import (
 	"bytes"
@@ -10,7 +10,10 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -19,7 +22,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
-	identityevent "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/event"
 	deliverycrypto "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
@@ -32,9 +34,14 @@ type deliveryRepository struct {
 	purgeErr error
 	notices  []string
 	deferred int
+	stale    bool
+	err      error
 }
 
 func (r *deliveryRepository) WithNextPasswordChangeNotice(ctx context.Context, send func(context.Context, string) error) (bool, error) {
+	if r.err != nil {
+		return false, r.err
+	}
 	if len(r.notices) == 0 {
 		return false, nil
 	}
@@ -48,6 +55,12 @@ func (r *deliveryRepository) WithNextPasswordChangeNotice(ctx context.Context, s
 
 func (r *deliveryRepository) WithCurrentDelivery(ctx context.Context, _, _ string, send func(context.Context, outbound.CurrentDelivery) error) error {
 	r.called++
+	if r.err != nil {
+		return r.err
+	}
+	if r.stale {
+		return nil
+	}
 	return send(ctx, r.delivery)
 }
 
@@ -62,6 +75,7 @@ type capturingSender struct {
 	purpose   string
 	notices   []string
 	noticeErr error
+	sendErr   error
 }
 
 func (s *capturingSender) SendPasswordChangeNotice(_ context.Context, email string) error {
@@ -76,7 +90,7 @@ func (s *capturingSender) Send(_ context.Context, _, code, purpose string) error
 	s.called++
 	s.code = code
 	s.purpose = purpose
-	return nil
+	return s.sendErr
 }
 
 func TestEmailWorkerAcceptsPasswordResetEvent(t *testing.T) {
@@ -99,7 +113,7 @@ func TestEmailWorkerDeliversPasswordChangeNotice(t *testing.T) {
 	repository.notices = []string{"Recipient@example.com"}
 	sender.noticeErr = errors.New("smtp refused Recipient@example.com")
 	found, err := worker.DeliverPasswordChangeNotice(context.Background())
-	if !found || !errors.Is(err, identityevent.ErrEmailDelivery) || strings.Contains(err.Error(), "Recipient@example.com") ||
+	if !found || !errors.Is(err, ErrEmailDelivery) || strings.Contains(err.Error(), "Recipient@example.com") ||
 		repository.deferred != 1 || len(repository.notices) != 1 {
 		t.Fatalf("failed notice: found=%v deferred=%d error=%v", found, repository.deferred, err)
 	}
@@ -152,7 +166,7 @@ func TestEmailWorkerRejectsMalformedBrokerRecords(t *testing.T) {
 		{Key: []byte("wrong-key"), Value: valid.Value},
 	}
 	for _, record := range tests {
-		if err := worker.HandleRecord(context.Background(), record); !errors.Is(err, identityevent.ErrInvalidDeliveryEvent) {
+		if err := worker.HandleRecord(context.Background(), record); !errors.Is(err, ErrInvalidDeliveryEvent) {
 			t.Fatalf("malformed event error = %v", err)
 		}
 	}
@@ -165,12 +179,12 @@ func TestEmailWorkerStopsWhenStartupCleanupFails(t *testing.T) {
 	worker, repository, _, _ := newEmailWorkerFixture(t)
 	defer worker.Close()
 	repository.purgeErr = errors.New("database unavailable with private detail")
-	if err := worker.Run(context.Background()); !errors.Is(err, identityevent.ErrEmailDelivery) || strings.Contains(err.Error(), "private detail") {
+	if err := worker.Run(context.Background()); !errors.Is(err, ErrEmailDelivery) || strings.Contains(err.Error(), "private detail") {
 		t.Fatalf("startup cleanup error = %v", err)
 	}
 }
 
-func newEmailWorkerFixture(t *testing.T) (*identityevent.EmailWorker, *deliveryRepository, *capturingSender, *kgo.Record) {
+func newEmailWorkerFixture(t *testing.T) (*EmailWorker, *deliveryRepository, *capturingSender, *kgo.Record) {
 	t.Helper()
 	return newEmailWorkerFixtureForPurpose(t, string(domain.PurposeVerifyEmail))
 }
@@ -187,7 +201,7 @@ func TestPasswordChangeNoticeStartsANewConsumerTrace(t *testing.T) {
 	core, logs := observer.New(zap.InfoLevel)
 	repository := &deliveryRepository{notices: []string{"Recipient@example.com"}}
 	sender := &capturingSender{noticeErr: errors.New("smtp refused Recipient@example.com")}
-	worker, err := identityevent.NewEmailWorker("127.0.0.1:1", "identity-email", "identity-mail-test", repository, nil, sender, zap.New(core))
+	worker, err := NewEmailWorker("127.0.0.1:1", "identity-email", "identity-mail-test", repository, nil, sender, zap.New(core))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +213,7 @@ func TestPasswordChangeNoticeStartsANewConsumerTrace(t *testing.T) {
 		TraceID: callerTrace, SpanID: callerSpan, TraceFlags: trace.FlagsSampled,
 	}))
 
-	if _, err := worker.DeliverPasswordChangeNotice(caller); !errors.Is(err, identityevent.ErrEmailDelivery) {
+	if _, err := worker.DeliverPasswordChangeNotice(caller); !errors.Is(err, ErrEmailDelivery) {
 		t.Fatalf("failed notice = %v", err)
 	}
 
@@ -219,7 +233,7 @@ func TestPasswordChangeNoticeStartsANewConsumerTrace(t *testing.T) {
 	}
 }
 
-func newEmailWorkerFixtureForPurpose(t *testing.T, purpose string) (*identityevent.EmailWorker, *deliveryRepository, *capturingSender, *kgo.Record) {
+func newEmailWorkerFixtureForPurpose(t *testing.T, purpose string) (*EmailWorker, *deliveryRepository, *capturingSender, *kgo.Record) {
 	t.Helper()
 	const eventID = "24cf7dd3-34a9-4f7d-9d51-d2a888b7ed72"
 	const challengeID = "6f2a1f3e-77e4-40f8-9798-54a4522730ae"
@@ -235,7 +249,7 @@ func newEmailWorkerFixtureForPurpose(t *testing.T, purpose string) (*identityeve
 		Subject: "subject", Email: "Recipient@example.com", Material: material,
 	}}
 	sender := &capturingSender{}
-	worker, err := identityevent.NewEmailWorker("127.0.0.1:1", "identity-email", "identity-mail-test", repository, protector, sender, zap.NewNop())
+	worker, err := NewEmailWorker("127.0.0.1:1", "identity-email", "identity-mail-test", repository, protector, sender, zap.NewNop())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,4 +265,162 @@ func newEmailWorkerFixtureForPurpose(t *testing.T, purpose string) (*identityeve
 	}
 	record := &kgo.Record{Key: []byte(eventID), Value: append(header, payload...)}
 	return worker, repository, sender, record
+}
+
+func TestEmailWorkerCountsRecordDeliveriesByKindAndOutcome(t *testing.T) {
+	reader := useDeliveryMeter(t)
+	committed := func(context.Context, ...*kgo.Record) error { return nil }
+	tests := []struct {
+		name    string
+		purpose domain.CodePurpose
+		commit  func(context.Context, ...*kgo.Record) error
+		change  func(*deliveryRepository, *capturingSender, *kgo.Record)
+		wantErr error
+		count   string
+	}{
+		{name: "verify email", purpose: domain.PurposeVerifyEmail, count: "verify-email delivered"},
+		{name: "claim account", purpose: domain.PurposeClaimAccount, count: "claim-account delivered"},
+		{name: "password reset", purpose: domain.PurposePasswordReset, count: "password-reset delivered"},
+		{
+			name: "failed send", purpose: domain.PurposeVerifyEmail, wantErr: ErrEmailDelivery, count: "verify-email failed",
+			change: func(_ *deliveryRepository, sender *capturingSender, _ *kgo.Record) {
+				sender.sendErr = errors.New("smtp refused Recipient@example.com")
+			},
+		},
+		{
+			name: "failed commit", purpose: domain.PurposeVerifyEmail, wantErr: ErrDeliveryBroker, count: "verify-email commit_failed",
+			commit: func(context.Context, ...*kgo.Record) error {
+				return errors.New("broker refused 24cf7dd3-34a9-4f7d-9d51-d2a888b7ed72")
+			},
+		},
+		// These records send no email, so they are not delivery attempts.
+		{
+			name: "stale delivery", purpose: domain.PurposeVerifyEmail,
+			change: func(repository *deliveryRepository, _ *capturingSender, _ *kgo.Record) { repository.stale = true },
+		},
+		{
+			name: "repository failure", purpose: domain.PurposeVerifyEmail, wantErr: ErrEmailDelivery,
+			change: func(repository *deliveryRepository, _ *capturingSender, _ *kgo.Record) {
+				repository.err = errors.New("database unavailable for Recipient@example.com")
+			},
+		},
+		{
+			name: "malformed record", purpose: domain.PurposeVerifyEmail, wantErr: ErrInvalidDeliveryEvent,
+			change: func(_ *deliveryRepository, _ *capturingSender, record *kgo.Record) { record.Value = []byte("invalid") },
+		},
+	}
+	want := map[string]int64{}
+	for _, test := range tests {
+		worker, repository, sender, record := newEmailWorkerFixtureForPurpose(t, string(test.purpose))
+		if test.change != nil {
+			test.change(repository, sender, record)
+		}
+		commit := test.commit
+		if commit == nil {
+			commit = committed
+		}
+		err := worker.processRecord(context.Background(), record, commit)
+		worker.Close()
+		if !errors.Is(err, test.wantErr) || (test.count == "" && sender.called != 0) {
+			t.Fatalf("%s: sends=%d error=%v", test.name, sender.called, err)
+		}
+		if test.count != "" {
+			want[test.count]++
+		}
+		assertDeliveryCounts(t, reader, want)
+	}
+}
+
+func TestEmailWorkerCountsPasswordChangeNoticeDeliveries(t *testing.T) {
+	reader := useDeliveryMeter(t)
+	worker, repository, sender, _ := newEmailWorkerFixture(t)
+	defer worker.Close()
+	repository.notices = []string{"Recipient@example.com"}
+	tests := []struct {
+		name    string
+		change  func()
+		wantErr error
+		count   string
+	}{
+		// A repository failure before the send is not a delivery attempt.
+		{
+			name: "repository failure", wantErr: ErrEmailDelivery,
+			change: func() { repository.err = errors.New("database unavailable for Recipient@example.com") },
+		},
+		{
+			name: "failed send", wantErr: ErrEmailDelivery, count: "password-change-notice failed",
+			change: func() {
+				repository.err = nil
+				sender.noticeErr = errors.New("smtp refused Recipient@example.com")
+			},
+		},
+		{name: "delivered", count: "password-change-notice delivered", change: func() { sender.noticeErr = nil }},
+		// No due notice is not a delivery attempt.
+		{name: "no due notice", change: func() {}},
+	}
+	want := map[string]int64{}
+	for _, test := range tests {
+		test.change()
+		if _, err := worker.DeliverPasswordChangeNotice(context.Background()); !errors.Is(err, test.wantErr) {
+			t.Fatalf("%s: error=%v", test.name, err)
+		}
+		if test.count != "" {
+			want[test.count]++
+		}
+		assertDeliveryCounts(t, reader, want)
+	}
+	if len(sender.notices) != 1 {
+		t.Fatalf("sent notices = %d", len(sender.notices))
+	}
+}
+
+func useDeliveryMeter(t *testing.T) *sdkmetric.ManualReader {
+	t.Helper()
+	reader := sdkmetric.NewManualReader()
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	previous := otel.GetMeterProvider()
+	otel.SetMeterProvider(provider)
+	t.Cleanup(func() {
+		otel.SetMeterProvider(previous)
+		_ = provider.Shutdown(context.Background())
+	})
+	return reader
+}
+
+// assertDeliveryCounts requires exactly the kind and outcome attributes, so no
+// address, code, event ID, or error text can reach a delivery count.
+func assertDeliveryCounts(t *testing.T, reader *sdkmetric.ManualReader, want map[string]int64) {
+	t.Helper()
+	var collected metricdata.ResourceMetrics
+	if err := reader.Collect(context.Background(), &collected); err != nil {
+		t.Fatal(err)
+	}
+	counts := map[string]int64{}
+	for _, scope := range collected.ScopeMetrics {
+		for _, measured := range scope.Metrics {
+			if measured.Name != "identity.email.deliveries" {
+				continue
+			}
+			sum, ok := measured.Data.(metricdata.Sum[int64])
+			if !ok || !sum.IsMonotonic || measured.Unit != "{delivery}" {
+				t.Fatalf("identity.email.deliveries = %+v", measured)
+			}
+			for _, point := range sum.DataPoints {
+				kind, _ := point.Attributes.Value("identity.email.kind")
+				outcome, _ := point.Attributes.Value("outcome")
+				if point.Attributes.Len() != 2 || kind.Type() != attribute.STRING || outcome.Type() != attribute.STRING {
+					t.Fatalf("delivery attributes = %v", point.Attributes.ToSlice())
+				}
+				counts[kind.AsString()+" "+outcome.AsString()] += point.Value
+			}
+		}
+	}
+	if len(counts) != len(want) {
+		t.Fatalf("delivery counts = %v, want %v", counts, want)
+	}
+	for key, value := range want {
+		if counts[key] != value {
+			t.Fatalf("delivery counts = %v, want %v", counts, want)
+		}
+	}
 }

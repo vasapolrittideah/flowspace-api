@@ -14,7 +14,7 @@ The workflow uses three patterns from the article [Building effective agents](ht
 
 The author agent is the agent that writes the change. A reviewer is an agent that runs one review role. A reviewer can read files, but it cannot change them. Its report ends with a verdict, which is `APPROVE` or `REQUEST CHANGES`.
 
-The maintainer is the person who reviews and merges each pull request (PR). The maintainer also connects the steps of the work. The maintainer starts each step, such as a specification, a plan, or the next task. Before the next step starts, the maintainer makes sure that its result is correct.
+The maintainer is the person who reviews and merges each pull request (PR). The maintainer also connects the steps of the work. The maintainer starts each step, such as a specification, a plan, or the next task. Before the next step starts, the maintainer makes sure that its result is correct. [Automatic builds](#automatic-builds) start the next tasks of approved plans without a request for each task, but the maintainer still starts each run.
 
 ## Comparison with orchestrator-workers
 
@@ -33,6 +33,14 @@ Flowspace does not use orchestrator-workers to write a change. The main differen
 If workers write code, they can also change the same files at the same time. This risk applies to coding tasks, and the article does not use it to define the pattern.
 
 Flowspace keeps one author agent for each change, because each PR holds one reviewable change. Independent tasks can still run at the same time. In that case, each task uses its own author agent, its own branch, and its own worktree, as the [Git workflow](../AGENTS.md#git-workflow) section of the repository instructions states. Each task then goes through the same review loop.
+
+## Automatic builds
+
+`/build auto` makes the author agent a dispatcher, as [ADR-0040](adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) decides. The dispatcher does not write code. It starts one background subagent for each ready Issue and for each open PR that needs work, and each subagent is the author agent of one PR. The [Automatic mode](../.agents/commands/build.md#automatic-mode) section of the build command gives the steps.
+
+The dispatcher does not select its subtasks while it works, so it does not use the orchestrator-workers pattern. The approved plan defines each task as an Issue, with its blockers and its likely files. The dispatcher only chooses which ready Issues start, within fixed limits, and it does not combine the results of the subagents. Each subagent goes through the same review loop as a `/build` run that the maintainer starts.
+
+An Issue with one open blocker can stack its PR on the PR of that blocker, so that the work continues before the merge. The maintainer merges a stack from the parent PR up. The [Automatic build PR](conventions/pull-requests.md#automatic-build-pr) rules state how a subagent restacks a PR and how the agents read comments.
 
 ## Agents and files
 

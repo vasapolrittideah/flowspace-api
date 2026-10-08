@@ -1,6 +1,6 @@
 # GitHub Issue conventions
 
-This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes. A module is one capability that the [Module specification](module-specs.md) convention defines, and a module plan lists the tasks of one module, as the [Module plan](module-plans.md) convention defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run.
+This convention defines the GitHub Issue for one task. A task is one piece of work that one PR completes. A module is one capability that the [Module specification](module-specs.md) convention defines, and a module plan lists the tasks of one module, as the [Module plan](module-plans.md) convention defines. The final Prove task is the last task of a module plan, and it proves the approved specification. Every other task is an ordinary task. A gap is an item in [Acceptance criteria](#acceptance-criteria) or [Verification](#verification) that failed or did not run. An automatic build is a run of `/build auto`, in which a dispatcher agent starts one subagent for each ready Issue, as [ADR-0040](../adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. An agent comment is a comment that an agent posts on an Issue or a PR. A marker is an HTML comment that starts an agent comment and names its kind. Agents post with the account of the maintainer, so a marker tells an agent comment apart from a comment of the maintainer.
 
 ## Template
 
@@ -72,21 +72,25 @@ Module ID: `<module ID, if any>`
 ### Format and content
 
 - Use the body fields in the template order, with the same spelling and capitalization.
+- Do not post a comment with the results of a task. The PR description records them. The comments of an [Automatic build](#automatic-build) record the run, not the results.
 
 ### Workflow
 
 - Write one Issue for each task.
 - Before you create an Issue for a module plan, compare its title, body, and planned blockers with the approved specification and the module plan.
-- After you create an Issue, apply the labels that the [GitHub label](github-labels.md) conventions state, and add the Issue to the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4) with the `Todo` status.
-- When you start a task, set the Project status of its Issue to `In Progress`. After the Issue closes, make sure that its status is `Done`.
 - Before you tell the maintainer that the PR is ready, or that it cannot become ready, check each passed item in [Acceptance criteria](#acceptance-criteria) and [Verification](#verification). Leave each gap unchecked.
-- If an ordinary task has a gap, let its PR close the Issue. The PR states the gap in [Risks or limitations](pull-requests.md#risks-or-limitations) and the remaining work in [Follow-up tasks](pull-requests.md#follow-up-tasks). A gap in the final Prove task keeps the Issue open, as the [Final Prove task](#final-prove-task) rules state.
-- Do not post a comment with the results of a task. The PR description records them.
 
 ### Links and tracking
 
+- After you create an Issue, apply the labels that the [GitHub label](github-labels.md) conventions state, and add the Issue to the [flowspace-api GitHub Project](https://github.com/users/vasapolrittideah/projects/4).
 - Record each blocking Issue as one native GitHub `Blocked by` relationship. Use these relationships as the dependency list, and do not list blocking Issues in the body.
 - If the Issue belongs to a module plan, assign the milestone of the plan, as the [GitHub milestone](github-milestones.md) conventions state.
+
+### Status and approval
+
+- After you create an Issue, set its Project status to `Todo`.
+- When you start a task, set the Project status of its Issue to `In Progress`. After the Issue closes, make sure that its status is `Done`.
+- If an ordinary task has a gap, let its PR close the Issue. The PR states the gap in [Risks or limitations](pull-requests.md#risks-or-limitations) and the remaining work in [Follow-up tasks](pull-requests.md#follow-up-tasks). A gap in the final Prove task keeps the Issue open, as the [Final Prove task](#final-prove-task) rules state.
 
 ### Changes
 
@@ -106,6 +110,76 @@ The final Prove task checks the approved specification through tests and review.
 - In [Files likely touched](#files-likely-touched), include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and the likely test paths.
 - When every item passes, mark the specification `Implemented` and the plan `Complete` in the PR of the task.
 - If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state how the PR refers to the Issue.
+
+## Automatic build
+
+These rules apply to each Issue that an automatic build starts, and to each agent comment. The [Automatic mode](../../.agents/commands/build.md#automatic-mode) section of the build command gives the steps of the run.
+
+- Start each agent comment with a marker, such as `<!-- automatic-build -->`. End the comment with the attribution line `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
+- Write each agent comment in English, as the [Markdown and English prose](markdown-and-english-prose.md) conventions state.
+- Before the subagent of an Issue starts, set the Project status of the Issue to `In Progress`, and add a [Start comment](#start-comment). Add a new start comment for each start.
+- When the build of an Issue stops, add a [Stop comment](#stop-comment), and set the Project status to `Needs human`. If the branch of the start comment has no open PR, also change the marker of the start comment to `<!-- automatic-build-ended -->`.
+- After the maintainer answers the stop comment, set the Project status according to the PR state. If the Issue has no open PR, set the status to `Todo`, so that a later run starts the Issue again. If the PR is open, set the status to `In Progress`, so that a later run continues the work on that PR.
+
+### Start comment
+
+The start comment shows that an automatic build works on the Issue. It has a marker, a notice, a branch line, and an attribution line.
+
+```markdown
+<!-- automatic-build -->
+An automatic build started this Issue.
+
+Branch: <branch name, if any>
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+```
+
+#### Marker
+
+- While the build works, write `<!-- automatic-build -->`. After the build stops without an open PR, write `<!-- automatic-build-ended -->`.
+
+#### Notice
+
+- Write the fixed sentence of the template.
+
+#### Branch line
+
+- When the subagent creates the branch, add the line with the exact branch name.
+- Until the branch exists, omit the line.
+
+#### Attribution line
+
+- Write the fixed line of the template.
+
+### Stop comment
+
+The stop comment tells the maintainer why the build stopped. It has a marker, a reason line, a question, and an attribution line.
+
+```markdown
+<!-- automatic-build-stop -->
+Reason: <reason that the build stopped>
+
+<question for the maintainer>
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+```
+
+#### Stop marker
+
+- Write `<!-- automatic-build-stop -->`.
+
+#### Reason line
+
+- State the step that stopped and the cause in one sentence.
+- When the specification or the plan must change, write exactly `Reason: specification or plan change`.
+
+#### Question
+
+- Ask one question that the maintainer can answer in a comment.
+
+#### Stop attribution line
+
+- Write the fixed line of the template.
 
 ## Differences from the planning-and-task-breakdown skill
 

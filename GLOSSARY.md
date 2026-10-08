@@ -6,11 +6,8 @@ This file defines each term that has a narrower or different meaning in Flowspac
 
 | Term | Meaning |
 | --- | --- |
-| generated file | A file that a tool writes, such as the files under `gen/`. |
 | GitHub text | The text of Issues, pull requests, comments, and milestones on GitHub. |
-| hard wrapping | The insertion of manual line breaks inside a paragraph or a list item. |
 | Markdown text | The text of Markdown files and GitHub text. |
-| tool directive | A comment that a tool reads, such as `//go:build` or `//go:generate`. |
 
 ## Conventions
 
@@ -27,7 +24,6 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | --- | --- |
 | index | The table of records in the [Architecture Decision Records](docs/adr/README.md) file. |
 | record | 1 architecture decision record (ADR). |
-| slug | A short form of the title in the file name of a record. |
 
 ## Module specifications
 
@@ -47,10 +43,8 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | checkpoint | The list of the outcomes of a phase. After the tasks of the phase are done, a reviewer makes sure that each outcome holds. |
 | final Prove task | The last task of a module plan, which proves the approved specification. |
 | gap | An item in the acceptance criteria or the verification of an Issue that failed or did not run. |
-| milestone | The GitHub milestone that groups the Issues of 1 module plan. |
 | module plan | A plan that breaks an approved module specification into tasks. Each task becomes 1 GitHub Issue. |
 | ordinary task | A task that is not the final Prove task. |
-| phase | A group of tasks in a module plan. |
 | task | 1 piece of work that 1 PR completes. |
 
 ## Code and tests
@@ -58,15 +52,11 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | Term | Meaning |
 | --- | --- |
 | capability | A task that a service performs. |
-| migration file | A SQL file that holds 1 schema change that goose applies. |
-| query file | A SQL file that holds the queries that sqlc turns into Go methods. |
 | request file | A `.bru` file in `tests/smoke/bruno/` that sends 1 HTTP request and tests the response. |
 | request name | The `name` value in the `meta` block of a request file. |
 | rule title | The `title` field of a provisioned Grafana alert rule. |
 | run position | The `seq` value in the `meta` block of a request file. |
-| runbook | A document that tells a developer what an alert means and what to do when it fires. |
 | scenario test | A test that checks 1 capability across several production files. |
-| transaction | A group of database changes that must commit or roll back together. |
 
 ## Commits and pull requests
 
@@ -74,15 +64,12 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | --- | --- |
 | area label | An `area:*` label that names a repository area. |
 | change that breaks callers | A change that `buf breaking` reports, or that removes or changes the meaning of a field, a route, or an event that callers use. |
-| footer | A `Key: value` line at the end of a commit message that Git and GitHub read, such as an Issue footer or a co-author trailer. A trailer is the same. |
-| instrumentation | Code that emits logs, metrics, or traces. |
 | main change | The change that a commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. |
 | material | Of a risk or an effect of a PR: able to change the decision to merge, or in need of an action after the merge. |
 | ready | Of a PR: the local checks that the [Workflow](docs/conventions/pull-requests.md#workflow) rules of the pull request convention name and CI pass, and the title, description, and labels match the final work. |
 | review comment | A comment or a review on a PR in GitHub. Feedback in the chat is not a review comment. |
 | service paths | The paths of a service, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service. |
 | squash message | The commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. |
-| subject line | The first line of a commit message, which holds the type, the scope, the breaking marker, and the description. |
 | type label | A `type:*` label that names the type of a change. |
 | work for later | Work that a PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. |
 
@@ -93,8 +80,7 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | agent comment | A comment that an agent posts on an Issue or a PR. |
 | automatic build | A run of `/build auto`, in which a dispatcher agent starts 1 subagent for each ready Issue, as [ADR-0040](docs/adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. |
 | marker | An HTML comment that starts an agent comment and names its kind. Agents post with the account of the maintainer, so a marker tells an agent comment apart from a comment of the maintainer. |
-| parent PR | The PR on whose branch a stacked PR started. |
 | requested change | A maintainer feedback comment, as [ADR-0041](docs/adr/0041-maintainers-answer-automatic-builds-in-the-chat.md) states. A requested change is open until its `Done in` line names a commit that the PR branch contains. |
 | restack | A move of the commits of a stacked PR onto the new state of its parent PR or of `main`. |
 | stack line | The line of a stacked PR that names its parent PR, also after the parent PR merges. |
-| stacked PR | A PR from an automatic build that started on the branch of another PR from an automatic build. |
+| stacked PR | A PR from an automatic build that started on the branch of another PR from an automatic build, its parent PR. |

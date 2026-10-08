@@ -19,12 +19,13 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md` and `CONSTRAINTS.md`.
+1. Read `AGENTS.md`, `CONSTRAINTS.md`, and `GLOSSARY.md`.
 2. List the changed files and the other inputs. For each one, find every matching convention in the `Conventions` tables of `AGENTS.md`. One artifact can match several conventions. For example, a PR matches the pull request convention, the commit message convention, and the label convention. Skip the Markdown and English prose convention and the planning conventions, because `writing-reviewer` and `planning-reviewer` check them. Check the label convention for the PR only.
 3. Read each matching convention in full, including its template, rules, exclusions, and examples. Read the commit message convention from `main` with `git show origin/main:docs/conventions/commit-messages.md`, because the PR convention requires the version on `main` for squash messages.
 4. Check each artifact against each rule of its conventions. Check the scope and exclusions of a convention before you report a finding, because some conventions exclude paths such as `.agents/` and `.claude/`.
 5. Skip the rules that the comment at the top of `scripts/check-pr-metadata.mjs` lists, because the caller runs that script before the review, and CI runs it again on each PR change for every input except the squash message. If its output has a finding, report it as Required. If you did not get its output, check those rules too, and say so in the report.
 6. Check that the change does not weaken `CONSTRAINTS.md`.
+7. For each term that the change adds or gives a new meaning, check that `GLOSSARY.md` defines it and that no other changed file defines it, as the [Glossary entry](../../docs/conventions/glossary-entries.md) conventions state.
 
 ## Severity
 

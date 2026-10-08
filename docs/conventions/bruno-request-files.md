@@ -1,6 +1,8 @@
 # Bruno request file conventions
 
-This convention defines the file name and the request name of each Bruno request file in `tests/smoke/bruno/`. A request file is a `.bru` file that sends one HTTP request and tests the response. The request name is the `name` value in the `meta` block of the file. The run position is the `seq` value in the same block. The [Project structure](../project-structure.md) defines the purpose of the collection.
+This convention defines the file name and the request name of each Bruno request file in `tests/smoke/bruno/`.
+
+The [Project structure](../project-structure.md) defines the purpose of the collection.
 
 ## Template
 
@@ -12,12 +14,12 @@ A file name has a run position and a request name.
 
 ### Run position
 
-- Write the run position with two digits, such as `01` for `seq: 1`.
+- Write the run position with 2 digits, such as `01` for `seq: 1`.
 
 ### Request name
 
 - In the file name, write the request name in lowercase words separated by hyphens, such as `log-in-with-password` for `Log in with password`. Keep each hyphen that the request name contains, such as in `all-session`.
-- In the `meta` block, write the request name as a verb phrase in sentence case. A request file is one step in an ordered run, so its name describes what the step does. Go component files use noun phrases because one file groups several actions of a capability.
+- In the `meta` block, write the request name as a verb phrase in sentence case. A request file is 1 step in an ordered run, so its name describes what the step does.
 - If the API must refuse the request, start the request name with `Reject`.
 
 ## Rules
@@ -37,7 +39,7 @@ These request names and file names follow the convention:
 | `Reject current session after all-session logout` | `23-reject-current-session-after-all-session-logout.bru` |
 | `Reject GitHub state on the Google callback` | `40-reject-github-state-on-the-google-callback.bru` |
 
-This request name does not follow the convention, because it is a noun phrase. It does not tell the reader whether the API must accept or refuse the request:
+This request name does not follow the convention, because its noun phrase does not show whether the API must accept or refuse the request:
 
 | Request name | File name |
 | --- | --- |

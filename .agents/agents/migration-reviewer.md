@@ -18,7 +18,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md`, `docs/conventions/sql-files.md`, `docs/adr/0014-relational-data-uses-explicit-sql.md`, and `docs/adr/0015-each-service-owns-a-postgresql-instance.md`.
+1. Read `AGENTS.md`, `GLOSSARY.md`, `docs/conventions/sql-files.md`, `docs/adr/0014-relational-data-uses-explicit-sql.md`, and `docs/adr/0015-each-service-owns-a-postgresql-instance.md`.
 2. List each new or changed migration. If the change edits a migration that is already on `main`, report it, because the SQL file convention forbids it.
 3. For each statement in the `Up` section, find the lock that it takes and how long it holds the lock. Look for a full table rewrite, a full table scan under a strong lock, and an index that is built without `CONCURRENTLY` on a table that can be large.
 4. Look for data loss: a dropped table or column, a narrowed type, a new `NOT NULL` or check constraint that existing rows can fail, and a `DELETE` or `UPDATE` without a safe condition.

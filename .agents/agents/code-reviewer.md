@@ -17,7 +17,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md` and `CONSTRAINTS.md`. For a change in a service, read `docs/project-structure.md`, `docs/conventions/hexagonal-components-and-files.md`, and [ADR-0003](../../docs/adr/0003-hexagonal-layers-inside-each-service.md). Read the other ADRs that the changed code depends on.
+1. Read `AGENTS.md`, `CONSTRAINTS.md`, and `GLOSSARY.md`. For a change in a service, read `docs/project-structure.md`, `docs/conventions/hexagonal-components-and-files.md`, and [ADR-0003](../../docs/adr/0003-hexagonal-layers-inside-each-service.md). Read the other ADRs that the changed code depends on.
 2. Read the tests first, because they show the intended behavior. Then read the code. Use the tests to understand the change, and leave their quality and coverage to `test-reviewer`.
 3. Check the change with the questions below.
 4. Run read-only checks when the sandbox allows them, such as `go vet ./...` or a focused `go test` that writes no files. Say which commands you ran.

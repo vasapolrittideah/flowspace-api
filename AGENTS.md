@@ -1,18 +1,14 @@
 # Repository instructions
 
-Follow these repository instructions for every task. Before making changes, read [`CONSTRAINTS.md`](CONSTRAINTS.md) and the matching convention in the table below. Do not weaken the constraints to make a change pass. For product, architecture, or implementation work, also read [`docs/architecture.md`](docs/architecture.md), relevant [architecture decision records (ADRs)](docs/adr/README.md), and [`docs/technology-stack.md`](docs/technology-stack.md). Treat open architecture proposals as undecided until explicitly approved.
+Follow these repository instructions for every task. Before making changes, read [`CONSTRAINTS.md`](CONSTRAINTS.md), [`GLOSSARY.md`](GLOSSARY.md), and the matching convention in the table below. Do not weaken the constraints to make a change pass. For product, architecture, or implementation work, also read [`docs/architecture.md`](docs/architecture.md), relevant [architecture decision records (ADRs)](docs/adr/README.md), and [`docs/technology-stack.md`](docs/technology-stack.md). Treat open architecture proposals as undecided until explicitly approved.
 
 ## Delivery authority
 
-A pull request (PR) proposes changes for review. A squash merge combines all commits in a PR into one commit.
-
-- Prepare and test changes on a branch, then submit them for review through a PR.
+- Prepare and test changes on a branch, then submit them for review through a pull request (PR).
 - Do not push directly to `main`, merge a PR, or enable auto-merge.
 - The maintainer reviews and squash merges each PR.
 
 ## Git workflow
-
-The working tree contains local repository files and changes. A branch holds changes outside `main`. A checkpoint commit records one tested work step. A diff shows the changes between two versions.
 
 1. Inspect the working tree and read the relevant project documents.
 2. Preserve work that is outside the task, as the [pull request workflow](docs/conventions/pull-requests.md#workflow) states.
@@ -28,11 +24,11 @@ The working tree contains local repository files and changes. A branch holds cha
 
 Keep each branch and PR limited to one reviewable change. Split unrelated changes into separate PRs.
 
-A worktree is a separate checkout of the repository. If tasks run at the same time, use separate worktrees.
+If tasks run at the same time, use a separate worktree for each task.
 
 ## Review roles
 
-A review role is an agent that checks one aspect of a change, such as the code or the conventions, before a commit or a PR. Read the [Review roles](.agents/rules/review-roles.md) rules before the first commit of a task. Then run each review role that the rules name for the change.
+Read the [Review roles](.agents/rules/review-roles.md) rules before the first commit of a task. Then run each review role that the rules name for the change.
 
 ## Conventions
 
@@ -45,6 +41,7 @@ The groups below follow the order of the work, from planning to delivery.
 | Work | Convention |
 | --- | --- |
 | Writing or updating Markdown, English prose, or code comments | [Markdown and English prose](docs/conventions/markdown-and-english-prose.md) |
+| Writing or updating term definitions in `GLOSSARY.md` | [Glossary entries](docs/conventions/glossary-entries.md) |
 | Writing or updating convention files in `docs/conventions/` | [Convention files](docs/conventions/convention-files.md) |
 
 ### Planning
@@ -52,7 +49,7 @@ The groups below follow the order of the work, from planning to delivery.
 | Work | Convention |
 | --- | --- |
 | Writing or updating architecture decision records in `docs/adr/` | [Architecture decision records](docs/conventions/adrs.md) |
-| Writing or updating module specifications in `docs/specs/<module-id>.md` | [Module specs](docs/conventions/module-specs.md) |
+| Writing or updating module specifications in `docs/specs/<module-id>.md` | [Module specifications](docs/conventions/module-specs.md) |
 | Writing or updating module plans in `tasks/<module-id>.md` and tracking tasks | [Module plans](docs/conventions/module-plans.md) |
 | Creating or updating GitHub milestones | [GitHub milestones](docs/conventions/github-milestones.md) |
 | Drafting Issues in `tasks/.todo.md` or creating or updating GitHub Issues | [GitHub Issues](docs/conventions/github-issues.md) |

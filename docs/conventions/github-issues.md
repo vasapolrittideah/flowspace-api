@@ -118,8 +118,10 @@ These rules apply to each Issue that an automatic build starts, and to each agen
 - Start each agent comment with a marker, such as `<!-- automatic-build -->`. End the comment with the attribution line `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 - Write each agent comment in English, as the [Markdown and English prose](markdown-and-english-prose.md) conventions state.
 - Before the subagent of an Issue starts, set the Project status of the Issue to `In Progress`, and add a [Start comment](#start-comment). Add a new start comment for each start.
-- When the build of an Issue stops, add a [Stop comment](#stop-comment), and set the Project status to `Needs human`. If the branch of the start comment has no open PR, also change the marker of the start comment to `<!-- automatic-build-ended -->`. If the branch has an open PR, also add a [Stop notice](pull-requests.md#stop-notice) to the PR.
-- After the maintainer answers the stop comment, set the Project status according to the PR state. If the Issue has no open PR, set the status to `Todo`, so that a later run starts the Issue again. If the PR is open, set the status to `In Progress`, so that a later run continues the work on that PR.
+- When the build of an Issue stops, add a [Stop comment](#stop-comment), and set the Project status to `Needs human`. If the branch of the start comment has no open PR, also change the marker of the start comment to `<!-- automatic-build-ended -->`. If the branch has an open PR, also convert the PR to a draft with `gh pr ready --undo`, so that GitHub blocks its merge.
+- When the maintainer answers a stop in the chat, record the answer with these steps, as [ADR-0041](../adr/0041-maintainers-answer-automatic-builds-in-the-chat.md) states:
+  1. Add the answer to the [Stop comment](#stop-comment).
+  2. If the Issue has no open PR, set the Project status to `Todo`, so that a later run starts the Issue again. If the PR is open, set the status to `In Progress`, so that a later run continues the work on that PR.
 
 ### Start comment
 
@@ -153,13 +155,15 @@ Branch: <branch name, if any>
 
 ### Stop comment
 
-The stop comment tells the maintainer why the build stopped. It has a marker, a reason line, a question, and an attribution line.
+The stop comment tells the maintainer why the build stopped, and it keeps the answer for a later run. It has a marker, a reason line, a question, an answer line, and an attribution line.
 
 ```markdown
 <!-- automatic-build-stop -->
 Reason: <reason that the build stopped>
 
 <question for the maintainer>
+
+Answer: <answer of the maintainer, if any>
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
@@ -175,7 +179,12 @@ Reason: <reason that the build stopped>
 
 #### Question
 
-- Ask one question that the maintainer can answer in a comment.
+- Ask one question that the maintainer can answer in the chat.
+
+#### Answer line
+
+- When the maintainer answers in the chat, edit the comment and add the answer in English.
+- Until the maintainer answers, omit the line.
 
 #### Stop attribution line
 

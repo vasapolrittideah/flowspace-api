@@ -3,6 +3,7 @@
 // the GitHub ruleset on main cannot enforce. The hook blocks these commands:
 // - `git commit` without the reviewer approvals for the staged tree.
 // - `gh pr merge`.
+// - Each `gh stack` command, because the extension creates and merges PRs without these checks.
 // - `gh pr create` and `gh pr edit` without the approvals of convention-reviewer and
 //   writing-reviewer, and of planning-reviewer when the branch changes a planning artifact.
 // It guards against forgotten steps, not against a deliberate bypass.
@@ -189,6 +190,20 @@ export function commitContentProblem(args) {
   return undefined;
 }
 
+// Returns the first word of a gh command that is not an option, such as `pr` or `stack`. It
+// skips the repository option and its value.
+export function ghCommand(args) {
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === '-R' || arg === '--repo') {
+      i += 1;
+    } else if (!arg.startsWith('-')) {
+      return arg;
+    }
+  }
+  return undefined;
+}
+
 // Returns the action and the arguments of a `gh pr` command, or undefined. It skips the
 // repository option, which gh accepts before and after `pr`.
 export function ghPr(args) {
@@ -256,6 +271,12 @@ export function decide({ command, cwd }, { run, exists, read }) {
     };
   }
   for (const git of gits) {
+    if (git.sub === 'gh' && ghCommand(git.args) === 'stack') {
+      return {
+        block: true,
+        reason: 'Do not run `gh stack`. Its commands create and merge PRs without the checks of this hook. Use `git` and `gh pr create --base`, as ADR-0040 states.',
+      };
+    }
     const out = (args) => {
       const result = run('git', args, git.dir);
       return result.status === 0 ? result.stdout.trim() : undefined;

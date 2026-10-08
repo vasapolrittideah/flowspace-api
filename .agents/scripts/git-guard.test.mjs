@@ -198,6 +198,29 @@ test('gh pr merge is always blocked', () => {
   assert.equal(decideWith('gh pr merge --auto --squash').block, true);
 });
 
+test('every gh stack command is blocked', () => {
+  for (const command of [
+    'gh stack submit',
+    'gh stack merge 12',
+    'gh stack sync',
+    'gh stack view',
+    'gh --repo owner/repo stack submit',
+    'gh -R owner/repo stack push',
+    'env GH_TOKEN=x gh stack submit',
+    'git status && gh stack submit',
+  ]) {
+    const result = decideWith(command);
+    assert.equal(result.block, true, command);
+    assert.match(result.reason, /gh stack/, command);
+  }
+});
+
+test('stack as an argument or inside quotes is not gh stack', () => {
+  for (const command of ['echo "gh stack submit"', 'gh issue list --search stack', 'gh repo view owner/stack']) {
+    assert.equal(decideWith(command).block, false, command);
+  }
+});
+
 test('gh pr create and edit need a convention-reviewer approval for the tree and the description', () => {
   const run = fakeGit({ headTree: TREE });
   // The writing-reviewer approvals are in place, so this test isolates the convention-reviewer ones.

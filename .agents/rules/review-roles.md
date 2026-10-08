@@ -39,6 +39,7 @@ In Claude Code and Codex, the [`git-guard` hook](../scripts/git-guard.mjs) runs 
 
 - `git commit` without the stamps for the staged tree, as stated above. Generated Go code under `gen/` or a `sqlc/` directory needs no `test-reviewer` stamp. It must run as its own command, without `cd`, and without `-a`, `-i`, `-o`, `-p`, or paths.
 - `gh pr merge`, because the maintainer merges pull requests.
+- Each `gh stack` command, because the extension creates and merges PRs without these checks, as [ADR-0040](../../docs/adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states.
 - `gh pr create` and `gh pr edit` without a convention-reviewer stamp and a writing-reviewer stamp for the tree of `HEAD`. When the command passes a description, it must use `--body-file` with the same file that both reviews stamped. When the branch changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, the command also needs a planning-reviewer stamp for the tree of `HEAD`.
 
 Other agents do not run this hook. An agent without the hook, or with a hook that it does not trust yet, must follow the same rules, and must not commit or open a PR without the stamps that the hook requires.

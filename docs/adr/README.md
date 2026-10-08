@@ -47,4 +47,5 @@ The [ADR convention](../conventions/adrs.md) defines the format of a record and 
 | [0037](0037-local-logs-and-traces-use-disposable-single-host-stores.md) | Local logs and traces use disposable single-host stores | Accepted |
 | [0038](0038-local-metrics-reach-a-single-host-prometheus-through-alloy.md) | Local metrics reach a single-host Prometheus through Alloy | Accepted |
 | [0039](0039-local-alerts-run-in-grafana-and-notify-through-mailpit.md) | Local alerts run in Grafana and notify through Mailpit | Accepted |
-| [0040](0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) | Automatic builds run one subagent for each ready Issue | Accepted |
+| [0040](0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) | Automatic builds run one subagent for each ready Issue | Accepted, except the requested changes from comments without a marker and the status change after an answer superseded by [0041](0041-maintainers-answer-automatic-builds-in-the-chat.md) |
+| [0041](0041-maintainers-answer-automatic-builds-in-the-chat.md) | Maintainers answer automatic builds in the chat | Accepted |

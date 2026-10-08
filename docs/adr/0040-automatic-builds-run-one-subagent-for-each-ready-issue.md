@@ -2,7 +2,7 @@
 
 Date: 2026-10-07
 
-Status: Accepted
+Status: Accepted, except the requested changes from comments without a marker and the status change after an answer superseded by [ADR-0041](0041-maintainers-answer-automatic-builds-in-the-chat.md)
 
 ## Context
 

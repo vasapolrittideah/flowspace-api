@@ -4,24 +4,6 @@ This convention defines how to write a pull request (PR), how to prepare it for 
 
 The [Repository instructions](../../AGENTS.md) define a PR and who merges it.
 
-A squash message is the commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR.
-
-A PR is ready when the local checks that the [Workflow](#workflow) rules name and CI pass, and the title, description, and labels match the final work.
-
-A review comment is a comment or a review on the PR in GitHub. Feedback in the chat is not a review comment.
-
-Work for later is work that the PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs.
-
-The [GitHub Issue](github-issues.md) convention defines a task, a final Prove task, a gap, an automatic build, an agent comment, and a marker.
-
-A risk or effect is material when it can change the decision to merge or needs an action after the merge.
-
-A stacked PR is a PR from an automatic build that started on the branch of another PR from an automatic build, its parent PR. Its stack line names the parent PR, also after the parent PR merges.
-
-A restack moves the commits of a stacked PR onto the new state of its parent PR or of `main`.
-
-A requested change is a maintainer feedback comment, as [ADR-0041](../adr/0041-maintainers-answer-automatic-builds-in-the-chat.md) states. A requested change is open until its `Done in` line names a commit that the PR branch contains.
-
 ## Template
 
 A PR has a title, [What changed](#what-changed), [Why](#why), [Related issues](#related-issues), [Risks or limitations](#risks-or-limitations), [Follow-up tasks](#follow-up-tasks), and an attribution line.

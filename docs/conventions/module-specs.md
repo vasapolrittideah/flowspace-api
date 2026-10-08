@@ -2,18 +2,6 @@
 
 This convention defines the file, the format, and the status of 1 module specification in `docs/specs/`.
 
-A module is 1 capability that can be tested on its own, and its specification states what the capability does.
-
-The [Specifications](../specs/README.md) index lists every module.
-
-A consumer is an API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts.
-
-A shape is a name, a route, a field, or a value that a consumer can read.
-
-A condition states when an effect happens, or why.
-
-A material risk is a failure that can break a success criterion or allow a threat in a threat model.
-
 ## Template
 
 A specification has a title, a module ID, a status line, [Objective](#objective), [Scope and ADRs](#scope-and-adrs), [Contract](#contract), [Behavior](#behavior), [Testing strategy](#testing-strategy), [Implementation boundaries](#implementation-boundaries), [Success criteria](#success-criteria), and [Assumptions and open questions](#assumptions-and-open-questions).

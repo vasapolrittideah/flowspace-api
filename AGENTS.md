@@ -1,6 +1,6 @@
 # Repository instructions
 
-Follow these repository instructions for every task. Before making changes, read [`CONSTRAINTS.md`](CONSTRAINTS.md) and the matching convention in the table below. Do not weaken the constraints to make a change pass. For product, architecture, or implementation work, also read [`docs/architecture.md`](docs/architecture.md), relevant [architecture decision records (ADRs)](docs/adr/README.md), and [`docs/technology-stack.md`](docs/technology-stack.md). Treat open architecture proposals as undecided until explicitly approved.
+Follow these repository instructions for every task. Before making changes, read [`CONSTRAINTS.md`](CONSTRAINTS.md), [`GLOSSARY.md`](GLOSSARY.md), and the matching convention in the table below. Do not weaken the constraints to make a change pass. For product, architecture, or implementation work, also read [`docs/architecture.md`](docs/architecture.md), relevant [architecture decision records (ADRs)](docs/adr/README.md), and [`docs/technology-stack.md`](docs/technology-stack.md). Treat open architecture proposals as undecided until explicitly approved.
 
 ## Delivery authority
 
@@ -45,6 +45,7 @@ The groups below follow the order of the work, from planning to delivery.
 | Work | Convention |
 | --- | --- |
 | Writing or updating Markdown, English prose, or code comments | [Markdown and English prose](docs/conventions/markdown-and-english-prose.md) |
+| Writing or updating term definitions in `GLOSSARY.md` | [Glossary entries](docs/conventions/glossary-entries.md) |
 | Writing or updating convention files in `docs/conventions/` | [Convention files](docs/conventions/convention-files.md) |
 
 ### Planning

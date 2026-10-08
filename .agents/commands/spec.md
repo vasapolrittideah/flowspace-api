@@ -11,9 +11,9 @@ The work starts from a request to add a capability or to change one. It ends whe
 1. Read the module specification conventions and the [specification index](../../docs/specs/README.md).
 2. Read the [constraints](../../CONSTRAINTS.md), the [architecture](../../docs/architecture.md), the [technology stack](../../docs/technology-stack.md), and the [ADRs](../../docs/adr/README.md) that apply to the capability. Treat an open proposal as undecided.
 3. For an Identity capability, read the [Identity threat model](../../docs/security/identity-threat-model.md).
-4. Use the [workflow rules](../../docs/conventions/module-specs.md#workflow) of the convention to decide whether the request changes an existing module or adds modules.
+4. Use the [workflow](../../docs/conventions/module-specs.md#workflow) and [changes](../../docs/conventions/module-specs.md#changes) rules of the convention to decide whether the request changes an existing module or adds modules.
 
-If the request bundles several capabilities that can be tested on their own, propose a capability map in the chat first. A capability map lists the module IDs, the dependencies of each module, and the build order. After the maintainer agrees, deliver the `Planned` rows in their own PR, as the workflow rules state. Then write one specification for each PR, in the build order.
+If the request bundles several capabilities that can be tested on their own, propose a capability map in the chat first. A capability map lists the module IDs, the dependencies of each module, and the build order. After the maintainer agrees, deliver the `Planned` rows in their own PR, as the [links and tracking rules](../../docs/conventions/module-specs.md#links-and-tracking) state. Then write one specification for each PR, in the build order.
 
 ## Clarify
 
@@ -22,7 +22,7 @@ Ask questions until you can write each section of the [template](../../docs/conv
 ## Write
 
 1. Create a branch from `main`, as the [branch name conventions](../../docs/conventions/branch-names.md) state.
-2. Write `docs/specs/<module-id>.md` and its row in the index with the `Draft` status. To change an existing specification, follow the [status rules](../../docs/conventions/module-specs.md#status-and-approval) to decide the status.
+2. Write `docs/specs/<module-id>.md` and its row in the index with the `Draft` status. To change an existing specification, follow the [changes rules](../../docs/conventions/module-specs.md#changes) to decide the status.
 3. Show the specification to the maintainer in the chat, and wait for their agreement. This agreement does not approve the specification.
 
 ## Open the PR

@@ -18,7 +18,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md`, `CONSTRAINTS.md`, `docs/architecture.md`, `docs/technology-stack.md`, and the ADR index in `docs/adr/README.md`. Read each ADR that the artifact links or that covers the same area. For an Identity artifact, read `docs/security/identity-threat-model.md`.
+1. Read `AGENTS.md`, `CONSTRAINTS.md`, `GLOSSARY.md`, `docs/architecture.md`, `docs/technology-stack.md`, and the ADR index in `docs/adr/README.md`. Read each ADR that the artifact links or that covers the same area. For an Identity artifact, read `docs/security/identity-threat-model.md`.
 2. Read the planning conventions that apply to the artifact in full, including their templates, rules, exclusions, and examples: `docs/conventions/module-specs.md`, `docs/conventions/module-plans.md`, `docs/conventions/github-issues.md`, `docs/conventions/github-milestones.md`, and `docs/conventions/adrs.md`. For the labels of an Issue, also read `docs/conventions/github-labels.md`.
 3. Check each artifact against each rule of its planning convention. Check the template sections and their order, the name and the location, the status and the index row, and the PR title that the status rules set. For an Issue, check its fields, labels, milestone, and `Blocked by` relationships.
 4. Check each artifact with the questions for its kind below.

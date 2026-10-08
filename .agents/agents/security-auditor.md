@@ -20,7 +20,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md` and `CONSTRAINTS.md`. For an Identity change, read `docs/security/identity-threat-model.md`, and find the threat IDs and the cross-feature invariants that apply. Read the security ADRs that apply, such as ADR-0013 for the acting identity, ADR-0020 for authorization, ADR-0027 for secrets, and ADR-0031 to ADR-0036 for authentication, sessions, tokens, provider login, signup mail, and internal mutual TLS.
+1. Read `AGENTS.md`, `CONSTRAINTS.md`, and `GLOSSARY.md`. For an Identity change, read `docs/security/identity-threat-model.md`, and find the threat IDs and the cross-feature invariants that apply. Read the security ADRs that apply, such as ADR-0013 for the acting identity, ADR-0020 for authorization, ADR-0027 for secrets, and ADR-0031 to ADR-0036 for authentication, sessions, tokens, provider login, signup mail, and internal mutual TLS.
 2. Find each trust boundary that the change crosses: a public REST or gRPC request, an internal RPC, a broker event, a provider callback, a configuration value, a file, or text from a PR or an Issue. Use STRIDE for each boundary before you list findings.
 3. Check the change with the questions below.
 4. For each finding, describe how an attacker reaches the code and what they gain. If you cannot describe a path, report the risk as Optional.

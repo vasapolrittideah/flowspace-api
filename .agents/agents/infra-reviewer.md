@@ -18,7 +18,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md`, `CONSTRAINTS.md`, and the environments section of `docs/architecture.md`. Read the ADRs that apply to the changed files: 0021 to 0027 for the cluster, storage, CI, deployment, overlays, tunnel, and secrets, 0028 to 0030 and 0037 to 0039 for telemetry, and 0036 for internal mutual TLS. Read `docs/identity-internal-tls.md` or `docs/identity-signing-keys.md` when the change touches those keys.
+1. Read `AGENTS.md`, `CONSTRAINTS.md`, `GLOSSARY.md`, and the environments section of `docs/architecture.md`. Read the ADRs that apply to the changed files: 0021 to 0027 for the cluster, storage, CI, deployment, overlays, tunnel, and secrets, 0028 to 0030 and 0037 to 0039 for telemetry, and 0036 for internal mutual TLS. Read `docs/identity-internal-tls.md` or `docs/identity-signing-keys.md` when the change touches those keys.
 2. List each changed manifest, values file, workflow, task, and script. For a Helm values file, find the chart version that the `Tiltfile` pins, and read the defaults of the values that the change sets or leaves unset.
 3. Check each changed workload with the questions below. Compare it with the other workloads in the overlay, because they share one host.
 4. Run the commands that the read-only sandbox allows, such as `kubectl kustomize deploy/overlays/local/<component>` or `helm template`, when the tools exist. Say which commands you ran. If a check needs a running cluster, say so, and name the command that the caller can run.

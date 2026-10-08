@@ -19,7 +19,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Process
 
-1. Read `AGENTS.md` and ADR-0005 to ADR-0013. For an Identity contract, also read ADR-0031 to ADR-0036 and `docs/security/identity-threat-model.md`. Read the `Contract` section of the specification when the caller names one.
+1. Read `AGENTS.md`, `GLOSSARY.md`, and ADR-0005 to ADR-0013. For an Identity contract, also read ADR-0031 to ADR-0036 and `docs/security/identity-threat-model.md`. Read the `Contract` section of the specification when the caller names one.
 2. List each changed service, method, message, field, enum, HTTP annotation, and event. For a changed element, compare it with the version on `origin/main`.
 3. Check each element with the questions below.
 4. Run the pinned Buf CLI with `bin/buf lint` and `bin/buf breaking --against '.git#branch=origin/main'` when the read-only sandbox allows them. Say which commands you ran.

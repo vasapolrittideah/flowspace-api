@@ -182,13 +182,15 @@ These rules apply to each Issue that an automatic build starts. The [Automatic m
 
 ### Start comment
 
-A start comment has a marker, a notice, a branch line, and an attribution line. It shows that an automatic build works on the Issue.
+A start comment has a marker, a notice, a branch line, a review sessions line, and an attribution line. It shows that an automatic build works on the Issue, and it keeps the review sessions of its PR.
 
 ```markdown
 <!-- automatic-build -->
 An automatic build started this Issue.
 
 Branch: `<branch name, if any>`
+
+<!-- review-sessions: <role>=<session ID> -->
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
@@ -205,6 +207,12 @@ Branch: `<branch name, if any>`
 
 - When the subagent creates the branch, add the line with the exact branch name in backticks, such as `` Branch: `feat/identity-github-login` ``.
 - Until the branch exists, omit the line.
+
+#### Review sessions line
+
+- After the first review of the branch, add the line with 1 `<role>=<session ID>` pair for each review role, separated by spaces, so that a later subagent can resume each review.
+- When a review session changes, edit the line. Do not add the line to another comment.
+- Until the first review, omit the line.
 
 #### Attribution line
 

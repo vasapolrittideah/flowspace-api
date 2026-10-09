@@ -10,13 +10,15 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -33,34 +35,6 @@ import (
 )
 
 type testSessionCheckService struct{}
-
-type sessionMetricMeter struct {
-	metric.Meter
-	counter *sessionMetricCounter
-}
-
-func (m sessionMetricMeter) Int64Counter(string, ...metric.Int64CounterOption) (metric.Int64Counter, error) {
-	return m.counter, nil
-}
-
-type sessionMetricCounter struct {
-	metric.Int64Counter
-	mu       sync.Mutex
-	outcomes map[string]int64
-	unsafe   bool
-}
-
-func (c *sessionMetricCounter) Add(_ context.Context, value int64, options ...metric.AddOption) {
-	attributeSet := metric.NewAddConfig(options).Attributes()
-	attributes := attributeSet.ToSlice()
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if len(attributes) != 1 || attributes[0].Key != "outcome" {
-		c.unsafe = true
-		return
-	}
-	c.outcomes[attributes[0].Value.AsString()] += value
-}
 
 func (testSessionCheckService) CheckSession(_ context.Context, input inbound.CheckSessionInput) (bool, error) {
 	switch input.Subject {
@@ -126,9 +100,11 @@ func checkSession(t *testing.T, client identityv1.IdentityServiceClient, subject
 
 func TestPrivateSessionRPC(t *testing.T) {
 	exporter := recordSpans(t)
-	counter := &sessionMetricCounter{outcomes: make(map[string]int64)}
+	reader := sdkmetric.NewManualReader()
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	t.Cleanup(func() { _ = provider.Shutdown(context.Background()) })
 	core, logs := observer.New(zap.InfoLevel)
-	client := startSessionRPC(t, testSessionCheckService{}, sessionMetricMeter{counter: counter}, zap.New(core))
+	client := startSessionRPC(t, testSessionCheckService{}, provider.Meter("test"), zap.New(core))
 	correlation := []string{"traceparent", parentTraceparent, "x-request-id", "request-1"}
 	approved := client("approved")
 	response, err := checkSession(t, approved, "subject-1")
@@ -158,7 +134,7 @@ func TestPrivateSessionRPC(t *testing.T) {
 			t.Fatalf("%s caller = %v", name, err)
 		}
 	}
-	assertSessionObservability(t, logs, counter)
+	assertSessionObservability(t, logs, reader)
 	if spans := exporter.GetSpans(); len(spans) != 3 {
 		t.Fatalf("recorded %d session spans, want 3", len(spans))
 	}
@@ -344,15 +320,57 @@ func TestSessionRPCStartsRootWithoutValidTraceparent(t *testing.T) {
 	}
 }
 
-func assertSessionObservability(t *testing.T, logs *observer.ObservedLogs, counter *sessionMetricCounter) {
+func assertSessionObservability(t *testing.T, logs *observer.ObservedLogs, reader *sdkmetric.ManualReader) {
 	t.Helper()
 	if got := fmt.Sprint(logs.All()); strings.Contains(got, "subject-1") || strings.Contains(got, "session-1") ||
 		logs.FilterMessage("identity_session_check").Len() != 3 {
 		t.Fatalf("unsafe or missing session-check logs: %s", got)
 	}
-	counter.mu.Lock()
-	defer counter.mu.Unlock()
-	if counter.unsafe || !maps.Equal(counter.outcomes, map[string]int64{"OK": 1, "Unauthenticated": 1, "Unavailable": 1}) {
-		t.Errorf("unsafe or missing session-check metrics: %v", counter.outcomes)
+	// Each status has one call, so the sum of its duration equals the
+	// duration of its log line.
+	want := map[string]float64{}
+	for _, line := range logs.FilterMessage("identity_session_check").All() {
+		fields := line.ContextMap()
+		elapsed, _ := fields["duration"].(time.Duration)
+		want[fmt.Sprint(fields["status"])] = elapsed.Seconds()
 	}
+	got := sessionDurations(t, reader)
+	if len(want) != 3 || !maps.Equal(got, want) || slices.Contains(slices.Collect(maps.Values(got)), 0) {
+		t.Errorf("rpc.server.call.duration seconds by status = %v, want %v", got, want)
+	}
+}
+
+// sessionDurations returns the rpc.server.call.duration sum by gRPC status
+// name, and fails when a status has more than one call. It permits only the
+// rpc.method string and the rpc.grpc.status_code integer, so no subject,
+// session, token, or client certificate data can reach a duration. It fails
+// when another metric, such as the identity.session_checks counter, exists.
+func sessionDurations(t *testing.T, reader *sdkmetric.ManualReader) map[string]float64 {
+	t.Helper()
+	var collected metricdata.ResourceMetrics
+	if err := reader.Collect(context.Background(), &collected); err != nil {
+		t.Fatal(err)
+	}
+	sums := map[string]float64{}
+	for _, scope := range collected.ScopeMetrics {
+		for _, measured := range scope.Metrics {
+			if measured.Name != "rpc.server.call.duration" || measured.Unit != "s" {
+				t.Fatalf("unexpected metric %q with unit %q", measured.Name, measured.Unit)
+			}
+			histogram, ok := measured.Data.(metricdata.Histogram[float64])
+			if !ok {
+				t.Fatalf("rpc.server.call.duration data = %T", measured.Data)
+			}
+			for _, point := range histogram.DataPoints {
+				method, hasMethod := point.Attributes.Value("rpc.method")
+				code, hasCode := point.Attributes.Value("rpc.grpc.status_code")
+				if point.Attributes.Len() != 2 || !hasMethod || method.Type() != attribute.STRING || !hasCode || code.Type() != attribute.INT64 ||
+					method.AsString() != strings.TrimPrefix(identityv1.IdentityService_CheckSession_FullMethodName, "/") || point.Count != 1 {
+					t.Fatalf("duration point = %v with %d calls", point.Attributes.ToSlice(), point.Count)
+				}
+				sums[codes.Code(code.AsInt64()).String()] = point.Sum
+			}
+		}
+	}
+	return sums
 }

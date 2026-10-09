@@ -89,6 +89,7 @@ A PR has a title, [What changed](#what-changed), [Why](#why), [Breaking changes]
   1. Before the PR opens, put the local output that shows the failure in a code block under its bullet, because no CI run exists for the PR.
   2. After the first CI run finishes, replace the output with a link to that run.
 - If a revert of the PR is not safe, such as after a migration, state why and what a revert needs.
+- If the PR changes a shared package, a shared configuration, or a path that more than 1 service uses, name the services that a failure of the change affects.
 - Write each unresolved failure, local check that did not run, security risk, and remaining limit. Write each compatibility effect in [Breaking changes](#breaking-changes).
 - For each unresolved failure, state the cause and link the CI run or the output that shows it.
 - For each local check that did not run, state the reason.

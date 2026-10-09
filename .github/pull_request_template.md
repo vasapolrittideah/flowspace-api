@@ -28,7 +28,7 @@ n/a
 
 ## Risks or limitations
 
-<!-- Include revert safety when a revert is not safe, unresolved failures, checks that did not run, or remaining limitations when present. -->
+<!-- Include revert safety when a revert is not safe, the services that a failure affects when the PR changes a shared path, unresolved failures, checks that did not run, or remaining limitations when present. -->
 
 n/a
 

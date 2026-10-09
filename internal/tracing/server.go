@@ -35,10 +35,15 @@ func SetHTTPStatus(span trace.Span, status int) {
 	}
 }
 
+// GRPCStatusCode returns the rpc.grpc.status_code attribute of code.
+func GRPCStatusCode(code codes.Code) attribute.KeyValue {
+	return grpcStatusCodeKey.Int64(int64(code))
+}
+
 // SetGRPCStatus records the gRPC status code of a server span. A code that
 // shows a server failure sets the error status.
 func SetGRPCStatus(span trace.Span, code codes.Code) {
-	span.SetAttributes(grpcStatusCodeKey.Int64(int64(code)))
+	span.SetAttributes(GRPCStatusCode(code))
 	if code == codes.Internal || code == codes.Unavailable || code == codes.DeadlineExceeded || code == codes.Unknown {
 		span.SetStatus(otelcodes.Error, "")
 	}

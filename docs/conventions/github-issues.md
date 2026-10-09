@@ -6,7 +6,7 @@ This convention defines the format and life cycle of the GitHub Issue for 1 task
 
 ## Template
 
-An Issue has a title, a module ID, [Description](#description), [Acceptance criteria](#acceptance-criteria), [Verification](#verification), and [Files likely touched](#files-likely-touched).
+An Issue has a title, a module ID, [Description](#description), [Acceptance criteria](#acceptance-criteria), [Verification](#verification), [Files likely touched](#files-likely-touched), and an attribution line.
 
 ```markdown
 <Issue title>
@@ -28,6 +28,8 @@ Module ID: `<module ID, if any>`
 ## Files likely touched
 
 - `<source, test, contract, or configuration path>`
+
+<attribution line, if any>
 ```
 
 ### Title
@@ -72,6 +74,11 @@ Module ID: `<module ID, if any>`
 - For generated output, list only its folder, with a trailing slash, followed by `(generated output)`, such as `` `gen/go/flowspace/identity/v1/` (generated output) ``.
 - Do not list generated file names.
 
+### Issue attribution line
+
+- If an agent writes the Issue, end the body with the attribution line `🤖 Generated with [Claude Code](https://claude.com/claude-code)`, after a blank line.
+- If a person writes the Issue, omit the line.
+
 ## Rules
 
 ### Format and content
@@ -115,7 +122,7 @@ The final Prove task checks the approved specification through tests and review.
 - When every item passes, change the statuses of the specification and the plan in the PR of the task, as the [Status and approval](module-specs.md#status-and-approval) rules of the module specification convention and the [Status and approval](module-plans.md#status-and-approval) rules of the module plan convention state.
 - If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state how the PR refers to the Issue.
 
-The Issue of the final Prove task has a title, a module ID, [Description](#description), [Acceptance criteria](#acceptance-criteria), [Verification](#verification), and [Files likely touched](#files-likely-touched).
+The Issue of the final Prove task has a title, a module ID, [Description](#description), [Acceptance criteria](#acceptance-criteria), [Verification](#verification), [Files likely touched](#files-likely-touched), and an attribution line.
 
 ```markdown
 Prove <capability name> against its specification
@@ -137,6 +144,8 @@ Module ID: `<module ID>`
 ## Files likely touched
 
 - `<specification, plan, or test path>`
+
+<attribution line, if any>
 ```
 
 ### Final Prove title
@@ -169,6 +178,10 @@ Module ID: `<module ID>`
 
 - Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and the likely test paths.
 - Follow the other [Files likely touched](#files-likely-touched) rules.
+
+### Final Prove attribution line
+
+- Follow the [Issue attribution line](#issue-attribution-line) rules.
 
 ## Automatic build
 

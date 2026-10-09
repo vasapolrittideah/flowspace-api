@@ -67,6 +67,7 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | author agent | The agent that writes a change. |
 | change that breaks callers | A change that `buf breaking` reports, or that removes or changes the meaning of a field, a route, or an event that callers use. |
 | checkpoint commit | A commit on a branch that records 1 tested work step. |
+| lasting record | The [What changed](docs/conventions/pull-requests.md#what-changed), [Why](docs/conventions/pull-requests.md#why), [Breaking changes](docs/conventions/pull-requests.md#breaking-changes), and [Related issues](docs/conventions/pull-requests.md#related-issues) sections of a PR description. Each squash commit has only the PR title, so these sections hold the details of the change for a later reader of `main`, as [ADR-0043](docs/adr/0043-squash-commits-keep-only-the-pull-request-title.md) states. |
 | main change | The change that a commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. |
 | maintainer | The person who reviews and merges each PR. |
 | material | Of a risk or an effect of a PR: able to change the decision to merge, or in need of an action after the merge. |
@@ -76,7 +77,6 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | reviewer | An agent that runs 1 review role. |
 | runner | A module in `.agents/scripts/review-runners/` that starts the CLI of 1 agent for a review. |
 | service paths | The paths of a service, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service. |
-| squash message | The commit message that an agent writes for the squash commit of a PR. The maintainer pastes it into GitHub when they squash merge the PR. |
 | staged tree | The Git tree object of the files that `git add` prepared for the next commit. |
 | type label | A `type:*` label that names the type of a change. |
 | work for later | Work that a PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. |

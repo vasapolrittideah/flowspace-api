@@ -2,7 +2,7 @@
 
 Date: 2026-10-09
 
-Status: Accepted
+Status: Accepted, except the Review notes section superseded by [ADR-0044](0044-pull-request-descriptions-have-no-review-notes-section.md)
 
 ## Context
 

@@ -69,5 +69,5 @@ The groups below follow the order of the work, from planning to delivery.
 | Work | Convention |
 | --- | --- |
 | Creating a short-lived branch for a pull request | [Branch names](docs/conventions/branch-names.md) |
-| Writing checkpoint commit messages or squash messages | [Commit messages](docs/conventions/commit-messages.md) |
-| Creating or updating pull requests or writing squash messages | [Pull requests](docs/conventions/pull-requests.md) |
+| Writing checkpoint commit messages | [Commit messages](docs/conventions/commit-messages.md) |
+| Creating or updating pull requests | [Pull requests](docs/conventions/pull-requests.md) |

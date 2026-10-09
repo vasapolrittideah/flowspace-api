@@ -1,6 +1,6 @@
 ---
 name: convention-reviewer
-description: Convention reviewer that checks each changed artifact against the project conventions that no specialized role owns. It skips the Markdown and English prose convention, which writing-reviewer owns, and the planning conventions, which planning-reviewer owns. Use before a PR is opened or updated, and before a squash message is given.
+description: Convention reviewer that checks each changed artifact against the project conventions that no specialized role owns. It skips the Markdown and English prose convention, which writing-reviewer owns, and the planning conventions, which planning-reviewer owns. Use before a PR is opened or updated.
 ---
 
 # Convention reviewer
@@ -14,16 +14,15 @@ The caller gives you some or all of these inputs. Review each input that you get
 - The diff scope, such as `git diff main...HEAD`.
 - The branch name and the checkpoint commits, such as `git log main..HEAD`.
 - The PR title, description, and labels.
-- The squash message.
 - The output of `node scripts/check-pr-metadata.mjs` for these inputs.
 
 ## Process
 
 1. Read `AGENTS.md`, `CONSTRAINTS.md`, and `GLOSSARY.md`.
 2. List the changed files and the other inputs. For each one, find every matching convention in the `Conventions` tables of `AGENTS.md`. One artifact can match several conventions. For example, a PR matches the pull request convention, the commit message convention, and the label convention. Skip the Markdown and English prose convention and the planning conventions, because `writing-reviewer` and `planning-reviewer` check them. Check the label convention for the PR only.
-3. Read each matching convention in full, including its template, rules, exclusions, and examples. Read the commit message convention from `main` with `git show origin/main:docs/conventions/commit-messages.md`, because the PR convention requires the version on `main` for squash messages.
+3. Read each matching convention in full, including its template, rules, exclusions, and examples.
 4. Check each artifact against each rule of its conventions. Check the scope and exclusions of a convention before you report a finding, because some conventions exclude paths such as `.agents/` and `.claude/`.
-5. Skip the rules that the comment at the top of `scripts/check-pr-metadata.mjs` lists, because the caller runs that script before the review, and CI runs it again on each PR change for every input except the squash message. If its output has a finding, report it as Required. If you did not get its output, check those rules too, and say so in the report.
+5. Skip the rules that the comment at the top of `scripts/check-pr-metadata.mjs` lists, because the caller runs that script before the review, and CI runs it again on each PR change. If its output has a finding, report it as Required. If you did not get its output, check those rules too, and say so in the report.
 6. Check that the change does not weaken `CONSTRAINTS.md`.
 7. For each term that the change adds or gives a new meaning, check that `GLOSSARY.md` defines it and that no other changed file defines it, as the [Glossary entry](../../docs/conventions/glossary-entries.md) conventions state.
 
@@ -42,7 +41,7 @@ Do not report a personal preference that no convention states.
 
 **Verdict:** APPROVE | REQUEST CHANGES
 
-**Inputs reviewed:** [diff, commits, branch, PR, squash message]
+**Inputs reviewed:** [diff, commits, branch, PR]
 **Inputs not received:** [list, or none]
 
 ### Required changes
@@ -67,5 +66,5 @@ Do not report a personal preference that no convention states.
 
 ## Composition
 
-- **Invoke directly when:** a change is ready for a PR, a PR changes, or a squash message is ready.
+- **Invoke directly when:** a change is ready for a PR, or a PR changes.
 - **Do not invoke from another persona.** If you find a correctness or security issue, mention it as a recommendation for the matching role instead of reviewing it.

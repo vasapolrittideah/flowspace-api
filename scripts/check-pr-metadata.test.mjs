@@ -23,9 +23,17 @@ const body = (sections = {}) =>
     '',
     'Reviewers skip rules that code can check.',
     '',
+    '## Breaking changes',
+    '',
+    sections.breaking ?? 'n/a',
+    '',
     '## Related issues',
     '',
     sections.related ?? 'n/a',
+    '',
+    '## Review notes',
+    '',
+    'n/a',
     '',
     '## Risks or limitations',
     '',
@@ -98,24 +106,16 @@ test('rejects malformed branch names', () => {
   assert.equal(checkBranch('fix/identity-login', 'feat').length, 1);
 });
 
-test('accepts the example commit and squash messages of the commit message convention', () => {
+test('accepts the example commit messages of the commit message convention', () => {
   const checkpoints = [
     `feat(identity): store trace context with outbox events\n\nMigration 00009 adds nullable traceparent and tracestate columns to\nidentity_outbox_events, and the outbox insert stores the context of\nthe current span. TestOutboxStoresTraceContext checks the stored\nvalues in a PostgreSQL container.\n\nRefs: #304\n\n${claude}\n`,
     'docs(agents): clarify convention headings\n\nCo-authored-by: Codex <noreply@openai.com>\n',
     'docs(agents): clarify convention headings',
+    `revert(agents): clarify convention headings\n\nThis reverts commit 2f77dde4c1b9a6e3d5f8a0b7c2e4d6f8a1b3c5e7.\n\nThe new headings broke links from other convention files.\n\n${claude}\n`,
+    `fix: refer to several Issues\n\nRefs: #2\nRefs: #10\n\nCo-authored-by: Ana <ana@example.com>\n${claude}\n`,
   ];
   for (const message of checkpoints) {
-    assert.deepEqual(checkMessage(message, rules, { squash: false }), [], message);
-  }
-  const squashes = [
-    `feat(identity): validate Google callbacks and issue handoff codes\n\nCloses: #217\n\n${claude}\n`,
-    `feat(identity): create provider-only accounts from Google logins\n\nMigration 00008 allows an empty password hash. Password login and\nrecovery skip such accounts, and rolling back the migration fails\nwhile they exist.\n\nCloses: #219\n\n${claude}\n`,
-    `feat(workspace)!: require a role when inviting members\n\nInviteMember rejects a request without a role with InvalidArgument.\nCallers must send the role field, which was optional before.\n\n${claude}\n`,
-    `revert(agents): clarify convention headings\n\nThis reverts commit 2f77dde4c1b9a6e3d5f8a0b7c2e4d6f8a1b3c5e7.\n\nThe new headings broke links from other convention files.\n\n${claude}\n`,
-    `fix: close one Issue and refer to others\n\nCloses: #100\nRefs: #2\nRefs: #10\n\nCo-authored-by: Ana <ana@example.com>\n${claude}\n`,
-  ];
-  for (const message of squashes) {
-    assert.deepEqual(checkMessage(message, rules, { squash: true }), [], message);
+    assert.deepEqual(checkMessage(message, rules), [], message);
   }
 });
 
@@ -123,24 +123,23 @@ test('exempts long lines with a URL or code, but not the prose next to them', ()
   const url = `See https://example.com/${'a'.repeat(70)} for the reason.`;
   const code = `Run \`${'b'.repeat(70)}\` first.`;
   const prose = 'c'.repeat(73);
-  assert.deepEqual(checkMessage(`fix: keep links\n\n${url}\n${code}\n`, rules, { squash: true }), []);
-  assert.deepEqual(checkMessage(`fix: keep links\n\n${url}\n${prose}\n`, rules, { squash: true }), [
+  assert.deepEqual(checkMessage(`fix: keep links\n\n${url}\n${code}\n`, rules), []);
+  assert.deepEqual(checkMessage(`fix: keep links\n\n${url}\n${prose}\n`, rules), [
     'line 4 has 73 characters, more than 72',
   ]);
-  assert.deepEqual(checkMessage(`fix: keep links\n\n${'d'.repeat(72)}\n`, rules, { squash: true }), []);
-  assert.deepEqual(checkMessage(`fix: keep code\n\nRun:\n\n\`\`\`text\n${'e'.repeat(80)}\n\`\`\`\n\n${prose}\n`, rules, { squash: true }), [
+  assert.deepEqual(checkMessage(`fix: keep links\n\n${'d'.repeat(72)}\n`, rules), []);
+  assert.deepEqual(checkMessage(`fix: keep code\n\nRun:\n\n\`\`\`text\n${'e'.repeat(80)}\n\`\`\`\n\n${prose}\n`, rules), [
     'line 9 has 73 characters, more than 72',
   ]);
 });
 
 test('rejects message structure, footer, and trailer errors', () => {
-  const check = (message, squash = false) => checkMessage(message, rules, { squash });
+  const check = (message) => checkMessage(message, rules);
   assert.deepEqual(check('fix: a\nbody'), ['no blank line after the subject']);
-  assert.deepEqual(check('fix: a\n\nCloses: #217'), ['a checkpoint commit uses Refs, not Closes']);
-  assert.deepEqual(check('fix: a\n\nRefs #217'), ['"Refs #217" is not a footer of the form Closes: #<n> or Refs: #<n>']);
-  assert.deepEqual(check('fix: a\n\nFixes: #217', true), ['"Fixes: #217" is not a footer of the form Closes: #<n> or Refs: #<n>']);
+  assert.deepEqual(check('fix: a\n\nCloses: #217'), ['a commit uses Refs, not Closes. The PR description closes the Issue']);
+  assert.deepEqual(check('fix: a\n\nRefs #217'), ['"Refs #217" is not a footer of the form Refs: #<n>']);
+  assert.deepEqual(check('fix: a\n\nFixes: #217'), ['"Fixes: #217" is not a footer of the form Refs: #<n>']);
   assert.deepEqual(check('fix: a\n\nRefs: #10\nRefs: #2'), ['the Issue footers are not Closes then Refs, each in ascending Issue number']);
-  assert.deepEqual(check('fix: a\n\nRefs: #2\nCloses: #10', true), ['the Issue footers are not Closes then Refs, each in ascending Issue number']);
   assert.deepEqual(check('fix: a\n\nRefs: #2\n\nRefs: #10'), ['the Issue footers are not on consecutive lines']);
   assert.deepEqual(check('fix: a\n\nBody.\nRefs: #2'), ['put a blank line before the Issue footers']);
   assert.deepEqual(check('fix: a\n\nRefs: #2\n\nMore body.'), ['the Issue footers must come after the body']);
@@ -194,12 +193,46 @@ test('accepts complete PR descriptions', () => {
   );
 });
 
+test('requires Breaking changes for a breaking title and the reverted SHA for a revert', () => {
+  const sha = '2f77dde4c1b9a6e3d5f8a0b7c2e4d6f8a1b3c5e7';
+  assert.deepEqual(checkBody(body(), { breaking: true }), [
+    'Breaking changes: the title has !, so state what breaks and what callers must change',
+  ]);
+  assert.deepEqual(checkBody(body({ breaking: ' n/a ' }), { breaking: true }), [
+    'Breaking changes: the title has !, so state what breaks and what callers must change',
+  ]);
+  assert.deepEqual(checkBody(body({ breaking: 'InviteMember rejects a request without a role.' }), { breaking: true }), []);
+  assert.deepEqual(checkBody(body({ breaking: 'InviteMember rejects a request without a role.' })), []);
+  assert.deepEqual(checkBody(body(), { revert: true }), [
+    'What changed: the title has the revert type, so start with "Reverts <full SHA>."',
+  ]);
+  assert.deepEqual(checkBody(body({ what: `Reverts ${sha.slice(0, 7)}.` }), { revert: true }), [
+    'What changed: the title has the revert type, so start with "Reverts <full SHA>."',
+  ]);
+  assert.deepEqual(checkBody(body({ what: `Reverts \`${sha}\`.` }), { revert: true }), [
+    'What changed: the title has the revert type, so start with "Reverts <full SHA>."',
+  ]);
+  assert.deepEqual(checkBody(body({ what: `Reverts ${sha}.\n\nThe headings return.` }), { revert: true }), []);
+});
+
+test('run checks the description against the title', () => {
+  const runGit = (args) => (args[0] === 'log' || args[0] === 'diff' ? '' : 'feat/roles\n');
+  const read = () => body();
+  assert.deepEqual(run({ title: 'feat(workspace)!: require roles', 'body-file': 'x' }, rules, { git: runGit, read }), [
+    'PR description: Breaking changes: the title has !, so state what breaks and what callers must change',
+  ]);
+  const revert = (args) => (args[0] === 'log' || args[0] === 'diff' ? '' : 'revert/headings\n');
+  assert.deepEqual(run({ title: 'revert(agents): clarify convention headings', 'body-file': 'x' }, rules, { git: revert, read }), [
+    'PR description: What changed: the title has the revert type, so start with "Reverts <full SHA>."',
+  ]);
+});
+
 test('rejects malformed PR descriptions', () => {
   assert.deepEqual(checkBody(body().replace('## Why', '## Reason')), [
-    'use the headings What changed, Why, Related issues, Risks or limitations, Follow-up tasks, in this order',
+    'use the headings What changed, Why, Breaking changes, Related issues, Review notes, Risks or limitations, Follow-up tasks, in this order',
   ]);
   assert.deepEqual(checkBody(body({ what: '```markdown\n## Why\n```' }).replace('## Why\n\nReviewers', 'Reviewers')), [
-    'use the headings What changed, Why, Related issues, Risks or limitations, Follow-up tasks, in this order',
+    'use the headings What changed, Why, Breaking changes, Related issues, Review notes, Risks or limitations, Follow-up tasks, in this order',
   ]);
   assert.deepEqual(checkBody(body({ what: '<!-- State what changed. -->\nIt runs.' })), ['delete the HTML comments of the template']);
   assert.deepEqual(checkBody(body({ what: '' })), ['section What changed is empty; write n/a if there is nothing to report']);
@@ -285,16 +318,6 @@ test('checks only the title and labels of a PR that Renovate opens', (t) => {
   assert.ok(person.some((finding) => finding.startsWith('PR description: ')));
 });
 
-test('checks the squash message against the title', () => {
-  const read = () => 'fix(identity): reject expired codes\n\nCloses: #217\n';
-  const runGit = (args) => (args[0] === 'log' || args[0] === 'diff' ? '' : 'fix/login\n');
-  const options = { title: 'fix(identity): reject expired codes', 'squash-file': 'x' };
-  assert.deepEqual(run(options, rules, { git: runGit, read }), []);
-  assert.deepEqual(run({ ...options, title: 'fix(identity): reject old codes' }, rules, { git: runGit, read }), [
-    'Squash message: the subject differs from the PR title',
-  ]);
-});
-
 test('the CLI exits 1 with each finding and 0 when the metadata follows the rules', (t) => {
   const { dir, git, commit } = repo(t);
   commit('chore: start');
@@ -312,6 +335,9 @@ test('the CLI exits 1 with each finding and 0 when the metadata follows the rule
     'Labels: apply exactly one type label, type:ci',
   ]);
   assert.notEqual(cli('--unknown', 'x').status, 0);
+  // Agents no longer write squash messages, so the script has no option for one.
+  writeFileSync(join(dir, 'squash.txt'), 'ci: check PR metadata\n');
+  assert.notEqual(cli('--title', 'ci: check PR metadata', '--labels', 'type:ci', '--squash-file', join(dir, 'squash.txt')).status, 0);
   // In GitHub Actions, the runner must not read workflow commands in quoted PR metadata.
   const actions = spawnSync('node', [script, '--base', 'main', '--title', '##[warning]forged'], {
     cwd: dir,
@@ -396,14 +422,13 @@ test('run reports prose findings from each source', () => {
     if (args[0] === 'diff') return '';
     return 'fix/login\n';
   };
-  const read = (path) => (path === 'body' ? body({ what: 'It could run.' }) : 'fix: a\n\nIt might run.\n');
-  const findings = run({ title: 'fix: a', 'body-file': 'body', 'squash-file': 'squash' }, rules, { git: runGit, read });
+  const read = () => body({ what: 'It could run.' });
+  const findings = run({ title: 'fix: a', 'body-file': 'body' }, rules, { git: runGit, read });
   assert.deepEqual(findings, [
     'Commit abc1234: "should" is a modal that simple-english forbids. Use can, will, or must',
     'PR description: "could" is a modal that simple-english forbids. Use can, will, or must',
-    'Squash message: "might" is a modal that simple-english forbids. Use can, will, or must',
   ]);
-  // The script checks only the squash message, because Renovate writes its commits and description.
-  const renovate = run({ title: 'fix: a', author: 'renovate[bot]', branch: 'renovate/x', 'body-file': 'body', 'squash-file': 'squash' }, rules, { git: runGit, read });
-  assert.deepEqual(renovate, ['Squash message: "might" is a modal that simple-english forbids. Use can, will, or must']);
+  // Renovate writes its commits and description, so the script checks neither.
+  const renovate = run({ title: 'fix: a', author: 'renovate[bot]', branch: 'renovate/x', 'body-file': 'body' }, rules, { git: runGit, read });
+  assert.deepEqual(renovate, []);
 });

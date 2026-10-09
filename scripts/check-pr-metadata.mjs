@@ -4,18 +4,18 @@
 // each rule: this script reads the types and scopes from the commit message convention and
 // the labels from .github/labels.json. It checks these rules:
 //
-// - Subject lines of the PR title, the checkpoint commits, and the squash message: the
-//   format, a known type and scope, at most 72 characters, a lowercase first letter, and no
-//   final period.
+// - Subject lines of the PR title and the checkpoint commits: the format, a known type and
+//   scope, at most 72 characters, a lowercase first letter, and no final period.
 // - The branch name format, and a branch type that matches the PR title.
-// - Commit and squash messages: the blank line after the subject, body lines of at most 72
-//   characters, the format, place, and order of Issue footers, no Closes footer in a
-//   checkpoint commit, and the spelling, place, and order of Co-authored-by trailers.
+// - Commit messages: the blank line after the subject, body lines of at most 72 characters,
+//   the format, place, and order of Issue footers, no Closes footer, and the spelling, place,
+//   and order of Co-authored-by trailers.
 // - Labels: known labels, the type label, the area label of a scope, breaking, and migration.
-// - The PR description: the template headings, no HTML comments, the format and order of
-//   Related issues, and the format and order of Follow-up tasks.
-// - A squash subject that matches the PR title.
-// - The prose of the PR description and of the checkpoint and squash message bodies. The prose
+// - The PR description: the template headings, no HTML comments, Breaking changes that are not
+//   n/a when the title has !, What changed that starts with "Reverts <full SHA>." when the
+//   title has the revert type, the format and order of Related issues, and the format and
+//   order of Follow-up tasks.
+// - The prose of the PR description and of the checkpoint commit bodies. The prose
 //   has none of the modals, contractions, semicolons, em dashes, present perfect forms, or
 //   filler words that the simple-english skill forbids. Code, URLs, HTML comments, and headings
 //   are not prose. The convention treats the sentence limits of the skill as targets, so the
@@ -25,7 +25,7 @@
 // Renovate writes them.
 //
 //   node scripts/check-pr-metadata.mjs [--base <ref>] [--head <ref>] [--branch <name>]
-//     [--author <login>] [--title <text>] [--labels <a,b>] [--body-file <file>] [--squash-file <file>]
+//     [--author <login>] [--title <text>] [--labels <a,b>] [--body-file <file>]
 
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -39,7 +39,9 @@ const ISSUE_FOOTER = /^(Closes|Refs): #(\d+)$/;
 const ISSUE_KEYWORD = /^(closes|refs|fixes|resolves):?\s*#?\d+/i;
 const TRAILER_KEY = /^co-authored-by:/i;
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
-const PR_HEADINGS = ['What changed', 'Why', 'Related issues', 'Risks or limitations', 'Follow-up tasks'];
+const PR_HEADINGS = ['What changed', 'Why', 'Breaking changes', 'Related issues', 'Review notes', 'Risks or limitations', 'Follow-up tasks'];
+// GitHub links a full SHA in the description to the reverted commit.
+const REVERT_LINE = /^Reverts [0-9a-f]{40}\./;
 const MAX_LINE = 72;
 // Rules of the simple-english skill that a pattern can find. Each match is a finding.
 const PROSE_RULES = [
@@ -119,8 +121,7 @@ export function checkBranch(branch, titleType) {
 }
 
 // Checks a commit message: the subject, the body lines, the Issue footers, and the trailers.
-// `squash` allows `Closes` footers, which only a squash commit can have.
-export function checkMessage(message, rules, { squash }) {
+export function checkMessage(message, rules) {
   const lines = message.replace(/\r\n/g, '\n').replace(/\n+$/, '').split('\n');
   const findings = checkSubject(lines[0], rules).findings;
   if (lines.length > 1 && lines[1] !== '') {
@@ -152,9 +153,9 @@ export function checkMessage(message, rules, { squash }) {
     } else if (kinds[index] === 'footer') {
       const footer = line.match(ISSUE_FOOTER);
       if (!footer) {
-        findings.push(`"${line}" is not a footer of the form Closes: #<n> or Refs: #<n>`);
-      } else if (footer[1] === 'Closes' && !squash) {
-        findings.push('a checkpoint commit uses Refs, not Closes');
+        findings.push(`"${line}" is not a footer of the form Refs: #<n>`);
+      } else if (footer[1] === 'Closes') {
+        findings.push('a commit uses Refs, not Closes. The PR description closes the Issue');
       } else {
         footers.push({ key: footer[1], number: Number(footer[2]) });
       }
@@ -224,7 +225,8 @@ export function checkLabels(labels, subject, rules, { migration }) {
   return findings;
 }
 
-export function checkBody(body) {
+// `breaking` and `revert` come from the PR title.
+export function checkBody(body, { breaking = false, revert = false } = {}) {
   const lines = body.replace(/\r\n/g, '\n').split('\n');
   const findings = [];
   if (body.includes('<!--')) {
@@ -253,6 +255,12 @@ export function checkBody(body) {
     if (section(title).length === 0) {
       findings.push(`section ${title} is empty; write n/a if there is nothing to report`);
     }
+  }
+  if (breaking && section('Breaking changes').map((line) => line.trim()).join('') === 'n/a') {
+    findings.push('Breaking changes: the title has !, so state what breaks and what callers must change');
+  }
+  if (revert && !REVERT_LINE.test(section('What changed')[0] ?? '')) {
+    findings.push('What changed: the title has the revert type, so start with "Reverts <full SHA>."');
   }
   const related = section('Related issues');
   const relatedNumbers = new Set();
@@ -382,8 +390,9 @@ export function run(options, rules, { git: runGit = git, read = (path) => readFi
   const head = options.head ?? 'HEAD';
   const branch = options.branch ?? runGit(['rev-parse', '--abbrev-ref', 'HEAD']).trim();
   // Renovate writes its branch, commits, and description from its own configuration. Its PR
-  // title becomes the squash subject, so the title and the labels follow the conventions. Any
-  // author can name a branch renovate/, so only the PR author proves a Renovate PR.
+  // title becomes the subject of the squash commit, so the title and the labels follow the
+  // conventions. Any author can name a branch renovate/, so only the PR author proves a
+  // Renovate PR.
   const renovate = options.author === 'renovate[bot]' && branch.startsWith('renovate/');
   const findings = [];
   let title;
@@ -396,7 +405,7 @@ export function run(options, rules, { git: runGit = git, read = (path) => readFi
     const log = runGit(['log', '--no-merges', '--reverse', '--format=%h%x00%B%x1e', `${base}..${head}`]);
     for (const entry of log.split('\x1e').map((text) => text.replace(/^\n/, '')).filter(Boolean)) {
       const [sha, message] = entry.split('\0');
-      findings.push(...checkMessage(message, rules, { squash: false }).map((finding) => `Commit ${sha}: ${finding}`));
+      findings.push(...checkMessage(message, rules).map((finding) => `Commit ${sha}: ${finding}`));
       findings.push(...checkProse(message, { commit: true }).map((finding) => `Commit ${sha}: ${finding}`));
     }
   }
@@ -407,16 +416,9 @@ export function run(options, rules, { git: runGit = git, read = (path) => readFi
   }
   if (options['body-file'] !== undefined && !renovate) {
     const body = read(options['body-file']);
-    findings.push(...checkBody(body).map((finding) => `PR description: ${finding}`));
+    const fromTitle = { breaking: title?.breaking ?? false, revert: title?.type === 'revert' };
+    findings.push(...checkBody(body, fromTitle).map((finding) => `PR description: ${finding}`));
     findings.push(...checkProse(body).map((finding) => `PR description: ${finding}`));
-  }
-  if (options['squash-file'] !== undefined) {
-    const message = read(options['squash-file']).replace(/\r\n/g, '\n');
-    findings.push(...checkMessage(message, rules, { squash: true }).map((finding) => `Squash message: ${finding}`));
-    findings.push(...checkProse(message, { commit: true }).map((finding) => `Squash message: ${finding}`));
-    if (options.title !== undefined && message.split('\n')[0] !== options.title) {
-      findings.push('Squash message: the subject differs from the PR title');
-    }
   }
   return findings;
 }
@@ -424,7 +426,7 @@ export function run(options, rules, { git: runGit = git, read = (path) => readFi
 function main() {
   const { values } = parseArgs({
     options: Object.fromEntries(
-      ['base', 'head', 'branch', 'author', 'title', 'labels', 'body-file', 'squash-file'].map((name) => [name, { type: 'string' }]),
+      ['base', 'head', 'branch', 'author', 'title', 'labels', 'body-file'].map((name) => [name, { type: 'string' }]),
     ),
   });
   const root = fileURLToPath(new URL('..', import.meta.url));

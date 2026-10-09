@@ -328,11 +328,17 @@ func assertSessionObservability(t *testing.T, logs *observer.ObservedLogs, reade
 	}
 	// Each status has one call, so the sum of its duration equals the
 	// duration of its log line.
-	want := map[string]float64{}
+	logged := map[string]float64{}
 	for _, line := range logs.FilterMessage("identity_session_check").All() {
 		fields := line.ContextMap()
 		elapsed, _ := fields["duration"].(time.Duration)
-		want[fmt.Sprint(fields["status"])] = elapsed.Seconds()
+		logged[fmt.Sprint(fields["status"])] = elapsed.Seconds()
+	}
+	want := map[int64]float64{}
+	for _, code := range []codes.Code{codes.OK, codes.Unauthenticated, codes.Unavailable} {
+		if seconds, ok := logged[code.String()]; ok {
+			want[int64(code)] = seconds
+		}
 	}
 	got := sessionDurations(t, reader)
 	if len(want) != 3 || !maps.Equal(got, want) || slices.Contains(slices.Collect(maps.Values(got)), 0) {
@@ -341,17 +347,17 @@ func assertSessionObservability(t *testing.T, logs *observer.ObservedLogs, reade
 }
 
 // sessionDurations returns the rpc.server.call.duration sum by gRPC status
-// name, and fails when a status has more than one call. It permits only the
+// code, and fails when a status has more than one call. It permits only the
 // rpc.method string and the rpc.grpc.status_code integer, so no subject,
 // session, token, or client certificate data can reach a duration. It fails
 // when another metric, such as the identity.session_checks counter, exists.
-func sessionDurations(t *testing.T, reader *sdkmetric.ManualReader) map[string]float64 {
+func sessionDurations(t *testing.T, reader *sdkmetric.ManualReader) map[int64]float64 {
 	t.Helper()
 	var collected metricdata.ResourceMetrics
 	if err := reader.Collect(context.Background(), &collected); err != nil {
 		t.Fatal(err)
 	}
-	sums := map[string]float64{}
+	sums := map[int64]float64{}
 	for _, scope := range collected.ScopeMetrics {
 		for _, measured := range scope.Metrics {
 			if measured.Name != "rpc.server.call.duration" || measured.Unit != "s" {
@@ -368,7 +374,7 @@ func sessionDurations(t *testing.T, reader *sdkmetric.ManualReader) map[string]f
 					method.AsString() != strings.TrimPrefix(identityv1.IdentityService_CheckSession_FullMethodName, "/") || point.Count != 1 {
 					t.Fatalf("duration point = %v with %d calls", point.Attributes.ToSlice(), point.Count)
 				}
-				sums[codes.Code(code.AsInt64()).String()] = point.Sum
+				sums[code.AsInt64()] = point.Sum
 			}
 		}
 	}

@@ -31,10 +31,6 @@ const body = (sections = {}) =>
     '',
     sections.related ?? 'n/a',
     '',
-    '## Review notes',
-    '',
-    'n/a',
-    '',
     '## Risks or limitations',
     '',
     'n/a',
@@ -229,10 +225,10 @@ test('run checks the description against the title', () => {
 
 test('rejects malformed PR descriptions', () => {
   assert.deepEqual(checkBody(body().replace('## Why', '## Reason')), [
-    'use the headings What changed, Why, Breaking changes, Related issues, Review notes, Risks or limitations, Follow-up tasks, in this order',
+    'use the headings What changed, Why, Breaking changes, Related issues, Risks or limitations, Follow-up tasks, in this order',
   ]);
   assert.deepEqual(checkBody(body({ what: '```markdown\n## Why\n```' }).replace('## Why\n\nReviewers', 'Reviewers')), [
-    'use the headings What changed, Why, Breaking changes, Related issues, Review notes, Risks or limitations, Follow-up tasks, in this order',
+    'use the headings What changed, Why, Breaking changes, Related issues, Risks or limitations, Follow-up tasks, in this order',
   ]);
   assert.deepEqual(checkBody(body({ what: '<!-- State what changed. -->\nIt runs.' })), ['delete the HTML comments of the template']);
   assert.deepEqual(checkBody(body({ what: '' })), ['section What changed is empty; write n/a if there is nothing to report']);

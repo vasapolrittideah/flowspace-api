@@ -1,4 +1,4 @@
-<!-- Use a paragraph for 1 connected point and bullets for multiple independent points in What changed, Why, Breaking changes, Review notes, and Risks or limitations. Always use bullets in Follow-up tasks. Write the lasting record for a later reader of `main`, because the squash commit has only the PR title. -->
+<!-- Use a paragraph for 1 connected point and bullets for multiple independent points in What changed, Why, Breaking changes, and Risks or limitations. Always use bullets in Follow-up tasks. Write the lasting record for a later reader of `main`, because the squash commit has only the PR title. -->
 
 ## What changed
 
@@ -17,12 +17,6 @@ n/a
 ## Related issues
 
 <!-- Add one line per Issue: `Closes #<issue-number>.` if this PR completes it, or `Refs #<issue-number>.` if it remains open. -->
-
-n/a
-
-## Review notes
-
-<!-- For a diff that needs more than 1 pass, give the reading order, the size, the parts that need review, the parts left out on purpose, and related PRs. -->
 
 n/a
 

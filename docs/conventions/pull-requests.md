@@ -6,7 +6,7 @@ The [Repository instructions](../../AGENTS.md) state who merges a PR. Each squas
 
 ## Template
 
-A PR has a title, [What changed](#what-changed), [Why](#why), [Breaking changes](#breaking-changes), [Related issues](#related-issues), [Review notes](#review-notes), [Risks or limitations](#risks-or-limitations), [Follow-up tasks](#follow-up-tasks), and an attribution line.
+A PR has a title, [What changed](#what-changed), [Why](#why), [Breaking changes](#breaking-changes), [Related issues](#related-issues), [Risks or limitations](#risks-or-limitations), [Follow-up tasks](#follow-up-tasks), and an attribution line.
 
 ```markdown
 <PR title>
@@ -26,10 +26,6 @@ A PR has a title, [What changed](#what-changed), [Why](#why), [Breaking changes]
 ## Related issues
 
 <Issue line>
-
-## Review notes
-
-<reading order, size, and parts that need review>
 
 ## Risks or limitations
 
@@ -76,12 +72,6 @@ A PR has a title, [What changed](#what-changed), [Why](#why), [Breaking changes]
 - If no Issue is related, write `n/a`.
 - Do not use `Fixes`, although GitHub accepts it. Use `Closes` for consistency.
 - Do not repeat a follow-up Issue.
-
-### Review notes
-
-- Write only the text that helps a reviewer read the diff: the reading order, the size, the parts that need review, the parts that the PR leaves out on purpose with the reason, and the related PRs, such as a PR that this PR depends on.
-- If a reviewer can read the diff in 1 pass, such as a diff of 1 to 3 files or of documents only, write `n/a`.
-- Do not write a lasting effect or a reason here. Write it in [What changed](#what-changed) or [Why](#why).
 
 ### Risks or limitations
 

@@ -39,7 +39,7 @@ const ISSUE_FOOTER = /^(Closes|Refs): #(\d+)$/;
 const ISSUE_KEYWORD = /^(closes|refs|fixes|resolves):?\s*#?\d+/i;
 const TRAILER_KEY = /^co-authored-by:/i;
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
-const PR_HEADINGS = ['What changed', 'Why', 'Breaking changes', 'Related issues', 'Review notes', 'Risks or limitations', 'Follow-up tasks'];
+const PR_HEADINGS = ['What changed', 'Why', 'Breaking changes', 'Related issues', 'Risks or limitations', 'Follow-up tasks'];
 // GitHub links a full SHA in the description to the reverted commit.
 const REVERT_LINE = /^Reverts [0-9a-f]{40}\./;
 const MAX_LINE = 72;

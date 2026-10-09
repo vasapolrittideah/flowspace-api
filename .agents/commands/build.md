@@ -133,7 +133,7 @@ A subagent of the [Automatic modes](#automatic-modes) follows this command with 
 1. Skip steps 1, 4, 5, and 6 of [Select the task](#select-the-task), and step 3 of [Implement](#implement). The dispatcher selected the Issue and set its status.
 2. Create the branch as step 2 of [Implement](#implement) states, but from `origin/<branch of the parent PR>` for a stacked Issue. Then add the branch to the start comment.
 3. Open the PR with the branch of the parent PR as the base, for a stacked Issue, and start its description with the stack line of the Automatic build PR rules.
-4. In step 4 of [Open the PR](#open-the-pr), post the review sessions comment instead of a message in the chat.
+4. In step 4 of [Open the PR](#open-the-pr), add the review sessions line to the start comment instead of a message in the chat.
 5. Report the PR and whether it is ready to the dispatcher, and stop. If the PR cannot become ready, name the condition that fails and why.
 
 ### Work on a PR
@@ -149,5 +149,5 @@ A subagent of the [Automatic modes](#automatic-modes) follows this command with 
 4. Before you fix a failed check, compare the failure with the diff. If the job log shows a failure of the runner, the network, or an external service, rerun the failed job once. If the failure is in code that the diff does not change, run `git merge-base --is-ancestor origin/main HEAD`, and update the base when the command fails.
 5. Push the branch. After a restack, use `git push --force-with-lease`.
 6. After the push, add the `Done in` line to each maintainer feedback comment that the push completes.
-7. Wait for CI, update the checked items of the Issue as step 3 of [Open the PR](#open-the-pr) states, and edit the review sessions comment when a review session changes. If the PR is a draft, run `gh pr ready` after CI passes.
+7. Wait for CI, update the checked items of the Issue as step 3 of [Open the PR](#open-the-pr) states, and edit the review sessions line of the start comment when a review session changes. If the PR is a draft, run `gh pr ready` after CI passes.
 8. Report the result and whether the PR is ready to the dispatcher, and stop.

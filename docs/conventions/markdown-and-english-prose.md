@@ -43,9 +43,12 @@ This convention defines how to format Markdown and how to write English prose in
 
 ### Links and tracking
 
-- When Markdown text can hold a link, link each reference to a heading. Otherwise, write the heading text as the heading spells it, without backticks, such as "the Follow-up tasks section". If a heading has the same text as a value that a system reads exactly, keep the backticks on the value, such as the `Draft` status.
+- Link a reference only when both conditions hold. The reader needs the target to understand the text or make sure that it is correct. The reader cannot find the target easily without the link. Examples are the ADR or specification that a change depends on, the CI run that shows a result, and a heading in another file.
+- Under each heading, link only the first reference to a target. Write each later reference to the same target without a link.
+- When a reference to a heading has no link, write the heading text as the heading spells it, without backticks, such as "the Follow-up tasks section". If a heading has the same text as a value that a system reads exactly, keep the backticks on the value, such as the `Draft` status.
 - In Markdown files, link to a tracked file with a relative path, and link to an Issue or a pull request with its full URL. In GitHub text, link to a file with its full GitHub URL on `main`, and refer to an Issue or a pull request with its number, such as `#123`. In commit messages, follow the [Rules](commit-messages.md#rules) of the commit message conventions.
 - In Markdown text, use only the name of the target as the link text. For a section, use its heading text, such as "Follow-up tasks". For a document, use its title without a word that names the kind of document, such as "Markdown and English prose" instead of "Markdown and English prose conventions". If the sentence needs such a word, such as "section" or "conventions", put the word outside the link. For an ADR, you can use its record number instead of its title, such as "ADR-0031". For a file, you can use its path in backticks instead of its title, such as `docs/architecture.md`.
+- Do not link a heading that the reader can already see, such as a section of the same PR description. In a PR description, do not link a file that the PR changes, because the diff shows it.
 - In Markdown text, do not use bare URLs or link text such as "here" or "this link".
 
 ### Changes

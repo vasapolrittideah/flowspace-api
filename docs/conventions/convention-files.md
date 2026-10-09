@@ -115,7 +115,7 @@ A convention file has a [Title](#title), a [Scope](#scope), a [Template section]
 
 - Put each table under its own `###` heading, such as [Types](commit-messages.md#types) in the commit message conventions.
 - Write only the `###` headings and their tables in this section.
-- Link to the table from each rule that uses it.
+- Link to the table from the first rule under each heading that uses it.
 - Do not put rules in this section. Put each rule in the subsection that uses the table.
 
 ### Examples

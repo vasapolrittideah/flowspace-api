@@ -86,7 +86,7 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | Term | Meaning |
 | --- | --- |
 | agent comment | A comment that an agent posts on an Issue or a PR. |
-| automatic build | A run of `/build auto`, in which a dispatcher agent starts 1 subagent for each ready Issue, as [ADR-0040](docs/adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states. |
+| automatic build | A run of `/build` in `chain`, `fanout`, or `swarm` mode, in which a dispatcher agent starts subagents for ready Issues and for PRs that need work, as [ADR-0040](docs/adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) and [ADR-0042](docs/adr/0042-the-build-command-has-four-modes.md) state. |
 | marker | An HTML comment that starts an agent comment and names its kind. Agents post with the account of the maintainer, so a marker tells an agent comment apart from a comment of the maintainer. |
 | requested change | A maintainer feedback comment, as [ADR-0041](docs/adr/0041-maintainers-answer-automatic-builds-in-the-chat.md) states. A requested change is open until its `Done in` line names a commit that the PR branch contains. |
 | restack | A move of the commits of a stacked PR onto the new state of its parent PR or of `main`. |

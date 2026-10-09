@@ -2,15 +2,11 @@
 
 This convention defines how to write a pull request (PR) and how to prepare it for review.
 
-Each squash commit has only the PR title, so the PR description holds the details of the change, as [ADR-0043](../adr/0043-squash-commits-keep-only-the-pull-request-title.md) states.
-
-The [Repository instructions](../../AGENTS.md) state who merges a PR.
+The [Repository instructions](../../AGENTS.md) state who merges a PR. Each squash commit has only the PR title, so the PR description holds the details of the change, as [ADR-0043](../adr/0043-squash-commits-keep-only-the-pull-request-title.md) states.
 
 ## Template
 
 A PR has a title, [What changed](#what-changed), [Why](#why), [Breaking changes](#breaking-changes), [Related issues](#related-issues), [Review notes](#review-notes), [Risks or limitations](#risks-or-limitations), [Follow-up tasks](#follow-up-tasks), and an attribution line.
-
-The first 4 sections are the lasting record of the change for a later reader of `main`. The last 3 sections are for the reviewer and the merge decision.
 
 ```markdown
 <PR title>
@@ -125,6 +121,7 @@ The first 4 sections are the lasting record of the change for a later reader of 
 
 - Start the description from the [`.github/pull_request_template.md`](../../.github/pull_request_template.md) template, and complete every section.
 - Delete the HTML comments of the template.
+- Write the [lasting record](../../GLOSSARY.md#commits-and-pull-requests) for a later reader of `main`. Write the other sections for the reviewer and the merge decision.
 - If a section has content, replace its `n/a`.
 - Do not copy CI results or measurements, such as coverage or reachable vulnerabilities, into the description.
 

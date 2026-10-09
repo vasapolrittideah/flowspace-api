@@ -67,7 +67,7 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | author agent | The agent that writes a change. |
 | change that breaks callers | A change that `buf breaking` reports, or that removes or changes the meaning of a field, a route, or an event that callers use. |
 | checkpoint commit | A commit on a branch that records 1 tested work step. |
-| lasting record | The What changed, Why, Breaking changes, and Related issues sections of a PR description. Each squash commit has only the PR title, so these sections hold the details of the change for a later reader of `main`, as [ADR-0043](docs/adr/0043-squash-commits-keep-only-the-pull-request-title.md) states. |
+| lasting record | The [What changed](docs/conventions/pull-requests.md#what-changed), [Why](docs/conventions/pull-requests.md#why), [Breaking changes](docs/conventions/pull-requests.md#breaking-changes), and [Related issues](docs/conventions/pull-requests.md#related-issues) sections of a PR description. Each squash commit has only the PR title, so these sections hold the details of the change for a later reader of `main`, as [ADR-0043](docs/adr/0043-squash-commits-keep-only-the-pull-request-title.md) states. |
 | main change | The change that a commit exists to make. Tests, generated output, and documents that change because of the main change are not part of it. |
 | maintainer | The person who reviews and merges each PR. |
 | material | Of a risk or an effect of a PR: able to change the decision to merge, or in need of an action after the merge. |

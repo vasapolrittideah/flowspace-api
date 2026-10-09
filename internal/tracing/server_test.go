@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -79,7 +80,7 @@ func TestGRPCStatusReadsTheStatusTrailer(t *testing.T) {
 	for value, want := range map[string]codes.Code{"0": codes.OK, "13": codes.Internal, "14": codes.Unavailable} {
 		header := http.Header{}
 		header.Set("Grpc-Status", value)
-		if got, ok := GRPCStatus(header); !ok || got != want {
+		if got, ok := GRPCStatus(context.Background(), header); !ok || got != want {
 			t.Errorf("GRPCStatus(%q) = %v, %v", value, got, ok)
 		}
 	}
@@ -88,8 +89,37 @@ func TestGRPCStatusReadsTheStatusTrailer(t *testing.T) {
 		if value != "" {
 			header.Set("Grpc-Status", value)
 		}
-		if got, ok := GRPCStatus(header); ok {
+		if got, ok := GRPCStatus(context.Background(), header); ok {
 			t.Errorf("GRPCStatus(%q) = %v, want no status", value, got)
+		}
+	}
+}
+
+func TestGRPCStatusUsesTheEndedContextWithoutATrailer(t *testing.T) {
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	expired, stop := context.WithDeadline(context.Background(), time.Unix(0, 0))
+	defer stop()
+	for name, test := range map[string]struct {
+		expired bool
+		trailer string
+		want    codes.Code
+	}{
+		"canceled":            {false, "", codes.Canceled},
+		"deadline exceeded":   {true, "", codes.DeadlineExceeded},
+		"trailer wins":        {false, "0", codes.OK},
+		"invalid and expired": {true, "x", codes.DeadlineExceeded},
+	} {
+		header := http.Header{}
+		if test.trailer != "" {
+			header.Set("Grpc-Status", test.trailer)
+		}
+		ctx := canceled
+		if test.expired {
+			ctx = expired
+		}
+		if got, ok := GRPCStatus(ctx, header); !ok || got != test.want {
+			t.Errorf("%s: GRPCStatus() = %v, %v, want %v", name, got, ok, test.want)
 		}
 	}
 }

@@ -172,7 +172,7 @@ Module ID: `<module ID>`
 
 ## Automatic build
 
-These rules apply to each Issue that an automatic build starts. The [Automatic mode](../../.agents/commands/build.md#automatic-mode) section of the build command gives the steps of the run. Each agent comment follows the [Format and content](#format-and-content) rules.
+These rules apply to each Issue that an automatic build starts. The [Automatic modes](../../.agents/commands/build.md#automatic-modes) section of the build command gives the steps of the run. Each agent comment follows the [Format and content](#format-and-content) rules.
 
 - Before the subagent of an Issue starts, set the Project status of the Issue to `In Progress`, and add a [Start comment](#start-comment). Add a new start comment for each start.
 - When the build of an Issue stops, add a [Stop comment](#stop-comment), and set the Project status to `Needs human`. If the branch of the start comment has no open PR, also change the marker of the start comment to `<!-- automatic-build-ended -->`. If the branch has an open PR, also convert the PR to a draft with `gh pr ready --undo`, so that GitHub blocks its merge.

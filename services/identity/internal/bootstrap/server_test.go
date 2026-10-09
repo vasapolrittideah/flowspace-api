@@ -19,7 +19,10 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -32,6 +35,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/metrics"
 	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 )
 
@@ -818,6 +822,224 @@ func TestPublicHandlerSpansOmitRequestData(t *testing.T) {
 			telemetry := fmt.Sprint(recorded...)
 			if logs.Len() == 0 || strings.Contains(telemetry, "secret-") || strings.Contains(telemetry, "subject-1") {
 				t.Fatalf("telemetry contains request data: %s", telemetry)
+			}
+		})
+	}
+}
+
+// recordMetrics installs a global meter provider with a manual reader.
+// Tests that call it must not run in parallel.
+func recordMetrics(t *testing.T) *sdkmetric.ManualReader {
+	t.Helper()
+	reader := sdkmetric.NewManualReader()
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	previous := otel.GetMeterProvider()
+	otel.SetMeterProvider(provider)
+	t.Cleanup(func() {
+		otel.SetMeterProvider(previous)
+		_ = provider.Shutdown(context.Background())
+	})
+	return reader
+}
+
+// durationPoints returns the attributes of each point of each seconds
+// histogram, keyed by the instrument name. Each point must count 1 request.
+func durationPoints(t *testing.T, reader sdkmetric.Reader) map[string][]attribute.Set {
+	t.Helper()
+	var data metricdata.ResourceMetrics
+	if err := reader.Collect(context.Background(), &data); err != nil {
+		t.Fatal(err)
+	}
+	points := map[string][]attribute.Set{}
+	for _, scope := range data.ScopeMetrics {
+		for _, metric := range scope.Metrics {
+			histogram, ok := metric.Data.(metricdata.Histogram[float64])
+			if !ok || metric.Unit != "s" {
+				t.Fatalf("metric %q = %+v, want a seconds histogram", metric.Name, metric)
+			}
+			for _, point := range histogram.DataPoints {
+				if point.Count != 1 || point.Sum <= 0 {
+					t.Fatalf("metric %q point count = %d, sum = %v, want 1 positive duration", metric.Name, point.Count, point.Sum)
+				}
+				points[metric.Name] = append(points[metric.Name], point.Attributes)
+			}
+		}
+	}
+	return points
+}
+
+func TestPublicHandlerRecordsOneBoundedDuration(t *testing.T) {
+	createAccount := identityv1.IdentityService_CreateAccount_FullMethodName
+	httpDuration, rpcDuration := "http.server.request.duration", "rpc.server.call.duration"
+	httpAttrs := func(method, route string, status int) attribute.Set {
+		return attribute.NewSet(attribute.String("http.request.method", method), attribute.String("http.route", route),
+			attribute.Int("http.response.status_code", status))
+	}
+	rpcAttrs := func(method string, code codes.Code) attribute.Set {
+		return attribute.NewSet(attribute.String("rpc.method", method), attribute.Int("rpc.grpc.status_code", int(code)))
+	}
+	unauthenticated := failingIdentityHandler{err: status.Error(codes.Unauthenticated, "secret-detail")}
+	invalid := failingIdentityHandler{err: status.Error(codes.InvalidArgument, "secret-detail")}
+	tests := []struct {
+		name       string
+		handler    identityv1.IdentityServiceServer
+		request    func(*testing.T) *http.Request
+		wantMetric string
+		wantAttrs  attribute.Set
+	}{
+		{
+			name: "known REST route",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return restRequest(t, http.MethodPost, "/v1/accounts?email=secret-user@example.com", `{}`)
+			},
+			wantMetric: httpDuration,
+			wantAttrs:  httpAttrs("POST", "/v1/accounts", 200),
+		},
+		{
+			name: "provider callback",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return restRequest(t, http.MethodGet, "/v1/provider-login-callbacks/secret-provider?code=secret-code", "")
+			},
+			wantMetric: httpDuration,
+			wantAttrs:  httpAttrs("GET", "/v1/provider-login-callbacks/{provider}", 404),
+		},
+		{
+			name: "unmatched path",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return restRequest(t, http.MethodGet, "/v1/accounts/subject-1/secret-path", "")
+			},
+			wantMetric: httpDuration,
+			wantAttrs:  httpAttrs("GET", "unmatched", 404),
+		},
+		{
+			name: "client-defined method",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return restRequest(t, "SECRET-METHOD", "/v1/accounts", "")
+			},
+			wantMetric: httpDuration,
+			wantAttrs:  httpAttrs("_OTHER", "/v1/accounts", 501),
+		},
+		{
+			name:    "REST authentication failure",
+			handler: unauthenticated,
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return restRequest(t, http.MethodPost, "/v1/accounts", `{}`)
+			},
+			wantMetric: httpDuration,
+			wantAttrs:  httpAttrs("POST", "/v1/accounts", 401),
+		},
+		{
+			name:    "REST validation failure",
+			handler: invalid,
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return restRequest(t, http.MethodPost, "/v1/accounts", `{"email":"secret-user@example.com"}`)
+			},
+			wantMetric: httpDuration,
+			wantAttrs:  httpAttrs("POST", "/v1/accounts", 400),
+		},
+		{
+			name: "known gRPC method",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return grpcRequest(t, createAccount, &identityv1.CreateAccountRequest{Email: "secret-user@example.com"})
+			},
+			wantMetric: rpcDuration,
+			wantAttrs:  rpcAttrs(strings.TrimPrefix(createAccount, "/"), codes.OK),
+		},
+		{
+			name:    "gRPC authentication failure",
+			handler: unauthenticated,
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return grpcRequest(t, createAccount, &identityv1.CreateAccountRequest{})
+			},
+			wantMetric: rpcDuration,
+			wantAttrs:  rpcAttrs(strings.TrimPrefix(createAccount, "/"), codes.Unauthenticated),
+		},
+		{
+			name:    "gRPC validation failure",
+			handler: invalid,
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return grpcRequest(t, createAccount, &identityv1.CreateAccountRequest{})
+			},
+			wantMetric: rpcDuration,
+			wantAttrs:  rpcAttrs(strings.TrimPrefix(createAccount, "/"), codes.InvalidArgument),
+		},
+		{
+			name: "unregistered gRPC method",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return grpcRequest(t, "/flowspace.identity.v1.IdentityService/SecretMethod", &identityv1.CreateAccountRequest{})
+			},
+			wantMetric: rpcDuration,
+			wantAttrs:  rpcAttrs("unknown", codes.Unimplemented),
+		},
+		{
+			name: "gRPC call to a REST path",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				return grpcRequest(t, "/v1/accounts", &identityv1.CreateAccountRequest{})
+			},
+			wantMetric: rpcDuration,
+			wantAttrs:  rpcAttrs("unknown", codes.Unimplemented),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			reader := recordMetrics(t)
+			handler := test.handler
+			if handler == nil {
+				handler = stubIdentityHandler{}
+			}
+			request := test.request(t)
+			request.Header.Set("X-Request-ID", "secret-request-id")
+			request.Header.Set("Authorization", "Bearer secret-access-token")
+			publicHandler(t, handler, zap.NewNop()).ServeHTTP(httptest.NewRecorder(), request)
+
+			points := durationPoints(t, reader)
+			if len(points) != 1 || len(points[test.wantMetric]) != 1 {
+				t.Fatalf("duration points = %v, want 1 %s point", points, test.wantMetric)
+			}
+			if got := points[test.wantMetric][0]; !got.Equals(&test.wantAttrs) {
+				t.Fatalf("attributes = %v, want %v", got.ToSlice(), test.wantAttrs.ToSlice())
+			}
+			if recorded := fmt.Sprint(points); strings.Contains(recorded, "secret-") || strings.Contains(recorded, "subject-1") {
+				t.Fatalf("duration attributes contain request data: %s", recorded)
+			}
+		})
+	}
+}
+
+// TestPublicHandlerServesWithMetricExport shows that the API serves a
+// request while metric export has no endpoint or an unreachable endpoint,
+// and that the meter provider then stops within the shutdown time.
+func TestPublicHandlerServesWithMetricExport(t *testing.T) {
+	for name, endpoint := range map[string]string{"no endpoint": "", "unreachable endpoint": "http://127.0.0.1:1"} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", endpoint)
+			previous := otel.GetMeterProvider()
+			t.Cleanup(func() { otel.SetMeterProvider(previous) })
+			started := time.Now()
+			stop := metrics.Start(t.Context(), "identity-api", "test", func() {})
+			response := httptest.NewRecorder()
+			publicHandler(t, stubIdentityHandler{}, zap.NewNop()).ServeHTTP(response, restRequest(t, http.MethodPost, "/v1/accounts", `{}`))
+			served := time.Since(started)
+
+			stopped := time.Now()
+			stop()
+
+			if response.Code != http.StatusOK || served > time.Second {
+				t.Fatalf("status = %d after %s, want 200 within 1s", response.Code, served)
+			}
+			if elapsed := time.Since(stopped); elapsed > requestTimeout {
+				t.Fatalf("meter provider stopped after %s, want at most %s", elapsed, requestTimeout)
 			}
 		})
 	}

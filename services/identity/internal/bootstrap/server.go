@@ -28,6 +28,7 @@ import (
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
 	"github.com/vasapolrittideah/flowspace-api/internal/logging"
+	"github.com/vasapolrittideah/flowspace-api/internal/metrics"
 	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 	"github.com/vasapolrittideah/flowspace-api/internal/tracing"
@@ -358,11 +359,12 @@ func (w *statusWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-// observeRequests creates the server span and writes the identity_request
-// line of each public request. grpcMethods holds the full names of the gRPC
-// methods that the server serves.
+// observeRequests creates the server span, records the duration, and writes
+// the identity_request line of each public request. grpcMethods holds the
+// full names of the gRPC methods that the server serves.
 func observeRequests(next http.Handler, logger *zap.Logger, grpcMethods map[string]bool) http.Handler {
 	propagator := propagation.TraceContext{}
+	durations := metrics.NewServerDurations(otel.Meter("flowspace/identity/api"))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
 		requestID := requestid.ValidOrNew(r.Header.Get("X-Request-ID"))
@@ -387,15 +389,22 @@ func observeRequests(next http.Handler, logger *zap.Logger, grpcMethods map[stri
 			}
 		}
 		next.ServeHTTP(observed, r.WithContext(ctx))
+		elapsed := time.Since(started)
 		statusField, succeeded := zap.Int("status", observed.status), observed.status < http.StatusBadRequest
 		if code, ok := tracing.GRPCStatus(observed.Header()); isGRPCRequest(r) && ok {
 			tracing.SetGRPCStatus(span, code)
 			statusField, succeeded = zap.String("status", code.String()), code == codes.OK
+			method := operation
+			if method == unknownOperation {
+				method = ""
+			}
+			durations.RecordRPC(ctx, elapsed, method, code)
 		} else {
 			tracing.SetHTTPStatus(span, observed.status)
+			durations.RecordHTTP(ctx, elapsed, r.Method, route, observed.status)
 		}
 		logger.Info("identity_request", zap.String("request_id", requestID), logging.TraceID(ctx), zap.String("operation", operation),
-			zap.String("outcome", outcome(succeeded)), statusField, zap.Duration("duration", time.Since(started)))
+			zap.String("outcome", outcome(succeeded)), statusField, zap.Duration("duration", elapsed))
 	})
 }
 
@@ -424,6 +433,12 @@ const providerCallbackRoute = "/v1/provider-login-callbacks/{provider}"
 // route, the route. A raw path or a client-defined method never becomes
 // part of the operation.
 func requestOperation(r *http.Request, grpcMethods map[string]bool) (operation, route string) {
+	if isGRPCRequest(r) {
+		if grpcMethods[r.URL.Path] {
+			return r.URL.Path, ""
+		}
+		return unknownOperation, ""
+	}
 	for _, path := range publicRoutes {
 		if r.URL.Path == path {
 			return tracing.HTTPMethod(r.Method) + " " + path, path
@@ -431,9 +446,6 @@ func requestOperation(r *http.Request, grpcMethods map[string]bool) (operation, 
 	}
 	if provider, found := strings.CutPrefix(r.URL.Path, "/v1/provider-login-callbacks/"); found && provider != "" && !strings.Contains(provider, "/") {
 		return tracing.HTTPMethod(r.Method) + " " + providerCallbackRoute, providerCallbackRoute
-	}
-	if isGRPCRequest(r) && grpcMethods[r.URL.Path] {
-		return r.URL.Path, ""
 	}
 	return unknownOperation, ""
 }

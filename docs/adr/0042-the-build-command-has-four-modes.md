@@ -1,4 +1,4 @@
-# ADR-0042: The build command has single, chain, fanout, and swarm modes
+# ADR-0042: The build command has `single`, `chain`, `fanout`, and `swarm` modes
 
 Date: 2026-10-09
 
@@ -25,7 +25,7 @@ ADR-0040 rejected 1 run that loops until the plan is complete. Such a run waits 
 
 In `single` mode, the author agent implements the next ready Issue of 1 plan itself and stops, as `/build` did before this decision. It takes the module ID as its second argument, or uses the only approved plan.
 
-A run in `chain`, `fanout`, or `swarm` mode is an automatic build. Its author agent is a dispatcher, and each subagent works on 1 Issue or 1 PR. All rules of ADR-0040 and [ADR-0041](0041-maintainers-answer-automatic-builds-in-the-chat.md) apply to these runs: the ready Issues, the stacks of at most 2 PRs, the limit of 3 open or in-progress PRs, the shared paths, the work that runs alone, the comments, and the lock that allows only 1 dispatcher run at a time.
+For automatic builds, the author agent is a dispatcher. Each subagent works on 1 Issue or 1 PR. All rules of ADR-0040 and [ADR-0041](0041-maintainers-answer-automatic-builds-in-the-chat.md) apply to these runs. These rules cover the ready Issues, the stacks of at most 2 PRs, and the limit of 3 open or in-progress PRs. They also cover the shared paths, the work that runs alone, the comments, and the lock that allows only 1 dispatcher run at a time.
 
 A `chain` run reads only 1 plan. It takes the module ID as its second argument, or uses the only approved plan. It works on the open PRs of that plan that need work, and then on the ready Issues of that plan in the order of the plan. It starts at most 1 subagent at a time, so the work of the plan goes in sequence, and each Issue starts with a new context.
 
@@ -40,14 +40,14 @@ Codex keeps only `single` mode until Codex runs the project hook, as ADR-0040 st
 ### `auto` as a second name for `fanout`
 
 - Pros: the maintainer can keep the command that they use now.
-- Cons: 2 names for 1 mode make the documents and the run reports harder to read.
-- Rejected: 1 name for each mode is clearer, and the old name is used only in the documents that this decision changes.
+- Cons: the documents and the run reports are harder to read with 2 names for 1 mode.
+- Rejected: the use of 1 name for each mode is clearer, and only the documents that this decision changes use the old name.
 
 ### A chain in the author agent without subagents
 
 - Pros: the run needs no dispatcher, and the author agent can ask the maintainer a question in the chat.
 - Cons: the context grows with each Issue, and the PRs are not from an automatic build, so they cannot stack and a later automatic build does not fix them.
-- Rejected: 1 subagent at a time gives each Issue a new context and uses the same rules as the other automatic builds.
+- Rejected: a run with 1 subagent at a time gives each Issue a new context and uses the same rules as the other automatic builds.
 
 ### A run that waits for each merge
 
@@ -62,4 +62,4 @@ Codex keeps only `single` mode until Codex runs the project hook, as ADR-0040 st
 - The context of the dispatcher grows with each report, but the limit of 1 subagent for each Issue and each PR in a run keeps the number of reports small.
 - An answer to a stop that the maintainer gives during a run sets the Project status, but the Issue or the PR does not start again before the next run.
 - An unattended `chain` or `swarm` run stops at a permission prompt unless the commands of `/build` are already allowed, as with `/build auto`.
-- `.agents/commands/build.md`, the [glossary](../../GLOSSARY.md), the [agent workflow](../agent-workflow.md), the GitHub Issue conventions, and the Pull request conventions need the 4 modes before the modes exist.
+- `.agents/commands/build.md`, the [Agent workflow](../agent-workflow.md), the GitHub Issue conventions, and the Pull request conventions need the 4 modes before the modes exist.

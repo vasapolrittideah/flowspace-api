@@ -12,6 +12,8 @@ The maintainer wants 4 ways to run `/build`. A run can implement 1 Issue at a ti
 
 ADR-0040 rejected 1 run that loops until the plan is complete. Such a run waits hours or days for each merge, and its context grows for the whole plan. ADR-0040 did not decide whether a run can continue with work that becomes ready without a merge.
 
+ADR-0040 also limits a stack to 2 PRs, so that a change to a lower PR causes rework in only 1 PR above it. In a plan where each Issue depends on the one before it, only 2 Issues can have open PRs before the maintainer merges the first one.
+
 ## Decision
 
 `/build` takes 1 of 4 modes as its first argument: `single`, `chain`, `fanout`, or `swarm`. Without a mode, it runs `single`. The `auto` argument no longer exists, and `fanout` does what `/build auto` did.
@@ -25,11 +27,13 @@ ADR-0040 rejected 1 run that loops until the plan is complete. Such a run waits 
 
 In `single` mode, the author agent implements the next ready Issue of 1 plan itself and stops, as `/build` did before this decision. It takes the module ID as its second argument, or uses the only approved plan.
 
-For automatic builds, the author agent is a dispatcher. Each subagent works on 1 Issue or 1 PR. All rules of ADR-0040 and [ADR-0041](0041-maintainers-answer-automatic-builds-in-the-chat.md) apply to these runs. These rules cover the ready Issues, the stacks of at most 2 PRs, and the limit of 3 open or in-progress PRs. They also cover the shared paths, the work that runs alone, the comments, and the lock that allows only 1 dispatcher run at a time.
+For automatic builds, the author agent is a dispatcher. Each subagent works on 1 Issue or 1 PR. All rules of ADR-0040 and [ADR-0041](0041-maintainers-answer-automatic-builds-in-the-chat.md) apply to these runs. These rules cover the ready Issues and the limit of 3 open or in-progress PRs. They also cover the shared paths, the work that runs alone, the comments, and the lock that allows only 1 dispatcher run at a time.
 
 A `chain` run reads only 1 plan. It takes the module ID as its second argument, or uses the only approved plan. It works on the open PRs of that plan that need work, and then on the ready Issues of that plan in the order of the plan. It starts at most 1 subagent at a time, so the work of the plan goes in sequence, and each Issue starts with a new context.
 
 A `fanout` run does the 3 steps of ADR-0040 and ends.
+
+A stack of PRs from automatic builds holds at most 3 PRs, in place of the 2 PRs of ADR-0040. An Issue with 1 open blocker and all other blockers closed is ready when the open blocker has an open PR from an automatic build in a stack of fewer than 3 PRs. The subagent of that Issue stacks its PR on the PR of the blocker. The limit of 3 open or in-progress PRs does not change, so a full stack uses the whole limit.
 
 In `chain` and `swarm` modes, the dispatcher does not end after 1 set of subagents. Each time a subagent ends, the dispatcher reads the Issues and the PRs on GitHub again and chooses the work again within the limits of its mode. An Issue whose blocker got an open PR in the same run can then start as a stacked Issue. Each Issue and each PR gets at most 1 subagent in each run, so a PR that a subagent did not make ready waits for the next run. The run ends when no subagent works and the choice starts no subagent. A run never waits for a merge or polls GitHub for one.
 
@@ -49,6 +53,18 @@ Codex keeps only `single` mode until Codex runs the project hook, as ADR-0040 st
 - Cons: the context grows with each Issue, and the PRs are not from an automatic build, so they cannot stack and a later automatic build does not fix them.
 - Rejected: a run with 1 subagent at a time gives each Issue a new context and uses the same rules as the other automatic builds.
 
+### Stacks of at most 2 PRs
+
+- Pros: a change to a lower PR causes rework in only 1 PR above it.
+- Cons: in a plan where each Issue depends on the one before it, a `chain` run stops after 2 Issues.
+- Rejected: the maintainer accepts rework in up to 2 PRs to get 1 more Issue ready for review before a merge.
+
+### No limit on stacks and open PRs
+
+- Pros: without the stack limit and the limit of 3 open or in-progress PRs, a `chain` run can continue until the plan is complete without a merge.
+- Cons: a change to a lower PR restacks every PR above it, and the maintainer must review and merge a long stack in order.
+- Rejected: the review and the merges of the maintainer set the pace of a plan, so a longer stack adds rework but does not complete the plan sooner.
+
 ### A run that waits for each merge
 
 - Pros: the run can continue until the plan is complete.
@@ -57,7 +73,9 @@ Codex keeps only `single` mode until Codex runs the project hook, as ADR-0040 st
 
 ## Consequences
 
-- A `chain` or `swarm` run can start more work without a request from the maintainer, but it still stops at the limit of 3 open or in-progress PRs and at stacks of 2 PRs. In a plan where each Issue depends on the one before it, a `chain` run usually ends after 2 Issues.
+- A `chain` or `swarm` run can start more work without a request from the maintainer, but it still stops at the limit of 3 open or in-progress PRs and at stacks of 3 PRs. In a plan where each Issue depends on the one before it, a `chain` run usually ends after 3 Issues.
+- A requested change to the lowest PR of a stack can force a restack, new tests, and new reviews in the 2 PRs above it, and a change to a specification or a plan can make both of them useless.
+- The maintainer merges a stack of 3 PRs from the lowest PR up, and a full stack blocks new Issues until a PR of the stack merges.
 - A `swarm` run can run longer than a `fanout` run, so it uses more review quota in 1 run and keeps the lock longer.
 - The context of the dispatcher grows with each report, but the limit of 1 subagent for each Issue and each PR in a run keeps the number of reports small.
 - An answer to a stop that the maintainer gives during a run sets the Project status, but the Issue or the PR does not start again before the next run.

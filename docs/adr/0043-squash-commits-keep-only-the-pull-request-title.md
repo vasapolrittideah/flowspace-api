@@ -30,11 +30,11 @@ The PR description has 7 sections in 2 groups. The first group is the lasting re
 | 6 | Risks or limitations | Reviewer | Revert safety, unresolved failures, checks that did not run, and remaining limits, or `n/a`. |
 | 7 | Follow-up tasks | Reviewer | The work for later, or `n/a`. |
 
-The Breaking changes section moves the compatibility effects out of [Risks or limitations](../conventions/pull-requests.md#risks-or-limitations). When the PR title has a breaking marker, the section must not be `n/a`. When a PR changes more than 1 value, such as a configuration value, a default, a limit, or an API field, What changed shows the values in a table with `Before` and `After` columns. For a revert, What changed starts with the full SHA of the reverted commit, and Why gives the reason. Risks or limitations states revert safety only when a revert of the PR is not safe, such as after a migration.
+The Breaking changes section moves the compatibility effects out of [Risks or limitations](../conventions/pull-requests.md#risks-or-limitations). When the PR title has a breaking marker, the section must not be `n/a`. When a PR changes more than 1 value, such as a configuration value, a default, a limit, or an API field, [What changed](../conventions/pull-requests.md#what-changed) shows the values in a table with `Before` and `After` columns. For a revert, [What changed](../conventions/pull-requests.md#what-changed) starts with the full SHA of the reverted commit, and [Why](../conventions/pull-requests.md#why) gives the reason. [Risks or limitations](../conventions/pull-requests.md#risks-or-limitations) states revert safety only when a revert of the PR is not safe, such as after a migration.
 
 Review notes holds only the text that helps a reviewer read the diff. A small PR, such as a PR that a reviewer can read in 1 pass, has `n/a` there. After the PR merges, an agent edits the description only to fix a wrong fact.
 
-`scripts/check-pr-metadata.mjs` makes sure that the Breaking changes section is not `n/a` when the title has a breaking marker. It also makes sure that the What changed section starts with a commit SHA when the title has the `revert` type.
+`scripts/check-pr-metadata.mjs` makes sure that the Breaking changes section is not `n/a` when the title has a breaking marker. It also makes sure that the [What changed](../conventions/pull-requests.md#what-changed) section starts with a commit SHA when the title has the `revert` type.
 
 This decision replaces 1 part of ADR-0040: the squash message comment of a subagent. A subagent reports a ready PR without that comment.
 

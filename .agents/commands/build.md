@@ -13,7 +13,7 @@ The first word of `$ARGUMENTS` can name a mode, as [ADR-0042](../../docs/adr/004
 | `fanout` | All approved plans | At most 3 | Wait for the others, then end |
 | `swarm` | All approved plans | At most 3 | Choose the work again |
 
-In `single` mode, the work starts from one module with an `Approved` plan. It implements one task, which is the next ready Issue of the plan. It ends when the PR of that task is ready, the Issue shows its results, and the maintainer has the squash message. The maintainer merges the PR. Do not start the next task in the same run. The [Automatic modes](#automatic-modes) start several tasks in one run instead.
+In `single` mode, the work starts from one module with an `Approved` plan. It implements one task, which is the next ready Issue of the plan. It ends when the PR of that task is ready and the Issue shows its results. The maintainer merges the PR. Do not start the next task in the same run. The [Automatic modes](#automatic-modes) start several tasks in one run instead.
 
 ## Select the task
 
@@ -47,7 +47,7 @@ In `single` mode, the work starts from one module with an `Approved` plan. It im
    1. Immediately before the edit, run `gh issue view <issue-number> --json body --jq .body`, and copy the body to a temporary file.
    2. In `Acceptance criteria` and `Verification`, change each passed item from `[ ]` to `[x]`. Keep all other content.
    3. Run `gh issue edit <issue-number> --body-file <temporary-file>`.
-4. Give the squash message in the chat, and tell the maintainer that the PR is ready, or why it cannot become ready. Stop.
+4. Tell the maintainer in the chat that the PR is ready, or why it cannot become ready. Stop.
 
 Keep the Issue open with the `In Progress` status. The PR closes it after the maintainer merges it.
 
@@ -133,7 +133,7 @@ A subagent of the [Automatic modes](#automatic-modes) follows this command with 
 1. Skip steps 1, 4, 5, and 6 of [Select the task](#select-the-task), and step 3 of [Implement](#implement). The dispatcher selected the Issue and set its status.
 2. Create the branch as step 2 of [Implement](#implement) states, but from `origin/<branch of the parent PR>` for a stacked Issue. Then add the branch to the start comment.
 3. Open the PR with the branch of the parent PR as the base, for a stacked Issue, and start its description with the stack line of the Automatic build PR rules.
-4. In step 4 of [Open the PR](#open-the-pr), post the squash message comment instead of a message in the chat.
+4. In step 4 of [Open the PR](#open-the-pr), post the review sessions comment instead of a message in the chat.
 5. Report the PR and whether it is ready to the dispatcher, and stop. If the PR cannot become ready, name the condition that fails and why.
 
 ### Work on a PR
@@ -149,5 +149,5 @@ A subagent of the [Automatic modes](#automatic-modes) follows this command with 
 4. Before you fix a failed check, compare the failure with the diff. If the job log shows a failure of the runner, the network, or an external service, rerun the failed job once. If the failure is in code that the diff does not change, run `git merge-base --is-ancestor origin/main HEAD`, and update the base when the command fails.
 5. Push the branch. After a restack, use `git push --force-with-lease`.
 6. After the push, add the `Done in` line to each maintainer feedback comment that the push completes.
-7. Wait for CI, update the checked items of the Issue as step 3 of [Open the PR](#open-the-pr) states, and edit the squash message comment when the message changes. If the PR is a draft, run `gh pr ready` after CI passes.
+7. Wait for CI, update the checked items of the Issue as step 3 of [Open the PR](#open-the-pr) states, and edit the review sessions comment when a review session changes. If the PR is a draft, run `gh pr ready` after CI passes.
 8. Report the result and whether the PR is ready to the dispatcher, and stop.

@@ -4,7 +4,7 @@ description: Start spec-driven development — write a structured specification 
 
 Invoke the agent-skills:spec-driven-development skill. Use the skill for its clarification and review gates. Follow the [module specification conventions](../../docs/conventions/module-specs.md) for the format, the status, and the approval, and the [differences that the convention lists](../../docs/conventions/module-specs.md#differences-from-the-spec-driven-development-skill) where the skill differs.
 
-The work starts from a request to add a capability or to change one. It ends when the specification PR has the `Approved` status, CI passes, and the maintainer has the squash message. The maintainer merges the PR. Do not plan or implement the module.
+The work starts from a request to add a capability or to change one. It ends when the specification PR has the `Approved` status and CI passes. The maintainer merges the PR. Do not plan or implement the module.
 
 ## Prepare
 
@@ -35,4 +35,4 @@ Ask questions until you can write each section of the [template](../../docs/conv
 
 1. When the maintainer asks for approval, change the status to `Approved` in the specification and in the index in one commit, and push it to the same PR.
 2. Wait until every CI check passes.
-3. Give the squash message in the chat, and tell the maintainer that the PR is ready. Stop.
+3. Tell the maintainer in the chat that the PR is ready. Stop.

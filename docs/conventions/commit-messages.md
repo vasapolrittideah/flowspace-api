@@ -1,6 +1,6 @@
 # Commit message conventions
 
-This convention defines the message of each commit that people and agents write: the checkpoint commits on a branch and the squash commit that merges a pull request (PR) into `main`. Commits that Renovate creates follow its own configuration, but the squash commit of a Renovate PR follows this convention.
+This convention defines the message of each checkpoint commit that people and agents write on a branch. The squash commit that merges a pull request (PR) into `main` has only the PR title, and the PR title follows the subject rules of this convention, as [ADR-0043](../adr/0043-squash-commits-keep-only-the-pull-request-title.md) states. Commits that Renovate creates follow its own configuration, but the title of a Renovate PR follows the subject rules.
 
 The [Repository instructions](../../AGENTS.md) state when to create checkpoint commits and who squash merges a PR.
 
@@ -38,7 +38,7 @@ Co-authored-by: <co-author name, if any> <<co-author email>>
 
 - Write the marker as `!` directly before the colon.
 - If a contract change breaks callers, add the marker. [ADR-0007](../adr/0007-version-apis-by-compatibility-boundary.md) requires a new version for such a change.
-- Do not add the marker for other incompatible changes, such as a renamed environment variable. Explain them in the body.
+- Do not add the marker for other incompatible changes, such as a renamed environment variable. Explain them in the [Breaking changes](pull-requests.md#breaking-changes) section of the PR description.
 
 ### Description
 
@@ -54,34 +54,21 @@ Co-authored-by: <co-author name, if any> <<co-author email>>
 - Separate paragraphs with 1 blank line.
 - Start each bullet item with a hyphen and a space, and indent its wrapped lines by 2 spaces.
 - Start each numbered item with its number, a period, and a space, and indent its wrapped lines by 3 spaces.
-- If the subject has a breaking marker, explain the incompatibility and the changes that callers must make.
 - In a checkpoint commit, write a body only when the subject does not explain the step. Write for a reviewer who reads the PR 1 commit at a time. Explain what the step changes, and the reason or trade-off when the subject does not make it clear. You can name the tests that the step adds, because they are part of the step.
-- If a checkpoint subject matches the PR title, apply the checkpoint body rule above. This also applies to the only commit of a PR. Do not omit the body only because the squash commit can have no body. The squash body leaves out text that only reviewers need, such as the tests that the step adds.
-- In a squash commit, write for a later reader of the `main` history. Choose the body with these steps, and stop after the first match:
-  1. If the main change only adds a document or changes its status, omit the body. Examples include a specification, plan, or ADR. The document on `main` holds its content.
-  2. If the main change edits an existing rule in a document, write only the reason or trade-off from the [Why](pull-requests.md#why) section of the PR. Include only what the changed files do not state. If the files state the reason, omit the body.
-  3. Describe the lasting effects on `main` that the subject and the diff do not state. Take changed behavior and compatibility or migration effects from [What changed](pull-requests.md#what-changed), and important decisions or trade-offs from [Why](pull-requests.md#why). If there are none, omit the body.
-- In a squash commit, rewrite the points that the steps above select in plain text for a reader of `main`.
-- In a squash commit, take the points from the final version of the PR description.
-- In a squash commit, do not copy sentences from the PR description.
-- In a squash commit, make sure that the final diff supports each sentence.
+- If a checkpoint subject matches the PR title, apply the checkpoint body rule above. This also applies to the only commit of a PR.
 - Do not repeat text or add process history, abandoned methods, hypothetical objections, or unrelated files.
 - Do not refer to the commit, the writer, or the time of writing, such as "This commit adds", "I", "we", "now", or "currently". State each change directly. The required first body line in [Commits that revert a commit](#commits-that-revert-a-commit) is an exception.
-- In a squash commit, do not include verification details, lists of added tests, or specification or plan status changes.
-- In a squash commit, do not include text that only reviewers need, such as merge order, review notes, checks that did not run, or follow-up tasks.
 
 ### Issue footers
 
 - Put the footers after the body, or after the subject when there is no body, separated by a blank line.
-- Write each footer as `Closes: #<Issue number>` or `Refs: #<Issue number>`.
+- Write each footer as `Refs: #<Issue number>`.
 - Do not leave blank lines between Issue footers.
 - Do not add a period at the end of an Issue footer.
 - Write 1 footer per Issue, and repeat the key on each line.
-- Put `Closes` footers before `Refs` footers, and order each group by ascending Issue number.
-- Use `Closes` only in a squash commit. GitHub closes the Issue when the commit reaches `main`.
+- Order the footers by ascending Issue number.
 - If a checkpoint commit belongs to an Issue, add a `Refs` footer for it.
-- In a squash commit, copy the PR's [Related issues](pull-requests.md#related-issues) as footers: `Closes` for each Issue it completes and `Refs` for each Issue that stays open.
-- In the squash commit of a PR whose main change is a module plan, omit the `Refs` footers, because the plan links each of its Issues. Keep each `Closes` footer.
+- Do not use `Closes` in a commit. The [Related issues](pull-requests.md#related-issues) section of the PR description closes each Issue when the PR merges.
 - Do not add Issues from [Follow-up tasks](pull-requests.md#follow-up-tasks).
 
 ### Co-author trailers
@@ -91,7 +78,7 @@ Co-authored-by: <co-author name, if any> <<co-author email>>
 - Order the trailers by name in alphabetical order.
 - Add 1 trailer for each person or agent, other than the commit author, who contributed to the commit.
 - For a person, use their name and the email that GitHub links to their account, such as their `users.noreply.github.com` address. For an agent, use the name and email in the attribution trailer that its harness gives. If the harness gives none, use the identity in [Agent trailers](#agent-trailers).
-- Keep the existing trailers when you amend or squash commits.
+- Keep the existing trailers when you amend or squash commits. GitHub copies the trailers of the checkpoint commits to the squash commit.
 - Do not add a trailer for a person or agent who did not contribute.
 
 ## Rules
@@ -114,7 +101,7 @@ Co-authored-by: <co-author name, if any> <<co-author email>>
 
 ## Commits that revert a commit
 
-Follow these rules for each commit that reverts an earlier commit, including the squash commit of a PR that reverts a commit.
+Follow these rules for each commit that reverts an earlier commit. The [What changed](pull-requests.md#what-changed) section of the PR description names the reverted commit for the squash commit.
 
 - Start the body with `This reverts commit <full SHA>.` Then give the reason in a new paragraph.
 - Use the scope and the description of the reverted commit.
@@ -239,7 +226,7 @@ revert(agents): clarify convention headings
 
 ### Checkpoint commits
 
-This checkpoint names the tests of its step and uses `Refs` to keep its Issue open until the squash commit:
+This checkpoint names the tests of its step and uses `Refs` to keep its Issue open until the PR merges:
 
 ```text
 feat(identity): store trace context with outbox events
@@ -260,95 +247,6 @@ This documentation checkpoint shows a complete message with Codex attribution:
 docs(agents): clarify convention headings
 
 Co-authored-by: Codex <noreply@openai.com>
-```
-
-### Feature squash commits
-
-A feature squash commit has no body when it builds what its Issue and specification describe and adds no migration, configuration, or decision of its own:
-
-```text
-feat(identity): validate Google callbacks and issue handoff codes
-
-Closes: #217
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
-A feature squash commit has a body when it adds a migration, configuration, or decision that the specification does not state:
-
-```text
-feat(identity): create provider-only accounts from Google logins
-
-Migration 00008 allows an empty password hash. Password login and
-recovery skip such accounts, and rolling back the migration fails
-while they exist.
-
-Closes: #219
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
-### Breaking squash commits
-
-This breaking squash commit has a breaking marker in its subject and explains the incompatibility and the changes that callers must make in its body:
-
-```text
-feat(workspace)!: require a role when inviting members
-
-InviteMember rejects a request without a role with InvalidArgument.
-Callers must send the role field, which was optional before.
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
-### Test squash commits
-
-A squash commit that only adds tests has no body, because the subject states every lasting effect:
-
-```text
-test(observability): prove logs and traces against the specification
-
-Closes: #306
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
-### Document squash commits
-
-A squash commit that only adds a specification has no body, because the specification on `main` holds the content:
-
-```text
-docs(observability): approve observability metrics and dashboards spec
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
-This ADR squash commit has no body, because the new record states the reason in its [Context](adrs.md#context) and [Decision](adrs.md#decision) sections and the earlier record only changes its status:
-
-```text
-docs(adr): record local alert routing
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
-A squash commit that approves a plan has no body and no `Refs` footers, because the plan on `main` links each of its Issues:
-
-```text
-docs(observability): approve observability logs and traces plan
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
-```
-
-This squash commit states only the reason in its body, because the changed convention states the new rules:
-
-```text
-docs(agents): revise module specification sections and approval
-
-Specifications repeated commands that Issue verification steps and
-CONSTRAINTS.md already own. Some section names did not say what
-belongs in them.
-
-Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
 ```
 
 ### Revert commits

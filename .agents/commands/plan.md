@@ -4,7 +4,7 @@ description: Break work into small verifiable tasks and track each task in GitHu
 
 Invoke the agent-skills:planning-and-task-breakdown skill. Follow the [module plan conventions](../../docs/conventions/module-plans.md), the [GitHub Issue conventions](../../docs/conventions/github-issues.md), the [GitHub milestone conventions](../../docs/conventions/github-milestones.md), and the [GitHub label conventions](../../docs/conventions/github-labels.md) instead of the skill defaults, as the [differences that the plan convention lists](../../docs/conventions/module-plans.md#differences-from-the-planning-and-task-breakdown-skill) state.
 
-The work starts from one module with an `Approved` specification. It ends when the plan PR has the `Approved` status, every Issue of the plan is in the GitHub Project and the milestone, CI passes, and the maintainer has the squash message. The maintainer merges the PR. Do not implement a task.
+The work starts from one module with an `Approved` specification. It ends when the plan PR has the `Approved` status, every Issue of the plan is in the GitHub Project and the milestone, and CI passes. The maintainer merges the PR. Do not implement a task.
 
 ## Prepare
 
@@ -35,4 +35,4 @@ To change an `Approved` plan, follow the [change rules](../../docs/conventions/m
 2. Commit the plan, as the [commit message conventions](../../docs/conventions/commit-messages.md) state.
 3. Push the branch and open the PR, as the [pull request conventions](../../docs/conventions/pull-requests.md) and the label conventions state. Use the PR title from the plan workflow.
 4. Wait until every CI check passes.
-5. Give the squash message in the chat, and tell the maintainer that the PR is ready. Stop.
+5. Tell the maintainer in the chat that the PR is ready. Stop.

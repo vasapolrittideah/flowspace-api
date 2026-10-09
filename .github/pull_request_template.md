@@ -1,12 +1,18 @@
-<!-- Use a paragraph for one connected point and bullets for multiple independent points in What changed, Why, and Risks or limitations. Always use bullets in Follow-up tasks. -->
+<!-- Use a paragraph for one connected point and bullets for multiple independent points in What changed, Why, Breaking changes, Review notes, and Risks or limitations. Always use bullets in Follow-up tasks. The first 4 sections are the lasting record for a later reader of main, because the squash commit has only the PR title. -->
 
 ## What changed
 
-<!-- State what changed and the result. -->
+<!-- State the lasting effect on main first, then what a reviewer must know. Use a table with Before and After columns when the PR changes more than one value. For a revert, start with `Reverts <full SHA>.` -->
 
 ## Why
 
 <!-- Explain the problem and why this change is needed. Include relevant decision links. -->
+
+## Breaking changes
+
+<!-- If the title has `!` or another change is incompatible, state what breaks and what callers must change. -->
+
+n/a
 
 ## Related issues
 
@@ -14,9 +20,15 @@
 
 n/a
 
+## Review notes
+
+<!-- For a diff that needs more than one pass, give the reading order, the size, the parts that need review, the parts left out on purpose, and related PRs. -->
+
+n/a
+
 ## Risks or limitations
 
-<!-- Include material compatibility effects, unresolved failures, checks that did not run, or remaining limitations when present. -->
+<!-- Include revert safety when a revert is not safe, unresolved failures, checks that did not run, or remaining limitations when present. -->
 
 n/a
 

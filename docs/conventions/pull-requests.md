@@ -2,7 +2,7 @@
 
 This convention defines how to write a pull request (PR) and how to prepare it for review.
 
-The [Repository instructions](../../AGENTS.md) state who merges a PR. Each squash commit has only the PR title, so the PR description holds the details of the change, as [ADR-0043](../adr/0043-squash-commits-keep-only-the-pull-request-title.md) states.
+The [Repository instructions](../../AGENTS.md) state who merges a PR. Each squash commit has only the PR title, so the PR description holds the details of the change, as [ADR-0043](../adr/0043-squash-commits-keep-only-the-pull-request-title.md) and [ADR-0044](../adr/0044-pull-request-descriptions-have-no-review-notes-section.md) state.
 
 ## Template
 

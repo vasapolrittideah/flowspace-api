@@ -188,7 +188,7 @@ A start comment has a marker, a notice, a branch line, and an attribution line. 
 <!-- automatic-build -->
 An automatic build started this Issue.
 
-Branch: <branch name, if any>
+Branch: `<branch name, if any>`
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
@@ -203,7 +203,7 @@ Branch: <branch name, if any>
 
 #### Branch line
 
-- When the subagent creates the branch, add the line with the exact branch name.
+- When the subagent creates the branch, add the line with the exact branch name in backticks, such as `` Branch: `feat/identity-github-login` ``.
 - Until the branch exists, omit the line.
 
 #### Attribution line

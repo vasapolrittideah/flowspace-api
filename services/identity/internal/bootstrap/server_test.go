@@ -990,6 +990,17 @@ func TestPublicHandlerRecordsOneBoundedDuration(t *testing.T) {
 			wantMetric: rpcDuration,
 			wantAttrs:  rpcAttrs("unknown", codes.Unimplemented),
 		},
+		{
+			name: "canceled gRPC call",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				return grpcRequest(t, createAccount, &identityv1.CreateAccountRequest{}).WithContext(ctx)
+			},
+			wantMetric: rpcDuration,
+			wantAttrs:  rpcAttrs(strings.TrimPrefix(createAccount, "/"), codes.Canceled),
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

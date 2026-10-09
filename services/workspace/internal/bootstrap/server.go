@@ -226,7 +226,7 @@ func withServerSpan(next http.Handler, grpcMethods map[string]bool) http.Handler
 		observed := &statusWriter{ResponseWriter: response, status: http.StatusOK}
 		next.ServeHTTP(observed, request.WithContext(ctx))
 		elapsed := time.Since(started)
-		if code, ok := tracing.GRPCStatus(observed.Header()); grpcRequest && ok {
+		if code, ok := tracing.GRPCStatus(ctx, observed.Header()); grpcRequest && ok {
 			tracing.SetGRPCStatus(span, code)
 			method := ""
 			if grpcMethods[request.URL.Path] {

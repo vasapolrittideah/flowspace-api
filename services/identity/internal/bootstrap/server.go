@@ -391,7 +391,7 @@ func observeRequests(next http.Handler, logger *zap.Logger, grpcMethods map[stri
 		next.ServeHTTP(observed, r.WithContext(ctx))
 		elapsed := time.Since(started)
 		statusField, succeeded := zap.Int("status", observed.status), observed.status < http.StatusBadRequest
-		if code, ok := tracing.GRPCStatus(observed.Header()); isGRPCRequest(r) && ok {
+		if code, ok := tracing.GRPCStatus(ctx, observed.Header()); isGRPCRequest(r) && ok {
 			tracing.SetGRPCStatus(span, code)
 			statusField, succeeded = zap.String("status", code.String()), code == codes.OK
 			method := operation

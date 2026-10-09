@@ -876,6 +876,17 @@ func TestHandlerRecordsOneBoundedDuration(t *testing.T) {
 			wantMetric: rpcDuration,
 			wantAttrs:  rpcAttrs("unknown", codes.Unimplemented),
 		},
+		{
+			name: "canceled gRPC call",
+			request: func(t *testing.T) *http.Request {
+				t.Helper()
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				return grpcRequest(t, getWorkspace, &workspacev1.GetWorkspaceRequest{}).WithContext(ctx)
+			},
+			wantMetric: rpcDuration,
+			wantAttrs:  rpcAttrs(strings.TrimPrefix(getWorkspace, "/"), codes.Canceled),
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

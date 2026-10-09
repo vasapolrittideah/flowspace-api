@@ -11,6 +11,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
@@ -110,6 +112,12 @@ func (w *Worker) Run(ctx context.Context) error {
 	if err != nil {
 		return errors.New("delivery cleanup failed")
 	}
+	metrics, err := registerWorkerMetrics(otel.Meter("flowspace/identity/worker"), w.logger, requestTimeout,
+		w.outboxAge, w.consumerLag)
+	if err != nil {
+		return errors.New("worker metrics unavailable")
+	}
+	defer func() { _ = metrics.Unregister() }()
 	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	results := make(chan error, 2)
@@ -117,7 +125,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	go func() { w.runEmail(runCtx); results <- nil }()
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	nextAgeLog := time.Now()
+	nextPurge := time.Now()
 	completed := 0
 	var result error
 loop:
@@ -142,11 +150,9 @@ loop:
 			stepCtx, stop = context.WithTimeout(runCtx, requestTimeout)
 			_, _ = w.consumer.DeliverPasswordChangeNotice(stepCtx)
 			stop()
-			if !time.Now().Before(nextAgeLog) {
+			if !time.Now().Before(nextPurge) {
 				w.purgeProviderAttempts(runCtx)
-				w.logOutboxAge(runCtx)
-				w.logBrokerLag(runCtx)
-				nextAgeLog = time.Now().Add(time.Minute)
+				nextPurge = time.Now().Add(time.Minute)
 			}
 		}
 	}
@@ -188,26 +194,70 @@ func (w *Worker) purgeProviderAttempts(ctx context.Context) {
 	}
 }
 
-func (w *Worker) logOutboxAge(ctx context.Context) {
-	checkCtx, cancel := context.WithTimeout(ctx, requestTimeout)
-	defer cancel()
+// outboxAge returns the age in seconds of the oldest unpublished outbox
+// event, or 0 when no such event exists.
+func (w *Worker) outboxAge(ctx context.Context) (float64, error) {
 	var age float64
-	if err := w.pool.QueryRow(checkCtx, `SELECT COALESCE(EXTRACT(EPOCH FROM (statement_timestamp() - min(created_at))), 0)
-		FROM identity_outbox_events WHERE published_at IS NULL`).Scan(&age); err == nil {
-		w.logger.Info("identity_outbox_age", zap.Float64("oldest_seconds", age))
-	} else {
-		w.logger.Warn("identity_outbox_age_unavailable")
-	}
+	err := w.pool.QueryRow(ctx, `SELECT COALESCE(EXTRACT(EPOCH FROM (statement_timestamp() - min(created_at))), 0)
+		FROM identity_outbox_events WHERE published_at IS NULL`).Scan(&age)
+	return age, err
 }
 
-func (w *Worker) logBrokerLag(ctx context.Context) {
-	checkCtx, cancel := context.WithTimeout(ctx, requestTimeout)
-	defer cancel()
-	lags, err := kadm.NewClient(w.producer).Lag(checkCtx, w.group)
-	lag, found := lags[w.group]
-	if err != nil || !found || (&lag).Error() != nil {
-		w.logger.Warn("identity_broker_lag_unavailable")
-		return
+// consumerLag returns the records that the consumer group of the email worker
+// still needs to consume.
+func (w *Worker) consumerLag(ctx context.Context) (int64, error) {
+	lags, err := kadm.NewClient(w.producer).Lag(ctx, w.group)
+	if err != nil {
+		return 0, err
 	}
-	w.logger.Info("identity_broker_lag", zap.Int64("records", lag.Lag.Total()))
+	lag, found := lags[w.group]
+	if !found {
+		return 0, errors.New("consumer group lag missing")
+	}
+	if err := lag.Error(); err != nil {
+		return 0, err
+	}
+	return lag.Lag.Total(), nil
+}
+
+// registerWorkerMetrics reports the outbox age and the consumer lag at each
+// export. The measurements run at the same time, each within timeout. A
+// measurement that fails omits its value for the interval and writes its
+// unavailable line.
+func registerWorkerMetrics(meter metric.Meter, logger *zap.Logger, timeout time.Duration,
+	outboxAge func(context.Context) (float64, error), consumerLag func(context.Context) (int64, error),
+) (metric.Registration, error) {
+	ageGauge, err := meter.Float64ObservableGauge("identity.outbox.oldest_age", metric.WithUnit("s"),
+		metric.WithDescription("Age of the oldest unpublished outbox event"))
+	if err != nil {
+		return nil, err
+	}
+	lagGauge, err := meter.Int64ObservableGauge("identity.broker.consumer_lag", metric.WithUnit("{record}"),
+		metric.WithDescription("Records that the email worker consumer group has not consumed"))
+	if err != nil {
+		return nil, err
+	}
+	return meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		lagDone := make(chan struct{})
+		var lag int64
+		var lagErr error
+		go func() {
+			defer close(lagDone)
+			lag, lagErr = consumerLag(ctx)
+		}()
+		if age, err := outboxAge(ctx); err == nil {
+			observer.ObserveFloat64(ageGauge, age)
+		} else {
+			logger.Warn("identity_outbox_age_unavailable")
+		}
+		<-lagDone
+		if lagErr == nil {
+			observer.ObserveInt64(lagGauge, lag)
+		} else {
+			logger.Warn("identity_broker_lag_unavailable")
+		}
+		return nil
+	}, ageGauge, lagGauge)
 }

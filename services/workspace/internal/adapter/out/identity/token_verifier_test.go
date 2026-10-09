@@ -18,7 +18,10 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -123,16 +126,22 @@ const (
 	parentSpanID  = "00f067aa0ba902b7"
 )
 
-// stubSessionServer answers CheckSession and sends the incoming metadata of
-// each call to received.
+// stubSessionServer answers CheckSession after wait and sends the incoming
+// metadata of each call to received. held is the time that the last call
+// spent in the handler.
 type stubSessionServer struct {
 	identityv1.UnimplementedIdentityServiceServer
 	received chan metadata.MD
 	verified bool
 	err      error
+	wait     time.Duration
+	held     time.Duration
 }
 
 func (s *stubSessionServer) CheckSession(ctx context.Context, request *identityv1.CheckSessionRequest) (*identityv1.CheckSessionResponse, error) {
+	started := time.Now()
+	defer func() { s.held = time.Since(started) }()
+	time.Sleep(s.wait)
 	incoming, _ := metadata.FromIncomingContext(ctx)
 	s.received <- incoming
 	if request.GetSubject() != testSubject || request.GetSessionId() != testSessionID {
@@ -360,6 +369,80 @@ func TestSessionCheckTracingKeepsTheVerificationResult(t *testing.T) {
 				t.Fatalf("span status = %v", client.Status)
 			}
 			assertNoSessionData(t, client, token)
+		})
+	}
+}
+
+// recordMetrics installs a global meter provider with a manual reader. Tests
+// that call it must not run in parallel.
+func recordMetrics(t *testing.T) *sdkmetric.ManualReader {
+	t.Helper()
+	reader := sdkmetric.NewManualReader()
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	previous := otel.GetMeterProvider()
+	otel.SetMeterProvider(provider)
+	t.Cleanup(func() {
+		otel.SetMeterProvider(previous)
+		_ = provider.Shutdown(context.Background())
+	})
+	return reader
+}
+
+// onlyClientDuration returns the only rpc.client.call.duration point, which
+// must hold one call.
+func onlyClientDuration(t *testing.T, reader *sdkmetric.ManualReader) metricdata.HistogramDataPoint[float64] {
+	t.Helper()
+	var collected metricdata.ResourceMetrics
+	if err := reader.Collect(context.Background(), &collected); err != nil {
+		t.Fatal(err)
+	}
+	var points []metricdata.HistogramDataPoint[float64]
+	for _, scope := range collected.ScopeMetrics {
+		for _, measured := range scope.Metrics {
+			histogram, ok := measured.Data.(metricdata.Histogram[float64])
+			if measured.Name != "rpc.client.call.duration" || measured.Unit != "s" || !ok {
+				t.Fatalf("unexpected metric %q with unit %q", measured.Name, measured.Unit)
+			}
+			points = append(points, histogram.DataPoints...)
+		}
+	}
+	if len(points) != 1 || points[0].Count != 1 {
+		t.Fatalf("rpc.client.call.duration points = %+v, want one call", points)
+	}
+	return points[0]
+}
+
+func TestSessionCheckRecordsClientDuration(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		code codes.Code
+	}{
+		{"verified", nil, codes.OK},
+		{"revoked", status.Error(codes.Unauthenticated, "inactive"), codes.Unauthenticated},
+		{"outage", status.Error(codes.Unavailable, "offline"), codes.Unavailable},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			reader := recordMetrics(t)
+			server := &stubSessionServer{received: make(chan metadata.MD, 1), verified: true, err: test.err, wait: 20 * time.Millisecond}
+			verifier, token := sessionVerifier(t, server)
+			started := time.Now()
+			_, _ = verifier.VerifyToken(t.Context(), token)
+			elapsed := time.Since(started).Seconds()
+
+			// The duration covers the time that the call spent in Identity.
+			point := onlyClientDuration(t, reader)
+			if held := server.held.Seconds(); point.Sum < held || point.Sum > elapsed {
+				t.Fatalf("duration = %gs, want at least %gs and at most %gs", point.Sum, held, elapsed)
+			}
+			// The exact attribute names and types rule out the subject, the
+			// session, the token, and client certificate data.
+			method, hasMethod := point.Attributes.Value("rpc.method")
+			code, hasCode := point.Attributes.Value("rpc.grpc.status_code")
+			if point.Attributes.Len() != 2 || !hasMethod || method.Type() != attribute.STRING || !hasCode || code.Type() != attribute.INT64 ||
+				method.AsString() != strings.TrimPrefix(identityv1.IdentityService_CheckSession_FullMethodName, "/") || code.AsInt64() != int64(test.code) {
+				t.Fatalf("duration attributes = %v, want status %d", point.Attributes.ToSlice(), test.code)
+			}
 		})
 	}
 }

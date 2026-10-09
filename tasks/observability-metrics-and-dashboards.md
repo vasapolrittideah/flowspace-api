@@ -75,7 +75,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Export and storage
 
-- [ ] Unit tests show that each process starts, serves, and stops on time with metric export, without an endpoint and with an unreachable endpoint.
+- [x] Unit tests show that each process starts, serves, and stops on time with metric export, without an endpoint and with an unreachable endpoint.
 - [x] Unit tests pass for the names, units, attributes, and values of the database pool metrics.
 - [x] Tilt brings up Prometheus and kube-state-metrics with limits, and Prometheus has one replica, a bound `5Gi` volume, and a retention of 7 days and `4GB`.
 - [x] Prometheus has series from all three processes, and its only kube-state-metrics series are container restarts in the Flowspace namespace.

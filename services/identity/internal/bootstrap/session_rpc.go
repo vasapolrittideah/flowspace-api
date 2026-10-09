@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
@@ -32,8 +31,8 @@ func newSessionGRPCServer(tlsConfig *tls.Config, service inbound.SessionCheckSer
 	if tlsConfig == nil || service == nil {
 		return nil, errors.New("session RPC unavailable")
 	}
-	checks, err := meter.Int64Counter("identity.session_checks",
-		metric.WithDescription("Identity session checks by gRPC outcome"))
+	durations, err := meter.Float64Histogram("rpc.server.call.duration", metric.WithUnit("s"),
+		metric.WithDescription("Duration of each gRPC call that the server handles"))
 	if err != nil {
 		return nil, errors.New("session metrics unavailable")
 	}
@@ -46,16 +45,18 @@ func newSessionGRPCServer(tlsConfig *tls.Config, service inbound.SessionCheckSer
 			started := time.Now()
 			incoming, _ := metadata.FromIncomingContext(ctx)
 			ctx = propagator.Extract(ctx, tracing.MetadataCarrier(incoming))
+			method := semconv.RPCMethod(strings.TrimPrefix(info.FullMethod, "/"))
 			ctx, span := otel.Tracer("flowspace/identity/api").Start(ctx, info.FullMethod, trace.WithSpanKind(trace.SpanKindServer),
-				trace.WithAttributes(semconv.RPCMethod(strings.TrimPrefix(info.FullMethod, "/"))))
+				trace.WithAttributes(method))
 			defer span.End()
 			response, err := next(ctx, request)
 			code := status.Code(err)
 			tracing.SetGRPCStatus(span, code)
-			checks.Add(ctx, 1, metric.WithAttributes(attribute.String("outcome", code.String())))
+			elapsed := time.Since(started)
+			durations.Record(ctx, elapsed.Seconds(), metric.WithAttributes(method, tracing.GRPCStatusCode(code)))
 			logger.Info("identity_session_check", zap.String("request_id", requestid.FromIncoming(ctx)), logging.TraceID(ctx),
 				zap.String("operation", info.FullMethod), zap.String("outcome", outcome(code == codes.OK)), zap.String("status", code.String()),
-				zap.Duration("duration", time.Since(started)))
+				zap.Duration("duration", elapsed))
 			return response, err
 		}))
 	identityv1.RegisterIdentityServiceServer(server, identitygrpc.NewSessionCheckHandler(service))

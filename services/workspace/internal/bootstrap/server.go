@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 
 	workspacev1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/workspace/v1"
+	"github.com/vasapolrittideah/flowspace-api/internal/metrics"
 	"github.com/vasapolrittideah/flowspace-api/internal/postgrespool"
 	"github.com/vasapolrittideah/flowspace-api/internal/requestid"
 	"github.com/vasapolrittideah/flowspace-api/internal/tracing"
@@ -192,13 +193,20 @@ func withBodyLimit(next http.Handler) http.Handler {
 	})
 }
 
-// withServerSpan creates the server span of each public request. A known
-// gRPC method names the span. Otherwise the span takes the HTTP method, and
-// recordRoute adds the route of a matched REST request. grpcMethods holds the
-// full names of the gRPC methods that the server serves.
+// matchedRoute holds the route template that recordRoute finds for a REST
+// request, so that withServerSpan can record it with the duration.
+type matchedRoute struct{}
+
+// withServerSpan creates the server span and records the duration of each
+// public request. A known gRPC method names the span. Otherwise the span
+// takes the HTTP method, and recordRoute adds the route of a matched REST
+// request. grpcMethods holds the full names of the gRPC methods that the
+// server serves.
 func withServerSpan(next http.Handler, grpcMethods map[string]bool) http.Handler {
 	propagator := propagation.TraceContext{}
+	durations := metrics.NewServerDurations(otel.Meter("flowspace/workspace/api"))
 	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		started := time.Now()
 		grpcRequest := isGRPCRequest(request)
 		name := tracing.HTTPMethod(request.Method)
 		attributes := []attribute.KeyValue{semconv.HTTPRequestMethodKey.String(name)}
@@ -213,18 +221,28 @@ func withServerSpan(next http.Handler, grpcMethods map[string]bool) http.Handler
 		ctx, span := otel.Tracer("flowspace/workspace/api").Start(ctx, name,
 			trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attributes...))
 		defer span.End()
+		route := new(string)
+		ctx = context.WithValue(ctx, matchedRoute{}, route)
 		observed := &statusWriter{ResponseWriter: response, status: http.StatusOK}
 		next.ServeHTTP(observed, request.WithContext(ctx))
-		if code, ok := tracing.GRPCStatus(observed.Header()); grpcRequest && ok {
+		elapsed := time.Since(started)
+		if code, ok := tracing.GRPCStatus(ctx, observed.Header()); grpcRequest && ok {
 			tracing.SetGRPCStatus(span, code)
+			method := ""
+			if grpcMethods[request.URL.Path] {
+				method = request.URL.Path
+			}
+			durations.RecordRPC(ctx, elapsed, method, code)
 			return
 		}
 		tracing.SetHTTPStatus(span, observed.status)
+		durations.RecordHTTP(ctx, elapsed, request.Method, *route, observed.status)
 	})
 }
 
 // recordRoute names the server span after the route template of the matched
-// gateway route, such as GET /v1/workspaces/{workspace_id}.
+// gateway route, such as GET /v1/workspaces/{workspace_id}, and keeps the
+// route for the duration.
 func recordRoute(next runtime.HandlerFunc) runtime.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request, parameters map[string]string) {
 		if pattern, ok := runtime.HTTPPattern(request.Context()); ok {
@@ -232,6 +250,9 @@ func recordRoute(next runtime.HandlerFunc) runtime.HandlerFunc {
 			span := trace.SpanFromContext(request.Context())
 			span.SetName(tracing.HTTPMethod(request.Method) + " " + route)
 			span.SetAttributes(semconv.HTTPRoute(route))
+			if matched, ok := request.Context().Value(matchedRoute{}).(*string); ok {
+				*matched = route
+			}
 		}
 		next(response, request, parameters)
 	}

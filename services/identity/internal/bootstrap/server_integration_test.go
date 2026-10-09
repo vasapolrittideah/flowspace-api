@@ -24,6 +24,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+	"go.opentelemetry.io/otel"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -181,11 +183,20 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 		bytes.Repeat([]byte{6}, 32), bytes.Repeat([]byte{7}, 32)); err != nil {
 		t.Fatal(err)
 	}
+	workerReader := sdkmetric.NewManualReader()
+	previousProvider := otel.GetMeterProvider()
+	otel.SetMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(workerReader)))
+	t.Cleanup(func() { otel.SetMeterProvider(previousProvider) })
 	runCtx, stop = context.WithCancel(ctx)
 	go func() { result <- worker.Run(runCtx) }()
-	waitForLog(t, logs, "identity_outbox_age")
-	waitForLog(t, logs, "identity_broker_lag")
+	waitForPurge(ctx, db)
+	workerMetrics := collectMetrics(t, workerReader)
 	stop()
+	assertAge(t, workerMetrics, 0)
+	assertLag(t, workerMetrics, 0)
+	if logs.FilterMessage("identity_outbox_age").Len() != 0 || logs.FilterMessage("identity_broker_lag").Len() != 0 {
+		t.Fatal("worker wrote a removed outbox age or broker lag info line")
+	}
 	var attempts int
 	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM identity_provider_login_attempts`).Scan(&attempts); err != nil || attempts != 0 {
 		t.Fatalf("expired provider attempts after the worker purge = %d, %v", attempts, err)
@@ -198,8 +209,12 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("worker readiness after shutdown = %d", response.Code)
 	}
-	worker.logOutboxAge(ctx)
-	worker.logBrokerLag(ctx)
+	reader := sdkmetric.NewManualReader()
+	if _, err := registerWorkerMetrics(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)).Meter("test"), logger,
+		requestTimeout, worker.outboxAge, worker.consumerLag); err != nil {
+		t.Fatal(err)
+	}
+	collectMetrics(t, reader)
 	if logs.FilterMessage("identity_outbox_age_unavailable").Len() == 0 || logs.FilterMessage("identity_broker_lag_unavailable").Len() == 0 {
 		t.Fatal("worker did not record unavailable monitoring data")
 	}
@@ -237,6 +252,17 @@ func waitForLog(t *testing.T, logs *observer.ObservedLogs, message string) {
 		case <-deadline:
 			t.Fatalf("missing %s log", message)
 		case <-ticker.C:
+		}
+	}
+}
+
+// waitForPurge waits up to 10 seconds until the worker removes the expired
+// provider login attempts.
+func waitForPurge(ctx context.Context, db *sql.DB) {
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		var attempts int
+		if db.QueryRowContext(ctx, `SELECT count(*) FROM identity_provider_login_attempts`).Scan(&attempts) == nil && attempts == 0 {
+			return
 		}
 	}
 }

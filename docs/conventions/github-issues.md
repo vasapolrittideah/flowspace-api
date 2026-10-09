@@ -190,7 +190,7 @@ An automatic build started this Issue.
 
 Branch: `<branch name, if any>`
 
-<!-- review-sessions: <role>=<session ID> -->
+<!-- review-sessions: <role>=<session ID, if any> -->
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```

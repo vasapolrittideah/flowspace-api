@@ -389,7 +389,7 @@ func recordMetrics(t *testing.T) *sdkmetric.ManualReader {
 }
 
 // onlyClientDuration returns the only rpc.client.call.duration point, which
-// must hold one call.
+// must hold 1 call.
 func onlyClientDuration(t *testing.T, reader *sdkmetric.ManualReader) metricdata.HistogramDataPoint[float64] {
 	t.Helper()
 	var collected metricdata.ResourceMetrics

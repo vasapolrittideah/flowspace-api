@@ -326,7 +326,7 @@ func assertSessionObservability(t *testing.T, logs *observer.ObservedLogs, reade
 		logs.FilterMessage("identity_session_check").Len() != 3 {
 		t.Fatalf("unsafe or missing session-check logs: %s", got)
 	}
-	// Each status has one call, so the sum of its duration equals the
+	// Each status has 1 call, so the sum of its duration equals the
 	// duration of its log line.
 	logged := map[string]float64{}
 	for _, line := range logs.FilterMessage("identity_session_check").All() {
@@ -347,7 +347,7 @@ func assertSessionObservability(t *testing.T, logs *observer.ObservedLogs, reade
 }
 
 // sessionDurations returns the rpc.server.call.duration sum by gRPC status
-// code, and fails when a status has more than one call. It permits only the
+// code, and fails when a status has more than 1 call. It permits only the
 // rpc.method string and the rpc.grpc.status_code integer, so no subject,
 // session, token, or client certificate data can reach a duration. It fails
 // when another metric, such as the identity.session_checks counter, exists.

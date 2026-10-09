@@ -1,6 +1,7 @@
 package tracing
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -9,6 +10,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // grpcStatusCodeKey is the span attribute that the specification names.
@@ -50,11 +52,16 @@ func SetGRPCStatus(span trace.Span, code codes.Code) {
 }
 
 // GRPCStatus reads the gRPC status code that a gRPC server wrote to the
-// Grpc-Status trailer of an HTTP response.
-func GRPCStatus(header http.Header) (codes.Code, bool) {
+// Grpc-Status trailer of an HTTP response. The server can stop a call that
+// the client canceled before it writes the trailer, so without a trailer a
+// request whose context ended gets the code of the context error.
+func GRPCStatus(ctx context.Context, header http.Header) (codes.Code, bool) {
 	code, err := strconv.ParseUint(header.Get("Grpc-Status"), 10, 32)
-	if err != nil || code > uint64(codes.Unauthenticated) {
-		return 0, false
+	if err == nil && code <= uint64(codes.Unauthenticated) {
+		return codes.Code(code), true
 	}
-	return codes.Code(code), true
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return status.FromContextError(ctxErr).Code(), true
+	}
+	return 0, false
 }

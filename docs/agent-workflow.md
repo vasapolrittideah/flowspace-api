@@ -36,11 +36,17 @@ Flowspace keeps 1 author agent for each change, because each pull request (PR) h
 
 ## Automatic builds
 
-The `chain`, `fanout`, and `swarm` modes of `/build` make the author agent a dispatcher, as [ADR-0040](adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) and [ADR-0042](adr/0042-the-build-command-has-four-modes.md) decide. The dispatcher does not write code. It starts one background subagent for each ready Issue and for each open PR that needs work, within the limits of its mode, and each subagent is the author agent of one PR. A `chain` run works on 1 plan with 1 subagent at a time. A `fanout` run starts 1 set of subagents and ends. A `swarm` run chooses the work again each time a subagent ends. The [Automatic modes](../.agents/commands/build.md#automatic-modes) section of the build command gives the steps.
+The `chain`, `fanout`, and `swarm` modes of `/build` make the author agent a dispatcher, as [ADR-0040](adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) and [ADR-0042](adr/0042-the-build-command-has-four-modes.md) decide. The dispatcher does not write code. It starts 1 background subagent for each ready Issue and each open PR that needs work, within the limits of its mode. Each subagent is the author agent of 1 PR. The [Automatic modes](../.agents/commands/build.md#automatic-modes) section of the build command gives the steps.
+
+| Mode | Behavior |
+| --- | --- |
+| `chain` | Works on 1 plan with 1 subagent at a time. |
+| `fanout` | Starts 1 set of subagents and ends. |
+| `swarm` | Chooses the work again each time a subagent ends. |
 
 The dispatcher does not select its subtasks while it works, so it does not use the orchestrator-workers pattern. The approved plan defines each task as an Issue, with its blockers and its likely files. The dispatcher only chooses which ready Issues start, within fixed limits, and it does not combine the results of the subagents. Each subagent goes through the same review loop as a `/build single` run.
 
-An Issue with one open blocker can stack its PR on the PR of that blocker, so that the work continues before the merge. A stack holds at most 3 PRs. The maintainer merges a stack from the parent PR up. The [Automatic build PR](conventions/pull-requests.md#automatic-build-pr) rules state how a subagent restacks a PR and how the agents read comments.
+An Issue with 1 open blocker can stack its PR on the PR of that blocker, so that the work continues before the merge. A stack holds at most 3 PRs. The maintainer merges a stack from the parent PR up. The [Automatic build PR](conventions/pull-requests.md#automatic-build-pr) rules state how a subagent restacks a PR and how the agents read comments.
 
 ## Agents and files
 

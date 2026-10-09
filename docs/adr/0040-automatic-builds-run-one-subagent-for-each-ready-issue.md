@@ -2,7 +2,7 @@
 
 Date: 2026-10-07
 
-Status: Accepted, except the requested changes from comments without a marker and the status change after an answer superseded by [ADR-0041](0041-maintainers-answer-automatic-builds-in-the-chat.md), and the `/build auto` name, the end of each run after 1 set of subagents, and the stack limit of 2 PRs superseded by [ADR-0042](0042-the-build-command-has-four-modes.md)
+Status: Accepted, except the requested changes from comments without a marker and the status change after an answer superseded by [ADR-0041](0041-maintainers-answer-automatic-builds-in-the-chat.md), and the `/build auto` name, the end of each run after 1 set of subagents, and the stack limit of 2 PRs superseded by [ADR-0042](0042-the-build-command-has-four-modes.md), and the squash message comment superseded by [ADR-0043](0043-squash-commits-keep-only-the-pull-request-title.md)
 
 ## Context
 

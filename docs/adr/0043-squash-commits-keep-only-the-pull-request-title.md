@@ -14,9 +14,9 @@ The [Pull requests](../conventions/pull-requests.md) conventions write the PR de
 
 ## Decision
 
-Each squash commit uses only the PR title as its subject. GitHub adds the `(#<number>)` suffix and copies the `Co-authored-by` trailers from the checkpoint commits. The PR description holds the lasting record of the change, and agents do not write a squash message.
+Each squash commit uses only the PR title as its subject. The PR description holds the lasting record of the change, and agents do not write a squash message.
 
-The default squash message of the repository uses the PR title and a blank body. In the GitHub API, the `squash_merge_commit_title` value is `PR_TITLE`, and the `squash_merge_commit_message` value is `BLANK`. The maintainer merges with this default and does not paste a message. Each checkpoint commit keeps the `Co-authored-by` trailers that the Commit messages conventions require, because the squash commit gets its trailers from them.
+GitHub adds the `(#<number>)` suffix and copies the `Co-authored-by` trailers from the checkpoint commits. The default squash message of the repository uses the PR title and a blank body. In the GitHub API, the `squash_merge_commit_title` value is `PR_TITLE`, and the `squash_merge_commit_message` value is `BLANK`. The maintainer merges with this default and does not paste a message. Each checkpoint commit keeps the `Co-authored-by` trailers that the Commit messages conventions require, because the squash commit gets its trailers from them.
 
 The PR description has 7 sections in 2 groups. The first group is the lasting record for a later reader of `main`. The second group is for the reviewer and the merge decision.
 

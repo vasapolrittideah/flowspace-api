@@ -26,7 +26,7 @@ The local setup runs on macOS. Install these tools before you start:
 | [kubeseal](https://github.com/bitnami-labs/sealed-secrets#kubeseal) and OpenSSL | Create the encrypted local secrets. |
 | [Tilt](https://docs.tilt.dev/install.html) | Builds and starts all services. |
 | [Go Task](https://taskfile.dev/docs/installation) | Runs the repository commands. |
-| [Go 1.27.1](https://go.dev/doc/install) | Builds the services and installs the pinned tools. |
+| [Go 1.27.2](https://go.dev/doc/install) | Builds the services and installs the pinned tools. |
 | [Node.js](https://nodejs.org/en/download) with npm | Creates local passwords and checks Markdown. |
 
 The first installation of the tools needs access to the Go and npm package registries.

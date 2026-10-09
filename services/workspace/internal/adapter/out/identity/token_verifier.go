@@ -11,11 +11,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-jose/go-jose/v4"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -84,10 +87,17 @@ func NewTokenVerifier(config Config) (*TokenVerifier, error) {
 }
 
 // dialSession returns the connection for session checks. Each call on it
-// gets a client span and sends the correlation metadata.
+// gets a client span and a client duration, and sends the correlation
+// metadata. An instrument error goes to the global error handler, because
+// telemetry never stops a process.
 func dialSession(address string, transport credentials.TransportCredentials, options ...grpc.DialOption) (*grpc.ClientConn, error) {
+	durations, err := otel.Meter("flowspace/workspace/api").Float64Histogram("rpc.client.call.duration", metric.WithUnit("s"),
+		metric.WithDescription("Duration of each CheckSession call from Workspace"))
+	if err != nil {
+		otel.Handle(err)
+	}
 	return grpc.NewClient(address, append([]grpc.DialOption{
-		grpc.WithTransportCredentials(transport), grpc.WithUnaryInterceptor(traceSessionCheck),
+		grpc.WithTransportCredentials(transport), grpc.WithUnaryInterceptor(observeSessionCheck(durations)),
 	}, options...)...)
 }
 
@@ -95,6 +105,22 @@ func newSessionCheck(conn *grpc.ClientConn) func(context.Context, *identityv1.Ch
 	client := identityv1.NewIdentityServiceClient(conn)
 	return func(ctx context.Context, request *identityv1.CheckSessionRequest) (*identityv1.CheckSessionResponse, error) {
 		return client.CheckSession(ctx, request)
+	}
+}
+
+// observeSessionCheck creates the client span of a session check under the
+// Workspace request span, and records its duration in durations. It sends
+// the trace context of the client span and the request ID of the Workspace
+// request as gRPC metadata.
+func observeSessionCheck(durations metric.Float64Histogram) grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, request, reply any, conn *grpc.ClientConn,
+		invoker grpc.UnaryInvoker, options ...grpc.CallOption,
+	) error {
+		started := time.Now()
+		err := traceSessionCheck(ctx, method, request, reply, conn, invoker, options...)
+		durations.Record(ctx, time.Since(started).Seconds(), metric.WithAttributes(
+			semconv.RPCMethod(strings.TrimPrefix(method, "/")), tracing.GRPCStatusCode(status.Code(err))))
+		return err
 	}
 }
 

@@ -5,3 +5,11 @@ resources:
   - network-policy.yaml
   - alloy-rbac.yaml
   - grafana-admin-sealed-secret.yaml
+# Grafana loads each dashboard JSON file in this ConfigMap into the Flowspace
+# folder. The name has no hash suffix, because grafana-values.yaml names it.
+configMapGenerator:
+  - name: grafana-dashboards-flowspace
+    files:
+      - dashboards/service-health.json
+    options:
+      disableNameSuffixHash: true

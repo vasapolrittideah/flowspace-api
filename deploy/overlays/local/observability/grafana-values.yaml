@@ -71,3 +71,19 @@ resources:
   limits:
     cpu: "1"
     memory: 1Gi
+# Git holds the Flowspace dashboards. The chart mounts the ConfigMap from the
+# kustomization, and the provider loads it into the Flowspace folder.
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: flowspace
+        orgId: 1
+        folder: Flowspace
+        type: file
+        disableDeletion: true
+        editable: false
+        options:
+          path: /var/lib/grafana/dashboards/flowspace
+dashboardsConfigMaps:
+  flowspace: grafana-dashboards-flowspace

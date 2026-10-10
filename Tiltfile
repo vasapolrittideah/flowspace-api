@@ -251,6 +251,7 @@ helm_repo('grafana-community', 'https://grafana-community.github.io/helm-charts'
 helm_repo('prometheus-community', 'https://prometheus-community.github.io/helm-charts', resource_name='prometheus-community-chart-repo', labels='observability')
 k8s_yaml(kustomize('deploy/overlays/local/observability'))
 k8s_resource(new_name='grafana-admin', objects=['grafana-admin:sealedsecret'], resource_deps=['sealed-secrets'], labels='observability')
+k8s_resource(new_name='grafana-dashboards', objects=['grafana-dashboards-flowspace:configmap'], labels='observability')
 helm_resource(
     'tempo',
     'grafana-community/tempo',
@@ -304,7 +305,7 @@ helm_resource(
     namespace='flowspace-local',
     deps=['deploy/overlays/local/observability/grafana-values.yaml'],
     flags=['--version=13.2.7', '--values=deploy/overlays/local/observability/grafana-values.yaml', '--create-namespace'],
-    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'tempo', 'loki', 'prometheus'],
+    resource_deps=['grafana-community-chart-repo', 'grafana-admin', 'grafana-dashboards', 'tempo', 'loki', 'prometheus'],
     port_forwards=[port_forward(3000, 3000, name='Grafana')],
     labels='observability',
 )

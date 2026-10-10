@@ -1,0 +1,204 @@
+{
+  "uid": "flowspace-service-health",
+  "title": "Service health",
+  "tags": ["flowspace"],
+  "editable": false,
+  "schemaVersion": 41,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "label_values(db_client_connection_max, service)", "refId": "service" },
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request rate",
+      "description": "Requests per second for each HTTP route and gRPC method.",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service, http_request_method, http_route) (rate(http_server_request_duration_seconds_count{service=~\"$service\"}[$__rate_interval]))",
+          "legendFormat": "{{service}} {{http_request_method}} {{http_route}}"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (service, rpc_method) (rate(rpc_server_call_duration_seconds_count{service=~\"$service\"}[$__rate_interval]))",
+          "legendFormat": "{{service}} {{rpc_method}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Error rate",
+      "description": "Failed requests per second: HTTP 5xx statuses, and the gRPC codes Unknown (2), DeadlineExceeded (4), Internal (13), and Unavailable (14).",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service, http_route) (rate(http_server_request_duration_seconds_count{service=~\"$service\", http_response_status_code=~\"5..\"}[$__rate_interval]))",
+          "legendFormat": "{{service}} {{http_route}} 5xx"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (service, rpc_method, rpc_grpc_status_code) (rate(rpc_server_call_duration_seconds_count{service=~\"$service\", rpc_grpc_status_code=~\"2|4|13|14\"}[$__rate_interval]))",
+          "legendFormat": "{{service}} {{rpc_method}} code {{rpc_grpc_status_code}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Latency percentiles",
+      "description": "p50, p95, and p99 duration for each HTTP route and gRPC method, from the histogram buckets.",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le, service, http_route) (rate(http_server_request_duration_seconds_bucket{service=~\"$service\"}[$__rate_interval])))",
+          "legendFormat": "p50 {{service}} {{http_route}}"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le, service, http_route) (rate(http_server_request_duration_seconds_bucket{service=~\"$service\"}[$__rate_interval])))",
+          "legendFormat": "p95 {{service}} {{http_route}}"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le, service, http_route) (rate(http_server_request_duration_seconds_bucket{service=~\"$service\"}[$__rate_interval])))",
+          "legendFormat": "p99 {{service}} {{http_route}}"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.5, sum by (le, service, rpc_method) (rate(rpc_server_call_duration_seconds_bucket{service=~\"$service\"}[$__rate_interval])))",
+          "legendFormat": "p50 {{service}} {{rpc_method}}"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.95, sum by (le, service, rpc_method) (rate(rpc_server_call_duration_seconds_bucket{service=~\"$service\"}[$__rate_interval])))",
+          "legendFormat": "p95 {{service}} {{rpc_method}}"
+        },
+        {
+          "refId": "F",
+          "expr": "histogram_quantile(0.99, sum by (le, service, rpc_method) (rate(rpc_server_call_duration_seconds_bucket{service=~\"$service\"}[$__rate_interval])))",
+          "legendFormat": "p99 {{service}} {{rpc_method}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "CheckSession latency",
+      "description": "p50, p95, and p99 duration of the CheckSession calls that Workspace makes to Identity, measured on the client side.",
+      "gridPos": { "x": 0, "y": 17, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le, service) (rate(rpc_client_call_duration_seconds_bucket{rpc_method=\"flowspace.identity.v1.IdentityService/CheckSession\"}[$__rate_interval])))",
+          "legendFormat": "p50 {{service}}"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le, service) (rate(rpc_client_call_duration_seconds_bucket{rpc_method=\"flowspace.identity.v1.IdentityService/CheckSession\"}[$__rate_interval])))",
+          "legendFormat": "p95 {{service}}"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le, service) (rate(rpc_client_call_duration_seconds_bucket{rpc_method=\"flowspace.identity.v1.IdentityService/CheckSession\"}[$__rate_interval])))",
+          "legendFormat": "p99 {{service}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "CheckSession errors",
+      "description": "Failed CheckSession calls per second on the client side, by gRPC code: Unknown (2), DeadlineExceeded (4), Internal (13), and Unavailable (14).",
+      "gridPos": { "x": 12, "y": 17, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service, rpc_grpc_status_code) (rate(rpc_client_call_duration_seconds_count{rpc_method=\"flowspace.identity.v1.IdentityService/CheckSession\", rpc_grpc_status_code=~\"2|4|13|14\"}[$__rate_interval]))",
+          "legendFormat": "{{service}} code {{rpc_grpc_status_code}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Database connections",
+      "description": "Idle and used connections in each database pool, against the maximum pool size.",
+      "gridPos": { "x": 0, "y": 25, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service, db_client_connection_state) (db_client_connection_count{service=~\"$service\"})",
+          "legendFormat": "{{service}} {{db_client_connection_state}}"
+        },
+        {
+          "refId": "B",
+          "expr": "max by (service) (db_client_connection_max{service=~\"$service\"})",
+          "legendFormat": "{{service}} max"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Connection acquire wait",
+      "description": "Seconds per second that callers waited for a database connection.",
+      "gridPos": { "x": 12, "y": 25, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service) (rate(flowspace_db_connection_acquire_wait_seconds_total{service=~\"$service\"}[$__rate_interval]))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Container restarts",
+      "description": "Container restarts in the last hour for each pod and container of the selected services.",
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "round(sum by (pod, container) (increase(kube_pod_container_status_restarts_total{namespace=\"flowspace-local\", pod=~\"($service)-.*\"}[1h])))",
+          "legendFormat": "{{pod}} {{container}}"
+        }
+      ]
+    }
+  ]
+}

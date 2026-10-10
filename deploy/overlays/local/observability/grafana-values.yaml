@@ -61,13 +61,16 @@ startupProbe:
     port: grafana
   periodSeconds: 10
   failureThreshold: 60
+# With a dashboard open, Grafana uses up to 450Mi of its own memory, and its
+# file cache fills the rest of the limit. At 512Mi, the container stayed at
+# its limit, requests timed out, and the liveness probe restarted Grafana.
 resources:
   requests:
     cpu: 100m
     memory: 128Mi
   limits:
     cpu: "1"
-    memory: 512Mi
+    memory: 1Gi
 # Git holds the Flowspace dashboards. The chart mounts the ConfigMap from the
 # kustomization, and the provider loads it into the Flowspace folder.
 dashboardProviders:

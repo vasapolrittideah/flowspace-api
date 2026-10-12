@@ -91,10 +91,10 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Service metrics
 
-- [ ] Unit tests pass for the HTTP and gRPC duration labels, the `unmatched`, `_OTHER`, and `unknown` values, the session check durations, and the delivery kinds and outcomes.
-- [ ] A Docker integration test shows the outbox age for unpublished, published, and absent events.
-- [ ] No unit test finds an ID, an email address, a raw path, or error text in a metric attribute.
-- [ ] A human reviews the removed log lines and the removed `identity.session_checks` counter.
+- [x] Unit tests pass for the HTTP and gRPC duration labels, the `unmatched`, `_OTHER`, and `unknown` values, the session check durations, and the delivery kinds and outcomes.
+- [x] A Docker integration test shows the outbox age for unpublished, published, and absent events.
+- [x] No unit test finds an ID, an email address, a raw path, or error text in a metric attribute.
+- [x] A human reviews the removed log lines and the removed `identity.session_checks` counter.
 
 ### Phase 3: Dashboards
 
@@ -103,9 +103,9 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Dashboards
 
-- [ ] Grafana lists the Service health, Event delivery, and Telemetry stack dashboards from Git in the `Flowspace` folder.
-- [ ] Each panel shows data for traffic that exists in the `local` cluster.
-- [ ] A human reviews the panel queries and the dashboard JSON files.
+- [x] Grafana lists the Service health, Event delivery, and Telemetry stack dashboards from Git in the `Flowspace` folder.
+- [x] Each panel shows data for traffic that exists in the `local` cluster.
+- [x] A human reviews the panel queries and the dashboard JSON files.
 
 ### Phase 4: Completion checks
 

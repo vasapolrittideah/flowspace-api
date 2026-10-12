@@ -41,5 +41,5 @@ Plan: https://github.com/vasapolrittideah/flowspace-api/blob/main/tasks/<module 
 
 - If you reuse a closed milestone, reopen it.
 - If the [Task list](module-plans.md#task-list) of the plan changes, update the Issue assignments to match.
-- After the PR of the final Prove task merges, close the milestone when the plan is `Complete` and every Issue in the milestone is closed.
+- After the PR of the final Prove task merges, close the milestone when the plan is `Complete` and every Issue in the milestone is closed. The [Close milestones](../../.github/workflows/close-milestones.yml) workflow closes a milestone when its last open Issue closes. The final Prove task is the last Issue of the plan, and its PR closes it only when the plan is `Complete`. If the milestone is still open after the merge, close it.
 - Apply a change of this convention only to new milestones and to milestones that a later PR changes. Do not change the assignments of closed Issues or merged PRs.

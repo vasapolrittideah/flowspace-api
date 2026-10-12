@@ -11,5 +11,7 @@ configMapGenerator:
   - name: grafana-dashboards-flowspace
     files:
       - dashboards/service-health.json
+      - dashboards/event-delivery.json
+      - dashboards/telemetry-stack.json
     options:
       disableNameSuffixHash: true

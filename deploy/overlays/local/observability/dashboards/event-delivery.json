@@ -1,0 +1,59 @@
+{
+  "uid": "flowspace-event-delivery",
+  "title": "Event delivery",
+  "tags": ["flowspace"],
+  "editable": false,
+  "schemaVersion": 41,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Oldest outbox event age",
+      "description": "Age of the oldest Identity outbox event that the relay has not published. It is 0 when every event is published.",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(identity_outbox_oldest_age_seconds)",
+          "legendFormat": "oldest unpublished event"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Consumer lag",
+      "description": "Records that the email worker consumer group has not consumed.",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(identity_broker_consumer_lag)",
+          "legendFormat": "email worker"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Email deliveries",
+      "description": "Email delivery attempts in each interval, by email kind and outcome.",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (identity_email_kind, outcome) (increase(identity_email_deliveries_total[$__rate_interval]))",
+          "legendFormat": "{{identity_email_kind}} {{outcome}}"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "uid": "flowspace-telemetry-stack",
+  "title": "Telemetry stack",
+  "tags": ["flowspace"],
+  "editable": false,
+  "schemaVersion": 41,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Alloy telemetry loss",
+      "description": "Spans, metric points, samples, and log entries that Alloy refused, failed to send, or dropped in each interval. A counter that has no series yet shows 0.",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(otelcol_receiver_refused_spans_total{job=\"alloy\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "refused spans"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(increase(otelcol_receiver_refused_metric_points_total{job=\"alloy\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "refused metric points"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(increase(otelcol_exporter_send_failed_spans_total{job=\"alloy\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "failed spans"
+        },
+        {
+          "refId": "D",
+          "expr": "sum(increase(prometheus_remote_storage_samples_failed_total{job=\"alloy\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "failed metric samples"
+        },
+        {
+          "refId": "E",
+          "expr": "sum(increase(loki_write_dropped_entries_total{job=\"alloy\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "dropped log entries"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Store ingestion failures",
+      "description": "Log samples that Loki discarded, spans that Tempo discarded, and remote write requests that Prometheus rejected, in each interval. A counter that has no series yet shows 0.",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(loki_discarded_samples_total{job=\"loki\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "Loki discarded samples"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(increase(tempo_discarded_spans_total{job=\"tempo\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "Tempo discarded spans"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(increase(prometheus_http_requests_total{job=\"prometheus\", handler=\"/api/v1/write\", code!~\"2..\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "Prometheus rejected writes"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Host filesystem use",
+      "description": "Used share of each volume. The local-path volumes share the host filesystem, so each capacity is the size of that filesystem.",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (persistentvolumeclaim) (kubelet_volume_stats_used_bytes{job=\"kubelet\"} / kubelet_volume_stats_capacity_bytes{job=\"kubelet\"})",
+          "legendFormat": "{{persistentvolumeclaim}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Prometheus database size",
+      "description": "Bytes that Prometheus stores in blocks, head chunks, and the write-ahead log.",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "stacking": { "mode": "normal" } } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(prometheus_tsdb_storage_blocks_bytes{job=\"prometheus\"})",
+          "legendFormat": "blocks"
+        },
+        {
+          "refId": "B",
+          "expr": "max(prometheus_tsdb_head_chunks_storage_size_bytes{job=\"prometheus\"})",
+          "legendFormat": "head chunks"
+        },
+        {
+          "refId": "C",
+          "expr": "max(prometheus_tsdb_wal_storage_size_bytes{job=\"prometheus\"})",
+          "legendFormat": "write-ahead log"
+        }
+      ]
+    }
+  ]
+}

@@ -36,7 +36,7 @@ In `single` mode, the work starts from one module with an `Approved` plan. It im
 4. Read the Issue, the specification, and the code, patterns, and types that the task affects.
 5. Build the task in slices with the skills. For each slice, write a failing test, make it pass, run the focused tests, and create a checkpoint commit with a `Refs` footer, as the [commit message conventions](../../docs/conventions/commit-messages.md) state.
 6. Run each check in the `Verification` list of the Issue, except the CI review.
-7. If the Issue is the last open Issue of its phase, check the checkpoint of the phase in the plan, as the [task list rules](../../docs/conventions/module-plans.md#task-list) state.
+7. If the Issue is the last open Issue of its phase, make sure that each outcome of the checkpoint of the phase holds, and mark the checkpoint items as complete in the plan, as the [plan change rules](../../docs/conventions/module-plans.md#changes) state. Commit the change on the branch of the Issue, so that the PR of the Issue includes it.
 8. If the Issue is the final Prove task, follow the [final Prove task rules](../../docs/conventions/github-issues.md#final-prove-task) for the statuses of the specification and the plan.
 
 ## Open the PR

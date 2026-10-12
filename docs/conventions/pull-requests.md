@@ -175,19 +175,20 @@ A PR that completes the final Prove task of a module plan also records the evide
 - If a test proves a success criterion only in part, such as with a fake provider instead of a real one, state in [Risks or limitations](#risks-or-limitations) why the module can still close.
 - If an item of the Issue fails or does not run, state the gap in [Risks or limitations](#risks-or-limitations), and use `Refs` instead of `Closes` for the Issue.
 
-The evidence has a [Status sentence](#status-sentence) and a [Local checks table](#local-checks-table).
+The evidence has a [Stack sentence](#stack-sentence) and a [Local checks table](#local-checks-table).
 
 ```markdown
-The specification is `<specification status>` and the plan is `<plan status>`.
+The checks ran against <local stack, if any>.
 
-| Check | Result | Stack |
-| --- | --- | --- |
-| `<command>` | <result> | <local stack> |
+| Check | Result |
+| --- | --- |
+| `<command>` | <result> |
 ```
 
-### Status sentence
+### Stack sentence
 
-- Write the statuses that the specification and the plan have after the merge.
+- Name the local cluster or environment and each service that a check ran against, such as "k3d `flowspace-local` with Mailpit".
+- If no local check applies, do not write the sentence.
 
 ### Local checks table
 
@@ -203,7 +204,6 @@ The specification is `<specification status>` and the plan is `<plan status>`.
 | --- | --- |
 | `Check` | The command, such as `` `task smoke:bruno` ``. |
 | `Result` | `Passed` or `Failed`, followed by the passed and total counts when the check reports them, such as "Passed 44/44 requests". |
-| `Stack` | The local cluster or environment and the services that the check ran against, such as "k3d `flowspace-local` with Mailpit". |
 
 ## Automatic build PR
 

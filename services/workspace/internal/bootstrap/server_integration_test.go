@@ -220,7 +220,10 @@ func freeAddress(t *testing.T) string {
 
 func waitForServer(t *testing.T, result <-chan error, url string) {
 	t.Helper()
-	client := &http.Client{Timeout: 100 * time.Millisecond}
+	// The transport keeps dialing after a request times out. Without keep-alives,
+	// it closes such a connection instead of leaving it unused, so that it does
+	// not hold up the server shutdown.
+	client := &http.Client{Timeout: 100 * time.Millisecond, Transport: &http.Transport{DisableKeepAlives: true}}
 	deadline := time.Now().Add(serverTimeout)
 	for time.Now().Before(deadline) {
 		select {

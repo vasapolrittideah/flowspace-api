@@ -103,8 +103,8 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Dashboards
 
-- [ ] Grafana lists the Service health, Event delivery, and Telemetry stack dashboards from Git in the `Flowspace` folder.
-- [ ] Each panel shows data for traffic that exists in the `local` cluster.
+- [x] Grafana lists the Service health, Event delivery, and Telemetry stack dashboards from Git in the `Flowspace` folder.
+- [x] Each panel shows data for traffic that exists in the `local` cluster.
 - [ ] A human reviews the panel queries and the dashboard JSON files.
 
 ### Phase 4: Completion checks

@@ -1,0 +1,10 @@
+{
+  "apiVersion": 1,
+  "templates": [
+    {
+      "orgId": 1,
+      "name": "flowspace",
+      "template": "{{ define \"flowspace.subject\" }}[{{ .Status | toUpper }}] {{ .CommonLabels.severity }}: {{ .CommonLabels.alertname }}{{ end }}\n{{ define \"flowspace.message\" }}{{ range .Alerts }}{{ .Annotations.summary }}\n\nLabels:\n{{ range .Labels.SortedPairs }}- {{ .Name }}: {{ .Value }}\n{{ end }}\nRunbook: {{ .Annotations.runbook_url }}\nDashboard: {{ .Annotations.dashboard_url }}\n\n{{ end }}{{ end }}"
+    }
+  ]
+}

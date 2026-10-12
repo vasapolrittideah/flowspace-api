@@ -16,6 +16,13 @@ grafana.ini:
     check_for_plugin_updates: false
   auth.anonymous:
     enabled: false
+  # Alert emails go to Mailpit inside the cluster, without authentication or
+  # TLS, as ADR-0039 decides.
+  smtp:
+    enabled: true
+    host: mailpit-smtp:1025
+    from_address: alerts@flowspace.local
+    startTLS_policy: NoStartTLS
 datasources:
   datasources.yaml:
     apiVersion: 1
@@ -87,3 +94,21 @@ dashboardProviders:
           path: /var/lib/grafana/dashboards/flowspace
 dashboardsConfigMaps:
   flowspace: grafana-dashboards-flowspace
+# Git holds the alerting resources. Grafana reads them only at startup, so a
+# change to the ConfigMap needs a restart of the Grafana deployment.
+extraConfigmapMounts:
+  - name: grafana-alerting-flowspace
+    configMap: grafana-alerting-flowspace
+    mountPath: /etc/grafana/provisioning/alerting
+    readOnly: true
+  # Each file replaces 1 default alert email template of Grafana.
+  - name: grafana-emails-flowspace-html
+    configMap: grafana-emails-flowspace
+    mountPath: /usr/share/grafana/public/emails/ng_alert_notification.html
+    subPath: ng_alert_notification.html
+    readOnly: true
+  - name: grafana-emails-flowspace-txt
+    configMap: grafana-emails-flowspace
+    mountPath: /usr/share/grafana/public/emails/ng_alert_notification.txt
+    subPath: ng_alert_notification.txt
+    readOnly: true

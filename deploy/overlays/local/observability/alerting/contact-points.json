@@ -1,0 +1,22 @@
+{
+  "apiVersion": 1,
+  "contactPoints": [
+    {
+      "orgId": 1,
+      "name": "mailpit",
+      "receivers": [
+        {
+          "uid": "mailpit",
+          "type": "email",
+          "disableResolveMessage": false,
+          "settings": {
+            "addresses": "alerts@flowspace.local",
+            "singleEmail": true,
+            "subject": "{{ template \"flowspace.subject\" . }}",
+            "message": "{{ template \"flowspace.message\" . }}"
+          }
+        }
+      ]
+    }
+  ]
+}

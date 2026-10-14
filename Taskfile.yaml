@@ -198,6 +198,12 @@ tasks:
     cmds:
       - sh scripts/setup-grafana-admin-local.sh
 
+  observability:alert-rules:check:
+    desc: Check the Grafana alert rules against their specification
+    cmds:
+      - node --test scripts/check-alert-rules.test.mjs
+      - node scripts/check-alert-rules.mjs
+
   observability:grafana-admin:test:
     desc: Test local Grafana admin password sealing without a cluster
     cmds:
@@ -232,6 +238,7 @@ tasks:
       - task: identity:session-tls:test
       - task: identity:signing-key:test
       - task: observability:grafana-admin:test
+      - task: observability:alert-rules:check
       - task: secrets:local-test
       - task: lint
       - task: coverage

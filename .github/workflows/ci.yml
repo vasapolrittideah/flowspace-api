@@ -100,6 +100,10 @@ jobs:
           globs: "**/*.md"
       - name: Check local Markdown links
         run: node scripts/check-local-links.mjs
+      - name: Test alert rule checker
+        run: node --test scripts/check-alert-rules.test.mjs
+      - name: Check alert rules
+        run: node scripts/check-alert-rules.mjs
       - name: Block Draft specifications and plans
         run: |
           if grep -nE '^Status: Draft\.?$|\| Draft \|$' docs/specs/*.md tasks/*.md; then

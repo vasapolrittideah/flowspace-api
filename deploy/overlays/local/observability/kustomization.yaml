@@ -15,13 +15,14 @@ configMapGenerator:
       - dashboards/telemetry-stack.json
     options:
       disableNameSuffixHash: true
-  # Grafana provisions the contact point, the notification policy, and the
-  # notification templates from this ConfigMap at startup.
+  # Grafana provisions the rule group, the contact point, the notification
+  # policy, and the notification templates from this ConfigMap at startup.
   - name: grafana-alerting-flowspace
     files:
       - alerting/contact-points.json
       - alerting/notification-policies.json
       - alerting/notification-templates.json
+      - alerting/rules.json
     options:
       disableNameSuffixHash: true
   # These templates replace the alert email layout of Grafana, so that the

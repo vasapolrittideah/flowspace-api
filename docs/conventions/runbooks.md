@@ -104,10 +104,4 @@ The [Observability and Instrumentation](../../.agents/skills/observability-and-i
 
 ## Examples
 
-These first sentences of a [Meaning](#meaning) section state the symptom before the condition:
-
-```markdown
-## Meaning
-
-API clients receive server errors from 1 Flowspace service. The alert fires when, over the last 5 minutes, more than 5% of the HTTP and gRPC server requests of a service end with an error status and the service receives at least 0.1 requests each second. The condition must stay true for 5 minutes.
-```
+The [API error rate is high](../runbooks/api-error-rate-is-high.md) runbook follows this convention.

@@ -1,0 +1,64 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "flowspace",
+      "folder": "Flowspace",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "api-error-rate-is-high",
+          "title": "API error rate is high",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "(sum by (environment, service) (rate(http_server_request_duration_seconds_count{http_response_status_code=~\"5..\"}[5m]) or rate(rpc_server_call_duration_seconds_count{rpc_grpc_status_code=~\"2|4|13|14\"}[5m])) / sum by (environment, service) (rate(http_server_request_duration_seconds_count[5m]) or rate(rpc_server_call_duration_seconds_count[5m]))) and (sum by (environment, service) (rate(http_server_request_duration_seconds_count[5m]) or rate(rpc_server_call_duration_seconds_count[5m])) >= 0.1)",
+                "instant": true,
+                "range": false
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0.05
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "5m",
+          "labels": {
+            "severity": "page"
+          },
+          "annotations": {
+            "summary": "{{ with $values.A }}API error rate is high: {{ humanizePercentage .Value }} of the requests of {{ $labels.service }} end with an error status.{{ else }}API error rate is high: Grafana cannot query Prometheus.{{ end }}",
+            "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/api-error-rate-is-high.md",
+            "dashboard_url": "http://localhost:3000/d/flowspace-service-health"
+          }
+        }
+      ]
+    }
+  ]
+}

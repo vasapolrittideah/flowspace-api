@@ -57,6 +57,57 @@
             "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/api-error-rate-is-high.md",
             "dashboard_url": "http://localhost:3000/d/flowspace-service-health"
           }
+        },
+        {
+          "uid": "api-latency-is-high",
+          "title": "API latency is high",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "max by (environment, service) (histogram_quantile(0.99, sum by (environment, service, le) (rate(http_server_request_duration_seconds_bucket[5m]))) or label_replace(histogram_quantile(0.99, sum by (environment, service, le) (rate(rpc_server_call_duration_seconds_bucket[5m]))), \"rpc\", \"true\", \"\", \"\")) and (sum by (environment, service) (rate(http_server_request_duration_seconds_count[5m]) or rate(rpc_server_call_duration_seconds_count[5m])) >= 0.1)",
+                "instant": true,
+                "range": false
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        2.5
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "10m",
+          "labels": {
+            "severity": "ticket"
+          },
+          "annotations": {
+            "summary": "{{ with $values.A }}API latency is high: the p99 server duration of {{ $labels.service }} is {{ humanizeDuration .Value }}.{{ else }}API latency is high: Grafana cannot query Prometheus.{{ end }}",
+            "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/api-latency-is-high.md",
+            "dashboard_url": "http://localhost:3000/d/flowspace-service-health"
+          }
         }
       ]
     }

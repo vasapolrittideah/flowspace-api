@@ -55,7 +55,7 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 - [x] A test notification and a firing and resolved `API error rate is high` alert reach Mailpit with the subject and body of the specification.
 - [x] The rule check passes, and its tests show that it rejects a rule without a runbook or with a severity, label, or annotation outside the contract.
 - [x] A pod other than Grafana or `identity-worker` cannot connect to Mailpit port 1025.
-- [ ] A human reviews the SMTP settings, the notification policy, the Mailpit NetworkPolicy, and the first runbook.
+- [x] A human reviews the SMTP configuration, the notification policy, the Mailpit NetworkPolicy, and the first runbook.
 
 ### Phase 2: Symptom rules
 

@@ -27,6 +27,8 @@ jobs:
         run: node --test scripts/constraint-check.test.mjs
       - name: Test PR metadata checker
         run: node --test scripts/check-pr-metadata.test.mjs
+      - name: Test prose checker
+        run: node --test scripts/check-prose.test.mjs
       - name: Test review roles and runners
         run: node --test .agents/scripts/review.test.mjs
       - name: Test local session TLS rotation
@@ -35,6 +37,8 @@ jobs:
         run: sh scripts/retire-identity-signing-key-local.test.sh
       - name: Enforce constraint floor
         run: node scripts/constraint-check.mjs floor --base "$CONSTRAINT_BASE"
+      - name: Check added prose
+        run: node scripts/check-prose.mjs --base "$CONSTRAINT_BASE" --head HEAD
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:

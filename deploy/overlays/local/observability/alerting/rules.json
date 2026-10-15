@@ -108,6 +108,108 @@
             "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/api-latency-is-high.md",
             "dashboard_url": "http://localhost:3000/d/flowspace-service-health"
           }
+        },
+        {
+          "uid": "outbox-events-are-stuck",
+          "title": "Outbox events are stuck",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "max by (environment) (identity_outbox_oldest_age_seconds{service=\"identity-worker\"})",
+                "instant": true,
+                "range": false
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        300
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "5m",
+          "labels": {
+            "severity": "page"
+          },
+          "annotations": {
+            "summary": "{{ with $values.A }}Outbox events are stuck: the oldest unpublished Identity outbox event is {{ humanizeDuration .Value }} old.{{ else }}Outbox events are stuck: Grafana cannot query Prometheus.{{ end }}",
+            "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/outbox-events-are-stuck.md",
+            "dashboard_url": "http://localhost:3000/d/flowspace-event-delivery"
+          }
+        },
+        {
+          "uid": "worker-metrics-are-missing",
+          "title": "Worker metrics are missing",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "max by (environment) (absent_over_time(identity_outbox_oldest_age_seconds{environment=\"local\", service=\"identity-worker\"}[5m]) or absent_over_time(identity_broker_consumer_lag{environment=\"local\", service=\"identity-worker\"}[5m]))",
+                "instant": true,
+                "range": false
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "5m",
+          "labels": {
+            "severity": "ticket"
+          },
+          "annotations": {
+            "summary": "{{ with $values.A }}Worker metrics are missing: Prometheus has no outbox age or consumer lag sample from identity-worker in the last 5 minutes.{{ else }}Worker metrics are missing: Grafana cannot query Prometheus.{{ end }}",
+            "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/worker-metrics-are-missing.md",
+            "dashboard_url": "http://localhost:3000/d/flowspace-event-delivery"
+          }
         }
       ]
     }

@@ -1,6 +1,6 @@
 # Review roles
 
-The agent that writes a change runs the code-reviewer, test-reviewer, security-auditor, convention-reviewer, writing-reviewer, spec-conformance-reviewer, planning-reviewer, migration-reviewer, infra-reviewer, and contract-reviewer roles with [`.agents/scripts/review.mjs`](../scripts/review.mjs). These rules apply to every agent that writes a change. `AGENTS.md` links this file, and Claude Code loads it through the symbolic link `.claude/rules/review-roles.md`.
+The agent that writes a change runs the code-reviewer, test-reviewer, security-auditor, convention-reviewer, writing-reviewer, spec-conformance-reviewer, planning-reviewer, migration-reviewer, infra-reviewer, ci-reviewer, and contract-reviewer roles with [`.agents/scripts/review.mjs`](../scripts/review.mjs). These rules apply to every agent that writes a change. `AGENTS.md` links this file, and Claude Code loads it through the symbolic link `.claude/rules/review-roles.md`.
 
 [`.agents/review-roles.json`](../../.agents/review-roles.json) gives each role an entry with its runner, model, and effort. A runner is a module in [`.agents/scripts/review-runners/`](../scripts/review-runners/) that starts one agent CLI in a read-only mode that denies secrets. Before a review starts, the script makes sure that the runner exists and accepts the effort. The CLI of the runner rejects a model that it does not know. The `codex` runner runs `codex exec` and needs Codex CLI 0.160.0 or later and a `codex login`. The `claude` runner runs `claude -p` and needs a logged-in Claude Code CLI. Do not use an MCP server for these roles, because Codex CLI 0.154.0 removed `codex mcp-server`.
 
@@ -14,7 +14,8 @@ The agent that writes a change runs the code-reviewer, test-reviewer, security-a
 | spec-conformance-reviewer | Before you open or update a PR for a task of a module plan. Run it at the same time as convention-reviewer. |
 | planning-reviewer | Before you show a specification, a plan with its Issue drafts, or an ADR to the maintainer. Run it again before you open or update a PR that adds or changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, at the same time as convention-reviewer. For a plan PR, also give it the created Issues and the milestone. |
 | migration-reviewer | When the change adds or changes a file under `services/*/db/migrations/`. Run it at the same time as code-reviewer. |
-| infra-reviewer | When the change adds or changes a file under `deploy/` or `.github/workflows/`, the `Tiltfile`, the `cluster:*` tasks in `Taskfile.yaml`, or a local operations script in `scripts/`, such as `scripts/*-local.sh`. Run it at the same time as code-reviewer. |
+| infra-reviewer | When the change adds or changes a file under `deploy/`, the `Tiltfile`, the `cluster:*` tasks in `Taskfile.yaml`, or a local operations script in `scripts/`, such as `scripts/*-local.sh`. Run it at the same time as code-reviewer. |
+| ci-reviewer | When the change adds or changes a file under `.github/workflows/`. Run it at the same time as code-reviewer. |
 | contract-reviewer | When the change adds or changes a file under `contracts/`, or `buf.yaml` or `buf.gen.yaml`. Run it at the same time as code-reviewer. |
 
 ## Start a review

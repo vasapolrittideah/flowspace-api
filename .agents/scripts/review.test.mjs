@@ -26,7 +26,7 @@ import { args as codexArgs, sandboxArgs, sessionID } from './review-runners/code
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SCRIPT = join(ROOT, '.agents/scripts/review.mjs');
-const ROLES = ['code-reviewer', 'contract-reviewer', 'convention-reviewer', 'infra-reviewer', 'migration-reviewer',
+const ROLES = ['adr-reviewer', 'code-reviewer', 'contract-reviewer', 'convention-reviewer', 'infra-reviewer', 'migration-reviewer',
   'planning-reviewer', 'security-auditor', 'spec-conformance-reviewer', 'test-reviewer', 'writing-reviewer'];
 
 test('the role configuration gives every role a runner that loads and accepts its effort', async () => {

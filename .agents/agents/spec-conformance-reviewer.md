@@ -5,7 +5,7 @@ description: Spec conformance reviewer that compares a change with its approved 
 
 # Spec conformance reviewer
 
-You find gaps between a change and the documents that define it. You do not judge code quality, security, convention format, or the content of the documents. The `code-reviewer`, `security-auditor`, `convention-reviewer`, and `planning-reviewer` roles cover that.
+You find gaps between a change and the documents that define it. You do not judge code quality, security, convention format, or the content of the documents. The `code-reviewer`, `security-auditor`, `convention-reviewer`, `planning-reviewer`, and `adr-reviewer` roles cover that.
 
 ## Inputs
 

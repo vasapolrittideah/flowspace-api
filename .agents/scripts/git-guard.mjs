@@ -5,7 +5,8 @@
 // - `gh pr merge`.
 // - Each `gh stack` command, because the extension creates and merges PRs without these checks.
 // - `gh pr create` and `gh pr edit` without the approvals of convention-reviewer and
-//   writing-reviewer, and of planning-reviewer when the branch changes a planning artifact.
+//   writing-reviewer, of planning-reviewer when the branch changes a specification or a plan,
+//   and of adr-reviewer when the branch changes an ADR.
 // It guards against forgotten steps, not against a deliberate bypass.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -15,7 +16,11 @@ import { fileURLToPath } from 'node:url';
 import { stampPath, textStampPath } from './review.mjs';
 
 const MIGRATION_PATH = /^services\/[^/]+\/db\/migrations\//;
-const PLANNING_PATH = /^(docs\/specs\/|tasks\/|docs\/adr\/)/;
+// Each of these roles approves the tree of HEAD when the branch changes a file on its path.
+const BRANCH_ROLES = [
+  ['planning-reviewer', /^(docs\/specs\/|tasks\/)/],
+  ['adr-reviewer', /^docs\/adr\//],
+];
 // test-reviewer reviews handwritten Go code. Buf writes `gen/`, and sqlc writes each `sqlc/` directory.
 const TESTED_GO_PATH = /^(?!gen\/)(?!(?:.*\/)?sqlc\/).*\.go$/;
 const WRAPPERS = new Set(['command', 'exec', 'env', 'time', 'nohup', 'builtin']);
@@ -313,17 +318,14 @@ export function decide({ command, cwd }, { run, exists, read }) {
       }
       // Each role approves the tree of HEAD and the exact PR description.
       const roles = ['convention-reviewer', 'writing-reviewer'];
-      // planning-reviewer approves the tree of HEAD when the branch changes a planning
-      // artifact. It does not review the PR description, so it needs no text stamp. If the
-      // branch diff fails, the hook does not require it.
+      // The roles of BRANCH_ROLES do not review the PR description, so they need no text
+      // stamp. If the branch diff fails, the hook does not require them.
       const branchPaths = (out(['diff', '--name-only', 'origin/main...HEAD']) ?? '').split('\n');
-      const planning = branchPaths.some((path) => PLANNING_PATH.test(path));
+      const branchRoles = BRANCH_ROLES.filter(([, path]) => branchPaths.some((changed) => path.test(changed))).map(([role]) => role);
       const missing = roles.filter(
         (role) => !exists(stampPath(common, role, tree)) || (text !== undefined && !exists(textStampPath(common, role, text))),
       );
-      if (planning && !exists(stampPath(common, 'planning-reviewer', tree))) {
-        missing.push('planning-reviewer');
-      }
+      missing.push(...branchRoles.filter((role) => !exists(stampPath(common, role, tree))));
       if (missing.length > 0) {
         return {
           block: true,
@@ -331,8 +333,8 @@ export function decide({ command, cwd }, { run, exists, read }) {
             `No approval for this branch and this PR description from: ${missing.join(', ')}. ` +
             missing
               .map((role) =>
-                role === 'planning-reviewer'
-                  ? 'Run `node .agents/scripts/review.mjs planning-reviewer ...`'
+                branchRoles.includes(role)
+                  ? `Run \`node .agents/scripts/review.mjs ${role} ...\``
                   : `Run \`node .agents/scripts/review.mjs ${role} ... --stamp-file <description-file>\``,
               )
               .join(', and ') +

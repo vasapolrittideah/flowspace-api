@@ -345,7 +345,7 @@ const BODY_EDIT = 'gh pr edit 12 --body-file pr.md';
 const LABEL_EDIT = 'gh pr edit 12 --add-label type:docs';
 
 test('a branch that changes a planning artifact needs a planning-reviewer approval for the PR', () => {
-  for (const path of ['docs/specs/identity.md', 'tasks/identity-provider-login.md', 'docs/adr/0040-example.md']) {
+  for (const path of ['docs/specs/identity.md', 'tasks/identity-provider-login.md']) {
     const run = planningGit({ paths: `cmd/main.go\n${path}\n` });
     for (const command of [CREATE, BODY_EDIT, LABEL_EDIT]) {
       const decision = decideWith(command, run, existing(...PR_STAMPS));
@@ -355,6 +355,29 @@ test('a branch that changes a planning artifact needs a planning-reviewer approv
       assert.equal(decideWith(command, run, existing(...ALL_PR)).block, false, `${command} with ${path}`);
     }
   }
+});
+
+const ADR_STAMP = (tree = TREE) => stampPath(COMMON, 'adr-reviewer', tree);
+
+test('a branch that changes an ADR needs an adr-reviewer approval and no planning-reviewer approval', () => {
+  const run = planningGit({ paths: 'cmd/main.go\ndocs/adr/0040-example.md\n' });
+  for (const command of [CREATE, BODY_EDIT, LABEL_EDIT]) {
+    const decision = decideWith(command, run, existing(...PR_STAMPS, PLANNING_STAMP()));
+    assert.equal(decision.block, true, command);
+    assert.match(decision.reason, /from: adr-reviewer\./, command);
+    assert.match(decision.reason, /node \.agents\/scripts\/review\.mjs adr-reviewer \.\.\.`/);
+    assert.equal(decideWith(command, run, existing(...PR_STAMPS, ADR_STAMP())).block, false, command);
+    assert.equal(decideWith(command, run, existing(...PR_STAMPS, ADR_STAMP('tree-other'))).block, true, command);
+  }
+});
+
+test('a branch that changes an ADR and a specification needs both approvals', () => {
+  const run = planningGit({ paths: 'docs/adr/0040-example.md\ndocs/specs/identity.md\n' });
+  const missing = (stamps) => decideWith(CREATE, run, existing(...stamps)).reason.match(/from: ([^.]*)\./)[1];
+  assert.equal(missing(PR_STAMPS), 'planning-reviewer, adr-reviewer');
+  assert.equal(missing([...PR_STAMPS, PLANNING_STAMP()]), 'adr-reviewer');
+  assert.equal(missing([...PR_STAMPS, ADR_STAMP()]), 'planning-reviewer');
+  assert.equal(decideWith(CREATE, run, existing(...PR_STAMPS, PLANNING_STAMP(), ADR_STAMP())).block, false);
 });
 
 test('the planning-reviewer approval covers the tree of HEAD and needs no text stamp', () => {

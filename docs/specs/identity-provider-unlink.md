@@ -62,7 +62,7 @@ The `provider` field uses the existing `Provider` enum of provider login and acc
 - `UnlinkProvider` is a sensitive method under the [Identity re-authentication](identity-re-authentication.md) specification. It makes sure that the session of the access token has an open re-authentication window in the same transaction as the unlink.
 - The method removes the link of the named provider from the subject of the access token. The client never names a provider subject.
 - Identity allows the unlink only when the account keeps a password or a link of the other provider after it. The verified-email state does not matter. Otherwise Identity returns `FailedPrecondition` and changes nothing. A provider-only account first sets a password through the [Identity password change](identity-password-change.md) specification.
-- Identity serializes `UnlinkProvider`, `SetPassword`, and provider-link changes for the same subject. 2 concurrent unlinks of the 2 providers cannot both remove the last sign-in method.
+- Identity serializes `UnlinkProvider`, `SetPassword`, and provider-link changes for the same subject. Concurrent unlinks of the 2 providers cannot both remove the last sign-in method.
 - After the unlink commits, a provider login with that provider subject no longer finds this account. It follows the new-identity and email-collision rules of the [Identity provider login](identity-provider-login.md) specification.
 - After the unlink commits, `CompleteProviderReauthentication` with that provider fails for this account, because the provider subject no longer matches a link.
 - A retry after a lost response, from an active session with an open re-authentication window, finds no link and returns `NotFound` without a change. The client reads `NotFound` after a lost response as a committed unlink.
@@ -100,7 +100,7 @@ Logs, traces, metrics, errors, and security events record the outcome of `Unlink
 | --- | --- |
 | `UnlinkProvider` removes a link outside the re-authentication window (`ID-T09`) | Integration |
 | An unlink removes the last sign-in method of an account (`ID-T08`) | Unit, Integration |
-| 2 concurrent unlinks, or an unlink and a password change, leave an account without a sign-in method (`ID-T12`) | Integration |
+| Concurrent unlinks of the 2 providers, or an unlink and a password change, leave an account without a sign-in method (`ID-T12`) | Integration |
 | The unlinked provider subject still signs in to or re-authenticates the account (`ID-T07`, `ID-T08`) | Integration |
 | A session of the unlinked provider still refreshes or passes `CheckSession`, or keeps its device data (`ID-T13`, `ID-T21`) | Integration |
 | The current session, a session of another method, or an unspecified session ends after the unlink | Integration |

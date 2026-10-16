@@ -2,7 +2,7 @@
 
 Module ID: `identity-password-change`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

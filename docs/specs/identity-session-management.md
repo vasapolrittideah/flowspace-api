@@ -2,7 +2,7 @@
 
 Module ID: `identity-session-management`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

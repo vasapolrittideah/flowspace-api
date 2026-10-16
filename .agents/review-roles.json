@@ -1,4 +1,14 @@
 {
+  "adr-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6.1-sol",
+    "effort": "high"
+  },
+  "ci-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6-astra",
+    "effort": "medium"
+  },
   "code-reviewer": {
     "runner": "codex",
     "model": "gpt-6-astra",

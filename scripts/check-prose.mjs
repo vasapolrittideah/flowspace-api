@@ -12,9 +12,9 @@
 //   tool directives, such as //go:build or -- +goose Up, indented code, raw strings, and YAML
 //   block scalars.
 //
-// It skips the paths that the convention excludes, test data, generated files, and the status
-// line of an ADR, because the ADR convention fixes its values, such as `Accepted; scoped
-// exception to ADR-0011`.
+// It skips the paths that the convention excludes, test data, generated files, the status
+// line of an ADR, and the Status column of the ADR index, because the ADR convention fixes
+// their values, such as `Accepted; scoped exception to ADR-0011`.
 //
 // Without --head, it checks the working tree, so that it sees changes before a commit.
 //
@@ -217,10 +217,13 @@ export function run(options, { git: runGit = git, read = (path) => readFileSync(
   const findings = [];
   for (let [path, added] of files) {
     if (added?.size === 0 || !inScope(path)) continue;
-    const text = readFile(path);
+    let text = readFile(path);
     added ??= new Set(text.split('\n').map((_, index) => index + 1));
     if (GENERATED.test(text)) continue;
-    if (path.startsWith('docs/adr/')) {
+    if (path === 'docs/adr/README.md') {
+      // The last column of the index copies the status line of each ADR.
+      text = text.replace(/^(\|.*\|)[^|\n]*\|[ \t]*$/gm, '$1 |');
+    } else if (path.startsWith('docs/adr/')) {
       text.split('\n').forEach((line, index) => line.startsWith('Status: ') && added.delete(index + 1));
     }
     const found = path.endsWith('.md') ? checkMarkdown(text, added) : checkComments(path, text, added);

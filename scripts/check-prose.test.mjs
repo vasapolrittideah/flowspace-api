@@ -105,6 +105,12 @@ test('run skips the status line of an ADR, whose values the ADR convention fixes
   assert.deepEqual(run({ head: 'head' }, { git }), ['docs/adr/0050-example.md:7: a semicolon joins two sentences. Write two sentences']);
 });
 
+test('run skips the Status column of the ADR index and checks the Decision column', () => {
+  const text = '| # | Decision | Status |\n| --- | --- | --- |\n| [0050](0050-a.md) | It runs | Accepted; scoped exception to [0011](0011-b.md) |\n| [0051](0051-c.md) | It runs; it stops | Accepted |\n';
+  const git = (args) => (args[0] === 'diff' ? 'diff --git a/docs/adr/README.md b/docs/adr/README.md\n+++ b/docs/adr/README.md\n@@ -0,0 +3,2 @@\n' : text);
+  assert.deepEqual(run({ head: 'head' }, { git }), ['docs/adr/README.md:4: a semicolon joins two sentences. Write two sentences']);
+});
+
 test('checkMarkdown skips indented code and HTML comments across lines', () => {
   const text = 'Run it:\n\n    x := "**bold**"; y should be 1\n\n<!--\nIt should run.\nIt runs.\n-->\nIt runs.\n';
   assert.deepEqual(checkMarkdown(text, lines(3, 5, 6, 7, 8, 9)), []);

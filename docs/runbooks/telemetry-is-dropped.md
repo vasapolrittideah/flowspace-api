@@ -6,7 +6,7 @@ Severity: `ticket`
 
 ## Meaning
 
-Developers lose traces, metrics, or logs, because Alloy refuses or fails to send spans, metric points, or log entries. The dashboards and Explore then show gaps, and other alerts can miss a symptom. The alert fires for each Alloy component that refused or failed to send at least 1 item in the last 2 minutes, and the condition must stay true for 10 minutes. The `component_id` label names the component. The [`deploy/overlays/local/observability/alerting/rules.json`](../../deploy/overlays/local/observability/alerting/rules.json) file holds the query. An email with the `DatasourceError` alert name and this runbook means that Grafana cannot query Prometheus.
+Developers lose traces, metrics, or logs, because Alloy refuses or fails to send spans, metric points, or log entries. The dashboards and Explore then show gaps, and other alerts can miss a symptom. The alert fires for each Alloy component that refused or failed to send at least 1 item in the last 5 minutes, and the condition must stay true for 10 minutes. The `component_id` label names the component. The [`deploy/overlays/local/observability/alerting/rules.json`](../../deploy/overlays/local/observability/alerting/rules.json) file holds the query. An email with the `DatasourceError` alert name and this runbook means that Grafana cannot query Prometheus.
 
 ## First checks
 
@@ -54,6 +54,7 @@ The `otelcol.receiver.otlp.default` value of the second check returns to 0.
 
 1. Read the `reason` label of `loki_write_dropped_entries_total` in Grafana Explore.
 2. Run `kubectl -n flowspace-local logs statefulset/loki | grep -i limit`. Then compare the error with the limits in [`loki-values.yaml`](../../deploy/overlays/local/observability/loki-values.yaml).
+3. If the reason is `ingester_error` and the Alloy log shows HTTP 400 errors for old timestamps, check the age of the Alloy pod. After a restart, Alloy reads the pod logs again, and Loki rejects the entries that are too old. This loss happens once and stops within 5 minutes.
 
 The Store ingestion failures panel shows no Loki discarded samples.
 

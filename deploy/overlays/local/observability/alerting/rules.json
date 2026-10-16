@@ -327,7 +327,7 @@
               "datasourceUid": "prometheus",
               "model": {
                 "refId": "A",
-                "expr": "label_replace(sum by (component_id) (label_replace(increase(otelcol_receiver_refused_spans_total{job=\"alloy\"}[2m]), \"metric\", \"otelcol_receiver_refused_spans_total\", \"\", \"\") or label_replace(increase(otelcol_receiver_refused_metric_points_total{job=\"alloy\"}[2m]), \"metric\", \"otelcol_receiver_refused_metric_points_total\", \"\", \"\") or label_replace(increase(otelcol_exporter_send_failed_spans_total{job=\"alloy\"}[2m]), \"metric\", \"otelcol_exporter_send_failed_spans_total\", \"\", \"\") or label_replace(increase(prometheus_remote_storage_samples_failed_total{job=\"alloy\"}[2m]), \"metric\", \"prometheus_remote_storage_samples_failed_total\", \"\", \"\") or label_replace(increase(loki_write_dropped_entries_total{job=\"alloy\"}[2m]), \"metric\", \"loki_write_dropped_entries_total\", \"\", \"\")), \"environment\", \"local\", \"\", \"\")",
+                "expr": "label_replace(sum by (component_id) (label_replace(increase(otelcol_receiver_refused_spans_total{job=\"alloy\"}[5m]), \"metric\", \"otelcol_receiver_refused_spans_total\", \"\", \"\") or label_replace(increase(otelcol_receiver_refused_metric_points_total{job=\"alloy\"}[5m]), \"metric\", \"otelcol_receiver_refused_metric_points_total\", \"\", \"\") or label_replace(increase(otelcol_exporter_send_failed_spans_total{job=\"alloy\"}[5m]), \"metric\", \"otelcol_exporter_send_failed_spans_total\", \"\", \"\") or label_replace(increase(prometheus_remote_storage_samples_failed_total{job=\"alloy\"}[5m]), \"metric\", \"prometheus_remote_storage_samples_failed_total\", \"\", \"\") or label_replace(increase(loki_write_dropped_entries_total{job=\"alloy\"}[5m]), \"metric\", \"loki_write_dropped_entries_total\", \"\", \"\")), \"environment\", \"local\", \"\", \"\")",
                 "instant": true,
                 "range": false
               }
@@ -359,7 +359,7 @@
             "severity": "ticket"
           },
           "annotations": {
-            "summary": "{{ with $values.A }}Telemetry is dropped: the Alloy component {{ $labels.component_id }} refused or failed to send {{ printf \"%.0f\" .Value }} spans, metric points, or log entries in the last 2 minutes.{{ else }}Telemetry is dropped: Grafana cannot query Prometheus.{{ end }}",
+            "summary": "{{ with $values.A }}Telemetry is dropped: the Alloy component {{ $labels.component_id }} refused or failed to send {{ printf \"%.0f\" .Value }} spans, metric points, or log entries in the last 5 minutes.{{ else }}Telemetry is dropped: Grafana cannot query Prometheus.{{ end }}",
             "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/telemetry-is-dropped.md",
             "dashboard_url": "http://localhost:3000/d/flowspace-telemetry-stack"
           }

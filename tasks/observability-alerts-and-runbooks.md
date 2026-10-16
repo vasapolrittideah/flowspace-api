@@ -66,10 +66,10 @@ Tasks are tracked in the [flowspace-api GitHub Project](https://github.com/users
 
 ### Checkpoint: Symptom rules
 
-- [ ] Each of the eight rules fired in the `local` cluster for its symptom, and its alert email reached Mailpit.
-- [ ] `Worker metrics are missing` fires while `identity-worker` is stopped, and `Outbox events are stuck` and `Email consumer lag is not decreasing` stay normal.
-- [ ] Each runbook follows the runbook conventions, and its first query ran in the `local` cluster.
-- [ ] A human reviews each rule against the thresholds, pending periods, and severities of the specification.
+- [x] Each of the 8 rules fired in the `local` cluster for its symptom, and its alert email reached Mailpit.
+- [x] `Worker metrics are missing` fires while `identity-worker` is stopped, and `Outbox events are stuck` and `Email consumer lag is not decreasing` stay normal.
+- [x] Each runbook follows the runbook conventions, and its first query ran in the `local` cluster.
+- [x] A human reviews each rule against the thresholds, pending periods, and severities of the specification.
 
 ### Phase 3: Completion checks
 

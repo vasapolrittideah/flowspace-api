@@ -12,4 +12,4 @@ This index lists the module specifications. Follow the [Module specification](..
 | `workspace-creation-and-reading` | [Workspace creation and reading](workspace-creation-and-reading.md) | None | Implemented |
 | `observability-logs-and-traces` | [Observability logs and traces](observability-logs-and-traces.md) | None | Implemented |
 | `observability-metrics-and-dashboards` | [Observability metrics and dashboards](observability-metrics-and-dashboards.md) | `observability-logs-and-traces` | Implemented |
-| `observability-alerts-and-runbooks` | [Observability alerts and runbooks](observability-alerts-and-runbooks.md) | `observability-metrics-and-dashboards` | Approved |
+| `observability-alerts-and-runbooks` | [Observability alerts and runbooks](observability-alerts-and-runbooks.md) | `observability-metrics-and-dashboards` | Implemented |

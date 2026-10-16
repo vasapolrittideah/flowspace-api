@@ -8,13 +8,13 @@ Status: Draft
 
 Let a signed-in user prove their identity again before a sensitive action, such as a change to a credential, an email address, a provider link, or the account itself. A session alone shows only that someone signed in on that device, up to 90 days earlier. Re-authentication shows that the owner still controls the session now. The first users are API clients, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md).
 
-The user can prove their identity with the account password, with a Google or GitHub account that is linked to the account, or with a six-digit code sent to the verified account email. Each method gives the same result: the current session is re-authenticated for 10 minutes. Each provider-only account and each password account has at least 1 method.
+The user can prove their identity with the account password, with a Google or GitHub account that is linked to the account, or with a 6-digit code sent to the verified account email. Each method gives the same result: the current session is re-authenticated for 10 minutes. Each provider-only account and each password account has at least 1 method.
 
 This module gives only the mechanism and the error that a sensitive method returns. Each later specification that adds a sensitive method states that the method requires re-authentication.
 
 ## Scope and ADRs
 
-The scope covers the re-authentication time of each session, the password, email code, and provider methods, the re-authentication window that a new session starts with, the error that a sensitive method returns outside the window, and the limits of each method.
+The scope covers the re-authentication time and the first window of each session, and the password, email code, and provider methods. It also covers the limits of each method and the error that a sensitive method returns outside the window.
 
 This capability excludes these items:
 
@@ -27,7 +27,7 @@ This capability excludes these items:
 
 These decisions apply:
 
-- [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md): Identity owns sessions, passwords, provider links, and email codes, and it checks each session on the server.
+- [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md): Identity owns sessions, passwords, provider links, and email codes, and it makes sure on the server that each session is valid.
 - [ADR-0045](../adr/0045-provider-re-authentication-reuses-the-one-time-handoff.md): provider re-authentication reuses the callback and the one-time handoff of provider login for the current session, and `StartProviderReauthentication` rejects `Idempotency-Key`.
 
 ## Contract
@@ -84,7 +84,7 @@ Re-authentication result:
 | Missing, invalid, or inactive session | `Unauthenticated` | 401 |
 | The account email is not verified, so Identity cannot send a code | `FailedPrecondition` | 400 |
 | The provider attempt is unknown, expired, used, or failed, or the provider account is not linked to the subject | `FailedPrecondition` | 400 |
-| A sensitive method is called outside the re-authentication window | `PermissionDenied` | 403 |
+| A client calls a sensitive method outside the re-authentication window | `PermissionDenied` | 403 |
 | A limit is reached | `ResourceExhausted` | 429 |
 | Identity, its limit store, or the provider is unavailable | `Unavailable` | 503 |
 
@@ -102,23 +102,23 @@ Re-authentication result:
 ### Sensitive methods
 
 - A later specification marks each of its methods that changes a credential, an email address, a provider link, the sessions of other devices, or the account itself as a sensitive method.
-- A sensitive method checks the window of the session of the access token in the same transaction as its change. If the window is closed at that time, the method changes nothing and returns `PermissionDenied` with an `ErrorInfo` detail whose reason is `REAUTHENTICATION_REQUIRED` and whose domain is `identity.flowspace`.
+- A sensitive method makes sure that the session of the access token has an open window in the same transaction as its change. If the window is closed at that time, the method changes nothing and returns `PermissionDenied` with an `ErrorInfo` detail whose reason is `REAUTHENTICATION_REQUIRED` and whose domain is `identity.flowspace`.
 - The client then re-authenticates and calls the sensitive method again. A sensitive method that started inside the window and commits after the window ends fails with the same error.
 
 ### Password method
 
-- `ReauthenticateWithPassword` checks the password against the Argon2id hash of the subject of the access token, with the same Unicode NFC normalization as password login.
+- `ReauthenticateWithPassword` uses the Argon2id hash of the subject of the access token to make sure that the password is correct, with the same Unicode NFC normalization as password login.
 - A wrong password and an account without a password return the same `InvalidArgument` error and do not change the window.
-- A retry after a lost response checks the password again. It counts against the limits again, and it returns the same end time while the window is open.
+- A retry after a lost response makes sure that the password is correct again. It counts against the limits again, and it returns the same end time while the window is open.
 
 ### Email code method
 
-- `RequestReauthenticationCode` creates a six-digit challenge for the subject, its current verified email, and the re-authentication purpose, and a durable delivery request in the same transaction. The `purpose` field of `EmailDeliveryRequested` is `reauthenticate`, next to `verify-email`, `claim-account`, and `password-reset`.
+- `RequestReauthenticationCode` creates a 6-digit challenge for the subject, its current verified email, and the re-authentication purpose, and a durable delivery request in the same transaction. The `purpose` field of `EmailDeliveryRequested` is `reauthenticate`, next to `verify-email`, `claim-account`, and `password-reset`.
 - Only an account whose current email is verified can request a code. Other accounts receive `FailedPrecondition` and no code.
 - A re-authentication code cannot claim an account or reset a password, and it never changes the verified state. `VerifyEmail` keeps its behavior for a verified account: it succeeds without a change. A verification, claim, or reset code cannot re-authenticate a session.
 - The challenge belongs to the subject, not to 1 session. Any active session of the subject can use the code, and the code opens the window of that session only.
 - A new code request replaces only the previous re-authentication challenge. A request within 60 seconds of the previous request returns `accepted=true` and does not replace the challenge.
-- The code expires 10 minutes after it is issued and succeeds once. A retry with a used code returns the code error, and the window that the first request opened stays open.
+- The code expires 10 minutes after Identity issues it and succeeds once. A retry with a used code returns the code error, and the window that the first request opened stays open.
 
 ### Provider method
 
@@ -131,7 +131,7 @@ Re-authentication result:
 
 ### Security and abuse
 
-- Each method first checks the access token and the live session, as `CheckSession` does.
+- Each method first makes sure that the access token is valid and the session is active, as `CheckSession` does.
 - Each method uses the same limit buckets as the existing method of its kind, not new buckets.
 - `ReauthenticateWithPassword` counts as 1 attempt against the source and email limits of [Password login](identity-password-login-and-sessions.md#password-login). The email limit uses the current account email. A full limit returns `ResourceExhausted` before password hashing.
 - `RequestReauthenticationCode` and `ReauthenticateWithCode` count against the code-request and wrong-guess limits that [Email code and verification](identity-signup-and-email-verification.md#email-code-and-verification) and [Abuse and failure handling](identity-signup-and-email-verification.md#abuse-and-failure-handling) share across verification, claim, and reset codes.
@@ -194,8 +194,8 @@ Never do these actions:
 
 ## Success criteria
 
-1. Given a user has just logged in with a password, a provider, signup, or an account claim, When the session calls a sensitive method within 10 minutes, Then the method does not return the re-authentication error.
-2. Given a session was created more than 10 minutes ago and has not re-authenticated since, When it calls a sensitive method, Then Identity changes nothing and returns `PermissionDenied` with the reason `REAUTHENTICATION_REQUIRED`.
+1. Given a user just logged in with a password, a provider, signup, or an account claim, When the session calls a sensitive method within 10 minutes, Then the method does not return the re-authentication error.
+2. Given a session started more than 10 minutes ago without any later re-authentication, When it calls a sensitive method, Then Identity changes nothing and returns `PermissionDenied` with the reason `REAUTHENTICATION_REQUIRED`.
 3. Given a session refreshes after its window closes, When it calls a sensitive method with the new access token, Then Identity returns the re-authentication error.
 4. Given an active session of a password account has a closed window and at least 10 minutes before its idle and absolute expiry, When the session calls `ReauthenticateWithPassword` with the correct password, Then the response has an end time 10 minutes after the commit, and a sensitive method succeeds until that time.
 5. Given a session has an open window, When it re-authenticates again with any method, Then the response returns the same end time, and the window does not move.

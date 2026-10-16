@@ -1,5 +1,9 @@
 config:
   MD013: false
+  MD029:
+    style: ordered
+  MD046:
+    style: fenced
 ignores:
   - .agents/**/*.md
   - .claude/**/*.md

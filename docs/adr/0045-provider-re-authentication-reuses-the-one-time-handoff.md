@@ -38,11 +38,11 @@ Provider re-authentication uses the callback and the handoff of ADR-0034 for a s
 
 - Pros: Identity needs no new provider flow, and the client needs no browser step.
 - Cons: a provider-only account with no verified email cannot re-authenticate, so it cannot do any sensitive action.
-- Rejected: every account type needs a re-authentication method, and provider proof is the one method that each provider-only account has.
+- Rejected: every account type needs a re-authentication method, and provider proof is the 1 method that each provider-only account has.
 
 ## Consequences
 
 - API-client users copy a handoff code from the callback page again, as in provider login.
-- The provider attempt store holds a purpose, a subject, and a session ID in addition to the values of ADR-0034. A provider result for one purpose cannot complete the other purpose.
+- The provider attempt store holds a purpose, a subject, and a session ID in addition to the values of ADR-0034. A provider result for 1 purpose cannot complete the other purpose.
 - A lost `CompleteProviderReauthentication` response leaves the session re-authenticated. The client can continue with the sensitive action or start a new attempt.
 - The Identity re-authentication specification defines the time window, the limits, the other methods, and the tests for this flow.

@@ -92,7 +92,7 @@ Session:
 ### Listing
 
 - `ListSessions` returns the sessions of the subject of the access token that are not revoked and not expired at the server time of the request. A session is expired at its exact expiry time.
-- The order is `last_used_at` from newest to oldest, then `session_id` in ascending byte order. The page token holds the position in this order, and it works only for the subject that received it. A changed `page_size` with a page token is allowed.
+- The order is `last_used_at` from newest to oldest, then `session_id` in ascending byte order. The page token holds the position in this order, and it works only for the subject that received it. `ListSessions` accepts a changed `page_size` with a page token.
 - The default page size is 20, and the maximum is 100. A page size of 0 uses the default. A negative page size, or a page size above 100, is malformed.
 - A session that a refresh moves or that ends between 2 pages can appear twice or be missing. The client reads the list again for an exact view.
 - `ListSessions` does not need re-authentication.
@@ -137,7 +137,7 @@ Logs, traces, metrics, errors, and security events record the method and the out
 | A successful refresh does not update the last-used values, or changes the created values | Integration |
 | A failed refresh changes the device data, or a replayed refresh leaves the session listed or its device data stored (`ID-T11`) | Integration |
 | `ListSessions` returns a revoked or expired session, or a session of another subject (`ID-T09`, `ID-T21`) | Integration |
-| A session at its exact expiry time is listed, or the cleanup misses the bound, before, at, and after each boundary (`ID-T19`) | Unit, Integration |
+| `ListSessions` returns a session at its exact expiry time, or the cleanup misses the bound, before, at, and after each boundary (`ID-T19`) | Unit, Integration |
 | A page token works for another subject or breaks the order across pages (`ID-T15`) | Unit, Integration |
 | `RevokeSession` revokes a session outside the re-authentication window (`ID-T09`) | Integration |
 | A session ID of another subject gives a different result or timing from an unknown ID (`ID-T01`) | Integration |
@@ -162,17 +162,17 @@ Ask the maintainer before these actions:
 1. Given a user signs in with a password, Google, or GitHub, When the user lists sessions, Then the new session shows the sign-in method, the IP address, the user agent, the device label, and `current=true`.
 2. Given a session refreshes from another IP address and user agent, When the user lists sessions, Then the session shows the new last-used values and keeps its created values.
 3. Given a refresh fails with an unknown token, When the user lists sessions, Then the last-used values do not change.
-4. Given a session replays a used refresh token, When the user lists sessions, Then the list no longer contains that session, and its device data is deleted.
+4. Given a session replays a used refresh token, When the user lists sessions, Then the list no longer contains that session, and Identity deletes its device data.
 5. Given a subject has a revoked session and an expired session, When the user lists sessions, Then the list contains neither of them.
 6. Given another subject has sessions, When the user lists sessions, Then the list contains only sessions of the caller.
 7. Given a subject has 25 active sessions and no session changes during the read, When the user lists with the default page size and then the next page token, Then the 2 pages contain all 25 sessions in the stated order without duplicates.
 8. Given a page token from 1 subject, When another subject sends it, Then Identity returns `InvalidArgument`.
-9. Given an open re-authentication window, When the user revokes another session of the account, Then that session cannot refresh or pass `CheckSession`, and its device data is deleted.
+9. Given an open re-authentication window, When the user revokes another session of the account, Then that session cannot refresh or pass `CheckSession`, and Identity deletes its device data.
 10. Given a closed re-authentication window, When the user calls `RevokeSession`, Then Identity changes nothing and returns `PermissionDenied` with the reason `REAUTHENTICATION_REQUIRED`.
 11. Given the session ID of the current session, When the user calls `RevokeSession`, Then Identity returns `FailedPrecondition` and the session stays active.
 12. Given a session ID of another subject or an unknown session ID, When the user calls `RevokeSession`, Then Identity returns the same `NotFound` error and changes no session.
 13. Given an active session with an open re-authentication window, and a successful `RevokeSession` response is lost, When the client retries, Then Identity returns success and changes nothing.
-14. Given a session ends through `LogoutCurrentSession`, `LogoutAllSessions`, or `ResetPassword`, When the transaction commits, Then the device data of that session is deleted.
-15. Given a session expires, When 1 hour passes, Then its device data is deleted.
+14. Given a session ends through `LogoutCurrentSession`, `LogoutAllSessions`, or `ResetPassword`, When the transaction commits, Then Identity deletes the device data of that session.
+15. Given a session expires, When 1 hour passes, Then `identity-worker` deletes its device data.
 16. Given a `User-Agent` value of more than 512 bytes or with invalid UTF-8, When a session starts, Then the request succeeds, and Identity stores at most 512 bytes of valid UTF-8 or an empty value.
 17. Given the session-management tests run, When a test inspects logs, traces, metrics, and errors, Then they contain no IP address, user agent, or token.

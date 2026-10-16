@@ -2,7 +2,7 @@
 
 Module ID: `identity-provider-unlink`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

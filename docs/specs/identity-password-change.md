@@ -6,7 +6,7 @@ Status: Draft
 
 ## Objective
 
-Let a signed-in user set a new password for their account without the email reset flow. A user with a password changes it, and a user of a provider-only account sets a first password, so that the account has a second way to sign in. The first users are API clients, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md).
+Let a signed-in user set a new password for their account without the email reset flow. A user with a password changes it. A user of a provider-only account sets a first password, so that the account has a second way to sign in. The first users are API clients, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md).
 
 After the change, every other session of the account ends, so a session that someone took with the old password stops. The session that made the change stays signed in.
 
@@ -58,7 +58,7 @@ Use package `flowspace.identity.v1` and service `IdentityService`.
 ### Setting the password
 
 - `SetPassword` is a sensitive method under the [Identity re-authentication](identity-re-authentication.md) specification. It makes sure that the session of the access token has an open re-authentication window in the same transaction as the change. It does not ask for the current password.
-- The new password must meet the normalization, length, blocklist, compromised-password, and Argon2id rules of the [Identity signup and email verification](identity-signup-and-email-verification.md) specification. Identity validates the request shape and the window before it checks or hashes the password. If the compromised-password check fails or times out, Identity returns `Unavailable` and changes nothing.
+- The new password must meet the normalization, length, blocklist, compromised-password, and Argon2id rules of the [Identity signup and email verification](identity-signup-and-email-verification.md) specification. Identity makes sure that the request shape is valid and that the window is open before it applies the password policy or hashes the password. If the compromised-password check fails or times out, Identity returns `Unavailable` and changes nothing.
 - For an account with a password, Identity replaces the password hash. For a provider-only account, Identity creates the password credential. The stable subject, the email address, the verified-email state, and the provider links do not change.
 - Identity accepts a new password that is the same as the current one, and it treats the request as a change.
 - After the change commits, the new password works through `CreatePasswordSession` and `ReauthenticateWithPassword`. A previous password whose normalized value differs from the new password fails.
@@ -67,7 +67,7 @@ Use package `flowspace.identity.v1` and service `IdentityService`.
 
 - In the same transaction as the password change, Identity revokes every other session of the subject and invalidates its refresh tokens. It deletes the device data of those sessions, as the [Identity session management](identity-session-management.md) specification states.
 - The session of the access token stays active. Its refresh token, its expiry times, its re-authentication time, and its device data do not change, and `SetPassword` issues no token.
-- Identity serializes `SetPassword` with password login, session creation, and refresh for the same subject. A session that commits before the change is revoked, unless it is the current session. A login that starts after the commit must use the new password.
+- Identity serializes `SetPassword` with password login, session creation, and refresh for the same subject. Identity revokes each session that commits before the change, unless it is the current session. A login that starts after the commit must use the new password.
 - A `CheckSession` or `RefreshSession` call that starts after the commit rejects each revoked session. A request that was admitted before the commit can finish.
 
 ### Notice
@@ -107,8 +107,8 @@ Logs, traces, metrics, errors, and security events record the outcome of `SetPas
 | --- | --- |
 | `SetPassword` changes a password outside the re-authentication window (`ID-T09`) | Integration |
 | A failed or timed-out compromised-password check accepts the password (`ID-T02`) | Unit, Integration |
-| A new password outside the password policy is accepted, or Identity hashes before it checks the window (`ID-T02`, `ID-T16`) | Unit |
-| A different old password still logs in or re-authenticates after the change, or a new password equal to the old one is rejected (`ID-T02`) | Integration |
+| Identity accepts a new password outside the password policy, or hashes before it makes sure that the window is open (`ID-T02`, `ID-T16`) | Unit |
+| A different old password still logs in or re-authenticates after the change, or Identity rejects a new password equal to the old one (`ID-T02`) | Integration |
 | A provider-only account gets no password credential, or loses a provider link or its email state | Integration |
 | Another session still refreshes or passes `CheckSession` after the commit (`ID-T13`, `ID-T14`) | Integration |
 | A revoked session keeps its device data (`ID-T21`) | Integration |
@@ -116,7 +116,7 @@ Logs, traces, metrics, errors, and security events record the outcome of `SetPas
 | A login or refresh races the change and keeps an old-password session (`ID-T12`) | Integration |
 | A database failure, a timeout, or a cancellation leaves part of the change committed (`ID-T12`, `ID-T16`) | Integration |
 | A repeated request after a lost response gives an effect other than a second change and, for a verified email, a second notice | Integration |
-| A notice is missing for a verified email, is queued for an unverified email, or contains a password (`ID-T04`, `ID-T17`) | Integration |
+| A notice is missing for a verified email, Identity queues a notice for an unverified email, or a notice contains a password (`ID-T04`, `ID-T17`) | Integration |
 | A burst of requests exhausts the password-hash bound (`ID-T16`) | Integration |
 | A malformed request or password value reaches hashing (`ID-T15`) | Unit |
 | Telemetry or errors contain a password, a hash, a token, or a full email (`ID-T17`) | Integration |

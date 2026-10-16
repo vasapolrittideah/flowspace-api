@@ -50,11 +50,11 @@ The `provider` field uses the existing `Provider` enum of provider login and acc
 
 | RPC | Authentication | Retry |
 | --- | --- | --- |
-| `ReauthenticateWithPassword` | `Bearer access token` | `Safe to retry` |
-| `RequestReauthenticationCode` | `Bearer access token` | `Safe to retry` |
-| `ReauthenticateWithCode` | `Bearer access token` | `Safe to retry` |
-| `StartProviderReauthentication` | `Bearer access token` | `Rejects Idempotency-Key` under [ADR-0045](../adr/0045-provider-re-authentication-reuses-the-one-time-handoff.md) |
-| `CompleteProviderReauthentication` | `Bearer access token` | `Safe to retry` |
+| `ReauthenticateWithPassword` | Bearer access token | Safe to retry |
+| `RequestReauthenticationCode` | Bearer access token | Safe to retry |
+| `ReauthenticateWithCode` | Bearer access token | Safe to retry |
+| `StartProviderReauthentication` | Bearer access token | Rejects `Idempotency-Key` under [ADR-0045](../adr/0045-provider-re-authentication-reuses-the-one-time-handoff.md) |
+| `CompleteProviderReauthentication` | Bearer access token | Safe to retry |
 
 ### Resource fields
 

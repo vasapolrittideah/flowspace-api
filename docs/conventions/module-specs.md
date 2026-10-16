@@ -197,8 +197,8 @@ Never do these actions:
 | Column | How to write |
 | --- | --- |
 | `RPC` | The RPC name, as in [Methods](#methods). |
-| `Authentication` | Choose 1 authentication value from [Method requirement values](#method-requirement-values). Use `None` only for a public method. Add an ADR link only when the value comes from an exception or a capability-specific decision, such as `Service mTLS` under ADR-0036. |
-| `Retry` | Choose 1 retry value from [Method requirement values](#method-requirement-values). Add the ADR link for `Rejects Idempotency-Key`. For `Do not retry`, explain the harmful effect in [Behavior](#behavior). If the value depends on a condition, state the condition in [Behavior](#behavior). |
+| `Authentication` | Choose 1 authentication value from [Method requirement values](#method-requirement-values). Use the value None only for a public method. Add an ADR link only when the value comes from an exception or a capability-specific decision, such as Service mTLS under ADR-0036. |
+| `Retry` | Choose 1 retry value from [Method requirement values](#method-requirement-values). Add the ADR link for Rejects `Idempotency-Key`. For Do not retry, explain the harmful effect in [Behavior](#behavior). If the value depends on a condition, state the condition in [Behavior](#behavior). |
 
 #### HTTP-only endpoints
 
@@ -209,7 +209,7 @@ Never do these actions:
 | --- | --- |
 | `Endpoint` | A short name, such as "Provider callback". |
 | `Public HTTP route` | The HTTP method and path, as in [Methods](#methods). |
-| `Authentication` | Choose 1 authentication value from [Method requirement values](#method-requirement-values). Use `None` only for a public endpoint. |
+| `Authentication` | Choose 1 authentication value from [Method requirement values](#method-requirement-values). Use the value None only for a public endpoint. |
 | `Request` | The query parameters, headers, or body fields that the endpoint reads. |
 | `Response` | What the endpoint returns, such as a redirect or a page, and the values that it contains. |
 
@@ -452,13 +452,13 @@ This convention applies where it differs from the [Spec-Driven Development](../.
 
 | Column | Value | Meaning |
 | --- | --- | --- |
-| `Authentication` | `None` | The method takes no credential. |
-| `Authentication` | `Bearer access token` | The request needs exactly 1 `Authorization: Bearer` header, and the subject comes from the token. |
-| `Authentication` | `Service mTLS` | The caller is a service that proves its identity with a client certificate. |
-| `Retry` | `Safe to retry` | A retry with the same request has no additional effect. |
-| `Retry` | `Requires Idempotency-Key` | The request needs a key, and a retry with the same key returns the original result. |
-| `Retry` | `Rejects Idempotency-Key` | The method rejects a key. |
-| `Retry` | `Do not retry` | A retry causes a harmful effect. |
+| `Authentication` | None | The method takes no credential. |
+| `Authentication` | Bearer access token | The request needs exactly 1 `Authorization: Bearer` header, and the subject comes from the token. |
+| `Authentication` | Service mTLS | The caller is a service that proves its identity with a client certificate. |
+| `Retry` | Safe to retry | A retry with the same request has no additional effect. |
+| `Retry` | Requires `Idempotency-Key` | The request needs a key, and a retry with the same key returns the original result. |
+| `Retry` | Rejects `Idempotency-Key` | The method rejects a key. |
+| `Retry` | Do not retry | A retry causes a harmful effect. |
 
 ### Contract shapes
 

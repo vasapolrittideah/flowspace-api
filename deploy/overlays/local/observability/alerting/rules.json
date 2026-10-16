@@ -312,6 +312,108 @@
             "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/email-delivery-fails.md",
             "dashboard_url": "http://localhost:3000/d/flowspace-event-delivery"
           }
+        },
+        {
+          "uid": "telemetry-is-dropped",
+          "title": "Telemetry is dropped",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "label_replace(sum by (component_id) (label_replace(increase(otelcol_receiver_refused_spans_total{job=\"alloy\"}[2m]), \"metric\", \"otelcol_receiver_refused_spans_total\", \"\", \"\") or label_replace(increase(otelcol_receiver_refused_metric_points_total{job=\"alloy\"}[2m]), \"metric\", \"otelcol_receiver_refused_metric_points_total\", \"\", \"\") or label_replace(increase(otelcol_exporter_send_failed_spans_total{job=\"alloy\"}[2m]), \"metric\", \"otelcol_exporter_send_failed_spans_total\", \"\", \"\") or label_replace(increase(prometheus_remote_storage_samples_failed_total{job=\"alloy\"}[2m]), \"metric\", \"prometheus_remote_storage_samples_failed_total\", \"\", \"\") or label_replace(increase(loki_write_dropped_entries_total{job=\"alloy\"}[2m]), \"metric\", \"loki_write_dropped_entries_total\", \"\", \"\")), \"environment\", \"local\", \"\", \"\")",
+                "instant": true,
+                "range": false
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "10m",
+          "labels": {
+            "severity": "ticket"
+          },
+          "annotations": {
+            "summary": "{{ with $values.A }}Telemetry is dropped: the Alloy component {{ $labels.component_id }} refused or failed to send {{ printf \"%.0f\" .Value }} spans, metric points, or log entries in the last 2 minutes.{{ else }}Telemetry is dropped: Grafana cannot query Prometheus.{{ end }}",
+            "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/telemetry-is-dropped.md",
+            "dashboard_url": "http://localhost:3000/d/flowspace-telemetry-stack"
+          }
+        },
+        {
+          "uid": "host-disk-is-almost-full",
+          "title": "Host disk is almost full",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "label_replace(max by (persistentvolumeclaim) (kubelet_volume_stats_used_bytes{job=\"kubelet\"} / kubelet_volume_stats_capacity_bytes{job=\"kubelet\"}), \"environment\", \"local\", \"\", \"\")",
+                "instant": true,
+                "range": false
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0.9
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "10m",
+          "labels": {
+            "severity": "ticket"
+          },
+          "annotations": {
+            "summary": "{{ with $values.A }}Host disk is almost full: the volume of {{ $labels.persistentvolumeclaim }} reports that {{ humanizePercentage .Value }} of the host disk is in use.{{ else }}Host disk is almost full: Grafana cannot query Prometheus.{{ end }}",
+            "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/host-disk-is-almost-full.md",
+            "dashboard_url": "http://localhost:3000/d/flowspace-telemetry-stack"
+          }
         }
       ]
     }

@@ -161,6 +161,57 @@
           }
         },
         {
+          "uid": "email-consumer-lag-is-not-decreasing",
+          "title": "Email consumer lag is not decreasing",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 1200,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "max by (environment) (identity_broker_consumer_lag{service=\"identity-worker\"} and (min_over_time(identity_broker_consumer_lag{service=\"identity-worker\"}[10m]) > 0) and (identity_broker_consumer_lag{service=\"identity-worker\"} >= identity_broker_consumer_lag{service=\"identity-worker\"} offset 10m))",
+                "instant": true,
+                "range": false
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "0s",
+          "labels": {
+            "severity": "ticket"
+          },
+          "annotations": {
+            "summary": "{{ with $values.A }}Email consumer lag is not decreasing: the email worker has {{ .Value }} records to consume, not fewer than 10 minutes earlier.{{ else }}Email consumer lag is not decreasing: Grafana cannot query Prometheus.{{ end }}",
+            "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/email-consumer-lag-is-not-decreasing.md",
+            "dashboard_url": "http://localhost:3000/d/flowspace-event-delivery"
+          }
+        },
+        {
           "uid": "worker-metrics-are-missing",
           "title": "Worker metrics are missing",
           "condition": "C",
@@ -208,6 +259,57 @@
           "annotations": {
             "summary": "{{ with $values.A }}Worker metrics are missing: Prometheus has no outbox age or consumer lag sample from identity-worker in the last 5 minutes.{{ else }}Worker metrics are missing: Grafana cannot query Prometheus.{{ end }}",
             "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/worker-metrics-are-missing.md",
+            "dashboard_url": "http://localhost:3000/d/flowspace-event-delivery"
+          }
+        },
+        {
+          "uid": "email-delivery-fails",
+          "title": "Email delivery fails",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 1200,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "sum by (environment, identity_email_kind) ((sum by (environment, identity_email_kind, outcome) (increase(identity_email_deliveries_total{service=\"identity-worker\", outcome=~\"failed|commit_failed\"}[15m])) > 0) or sum by (environment, identity_email_kind, outcome) (identity_email_deliveries_total{service=\"identity-worker\", outcome=~\"failed|commit_failed\"} unless identity_email_deliveries_total{service=\"identity-worker\", outcome=~\"failed|commit_failed\"} offset 15m))",
+                "instant": true,
+                "range": false
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "0s",
+          "labels": {
+            "severity": "ticket"
+          },
+          "annotations": {
+            "summary": "{{ with $values.A }}Email delivery fails: about {{ printf \"%.0f\" .Value }} deliveries of {{ $labels.identity_email_kind }} emails failed in the last 15 minutes.{{ else }}Email delivery fails: Grafana cannot query Prometheus.{{ end }}",
+            "runbook_url": "https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/email-delivery-fails.md",
             "dashboard_url": "http://localhost:3000/d/flowspace-event-delivery"
           }
         }

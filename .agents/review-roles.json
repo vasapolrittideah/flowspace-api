@@ -1,4 +1,9 @@
 {
+  "adr-reviewer": {
+    "runner": "codex",
+    "model": "gpt-6.1-sol",
+    "effort": "high"
+  },
   "code-reviewer": {
     "runner": "codex",
     "model": "gpt-6-astra",

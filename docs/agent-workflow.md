@@ -92,7 +92,8 @@ Claude Code and Codex both register the `git-guard` hook to run before each shel
 - The hook blocks a commit when the staged tree has no `code-reviewer` stamp. If the staged tree is the tree of `HEAD`, the hook allows the commit. A commit that only changes the message needs no new review.
 - The hook blocks a commit that changes a migration when the staged tree has no `migration-reviewer` stamp.
 - The hook blocks `gh pr create` and `gh pr edit` when the tree of `HEAD` has no `convention-reviewer` stamp or no `writing-reviewer` stamp. `gh pr create` must pass the description with `--body-file`. `gh pr edit` must use `--body-file` when it changes the description. Both roles must have a stamp for the exact text of that file.
-- The hook blocks `gh pr create` and `gh pr edit` when the branch changes a file in `docs/specs/`, `tasks/`, or `docs/adr/`, and the tree of `HEAD` has no `planning-reviewer` stamp.
+- The hook blocks `gh pr create` and `gh pr edit` when the branch changes a file in `docs/specs/` or `tasks/`, and the tree of `HEAD` has no `planning-reviewer` stamp.
+- The hook blocks `gh pr create` and `gh pr edit` when the branch changes a file in `docs/adr/`, and the tree of `HEAD` has no `adr-reviewer` stamp.
 - The hook blocks `gh pr merge` because the maintainer merges each PR.
 - The hook blocks each `gh stack` command, because the extension creates and merges PRs without the checks of the hook, as [ADR-0040](adr/0040-automatic-builds-run-one-subagent-for-each-ready-issue.md) states.
 

@@ -14,6 +14,7 @@ This index lists the module specifications. Follow the [Module specification](..
 | `identity-provider-unlink` | [Identity provider unlink](identity-provider-unlink.md) | `identity-provider-login`, `identity-re-authentication`, `identity-session-management`, `identity-password-change` | Approved |
 | `identity-provider-link` | [Identity provider link](identity-provider-link.md) | `identity-provider-login`, `identity-re-authentication`, `identity-provider-unlink` | Approved |
 | `identity-email-change` | [Identity email change](identity-email-change.md) | `identity-signup-and-email-verification`, `identity-password-recovery`, `identity-re-authentication` | Approved |
+| `identity-account-deletion` | [Identity account deletion](identity-account-deletion.md) | `identity-password-login-and-sessions`, `identity-provider-login`, `identity-password-recovery`, `identity-re-authentication`, `identity-session-management` | Draft |
 | `workspace-creation-and-reading` | [Workspace creation and reading](workspace-creation-and-reading.md) | None | Implemented |
 | `observability-logs-and-traces` | [Observability logs and traces](observability-logs-and-traces.md) | None | Implemented |
 | `observability-metrics-and-dashboards` | [Observability metrics and dashboards](observability-metrics-and-dashboards.md) | `observability-logs-and-traces` | Implemented |

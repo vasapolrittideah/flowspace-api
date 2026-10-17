@@ -6,15 +6,15 @@ Status: Accepted; scoped exception to [ADR-0035](0035-identity-signup-security-a
 
 ## Context
 
-A signed-in user will change the email address of their account. The user must prove control of the new address with a 6-digit code before the account uses it, so the code must reach the new address, not the current one.
+A signed-in user will change the email address of their account. The user must prove control of the new address before the account uses it. As a result, the 6-digit code must reach the new address, not the current one.
 
-[ADR-0035](0035-identity-signup-security-and-mail-delivery.md) protects queued email codes. The mail worker locks the account and the current challenge, checks the challenge, and sends only if the decrypted recipient matches the current account address. This rule stops a replaced or stale delivery from reaching an old address. Under this rule, the worker discards every code for a new address, because the new address is not the current account address until the change commits.
+[ADR-0035](0035-identity-signup-security-and-mail-delivery.md) protects queued email codes. The mail worker locks the account and the current challenge, makes sure that the challenge is valid, and sends only if the decrypted recipient matches the current account address. This rule stops a replaced or stale delivery from reaching an old address. Under this rule, the worker discards every code for a new address, because the new address is not the current account address until the change commits.
 
 ## Decision
 
-For the email-change purpose only, the mail worker checks the decrypted recipient against the new address of the current email-change challenge of the subject, not against the current account address. Every other purpose keeps the recipient rule of ADR-0035.
+For the email-change purpose only, the mail worker compares the decrypted recipient with the new address of the current email-change challenge of the subject, not with the current account address. Every other purpose keeps the recipient rule of ADR-0035.
 
-The email-change challenge stores its new address with the subject and the purpose. The worker locks the account and that challenge in a database transaction, checks the challenge ID, the purpose, the account state, and the 10-minute expiry, and decrypts the payload. It sends only if the decrypted recipient matches the new address of that challenge. It discards a replaced, consumed, or expired challenge without sending.
+The email-change challenge stores its new address with the subject and the purpose. The worker locks the account and that challenge in a database transaction. It makes sure that the challenge ID, the purpose, the account state, and the 10-minute expiry meet the rules of ADR-0035, then decrypts the payload. It sends only if the decrypted recipient matches the new address of that challenge. It discards a replaced, consumed, or expired challenge without sending.
 
 The other controls of ADR-0035 apply without change: the keyed one-way verifier, the AES-256-GCM payload with the challenge ID, purpose, and subject as associated data, the opaque broker record, the lock through the mail call, and the deletion of delivery material after acceptance, replacement, consumption, and expiry.
 

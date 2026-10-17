@@ -6,9 +6,9 @@ Status: Accepted
 
 ## Context
 
-A user will delete their Flowspace account. Identity keeps the account for a 30-day grace period, lets the user restore it in that period, and then deletes its personal data and keeps only the subject. Workspace references the subject in memberships, and Workspace must react when an account leaves, for example when the account is the only owner of a workspace.
+A user will delete their Flowspace account. Identity keeps the account for a 30-day grace period and lets the user restore it during that period. Then Identity deletes its personal data and keeps only the subject. Workspace references the subject in memberships, and Workspace must react when an account leaves, for example when the account is the only owner of a workspace.
 
-[ADR-0016](0016-cross-service-side-effects-use-domain-events.md) integrates cross-service side effects through versioned domain events, and [ADR-0017](0017-outbox-and-idempotent-consumers-deliver-events.md) delivers them through an outbox and idempotent consumers. Today only Workspace and Work publish events for other services. Identity publishes only `EmailDeliveryRequested` to a private topic for its own mail worker, as [ADR-0035](0035-identity-signup-security-and-mail-delivery.md) states. The [architecture](../architecture.md#service-boundaries) states that Workspace depends on Identity only for access tokens and session checks.
+[ADR-0016](0016-cross-service-side-effects-use-domain-events.md) integrates cross-service side effects through versioned domain events, and [ADR-0017](0017-outbox-and-idempotent-consumers-deliver-events.md) delivers them through an outbox and idempotent consumers. Today only Workspace and Work publish events for other services. Identity publishes only `EmailDeliveryRequested` to a private topic for its own mail worker, as [ADR-0035](0035-identity-signup-security-and-mail-delivery.md) states. The [Service boundaries](../architecture.md#service-boundaries) section states that Workspace depends on Identity only for access tokens and session checks.
 
 ## Decision
 
@@ -16,9 +16,9 @@ Identity publishes account lifecycle events for other Flowspace services on the 
 
 Identity publishes these events:
 
-- `AccountDeletionScheduled`, when a user requests the deletion of their account.
-- `AccountRestored`, when the user restores the account in the grace period.
-- `AccountDeleted`, when Identity deletes the personal data of the account at the end of the grace period.
+- `AccountDeletionScheduled`, when a user requests the deletion of their account
+- `AccountRestored`, when the user restores the account in the grace period
+- `AccountDeleted`, when Identity deletes the personal data of the account at the end of the grace period
 
 Each event carries its event ID, the subject, the time of the fact, and for `AccountDeletionScheduled`, the time of the planned deletion. An event carries no email address, name, provider subject, or other personal data. The subject is the only account reference.
 

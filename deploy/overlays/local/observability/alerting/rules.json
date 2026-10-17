@@ -174,7 +174,7 @@
               "datasourceUid": "prometheus",
               "model": {
                 "refId": "A",
-                "expr": "max by (environment) (identity_broker_consumer_lag{service=\"identity-worker\"} and (min_over_time(identity_broker_consumer_lag{service=\"identity-worker\"}[10m]) > 0) and (identity_broker_consumer_lag{service=\"identity-worker\"} >= identity_broker_consumer_lag{service=\"identity-worker\"} offset 10m))",
+                "expr": "max by (environment) (identity_broker_consumer_lag{service=\"identity-worker\"} and (min_over_time(identity_broker_consumer_lag{service=\"identity-worker\"}[10m]) > 0) and (count_over_time(identity_broker_consumer_lag{service=\"identity-worker\"}[10m]) >= 18) and (identity_broker_consumer_lag{service=\"identity-worker\"} >= (last_over_time(identity_broker_consumer_lag{service=\"identity-worker\"}[1m] offset 10m) > 0)))",
                 "instant": true,
                 "range": false
               }

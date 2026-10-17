@@ -6,7 +6,7 @@ Severity: `ticket`
 
 ## Meaning
 
-Identity emails wait in Redpanda, so users receive their verification and recovery emails late or not at all. The alert fires when the consumer lag of the email worker stays above 0 for 10 minutes and is not lower than 10 minutes earlier. It has no pending period. The worker reports the lag itself, so a stopped worker reports no lag and fires `Worker metrics are missing` instead. The [`deploy/overlays/local/observability/alerting/rules.json`](../../deploy/overlays/local/observability/alerting/rules.json) file holds the query. An email with the `DatasourceError` alert name and this runbook means that Grafana cannot query Prometheus.
+Identity emails wait in Redpanda, so users receive their verification and recovery emails late or not at all. The alert fires when the consumer lag of the email worker stays above 0 for 10 minutes and is not lower than 10 minutes earlier. It has no pending period. The worker reports the lag itself, so a stopped worker reports no lag and fires `Worker metrics are missing` instead. After the worker misses lag samples, such as after a restart, the alert fires only when Prometheus has at least 18 lag samples from the last 10 minutes and a lag sample above 0 from the minute before that. The [`deploy/overlays/local/observability/alerting/rules.json`](../../deploy/overlays/local/observability/alerting/rules.json) file holds the query. An email with the `DatasourceError` alert name and this runbook means that Grafana cannot query Prometheus.
 
 ## First checks
 

@@ -2,7 +2,7 @@
 
 Module ID: `observability-alerts-and-runbooks`
 
-Status: Approved
+Status: Implemented
 
 ## Objective
 

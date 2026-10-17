@@ -1,0 +1,72 @@
+# Regression tests for the query of the `Email consumer lag is not decreasing`
+# rule. scripts/test-alert-queries.mjs writes the query to rules.json and runs
+# promtool. The worker reports the lag every 30 seconds, and `_` is a missing
+# sample, such as while the worker is stopped.
+rule_files: [rules.json]
+evaluation_interval: 30s
+tests:
+  # The lag rises at 10:30 and stays above 0, so the rule fires at 20:30.
+  - interval: 30s
+    input_series:
+      - series: 'identity_broker_consumer_lag{service="identity-worker", environment="local"}'
+        values: '0x20 1x40'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: []
+      - eval_time: 20m30s
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: [{exp_labels: {environment: local}}]
+  # 1 sample is missing at 10:30 after a 0 at 10:00. The 0 must not count as
+  # the value from 10 minutes earlier.
+  - interval: 30s
+    input_series:
+      - series: 'identity_broker_consumer_lag{service="identity-worker", environment="local"}'
+        values: '0x20 _ 1x40'
+    alert_rule_test:
+      - eval_time: 20m30s
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: []
+      - eval_time: 21m
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: [{exp_labels: {environment: local}}]
+  # The lag is above 0 before and after a gap from 10:30 to 12:30. The rule
+  # needs 10 minutes of samples after the gap.
+  - interval: 30s
+    input_series:
+      - series: 'identity_broker_consumer_lag{service="identity-worker", environment="local"}'
+        values: '0x10 1x8 _x5 1x40'
+    alert_rule_test:
+      - eval_time: 21m30s
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: []
+      - eval_time: 23m
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: [{exp_labels: {environment: local}}]
+  # The worker is stopped from 10:30 to 16:00 and reports a lag from 16:30.
+  - interval: 30s
+    input_series:
+      - series: 'identity_broker_consumer_lag{service="identity-worker", environment="local"}'
+        values: '0x20 _x12 1x40'
+    alert_rule_test:
+      - eval_time: 21m
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: []
+      - eval_time: 26m
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: []
+      - eval_time: 26m30s
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: [{exp_labels: {environment: local}}]
+  # The lag is above 0 but falls, so the rule stays normal.
+  - interval: 30s
+    input_series:
+      - series: 'identity_broker_consumer_lag{service="identity-worker", environment="local"}'
+        values: '0x20 30-1x29'
+    alert_rule_test:
+      - eval_time: 21m
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: []
+      - eval_time: 24m
+        alertname: Email consumer lag is not decreasing
+        exp_alerts: []

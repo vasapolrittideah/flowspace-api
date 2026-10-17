@@ -60,7 +60,7 @@ Only owners may grant or modify administrator access.
 | Component | Owns | Depends on |
 | --- | --- | --- |
 | Identity | Credentials, login, tokens, account identity | No Flowspace service |
-| Workspace | Workspaces, memberships, invitations, roles, authorization events | Identity access tokens and session checks |
+| Workspace | Workspaces, memberships, invitations, roles, authorization events | Identity access tokens, session checks, and Identity account lifecycle events |
 | Work | Projects, tasks, assignments, comments, activity, outbox, authorization projection | Identity access tokens, session checks, and Workspace events |
 | Notifications | Inbox, read state, deduplication, authorization projection | Identity access tokens, session checks, Workspace events, and Work events |
 
@@ -79,13 +79,15 @@ flowchart TD
     Workspace --> WorkspaceDB[(Workspace PostgreSQL + outbox)]
     Work --> WorkDB[(Work PostgreSQL + outbox)]
     Notifications --> NotificationsDB[(Notifications PostgreSQL)]
-    Identity --> IdentityDB[(Identity PostgreSQL)]
+    Identity --> IdentityDB[(Identity PostgreSQL + outbox)]
 
     Workspace -->|Session check| Identity
     Work -->|Session check| Identity
     Notifications -->|Session check| Identity
 
-    Workspace -->|Authorization events| Events[Redpanda]
+    Identity -->|Account lifecycle events| Events[Redpanda]
+    Events -->|Account lifecycle events| Workspace
+    Workspace -->|Authorization events| Events
     Events -->|Local authorization projection| Work
     Events -->|Local authorization projection| Notifications
     Work -->|Task events| Events

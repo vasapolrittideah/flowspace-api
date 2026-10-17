@@ -55,3 +55,4 @@ The [ADR convention](../conventions/adrs.md) defines the format of a record and 
 | [0045](0045-provider-re-authentication-reuses-the-one-time-handoff.md) | Provider re-authentication reuses the one-time handoff | Accepted; scoped exceptions to [0005](0005-one-protobuf-contract-generates-rest.md) and [0011](0011-idempotency-keys-protect-non-idempotent-creates.md) |
 | [0046](0046-provider-link-reuses-the-one-time-handoff.md) | Provider link reuses the one-time handoff | Accepted; scoped exceptions to [0005](0005-one-protobuf-contract-generates-rest.md) and [0011](0011-idempotency-keys-protect-non-idempotent-creates.md) |
 | [0047](0047-email-change-codes-go-to-the-pending-address.md) | Email-change codes go to the pending address | Accepted; scoped exception to [0035](0035-identity-signup-security-and-mail-delivery.md) |
+| [0048](0048-identity-publishes-account-lifecycle-events.md) | Identity publishes account lifecycle events | Accepted |

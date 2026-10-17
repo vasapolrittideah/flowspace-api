@@ -2,7 +2,7 @@
 
 Module ID: `identity-account-deletion`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

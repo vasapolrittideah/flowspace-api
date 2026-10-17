@@ -42,7 +42,7 @@ This capability adds no RPC, field, or event. It adds the value `new-device-noti
 
 ### Known devices
 
-- A device fingerprint is a keyed hash of 3 values: the browser family and the operating-system family from the fixed user-agent parser of the [Identity session management](identity-session-management.md) specification, and the network of the trusted source IP address. The network is the first 24 bits of an IPv4 address or the first 48 bits of an IPv6 address.
+- Identity computes the device fingerprint with a keyed hash of 3 values: the browser family and the operating-system family from the fixed user-agent parser of the [Identity session management](identity-session-management.md) specification, and the network of the trusted source IP address. The network is the first 24 bits of an IPv4 address or the first 48 bits of an IPv6 address.
 - An unknown user agent gives `Unknown` for both families, and a missing trusted address gives an empty network. Each combination still gives 1 fingerprint.
 - The hash key is an Identity secret, so a copy of the database alone cannot recover the network of a fingerprint.
 - A known device holds the subject, the fingerprint, and its last-used time. It holds no IP address, user agent, or session ID.
@@ -53,7 +53,7 @@ This capability adds no RPC, field, or event. It adds the value `new-device-noti
 - When `CreatePasswordSession` or `CreateProviderSession` creates a session, Identity computes the fingerprint of the request in the same transaction. This includes a restricted session under the [Identity account deletion](identity-account-deletion.md) specification.
 - When the fingerprint matches an unexpired known device, Identity sets its last-used time to the login time and queues no notice.
 - When the fingerprint matches no unexpired known device and the account has at least 1 unexpired known device, Identity adds the fingerprint as a known device and queues 1 new-device notice.
-- When the account has no unexpired known device, Identity adds the fingerprint as a known device and queues no notice. This covers the first login after signup and the first login after this capability starts.
+- When the account has no unexpired known device, Identity adds the fingerprint as a known device and queues no notice. This covers the first login after this capability starts and an account whose known devices all expired.
 - `CreateAccount` and `ClaimUnverifiedAccount` add the fingerprint of their request as a known device without a notice.
 - A successful `RefreshSession` sets the last-used time of a matching unexpired known device. It never adds a known device and never queues a notice.
 - Re-authentication in an existing session neither changes the known devices nor queues a notice.
@@ -126,7 +126,7 @@ Ask the maintainer before these actions:
 7. Given an account with an unverified email, When the user signs in from a new device, Then Identity adds the known device and queues no notice.
 8. Given an account in its deletion grace period with a verified email and an unexpired known device, When the user signs in from a new device, Then Identity queues 1 notice with the restricted session.
 9. Given an account with a verified email and an unexpired known device, and 2 concurrent logins with the same new fingerprint, When both commit, Then Identity queues 1 notice.
-10. Given a new-device notice, When the mail worker sends it, Then it contains the UTC login time, the device label, and the sign-in method, and no IP address, location, link, code, or token, and `identity_email_deliveries_total` increases for the kind `new-device-notice`.
+10. Given a new-device notice, When the mail worker sends it, Then it contains the UTC login time, the device label, and the sign-in method. It contains no IP address, location, link, code, or token. The `identity_email_deliveries_total` metric increases for the kind `new-device-notice`.
 11. Given a known device expired more than 24 hours ago, When `identity-worker` runs, Then the known device no longer exists.
 12. Given an account reaches its final deletion or an unverified account is claimed, When the transaction commits, Then the old subject has no known device.
 13. Given the new-device tests run, When a test inspects logs, traces, metrics, and errors, Then they contain no fingerprint, IP address, network, user agent, or token.

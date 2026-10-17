@@ -34,7 +34,9 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | index | The [Specifications](docs/specs/README.md) table, which lists every module. |
 | material risk | A failure that can break a success criterion or allow a threat in a threat model. |
 | module | 1 capability that can be tested on its own. Its specification states what the capability does. |
+| restricted session | An Identity session of an account in its deletion grace period. It can only restore the account, refresh, or log out, as the [Identity account deletion](docs/specs/identity-account-deletion.md) specification states. |
 | shape | A name, a route, a field, or a value that a consumer can read. |
+| tombstone | The record that Identity keeps after the final deletion of an account. It holds only the subject and the deletion time, as the [Identity account deletion](docs/specs/identity-account-deletion.md) specification states. |
 
 ## Module plans and Issues
 

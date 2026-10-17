@@ -78,7 +78,7 @@ The `FailedPrecondition` error for a restricted session carries an `ErrorInfo` d
 
 - `DeleteAccount` is a sensitive method under the [Identity re-authentication](identity-re-authentication.md) specification. It makes sure that the session of the access token has an open re-authentication window in the same transaction as the request.
 - In 1 transaction, Identity records the request time, sets the due time to 30 days later, revokes every session of the subject including the current one, invalidates their refresh tokens, deletes their device data, and queues an `AccountDeletionScheduled` event.
-- Identity does not ask another service before a deletion. An account that owns a workspace alone can be deleted.
+- Identity does not ask another service before a deletion. Identity can delete an account that owns a workspace alone.
 - A retry after a lost response finds the current session revoked and returns `Unauthenticated` without a second change.
 
 ### Grace period
@@ -86,7 +86,7 @@ The `FailedPrecondition` error for a restricted session carries an `ErrorInfo` d
 - During the 30 days, the account keeps its email address, password, provider links, and verified state. Another person cannot sign up with the email or link the provider subjects.
 - `CreatePasswordSession` and `CreateProviderSession` work as usual and create a restricted session. Their responses set `account_deletion_due_at`. A restricted session can call only `RestoreAccount`, `RefreshSession`, and `LogoutCurrentSession`. Every other Identity method returns `FailedPrecondition` with the reason `ACCOUNT_DELETION_PENDING`.
 - `CheckSession` treats a restricted session as inactive and returns `Unauthenticated`, so Workspace and other services deny it.
-- `RequestPasswordResetCode` and `ResetPassword` keep working under their existing rules, so a user who forgot the password can still sign in and restore. Only an account with a verified email and a password is eligible, and a pending deletion makes no other account eligible. A reset does not restore the account.
+- `RequestPasswordResetCode` and `ResetPassword` continue to work under their existing rules, so a user who forgot the password can still sign in and restore. Only an account with a verified email and a password is eligible, and a pending deletion makes no other account eligible. A reset does not restore the account.
 - Identity never restores an account during a login. Only `RestoreAccount` restores it.
 
 ### Restoring an account

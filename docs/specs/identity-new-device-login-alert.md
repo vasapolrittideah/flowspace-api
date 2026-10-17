@@ -2,7 +2,7 @@
 
 Module ID: `identity-new-device-login-alert`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

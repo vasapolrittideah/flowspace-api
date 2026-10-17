@@ -2,7 +2,7 @@
 
 Module ID: `identity-email-change`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

@@ -22,6 +22,7 @@ Co-authored-by: <co-author name, if any> <<co-author email>>
 
 - Use the type of the main change.
 - If a change only edits Markdown agent instructions, conventions, skills, or commands, use `docs`. If it changes code or configuration for agents, such as a script or a hook, use the type of that change.
+- In the title of a PR that completes the final Prove task of a module plan, use `test`, also when the PR changes only documentation, as the [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state.
 - Use one of the [Types](#types).
 - Do not use `feat` only because the change adds a file.
 

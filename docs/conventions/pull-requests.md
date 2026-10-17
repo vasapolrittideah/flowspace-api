@@ -171,6 +171,7 @@ These rules apply to a PR with a contract or generator change. The `Contract che
 
 A PR that completes the final Prove task of a module plan also records the evidence that CI does not keep. GitHub shows the PR on the Issue, so the Issue needs no comment.
 
+- Use the title `test(<scope, if any>): prove <capability> spec`. Write the capability name in lowercase, except for names and abbreviations, such as `test(observability): prove observability alerts and runbooks spec`.
 - At the end of [What changed](#what-changed), write the evidence.
 - If a test proves a success criterion only in part, such as with a fake provider instead of a real one, state in [Risks or limitations](#risks-or-limitations) why the module can still close.
 - If an item of the Issue fails or does not run, state the gap in [Risks or limitations](#risks-or-limitations), and use `Refs` instead of `Closes` for the Issue.

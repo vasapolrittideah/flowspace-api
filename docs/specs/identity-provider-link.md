@@ -2,7 +2,7 @@
 
 Module ID: `identity-provider-link`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

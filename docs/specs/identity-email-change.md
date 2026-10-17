@@ -80,7 +80,7 @@ Email change result:
 
 - `RequestEmailChange` and `ConfirmEmailChange` are sensitive methods under the [Identity re-authentication](identity-re-authentication.md) specification. `RequestEmailChange` makes sure that the session of the access token has an open re-authentication window before it creates a code.
 - Identity compares the new email with the current email by the comparison rules of the signup specification. An equal address returns `InvalidArgument`.
-- When no other account uses the new email, Identity creates a 6-digit challenge for the subject, the new email, and the email-change purpose, and a durable delivery request in the same transaction. The `purpose` field of `EmailDeliveryRequested` is `change-email`. Identity sends the code only to the new email, and the mail worker discards the delivery when the challenge is replaced, consumed, or expired.
+- When no other account uses the new email, Identity creates a 6-digit challenge for the subject, the new email, and the email-change purpose. It creates a durable delivery request in the same transaction. The `purpose` field of `EmailDeliveryRequested` is `change-email`. Identity sends the code only to the new email, and the mail worker discards the delivery when the challenge is replaced, consumed, or expired.
 - When another account uses the new email, verified or not, Identity creates no challenge and sends no code. It returns the same `accepted=true` response with the same practical timing.
 - A new request replaces the previous email-change challenge of the subject. A request within 60 seconds of the previous request returns `accepted=true` and does not replace the challenge.
 - Identity holds no address for the subject while the challenge waits. Another person can sign up with the new email before the confirmation.
@@ -93,7 +93,7 @@ Email change result:
 - In the same transaction, Identity makes sure again that no other account uses the new email. If another account took it after the request, Identity consumes the code, changes nothing, and returns the same error as a wrong code.
 - A successful confirmation sets the account email to the new address and sets `email_verified=true`. It invalidates every outstanding verification, claim, reset, and re-authentication code of the old address.
 - The old address is free at once. Another person can sign up with it after the commit.
-- The confirmation issues no token, revokes no session, and changes no password or provider link. Provider login keeps finding the account by its provider subject.
+- The confirmation issues no token, revokes no session, and changes no password or provider link. Provider login continues to find the account by its provider subject.
 - After the commit, password login, password recovery, re-authentication codes, and notices use the new address. A `CheckSession` that starts after the commit returns `email_verified=true`.
 - A retry after a lost response returns the code error, and the change that the first request made stays in place.
 

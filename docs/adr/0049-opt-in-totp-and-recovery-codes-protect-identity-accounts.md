@@ -16,7 +16,7 @@ No record states which second factor Identity uses, when it asks for it, or how 
 
 Each Identity account can turn on MFA with a time-based one-time password (TOTP) and 10 recovery codes. MFA is optional for every account, and no role requires it.
 
-The TOTP follows RFC 6238 with SHA-1, 6 digits, and a 30-second step. Identity accepts the current step and 1 step on each side, and it accepts each step at most once for each account. Identity generates a 160-bit secret and stores it encrypted with an Identity key, because it must read the secret to check a code. A user turns MFA on in 2 steps: Identity returns the secret, and the user confirms it with 1 valid code before MFA starts.
+The TOTP follows RFC 6238 with SHA-1, 6 digits, and a 30-second step. Identity accepts the current step and 1 step on each side, and it accepts each step at most once for each account. Identity generates a 160-bit secret and stores it encrypted with an Identity key. Identity must read the secret to make sure that a code is valid. A user turns MFA on in 2 steps: Identity returns the secret, and the user submits 1 valid code before MFA starts.
 
 For an account with MFA, every password login and provider login that creates a session needs a second step. `CreatePasswordSession` and `CreateProviderSession` return a single-use MFA challenge instead of tokens. The challenge expires 5 minutes after Identity issues it. A new RPC takes the challenge with a TOTP code or a recovery code and creates the session. A refresh needs no second factor.
 
@@ -60,8 +60,8 @@ The MFA login step, the confirmation of MFA, and a new set of recovery codes rej
 
 - An account with MFA resists a stolen password or a stolen provider account alone.
 - Login responses get a second shape, so each client must handle the MFA challenge before it gets tokens.
-- Identity holds a new encryption key for TOTP secrets. If the key is lost, Identity cannot check TOTP codes, but MFA stays on. Users can still log in with recovery codes, and restoring the key restores the TOTP check.
-- A user who loses the TOTP device and every recovery code loses the account. The account deletion grace period does not help, because its restricted session also needs the second factor.
+- Identity holds a new encryption key for TOTP secrets. If the key is lost, Identity cannot make sure that TOTP codes are valid, but MFA stays on. Users can still log in with recovery codes, and restoring the key restores TOTP codes.
+- A user who loses the TOTP device and every recovery code loses the account. The grace period for account deletion does not help, because its restricted session also needs the second factor.
 - The specifications of password login, provider login, re-authentication, and account deletion change to add the second step. The MFA specifications define the limits, the delivery of the notices, and the threat-model review.
 - A later record decides a remembered device that skips the second factor for a time.
 

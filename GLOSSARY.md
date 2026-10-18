@@ -31,7 +31,9 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | --- | --- |
 | condition | A statement of when an effect happens, or why. |
 | consumer | An API client, an event consumer, or a developer who reads logs, traces, metrics, dashboards, or alerts. |
+| device fingerprint | A keyed hash that Identity derives from the browser family, the operating-system family, and the IP network of a request, as the [Identity new device login alert](docs/specs/identity-new-device-login-alert.md) specification states. |
 | index | The [Specifications](docs/specs/README.md) table, which lists every module. |
+| known device | A device fingerprint that an account used within the last 90 days, as the [Identity new device login alert](docs/specs/identity-new-device-login-alert.md) specification states. |
 | material risk | A failure that can break a success criterion or allow a threat in a threat model. |
 | module | 1 capability that can be tested on its own. Its specification states what the capability does. |
 | restricted session | An Identity session of an account in its deletion grace period. It can only restore the account, refresh, or log out, as the [Identity account deletion](docs/specs/identity-account-deletion.md) specification states. |

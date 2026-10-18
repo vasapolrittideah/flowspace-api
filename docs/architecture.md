@@ -238,7 +238,7 @@ Keep these here until accepted; then update the owning ADR.
 Not in the initial scope:
 
 - Private projects, nested teams, multiple assignees, and configurable workflows.
-- Real email delivery, MFA, LinkedIn login, and enterprise SSO.
+- Real email delivery, LinkedIn login, and enterprise SSO.
 - Service mesh, custom API gateway, shared application cache, Elasticsearch, event sourcing, generic saga infrastructure, and custom Kubernetes operators.
 - A service per entity or separate Go modules.
 - Multi-host availability and distributed storage.

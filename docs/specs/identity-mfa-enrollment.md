@@ -95,7 +95,7 @@ MFA enrollment:
 
 ### Status
 
-- `GetMfaStatus` returns whether MFA is on and how many recovery codes are unused. It never returns the secret or a recovery code.
+`GetMfaStatus` returns whether MFA is on and how many recovery codes are unused. It never returns the secret or a recovery code.
 
 ### Recovery codes
 
@@ -157,8 +157,8 @@ The mail worker counts each notice delivery in `identity_email_deliveries_total`
 | A confirmation retry after a lost response returns codes instead of `FailedPrecondition`, a new set after a lost response leaves the lost set valid, or either method accepts `Idempotency-Key` | Integration |
 | `DisableMfa` with only a pending secret leaves the secret or queues a notice | Integration |
 | A malformed code, a long code, or a request with unknown fields breaks a method or reaches the database (`ID-T15`) | Unit |
-| A secret is stored in plaintext, without a key ID, or is readable without the key (`ID-T18`) | Integration |
-| A recovery code has the wrong alphabet, length, or entropy, or is stored in plaintext (`ID-T18`) | Unit, Integration |
+| Identity stores a secret in plaintext or without a key ID, or the secret is readable without the key (`ID-T18`) | Integration |
+| A recovery code has the wrong alphabet, length, or entropy, or Identity stores it in plaintext (`ID-T18`) | Unit, Integration |
 | Recovery-code input fails for another case, spaces, or hyphens | Unit |
 | A new set leaves an old code valid, or a status call returns a secret or a code | Integration |
 | `DisableMfa` leaves a secret or a code, removes the last accepted step, or revokes a session | Integration |

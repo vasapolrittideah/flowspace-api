@@ -2,7 +2,7 @@
 
 Module ID: `identity-mfa-enrollment`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

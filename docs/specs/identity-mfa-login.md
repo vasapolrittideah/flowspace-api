@@ -28,7 +28,7 @@ These decisions apply:
 
 Use package `flowspace.identity.v1` and service `IdentityService`.
 
-The `code` field is a string of exactly 6 ASCII digits, and leading zeroes are significant. The `recovery_code` field follows the format of the [Identity MFA enrollment](identity-mfa-enrollment.md#recovery-codes) specification.
+The `code` field is a string of exactly 6 ASCII digits, and leading zeroes are significant. The `recovery_code` field follows the format in [Recovery codes](identity-mfa-enrollment.md#recovery-codes) of the Identity MFA enrollment specification.
 
 The token and session fields keep their meaning from the [Identity password login and sessions](identity-password-login-and-sessions.md) specification, and `account_deletion_due_at` keeps its meaning from the [Identity account deletion](identity-account-deletion.md) specification.
 
@@ -85,7 +85,7 @@ Login responses:
 ### Second step
 
 - `CompleteMfaLogin` accepts the challenge with a TOTP code or a recovery code.
-- A TOTP code follows the rules of the [Identity MFA enrollment](identity-mfa-enrollment.md#security-and-abuse) specification: the active secret, 1 step on each side, and a step later than the last accepted step.
+- A TOTP code follows the [Security and abuse](identity-mfa-enrollment.md#security-and-abuse) rules of the Identity MFA enrollment specification: the active secret, 1 step on each side, and a step later than the last accepted step.
 - A recovery code matches 1 unused code of the account.
 - On success, in 1 transaction, Identity uses the challenge, records the accepted step or deletes the used recovery code, and creates the session. The session uses the sign-in method and the device data of the challenge. It opens the re-authentication window, as other logins do.
 - The response returns the same token and session fields as `CreatePasswordSession`. For an account in its deletion grace period, the session is a restricted session, and the response sets `account_deletion_due_at`, under the [Identity account deletion](identity-account-deletion.md) specification.
@@ -106,8 +106,8 @@ Login responses:
 
 ### Security and abuse
 
-- Wrong codes at the second step count against the shared hourly and daily limit of each account in the [Identity MFA enrollment](identity-mfa-enrollment.md#security-and-abuse) specification.
-- Wrong codes also count against the limit of 100 wrong code guesses for each source IP address each hour, which the [Identity signup and email verification](identity-signup-and-email-verification.md#abuse-and-failure-handling) specification shares across the code-submission methods.
+- Wrong codes at the second step count against the shared hourly and daily limit of each account in the [Security and abuse](identity-mfa-enrollment.md#security-and-abuse) section of the Identity MFA enrollment specification.
+- Wrong codes also count against the limit of 100 wrong code guesses for each source IP address each hour, which the Identity signup and email verification specification shares across the code-submission methods under [Abuse and failure handling](identity-signup-and-email-verification.md#abuse-and-failure-handling).
 - The limits use shared state across replicas, count retries, and fail closed with `Unavailable` when the limit store is unavailable.
 - An unknown challenge and a wrong code return the same `Unauthenticated` error, so the error does not tell whether the challenge exists.
 - A challenge token gives no access by itself. It only lets the holder try the second factor within 5 minutes.

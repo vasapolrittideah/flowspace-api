@@ -18,7 +18,7 @@ This index lists the module specifications. Follow the [Module specification](..
 | `identity-new-device-login-alert` | [Identity new device login alert](identity-new-device-login-alert.md) | `identity-signup-and-email-verification`, `identity-password-login-and-sessions`, `identity-provider-login`, `identity-session-management`, `identity-account-deletion` | Approved |
 | `identity-mfa-enrollment` | [Identity MFA enrollment](identity-mfa-enrollment.md) | `identity-signup-and-email-verification`, `identity-re-authentication` | Approved |
 | `identity-mfa-login` | [Identity MFA login](identity-mfa-login.md) | `identity-mfa-enrollment`, `identity-password-login-and-sessions`, `identity-provider-login`, `identity-account-deletion`, `identity-new-device-login-alert` | Approved |
-| `identity-mfa-re-authentication` | [Identity MFA re-authentication](identity-mfa-re-authentication.md) | `identity-mfa-enrollment`, `identity-mfa-login`, `identity-re-authentication` | Draft |
+| `identity-mfa-re-authentication` | [Identity MFA re-authentication](identity-mfa-re-authentication.md) | `identity-mfa-enrollment`, `identity-mfa-login`, `identity-re-authentication` | Approved |
 | `workspace-creation-and-reading` | [Workspace creation and reading](workspace-creation-and-reading.md) | None | Implemented |
 | `observability-logs-and-traces` | [Observability logs and traces](observability-logs-and-traces.md) | None | Implemented |
 | `observability-metrics-and-dashboards` | [Observability metrics and dashboards](observability-metrics-and-dashboards.md) | `observability-logs-and-traces` | Implemented |

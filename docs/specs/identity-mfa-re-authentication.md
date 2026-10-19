@@ -2,7 +2,7 @@
 
 Module ID: `identity-mfa-re-authentication`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

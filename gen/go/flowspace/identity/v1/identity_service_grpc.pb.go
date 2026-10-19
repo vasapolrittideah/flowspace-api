@@ -32,6 +32,11 @@ const (
 	IdentityService_LogoutAllSessions_FullMethodName                 = "/flowspace.identity.v1.IdentityService/LogoutAllSessions"
 	IdentityService_StartProviderLogin_FullMethodName                = "/flowspace.identity.v1.IdentityService/StartProviderLogin"
 	IdentityService_CreateProviderSession_FullMethodName             = "/flowspace.identity.v1.IdentityService/CreateProviderSession"
+	IdentityService_ReauthenticateWithPassword_FullMethodName        = "/flowspace.identity.v1.IdentityService/ReauthenticateWithPassword"
+	IdentityService_RequestReauthenticationCode_FullMethodName       = "/flowspace.identity.v1.IdentityService/RequestReauthenticationCode"
+	IdentityService_ReauthenticateWithCode_FullMethodName            = "/flowspace.identity.v1.IdentityService/ReauthenticateWithCode"
+	IdentityService_StartProviderReauthentication_FullMethodName     = "/flowspace.identity.v1.IdentityService/StartProviderReauthentication"
+	IdentityService_CompleteProviderReauthentication_FullMethodName  = "/flowspace.identity.v1.IdentityService/CompleteProviderReauthentication"
 	IdentityService_CheckSession_FullMethodName                      = "/flowspace.identity.v1.IdentityService/CheckSession"
 )
 
@@ -78,6 +83,21 @@ type IdentityServiceClient interface {
 	// An unusable or colliding provider email returns FailedPrecondition.
 	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
 	CreateProviderSession(ctx context.Context, in *CreateProviderSessionRequest, opts ...grpc.CallOption) (*CreateProviderSessionResponse, error)
+	// Proves the current session owner's identity with the account password.
+	// Requires exactly 1 Authorization bearer header.
+	ReauthenticateWithPassword(ctx context.Context, in *ReauthenticateWithPasswordRequest, opts ...grpc.CallOption) (*ReauthenticateWithPasswordResponse, error)
+	// Requests a re-authentication code for the subject's current verified email.
+	// Requires exactly 1 Authorization bearer header.
+	RequestReauthenticationCode(ctx context.Context, in *RequestReauthenticationCodeRequest, opts ...grpc.CallOption) (*RequestReauthenticationCodeResponse, error)
+	// Proves the current session owner's identity with a re-authentication code.
+	// Requires exactly 1 Authorization bearer header.
+	ReauthenticateWithCode(ctx context.Context, in *ReauthenticateWithCodeRequest, opts ...grpc.CallOption) (*ReauthenticateWithCodeResponse, error)
+	// Starts a provider proof for the subject and session of the access token.
+	// Requires exactly 1 Authorization bearer header. Rejects Idempotency-Key.
+	StartProviderReauthentication(ctx context.Context, in *StartProviderReauthenticationRequest, opts ...grpc.CallOption) (*StartProviderReauthenticationResponse, error)
+	// Completes a linked provider proof from the session that started the attempt.
+	// Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
+	CompleteProviderReauthentication(ctx context.Context, in *CompleteProviderReauthenticationRequest, opts ...grpc.CallOption) (*CompleteProviderReauthenticationResponse, error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -222,6 +242,56 @@ func (c *identityServiceClient) CreateProviderSession(ctx context.Context, in *C
 	return out, nil
 }
 
+func (c *identityServiceClient) ReauthenticateWithPassword(ctx context.Context, in *ReauthenticateWithPasswordRequest, opts ...grpc.CallOption) (*ReauthenticateWithPasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReauthenticateWithPasswordResponse)
+	err := c.cc.Invoke(ctx, IdentityService_ReauthenticateWithPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) RequestReauthenticationCode(ctx context.Context, in *RequestReauthenticationCodeRequest, opts ...grpc.CallOption) (*RequestReauthenticationCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestReauthenticationCodeResponse)
+	err := c.cc.Invoke(ctx, IdentityService_RequestReauthenticationCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) ReauthenticateWithCode(ctx context.Context, in *ReauthenticateWithCodeRequest, opts ...grpc.CallOption) (*ReauthenticateWithCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReauthenticateWithCodeResponse)
+	err := c.cc.Invoke(ctx, IdentityService_ReauthenticateWithCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) StartProviderReauthentication(ctx context.Context, in *StartProviderReauthenticationRequest, opts ...grpc.CallOption) (*StartProviderReauthenticationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartProviderReauthenticationResponse)
+	err := c.cc.Invoke(ctx, IdentityService_StartProviderReauthentication_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) CompleteProviderReauthentication(ctx context.Context, in *CompleteProviderReauthenticationRequest, opts ...grpc.CallOption) (*CompleteProviderReauthenticationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompleteProviderReauthenticationResponse)
+	err := c.cc.Invoke(ctx, IdentityService_CompleteProviderReauthentication_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *identityServiceClient) CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*CheckSessionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CheckSessionResponse)
@@ -275,6 +345,21 @@ type IdentityServiceServer interface {
 	// An unusable or colliding provider email returns FailedPrecondition.
 	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
 	CreateProviderSession(context.Context, *CreateProviderSessionRequest) (*CreateProviderSessionResponse, error)
+	// Proves the current session owner's identity with the account password.
+	// Requires exactly 1 Authorization bearer header.
+	ReauthenticateWithPassword(context.Context, *ReauthenticateWithPasswordRequest) (*ReauthenticateWithPasswordResponse, error)
+	// Requests a re-authentication code for the subject's current verified email.
+	// Requires exactly 1 Authorization bearer header.
+	RequestReauthenticationCode(context.Context, *RequestReauthenticationCodeRequest) (*RequestReauthenticationCodeResponse, error)
+	// Proves the current session owner's identity with a re-authentication code.
+	// Requires exactly 1 Authorization bearer header.
+	ReauthenticateWithCode(context.Context, *ReauthenticateWithCodeRequest) (*ReauthenticateWithCodeResponse, error)
+	// Starts a provider proof for the subject and session of the access token.
+	// Requires exactly 1 Authorization bearer header. Rejects Idempotency-Key.
+	StartProviderReauthentication(context.Context, *StartProviderReauthenticationRequest) (*StartProviderReauthenticationResponse, error)
+	// Completes a linked provider proof from the session that started the attempt.
+	// Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
+	CompleteProviderReauthentication(context.Context, *CompleteProviderReauthenticationRequest) (*CompleteProviderReauthenticationResponse, error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -327,6 +412,21 @@ func (UnimplementedIdentityServiceServer) StartProviderLogin(context.Context, *S
 }
 func (UnimplementedIdentityServiceServer) CreateProviderSession(context.Context, *CreateProviderSessionRequest) (*CreateProviderSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProviderSession not implemented")
+}
+func (UnimplementedIdentityServiceServer) ReauthenticateWithPassword(context.Context, *ReauthenticateWithPasswordRequest) (*ReauthenticateWithPasswordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReauthenticateWithPassword not implemented")
+}
+func (UnimplementedIdentityServiceServer) RequestReauthenticationCode(context.Context, *RequestReauthenticationCodeRequest) (*RequestReauthenticationCodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestReauthenticationCode not implemented")
+}
+func (UnimplementedIdentityServiceServer) ReauthenticateWithCode(context.Context, *ReauthenticateWithCodeRequest) (*ReauthenticateWithCodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReauthenticateWithCode not implemented")
+}
+func (UnimplementedIdentityServiceServer) StartProviderReauthentication(context.Context, *StartProviderReauthenticationRequest) (*StartProviderReauthenticationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartProviderReauthentication not implemented")
+}
+func (UnimplementedIdentityServiceServer) CompleteProviderReauthentication(context.Context, *CompleteProviderReauthenticationRequest) (*CompleteProviderReauthenticationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CompleteProviderReauthentication not implemented")
 }
 func (UnimplementedIdentityServiceServer) CheckSession(context.Context, *CheckSessionRequest) (*CheckSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckSession not implemented")
@@ -586,6 +686,96 @@ func _IdentityService_CreateProviderSession_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IdentityService_ReauthenticateWithPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReauthenticateWithPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).ReauthenticateWithPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_ReauthenticateWithPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).ReauthenticateWithPassword(ctx, req.(*ReauthenticateWithPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_RequestReauthenticationCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestReauthenticationCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).RequestReauthenticationCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_RequestReauthenticationCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).RequestReauthenticationCode(ctx, req.(*RequestReauthenticationCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_ReauthenticateWithCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReauthenticateWithCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).ReauthenticateWithCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_ReauthenticateWithCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).ReauthenticateWithCode(ctx, req.(*ReauthenticateWithCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_StartProviderReauthentication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartProviderReauthenticationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).StartProviderReauthentication(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_StartProviderReauthentication_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).StartProviderReauthentication(ctx, req.(*StartProviderReauthenticationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_CompleteProviderReauthentication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteProviderReauthenticationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).CompleteProviderReauthentication(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_CompleteProviderReauthentication_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).CompleteProviderReauthentication(ctx, req.(*CompleteProviderReauthenticationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IdentityService_CheckSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CheckSessionRequest)
 	if err := dec(in); err != nil {
@@ -662,6 +852,26 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateProviderSession",
 			Handler:    _IdentityService_CreateProviderSession_Handler,
+		},
+		{
+			MethodName: "ReauthenticateWithPassword",
+			Handler:    _IdentityService_ReauthenticateWithPassword_Handler,
+		},
+		{
+			MethodName: "RequestReauthenticationCode",
+			Handler:    _IdentityService_RequestReauthenticationCode_Handler,
+		},
+		{
+			MethodName: "ReauthenticateWithCode",
+			Handler:    _IdentityService_ReauthenticateWithCode_Handler,
+		},
+		{
+			MethodName: "StartProviderReauthentication",
+			Handler:    _IdentityService_StartProviderReauthentication_Handler,
+		},
+		{
+			MethodName: "CompleteProviderReauthentication",
+			Handler:    _IdentityService_CompleteProviderReauthentication_Handler,
 		},
 		{
 			MethodName: "CheckSession",

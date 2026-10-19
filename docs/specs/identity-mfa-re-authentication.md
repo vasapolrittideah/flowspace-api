@@ -105,7 +105,7 @@ Logs, traces, metrics, errors, and security events record the outcome of each re
 | A TOTP code outside 1 step on each side, or at or before the last accepted step, opens the window (`ID-T03`, `ID-T04`) | Unit, Integration |
 | A used recovery code opens the window, or a recovery code stays unused after a success (`ID-T04`) | Integration |
 | A closed-window success returns an end time other than the earlier of 10 minutes after the commit and the idle or absolute expiry of the session (`ID-T19`) | Unit, Integration |
-| A call with an open window checks or uses a code, moves the end time, or queues a notice (`ID-T19`) | Integration |
+| A call with an open window tries to make sure that the code is valid, uses a code, moves the end time, or queues a notice (`ID-T19`) | Integration |
 | An existing method opens the window, sends a code, or counts against a limit for an account with MFA (`ID-T09`) | Integration |
 | A provider attempt or an email code that started before MFA turned on opens the window after it (`ID-T12`) | Integration |
 | `ReauthenticateWithMfa` succeeds for an account without MFA, or an existing method fails for it | Integration |

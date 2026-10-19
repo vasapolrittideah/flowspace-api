@@ -2,7 +2,7 @@
 
 Module ID: `identity-mfa-login`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

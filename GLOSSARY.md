@@ -35,6 +35,7 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | index | The [Specifications](docs/specs/README.md) table, which lists every module. |
 | known device | A device fingerprint that an account used within the last 90 days, as the [Identity new device login alert](docs/specs/identity-new-device-login-alert.md) specification states. |
 | material risk | A failure that can break a success criterion or allow a threat in a threat model. |
+| MFA challenge | A single-use token that a login of an account with MFA returns instead of tokens. The holder completes the login with a TOTP code or a recovery code, as the [Identity MFA login](docs/specs/identity-mfa-login.md) specification states. |
 | module | 1 capability that can be tested on its own. Its specification states what the capability does. |
 | pending secret | A TOTP secret that Identity issued to an account but that the user has not confirmed with a code yet, as the [Identity MFA enrollment](docs/specs/identity-mfa-enrollment.md) specification states. |
 | recovery code | A single-use code that replaces a TOTP code for an account with MFA, as the [Identity MFA enrollment](docs/specs/identity-mfa-enrollment.md) specification states. |

@@ -13,9 +13,9 @@ The plan follows the approved [Identity re-authentication](../docs/specs/identit
 ## Architecture decisions
 
 - Add the 5 re-authentication RPCs to `flowspace.identity.v1` with generated REST routes in 1 contract task, before any behavior.
-- Store 1 nullable re-authentication time on each session, and keep the window guard in the application layer, so that each later sensitive method calls it in its own transaction. A test-only method proves the guard, as the specification requires.
+- Store 1 nullable re-authentication time on each session. Keep the window guard in the application layer so that each later sensitive method calls it in its own transaction. A test-only method proves the guard, as the specification requires.
 - Reuse the existing limit buckets of password login, email codes, and provider login. Add no new limit table.
-- Reuse the provider attempts, the callback route, and the handoff of [ADR-0034](../docs/adr/0034-provider-login-uses-a-one-time-handoff.md), and add a purpose, a subject, and a session ID to each attempt, as [ADR-0045](../docs/adr/0045-provider-re-authentication-reuses-the-one-time-handoff.md) states.
+- Reuse the provider attempts, the callback route, and the handoff of [ADR-0034](../docs/adr/0034-provider-login-uses-a-one-time-handoff.md). Add a purpose, a subject, and a session ID to each attempt, as [ADR-0045](../docs/adr/0045-provider-re-authentication-reuses-the-one-time-handoff.md) states.
 
 ## Dependency graph
 
@@ -70,11 +70,11 @@ Tasks are tracked in the [flowspace-api](https://github.com/users/vasapolrittide
 
 | Risk | Impact | Control |
 | --- | --- | --- |
-| The guard admits a change after the window ends in a race with its check. | A stolen session makes a sensitive change without proof. | Make sure that the window is open in the transaction of the change, and test the race through the test-only method in Task 2. |
-| A re-authentication opens the window of another session of the subject. | A session on another device skips the proof. | Bind the window to the session of the access token, and test 2 sessions in Tasks 2 to 5. |
-| A code or a provider result of another purpose opens the window. | A verification, claim, reset, or login result becomes a step-up proof. | Bind each challenge and attempt to its purpose, and test cross-purpose use in Tasks 4 and 5. |
-| Re-authentication bypasses the shared limits. | An attacker guesses passwords or codes through a second path. | Count each method in the existing buckets, and test the limits across replicas in Tasks 3 to 5. |
+| The guard admits a change after the window ends in a race with its check. | A stolen session makes a sensitive change without proof. | Make sure that the window is open in the transaction of the change. Test the race through the test-only method in Task 2. |
+| A re-authentication opens the window of another session of the subject. | A session on another device skips the proof. | Bind the window to the session of the access token. Test 2 sessions in Tasks 2 to 5. |
+| A code or a provider result of another purpose opens the window. | A verification, claim, reset, or login result becomes a step-up proof. | Bind each challenge and attempt to its purpose. Test cross-purpose use in Tasks 4 and 5. |
+| Re-authentication bypasses the shared limits. | An attacker guesses passwords or codes through a second path. | Count each method in the existing buckets. Test the limits across replicas in Tasks 3 to 5. |
 | A rollback lets older code complete a re-authentication attempt as provider login. | A provider result creates an unexpected session. | Document the deletion of pending re-authentication attempts before a rollback in Task 5. |
-| A dependency failure, a timeout, or a cancellation opens a window. | A session gets a window without a committed proof. | Return a result only after the commit, and test failures and cancellations in Tasks 3 to 6. |
+| A dependency failure, a timeout, or a cancellation opens a window. | A session gets a window without a committed proof. | Return a result only after the commit. Test failures and cancellations in Tasks 3 to 6. |
 | An expiry, a refresh, or a retry extends a window. | A session keeps the window longer than 10 minutes. | Test the boundary, the refresh, and the open-window retry with a controlled clock in Tasks 2 to 6. |
 | Telemetry or errors contain a password, a code, or a token. | A secret becomes reusable. | Capture logs, traces, and errors in tests of each method and in Task 6. |

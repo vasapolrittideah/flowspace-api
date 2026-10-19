@@ -2,7 +2,7 @@
 
 Module ID: `identity-mfa-remembered-device`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

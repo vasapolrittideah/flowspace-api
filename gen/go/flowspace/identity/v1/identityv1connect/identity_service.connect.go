@@ -72,6 +72,21 @@ const (
 	// IdentityServiceCreateProviderSessionProcedure is the fully-qualified name of the
 	// IdentityService's CreateProviderSession RPC.
 	IdentityServiceCreateProviderSessionProcedure = "/flowspace.identity.v1.IdentityService/CreateProviderSession"
+	// IdentityServiceReauthenticateWithPasswordProcedure is the fully-qualified name of the
+	// IdentityService's ReauthenticateWithPassword RPC.
+	IdentityServiceReauthenticateWithPasswordProcedure = "/flowspace.identity.v1.IdentityService/ReauthenticateWithPassword"
+	// IdentityServiceRequestReauthenticationCodeProcedure is the fully-qualified name of the
+	// IdentityService's RequestReauthenticationCode RPC.
+	IdentityServiceRequestReauthenticationCodeProcedure = "/flowspace.identity.v1.IdentityService/RequestReauthenticationCode"
+	// IdentityServiceReauthenticateWithCodeProcedure is the fully-qualified name of the
+	// IdentityService's ReauthenticateWithCode RPC.
+	IdentityServiceReauthenticateWithCodeProcedure = "/flowspace.identity.v1.IdentityService/ReauthenticateWithCode"
+	// IdentityServiceStartProviderReauthenticationProcedure is the fully-qualified name of the
+	// IdentityService's StartProviderReauthentication RPC.
+	IdentityServiceStartProviderReauthenticationProcedure = "/flowspace.identity.v1.IdentityService/StartProviderReauthentication"
+	// IdentityServiceCompleteProviderReauthenticationProcedure is the fully-qualified name of the
+	// IdentityService's CompleteProviderReauthentication RPC.
+	IdentityServiceCompleteProviderReauthenticationProcedure = "/flowspace.identity.v1.IdentityService/CompleteProviderReauthentication"
 	// IdentityServiceCheckSessionProcedure is the fully-qualified name of the IdentityService's
 	// CheckSession RPC.
 	IdentityServiceCheckSessionProcedure = "/flowspace.identity.v1.IdentityService/CheckSession"
@@ -118,6 +133,21 @@ type IdentityServiceClient interface {
 	// An unusable or colliding provider email returns FailedPrecondition.
 	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
 	CreateProviderSession(context.Context, *connect.Request[v1.CreateProviderSessionRequest]) (*connect.Response[v1.CreateProviderSessionResponse], error)
+	// Proves the current session owner's identity with the account password.
+	// Requires exactly 1 Authorization bearer header.
+	ReauthenticateWithPassword(context.Context, *connect.Request[v1.ReauthenticateWithPasswordRequest]) (*connect.Response[v1.ReauthenticateWithPasswordResponse], error)
+	// Requests a re-authentication code for the subject's current verified email.
+	// Requires exactly 1 Authorization bearer header.
+	RequestReauthenticationCode(context.Context, *connect.Request[v1.RequestReauthenticationCodeRequest]) (*connect.Response[v1.RequestReauthenticationCodeResponse], error)
+	// Proves the current session owner's identity with a re-authentication code.
+	// Requires exactly 1 Authorization bearer header.
+	ReauthenticateWithCode(context.Context, *connect.Request[v1.ReauthenticateWithCodeRequest]) (*connect.Response[v1.ReauthenticateWithCodeResponse], error)
+	// Starts a provider proof for the subject and session of the access token.
+	// Requires exactly 1 Authorization bearer header. Rejects Idempotency-Key.
+	StartProviderReauthentication(context.Context, *connect.Request[v1.StartProviderReauthenticationRequest]) (*connect.Response[v1.StartProviderReauthenticationResponse], error)
+	// Completes a linked provider proof from the session that started the attempt.
+	// Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
+	CompleteProviderReauthentication(context.Context, *connect.Request[v1.CompleteProviderReauthenticationRequest]) (*connect.Response[v1.CompleteProviderReauthenticationResponse], error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -213,6 +243,36 @@ func NewIdentityServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(identityServiceMethods.ByName("CreateProviderSession")),
 			connect.WithClientOptions(opts...),
 		),
+		reauthenticateWithPassword: connect.NewClient[v1.ReauthenticateWithPasswordRequest, v1.ReauthenticateWithPasswordResponse](
+			httpClient,
+			baseURL+IdentityServiceReauthenticateWithPasswordProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("ReauthenticateWithPassword")),
+			connect.WithClientOptions(opts...),
+		),
+		requestReauthenticationCode: connect.NewClient[v1.RequestReauthenticationCodeRequest, v1.RequestReauthenticationCodeResponse](
+			httpClient,
+			baseURL+IdentityServiceRequestReauthenticationCodeProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("RequestReauthenticationCode")),
+			connect.WithClientOptions(opts...),
+		),
+		reauthenticateWithCode: connect.NewClient[v1.ReauthenticateWithCodeRequest, v1.ReauthenticateWithCodeResponse](
+			httpClient,
+			baseURL+IdentityServiceReauthenticateWithCodeProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("ReauthenticateWithCode")),
+			connect.WithClientOptions(opts...),
+		),
+		startProviderReauthentication: connect.NewClient[v1.StartProviderReauthenticationRequest, v1.StartProviderReauthenticationResponse](
+			httpClient,
+			baseURL+IdentityServiceStartProviderReauthenticationProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("StartProviderReauthentication")),
+			connect.WithClientOptions(opts...),
+		),
+		completeProviderReauthentication: connect.NewClient[v1.CompleteProviderReauthenticationRequest, v1.CompleteProviderReauthenticationResponse](
+			httpClient,
+			baseURL+IdentityServiceCompleteProviderReauthenticationProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("CompleteProviderReauthentication")),
+			connect.WithClientOptions(opts...),
+		),
 		checkSession: connect.NewClient[v1.CheckSessionRequest, v1.CheckSessionResponse](
 			httpClient,
 			baseURL+IdentityServiceCheckSessionProcedure,
@@ -237,6 +297,11 @@ type identityServiceClient struct {
 	logoutAllSessions                 *connect.Client[v1.LogoutAllSessionsRequest, v1.LogoutAllSessionsResponse]
 	startProviderLogin                *connect.Client[v1.StartProviderLoginRequest, v1.StartProviderLoginResponse]
 	createProviderSession             *connect.Client[v1.CreateProviderSessionRequest, v1.CreateProviderSessionResponse]
+	reauthenticateWithPassword        *connect.Client[v1.ReauthenticateWithPasswordRequest, v1.ReauthenticateWithPasswordResponse]
+	requestReauthenticationCode       *connect.Client[v1.RequestReauthenticationCodeRequest, v1.RequestReauthenticationCodeResponse]
+	reauthenticateWithCode            *connect.Client[v1.ReauthenticateWithCodeRequest, v1.ReauthenticateWithCodeResponse]
+	startProviderReauthentication     *connect.Client[v1.StartProviderReauthenticationRequest, v1.StartProviderReauthenticationResponse]
+	completeProviderReauthentication  *connect.Client[v1.CompleteProviderReauthenticationRequest, v1.CompleteProviderReauthenticationResponse]
 	checkSession                      *connect.Client[v1.CheckSessionRequest, v1.CheckSessionResponse]
 }
 
@@ -307,6 +372,35 @@ func (c *identityServiceClient) CreateProviderSession(ctx context.Context, req *
 	return c.createProviderSession.CallUnary(ctx, req)
 }
 
+// ReauthenticateWithPassword calls
+// flowspace.identity.v1.IdentityService.ReauthenticateWithPassword.
+func (c *identityServiceClient) ReauthenticateWithPassword(ctx context.Context, req *connect.Request[v1.ReauthenticateWithPasswordRequest]) (*connect.Response[v1.ReauthenticateWithPasswordResponse], error) {
+	return c.reauthenticateWithPassword.CallUnary(ctx, req)
+}
+
+// RequestReauthenticationCode calls
+// flowspace.identity.v1.IdentityService.RequestReauthenticationCode.
+func (c *identityServiceClient) RequestReauthenticationCode(ctx context.Context, req *connect.Request[v1.RequestReauthenticationCodeRequest]) (*connect.Response[v1.RequestReauthenticationCodeResponse], error) {
+	return c.requestReauthenticationCode.CallUnary(ctx, req)
+}
+
+// ReauthenticateWithCode calls flowspace.identity.v1.IdentityService.ReauthenticateWithCode.
+func (c *identityServiceClient) ReauthenticateWithCode(ctx context.Context, req *connect.Request[v1.ReauthenticateWithCodeRequest]) (*connect.Response[v1.ReauthenticateWithCodeResponse], error) {
+	return c.reauthenticateWithCode.CallUnary(ctx, req)
+}
+
+// StartProviderReauthentication calls
+// flowspace.identity.v1.IdentityService.StartProviderReauthentication.
+func (c *identityServiceClient) StartProviderReauthentication(ctx context.Context, req *connect.Request[v1.StartProviderReauthenticationRequest]) (*connect.Response[v1.StartProviderReauthenticationResponse], error) {
+	return c.startProviderReauthentication.CallUnary(ctx, req)
+}
+
+// CompleteProviderReauthentication calls
+// flowspace.identity.v1.IdentityService.CompleteProviderReauthentication.
+func (c *identityServiceClient) CompleteProviderReauthentication(ctx context.Context, req *connect.Request[v1.CompleteProviderReauthenticationRequest]) (*connect.Response[v1.CompleteProviderReauthenticationResponse], error) {
+	return c.completeProviderReauthentication.CallUnary(ctx, req)
+}
+
 // CheckSession calls flowspace.identity.v1.IdentityService.CheckSession.
 func (c *identityServiceClient) CheckSession(ctx context.Context, req *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error) {
 	return c.checkSession.CallUnary(ctx, req)
@@ -353,6 +447,21 @@ type IdentityServiceHandler interface {
 	// An unusable or colliding provider email returns FailedPrecondition.
 	// Rejects Idempotency-Key. Token responses require Cache-Control: no-store.
 	CreateProviderSession(context.Context, *connect.Request[v1.CreateProviderSessionRequest]) (*connect.Response[v1.CreateProviderSessionResponse], error)
+	// Proves the current session owner's identity with the account password.
+	// Requires exactly 1 Authorization bearer header.
+	ReauthenticateWithPassword(context.Context, *connect.Request[v1.ReauthenticateWithPasswordRequest]) (*connect.Response[v1.ReauthenticateWithPasswordResponse], error)
+	// Requests a re-authentication code for the subject's current verified email.
+	// Requires exactly 1 Authorization bearer header.
+	RequestReauthenticationCode(context.Context, *connect.Request[v1.RequestReauthenticationCodeRequest]) (*connect.Response[v1.RequestReauthenticationCodeResponse], error)
+	// Proves the current session owner's identity with a re-authentication code.
+	// Requires exactly 1 Authorization bearer header.
+	ReauthenticateWithCode(context.Context, *connect.Request[v1.ReauthenticateWithCodeRequest]) (*connect.Response[v1.ReauthenticateWithCodeResponse], error)
+	// Starts a provider proof for the subject and session of the access token.
+	// Requires exactly 1 Authorization bearer header. Rejects Idempotency-Key.
+	StartProviderReauthentication(context.Context, *connect.Request[v1.StartProviderReauthenticationRequest]) (*connect.Response[v1.StartProviderReauthenticationResponse], error)
+	// Completes a linked provider proof from the session that started the attempt.
+	// Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
+	CompleteProviderReauthentication(context.Context, *connect.Request[v1.CompleteProviderReauthenticationRequest]) (*connect.Response[v1.CompleteProviderReauthenticationResponse], error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -444,6 +553,36 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 		connect.WithSchema(identityServiceMethods.ByName("CreateProviderSession")),
 		connect.WithHandlerOptions(opts...),
 	)
+	identityServiceReauthenticateWithPasswordHandler := connect.NewUnaryHandler(
+		IdentityServiceReauthenticateWithPasswordProcedure,
+		svc.ReauthenticateWithPassword,
+		connect.WithSchema(identityServiceMethods.ByName("ReauthenticateWithPassword")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceRequestReauthenticationCodeHandler := connect.NewUnaryHandler(
+		IdentityServiceRequestReauthenticationCodeProcedure,
+		svc.RequestReauthenticationCode,
+		connect.WithSchema(identityServiceMethods.ByName("RequestReauthenticationCode")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceReauthenticateWithCodeHandler := connect.NewUnaryHandler(
+		IdentityServiceReauthenticateWithCodeProcedure,
+		svc.ReauthenticateWithCode,
+		connect.WithSchema(identityServiceMethods.ByName("ReauthenticateWithCode")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceStartProviderReauthenticationHandler := connect.NewUnaryHandler(
+		IdentityServiceStartProviderReauthenticationProcedure,
+		svc.StartProviderReauthentication,
+		connect.WithSchema(identityServiceMethods.ByName("StartProviderReauthentication")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceCompleteProviderReauthenticationHandler := connect.NewUnaryHandler(
+		IdentityServiceCompleteProviderReauthenticationProcedure,
+		svc.CompleteProviderReauthentication,
+		connect.WithSchema(identityServiceMethods.ByName("CompleteProviderReauthentication")),
+		connect.WithHandlerOptions(opts...),
+	)
 	identityServiceCheckSessionHandler := connect.NewUnaryHandler(
 		IdentityServiceCheckSessionProcedure,
 		svc.CheckSession,
@@ -478,6 +617,16 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 			identityServiceStartProviderLoginHandler.ServeHTTP(w, r)
 		case IdentityServiceCreateProviderSessionProcedure:
 			identityServiceCreateProviderSessionHandler.ServeHTTP(w, r)
+		case IdentityServiceReauthenticateWithPasswordProcedure:
+			identityServiceReauthenticateWithPasswordHandler.ServeHTTP(w, r)
+		case IdentityServiceRequestReauthenticationCodeProcedure:
+			identityServiceRequestReauthenticationCodeHandler.ServeHTTP(w, r)
+		case IdentityServiceReauthenticateWithCodeProcedure:
+			identityServiceReauthenticateWithCodeHandler.ServeHTTP(w, r)
+		case IdentityServiceStartProviderReauthenticationProcedure:
+			identityServiceStartProviderReauthenticationHandler.ServeHTTP(w, r)
+		case IdentityServiceCompleteProviderReauthenticationProcedure:
+			identityServiceCompleteProviderReauthenticationHandler.ServeHTTP(w, r)
 		case IdentityServiceCheckSessionProcedure:
 			identityServiceCheckSessionHandler.ServeHTTP(w, r)
 		default:
@@ -539,6 +688,26 @@ func (UnimplementedIdentityServiceHandler) StartProviderLogin(context.Context, *
 
 func (UnimplementedIdentityServiceHandler) CreateProviderSession(context.Context, *connect.Request[v1.CreateProviderSessionRequest]) (*connect.Response[v1.CreateProviderSessionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.CreateProviderSession is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) ReauthenticateWithPassword(context.Context, *connect.Request[v1.ReauthenticateWithPasswordRequest]) (*connect.Response[v1.ReauthenticateWithPasswordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.ReauthenticateWithPassword is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) RequestReauthenticationCode(context.Context, *connect.Request[v1.RequestReauthenticationCodeRequest]) (*connect.Response[v1.RequestReauthenticationCodeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.RequestReauthenticationCode is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) ReauthenticateWithCode(context.Context, *connect.Request[v1.ReauthenticateWithCodeRequest]) (*connect.Response[v1.ReauthenticateWithCodeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.ReauthenticateWithCode is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) StartProviderReauthentication(context.Context, *connect.Request[v1.StartProviderReauthenticationRequest]) (*connect.Response[v1.StartProviderReauthenticationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.StartProviderReauthentication is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) CompleteProviderReauthentication(context.Context, *connect.Request[v1.CompleteProviderReauthenticationRequest]) (*connect.Response[v1.CompleteProviderReauthenticationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.CompleteProviderReauthentication is not implemented"))
 }
 
 func (UnimplementedIdentityServiceHandler) CheckSession(context.Context, *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error) {

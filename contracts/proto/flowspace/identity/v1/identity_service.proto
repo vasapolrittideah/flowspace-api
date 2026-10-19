@@ -126,6 +126,51 @@ service IdentityService {
     };
   }
 
+  // Proves the current session owner's identity with the account password.
+  // Requires exactly 1 Authorization bearer header.
+  rpc ReauthenticateWithPassword(ReauthenticateWithPasswordRequest) returns (ReauthenticateWithPasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/password-reauthentications"
+      body: "*"
+    };
+  }
+
+  // Requests a re-authentication code for the subject's current verified email.
+  // Requires exactly 1 Authorization bearer header.
+  rpc RequestReauthenticationCode(RequestReauthenticationCodeRequest) returns (RequestReauthenticationCodeResponse) {
+    option (google.api.http) = {
+      post: "/v1/reauthentication-codes"
+      body: "*"
+    };
+  }
+
+  // Proves the current session owner's identity with a re-authentication code.
+  // Requires exactly 1 Authorization bearer header.
+  rpc ReauthenticateWithCode(ReauthenticateWithCodeRequest) returns (ReauthenticateWithCodeResponse) {
+    option (google.api.http) = {
+      post: "/v1/code-reauthentications"
+      body: "*"
+    };
+  }
+
+  // Starts a provider proof for the subject and session of the access token.
+  // Requires exactly 1 Authorization bearer header. Rejects Idempotency-Key.
+  rpc StartProviderReauthentication(StartProviderReauthenticationRequest) returns (StartProviderReauthenticationResponse) {
+    option (google.api.http) = {
+      post: "/v1/provider-reauthentication-attempts"
+      body: "*"
+    };
+  }
+
+  // Completes a linked provider proof from the session that started the attempt.
+  // Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
+  rpc CompleteProviderReauthentication(CompleteProviderReauthenticationRequest) returns (CompleteProviderReauthenticationResponse) {
+    option (google.api.http) = {
+      post: "/v1/provider-reauthentications"
+      body: "*"
+    };
+  }
+
   // Returns the current email state for an active session; inactive sessions
   // return Unauthenticated.
   // Requires an authenticated service caller and has no public HTTP route.
@@ -244,6 +289,51 @@ message CreateProviderSessionResponse {
   google.protobuf.Timestamp access_token_expires_at = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp refresh_token_expires_at = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp session_expires_at = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ReauthenticateWithPasswordRequest {
+  string password = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ReauthenticateWithPasswordResponse {
+  google.protobuf.Timestamp reauthentication_expires_at = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message RequestReauthenticationCodeRequest {}
+
+message RequestReauthenticationCodeResponse {
+  bool accepted = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ReauthenticateWithCodeRequest {
+  // Exactly 6 ASCII digits. Leading zeroes are significant.
+  string code = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ReauthenticateWithCodeResponse {
+  google.protobuf.Timestamp reauthentication_expires_at = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message StartProviderReauthenticationRequest {
+  // Accepts only PROVIDER_GOOGLE and PROVIDER_GITHUB.
+  // PROVIDER_UNSPECIFIED and unknown values are malformed.
+  Provider provider = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message StartProviderReauthenticationResponse {
+  string authorization_url = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // A secret token with at least 128 random bits.
+  string attempt_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp attempt_expires_at = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message CompleteProviderReauthenticationRequest {
+  string attempt_token = 1 [(google.api.field_behavior) = REQUIRED];
+  string handoff_code = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CompleteProviderReauthenticationResponse {
+  google.protobuf.Timestamp reauthentication_expires_at = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message RefreshSessionRequest {

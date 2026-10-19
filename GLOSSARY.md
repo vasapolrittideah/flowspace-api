@@ -36,6 +36,8 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | known device | A device fingerprint that an account used within the last 90 days, as the [Identity new device login alert](docs/specs/identity-new-device-login-alert.md) specification states. |
 | material risk | A failure that can break a success criterion or allow a threat in a threat model. |
 | module | 1 capability that can be tested on its own. Its specification states what the capability does. |
+| pending secret | A TOTP secret that Identity issued to an account but that the user has not confirmed with a code yet, as the [Identity MFA enrollment](docs/specs/identity-mfa-enrollment.md) specification states. |
+| recovery code | A single-use code that replaces a TOTP code for an account with MFA, as the [Identity MFA enrollment](docs/specs/identity-mfa-enrollment.md) specification states. |
 | restricted session | An Identity session of an account in its deletion grace period. It can only restore the account, refresh, or log out, as the [Identity account deletion](docs/specs/identity-account-deletion.md) specification states. |
 | shape | A name, a route, a field, or a value that a consumer can read. |
 | tombstone | The record that Identity keeps after the final deletion of an account. It holds only the subject and the deletion time, as the [Identity account deletion](docs/specs/identity-account-deletion.md) specification states. |

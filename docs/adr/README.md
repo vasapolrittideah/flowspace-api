@@ -57,3 +57,4 @@ The [ADR convention](../conventions/adrs.md) defines the format of a record and 
 | [0047](0047-email-change-codes-go-to-the-pending-address.md) | Email-change codes go to the pending address | Accepted; scoped exception to [0035](0035-identity-signup-security-and-mail-delivery.md) |
 | [0048](0048-identity-publishes-account-lifecycle-events.md) | Identity publishes account lifecycle events | Accepted |
 | [0049](0049-opt-in-totp-and-recovery-codes-protect-identity-accounts.md) | Opt-in TOTP and recovery codes protect Identity accounts | Accepted; scoped exception to [0011](0011-idempotency-keys-protect-non-idempotent-creates.md) |
+| [0050](0050-remembered-devices-skip-the-mfa-login-step-for-30-days.md) | Remembered devices skip the MFA login step for 30 days | Accepted; scoped exception to [0049](0049-opt-in-totp-and-recovery-codes-protect-identity-accounts.md) |

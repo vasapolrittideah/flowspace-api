@@ -24,6 +24,7 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | --- | --- |
 | index | The table of records in the [Architecture Decision Records](docs/adr/README.md) file. |
 | record | 1 architecture decision record (ADR). |
+| remembered-device token | A secret that lets a later login of the same Identity account skip the MFA step, as [ADR-0050](docs/adr/0050-remembered-devices-skip-the-mfa-login-step-for-30-days.md) states. |
 
 ## Module specifications
 

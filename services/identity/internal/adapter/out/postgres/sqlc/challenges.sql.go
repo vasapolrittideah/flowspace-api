@@ -142,6 +142,20 @@ func (q *Queries) IncrementChallengeWrongGuess(ctx context.Context, id pgtype.UU
 	return wrong_guesses, err
 }
 
+const latestReauthenticationCodeIssue = `-- name: LatestReauthenticationCodeIssue :one
+SELECT max(issued_at)::timestamptz AS issued_at
+FROM identity_challenges
+WHERE account_subject = $1
+  AND purpose = 'reauthenticate'
+`
+
+func (q *Queries) LatestReauthenticationCodeIssue(ctx context.Context, accountSubject string) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, latestReauthenticationCodeIssue, accountSubject)
+	var issued_at pgtype.Timestamptz
+	err := row.Scan(&issued_at)
+	return issued_at, err
+}
+
 const replaceCurrentChallenge = `-- name: ReplaceCurrentChallenge :execrows
 UPDATE identity_challenges
 SET replaced_at = statement_timestamp()

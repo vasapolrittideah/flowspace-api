@@ -104,6 +104,8 @@ func validateMessage(recipient, code, purpose string) (string, string, error) {
 		return address, "Flowspace email verification code", nil
 	case string(domain.PurposeClaimAccount):
 		return address, "Flowspace account claim code", nil
+	case string(domain.PurposeReauthenticate):
+		return address, "Flowspace re-authentication code", nil
 	case string(domain.PurposePasswordReset):
 		return address, "Flowspace password reset code", nil
 	default:

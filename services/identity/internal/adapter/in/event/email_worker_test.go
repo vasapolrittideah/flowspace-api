@@ -281,6 +281,7 @@ func TestEmailWorkerCountsRecordDeliveriesByKindAndOutcome(t *testing.T) {
 		{name: "verify email", purpose: domain.PurposeVerifyEmail, count: "verify-email delivered"},
 		{name: "claim account", purpose: domain.PurposeClaimAccount, count: "claim-account delivered"},
 		{name: "password reset", purpose: domain.PurposePasswordReset, count: "password-reset delivered"},
+		{name: "reauthentication", purpose: domain.PurposeReauthenticate, count: "reauthenticate delivered"},
 		{
 			name: "failed send", purpose: domain.PurposeVerifyEmail, wantErr: ErrEmailDelivery, count: "verify-email failed",
 			change: func(_ *deliveryRepository, sender *capturingSender, _ *kgo.Record) {
@@ -422,5 +423,13 @@ func assertDeliveryCounts(t *testing.T, reader *sdkmetric.ManualReader, want map
 		if counts[key] != value {
 			t.Fatalf("delivery counts = %v, want %v", counts, want)
 		}
+	}
+}
+
+func TestEmailWorkerAcceptsReauthenticationEvent(t *testing.T) {
+	worker, repository, sender, record := newEmailWorkerFixtureForPurpose(t, "reauthenticate")
+	defer worker.Close()
+	if err := worker.HandleRecord(t.Context(), record); err != nil || repository.called != 1 || sender.called != 1 || sender.purpose != "reauthenticate" {
+		t.Fatalf("re-authentication delivery: called=%d purpose=%q err=%v", sender.called, sender.purpose, err)
 	}
 }

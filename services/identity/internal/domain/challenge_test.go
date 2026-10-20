@@ -90,3 +90,31 @@ func TestPasswordResetChallengeCannotCrossPurposes(t *testing.T) {
 		}
 	}
 }
+
+func TestReauthenticationChallengePurposeAndExpiry(t *testing.T) {
+	key := bytes.Repeat([]byte{7}, 32)
+	now := time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC)
+	purpose := CodePurpose("reauthenticate")
+	code, verifier, expiry, err := NewChallenge(key, "subject", "User@example.com", purpose, now)
+	if err != nil {
+		t.Fatalf("re-authentication challenge rejected: %v", err)
+	}
+	if !VerifyChallenge(key, "subject", "User@example.com", purpose, code, verifier, expiry, expiry.Add(-time.Nanosecond)) {
+		t.Fatal("valid re-authentication code rejected")
+	}
+	if VerifyChallenge(key, "subject", "User@example.com", purpose, code, verifier, expiry, expiry) {
+		t.Fatal("code accepted at exact expiry")
+	}
+	for _, other := range []CodePurpose{PurposeVerifyEmail, PurposeClaimAccount, PurposePasswordReset} {
+		if VerifyChallenge(key, "subject", "User@example.com", other, code, verifier, expiry, now) {
+			t.Fatalf("re-authentication code accepted as %s", other)
+		}
+		otherCode, otherVerifier, otherExpiry, err := NewChallenge(key, "subject", "User@example.com", other, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if VerifyChallenge(key, "subject", "User@example.com", purpose, otherCode, otherVerifier, otherExpiry, now) {
+			t.Fatalf("%s code accepted for re-authentication", other)
+		}
+	}
+}

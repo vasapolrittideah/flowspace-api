@@ -48,3 +48,10 @@ func TestPasswordResetMessage(t *testing.T) {
 		t.Fatalf("recovery message: address=%q subject=%q error=%v", address, subject, err)
 	}
 }
+
+func TestReauthenticationMessage(t *testing.T) {
+	address, subject, err := validateMessage("Recipient@example.com", "123456", "reauthenticate")
+	if err != nil || address != "Recipient@example.com" || subject != "Flowspace re-authentication code" {
+		t.Fatalf("re-authentication email rejected: %v, subject=%q", err, subject)
+	}
+}

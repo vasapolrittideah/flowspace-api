@@ -58,3 +58,9 @@ WHERE id = sqlc.arg(id)
   AND consumed_at IS NULL
   AND expires_at > statement_timestamp()
   AND wrong_guesses < 5;
+
+-- name: LatestReauthenticationCodeIssue :one
+SELECT max(issued_at)::timestamptz AS issued_at
+FROM identity_challenges
+WHERE account_subject = sqlc.arg(account_subject)
+  AND purpose = 'reauthenticate';

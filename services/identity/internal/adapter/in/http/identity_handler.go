@@ -21,20 +21,26 @@ type sourceContextKey struct{}
 
 type IdentityHandler struct {
 	identityv1.UnimplementedIdentityServiceServer
-	signup           inbound.SignupService
-	verification     inbound.EmailVerificationCodeService
-	verifyEmail      inbound.EmailVerificationService
-	claimCodes       inbound.ClaimCodeService
-	passwordRecovery inbound.PasswordResetCodeService
-	passwordReset    inbound.PasswordResetService
-	claims           inbound.AccountClaimService
-	passwordLogin    inbound.PasswordLoginService
-	providerLogin    inbound.ProviderLoginService
-	refresh          inbound.SessionRefreshService
-	currentLogout    inbound.CurrentSessionLogoutService
-	allLogout        inbound.AllSessionLogoutService
-	verifier         outbound.AccessTokenVerifier
-	trusted          []netip.Prefix
+	signup                   inbound.SignupService
+	verification             inbound.EmailVerificationCodeService
+	verifyEmail              inbound.EmailVerificationService
+	claimCodes               inbound.ClaimCodeService
+	passwordRecovery         inbound.PasswordResetCodeService
+	passwordReset            inbound.PasswordResetService
+	claims                   inbound.AccountClaimService
+	passwordLogin            inbound.PasswordLoginService
+	passwordReauthentication inbound.PasswordReauthenticationService
+	providerLogin            inbound.ProviderLoginService
+	refresh                  inbound.SessionRefreshService
+	currentLogout            inbound.CurrentSessionLogoutService
+	allLogout                inbound.AllSessionLogoutService
+	verifier                 outbound.AccessTokenVerifier
+	trusted                  []netip.Prefix
+}
+
+func (h *IdentityHandler) WithPasswordReauthentication(service inbound.PasswordReauthenticationService) *IdentityHandler {
+	h.passwordReauthentication = service
+	return h
 }
 
 func (h *IdentityHandler) WithPasswordLogin(service inbound.PasswordLoginService) *IdentityHandler {

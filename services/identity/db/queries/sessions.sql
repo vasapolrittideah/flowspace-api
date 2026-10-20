@@ -39,6 +39,9 @@ WHERE session.id = sqlc.arg(session_id)
   AND session.idle_expires_at > clock_timestamp()
   AND session.absolute_expires_at > clock_timestamp();
 
+-- name: RequestSessionReauthentication :exec
+SELECT set_config('flowspace.reauthentication_session', sqlc.arg(session_id)::uuid::text, true);
+
 -- name: SetReauthenticationDeadline :exec
 SELECT set_config('flowspace.reauthentication_deadline', sqlc.arg(deadline)::timestamptz::text, true);
 

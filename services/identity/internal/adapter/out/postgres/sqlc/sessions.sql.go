@@ -211,6 +211,15 @@ func (q *Queries) RecordRotatedRefreshToken(ctx context.Context, arg RecordRotat
 	return err
 }
 
+const requestSessionReauthentication = `-- name: RequestSessionReauthentication :exec
+SELECT set_config('flowspace.reauthentication_session', $1::uuid::text, true)
+`
+
+func (q *Queries) RequestSessionReauthentication(ctx context.Context, sessionID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, requestSessionReauthentication, sessionID)
+	return err
+}
+
 const revokeAccountSessions = `-- name: RevokeAccountSessions :execrows
 UPDATE identity_sessions
 SET revoked_at = statement_timestamp()

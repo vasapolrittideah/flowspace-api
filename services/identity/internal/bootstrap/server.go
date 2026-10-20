@@ -120,6 +120,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 			},
 			limits.AccountWrongCode, checkPassword, verifierKey)).
 		WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
+		WithPasswordReauthentication(app.NewPasswordReauthenticationService(accountRepo, limits.PasswordLogin)).
 		WithProviderLogin(providerLogin).
 		WithRefreshSession(app.NewSessionRefreshService(postgres.NewSessionRefreshRepository(pool.Pool), signer)).
 		WithCurrentSessionLogout(app.NewCurrentSessionLogoutService(postgres.NewSessionRepository(pool.Pool))).
@@ -425,6 +426,7 @@ var publicRoutes = []string{
 	"/v1/accounts", "/v1/email-verification-codes", "/v1/email-verifications",
 	"/v1/unverified-account-claim-codes", "/v1/unverified-account-claims", "/v1/password-reset-codes", "/v1/password-resets", "/v1/password-sessions", "/v1/session-refreshes", "/v1/session-logouts", "/v1/account-session-logouts",
 	"/v1/provider-login-attempts", "/v1/provider-sessions",
+	"/v1/password-reauthentications",
 }
 
 const providerCallbackRoute = "/v1/provider-login-callbacks/{provider}"

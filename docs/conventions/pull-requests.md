@@ -47,8 +47,9 @@ A PR has a title, [What changed](#what-changed), [Why](#why), [Breaking changes]
 ### What changed
 
 - State the lasting effect of the merged PR on `main` first, for a later reader of `main`. Then state each change that a reviewer must know to review the PR.
-- If the PR changes more than 1 value, such as a configuration value, a default, a limit, or an API field, show the values in a table. Name each value in the first column, and add a `Before` column and an `After` column.
+- If the PR changes more than 1 existing value, such as a configuration value, a default, a limit, or an API field, show the values in a table. Name each value in the first column, and add a `Before` column and an `After` column.
 - If the PR title has the `revert` type, start the section with `Reverts <full SHA>.`, and give the reason in [Why](#why). Write the SHA without backticks, so that GitHub links the reverted commit.
+- Do not put a value that the PR adds or removes in the table, because its `Before` or `After` cell has no value. List the added or removed values in bullets.
 - Do not list every changed file, because the diff shows them.
 - Do not describe process history, such as a rebase or a method that did not work.
 

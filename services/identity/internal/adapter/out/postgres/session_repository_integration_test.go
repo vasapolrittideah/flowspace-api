@@ -184,6 +184,7 @@ func testCurrentSessionLogout(t *testing.T, pool *pgxpool.Pool) {
 	if err := logout.LogoutCurrentSession(ctx, current); err != nil {
 		t.Fatalf("logout = %v", err)
 	}
+	assertRevokedReauthenticationWindow(t, pool, subject, currentID)
 	if _, err := refresh.RefreshSession(ctx, rotated.RefreshToken); !errors.Is(err, app.ErrUnauthenticatedRefresh) {
 		t.Fatalf("current device refresh after logout = %v", err)
 	}

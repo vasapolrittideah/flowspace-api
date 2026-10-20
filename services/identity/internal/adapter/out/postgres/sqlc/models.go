@@ -114,4 +114,5 @@ type IdentitySession struct {
 	IdleExpiresAt     pgtype.Timestamptz
 	AbsoluteExpiresAt pgtype.Timestamptz
 	RevokedAt         pgtype.Timestamptz
+	ReauthenticatedAt pgtype.Timestamptz
 }

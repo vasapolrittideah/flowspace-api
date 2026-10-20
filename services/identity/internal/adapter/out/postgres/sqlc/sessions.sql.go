@@ -12,9 +12,9 @@ import (
 )
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO identity_sessions (account_subject, refresh_token_hash, idle_expires_at, absolute_expires_at)
+INSERT INTO identity_sessions (account_subject, refresh_token_hash, reauthenticated_at, idle_expires_at, absolute_expires_at)
 VALUES ($1, $2,
-    statement_timestamp() + INTERVAL '30 days', statement_timestamp() + INTERVAL '90 days')
+    statement_timestamp(), statement_timestamp() + INTERVAL '30 days', statement_timestamp() + INTERVAL '90 days')
 RETURNING id, created_at, idle_expires_at, absolute_expires_at
 `
 
@@ -146,6 +146,56 @@ func (q *Queries) GetRefreshSessionSubject(ctx context.Context, sessionID pgtype
 	return account_subject, err
 }
 
+const getSessionReauthentication = `-- name: GetSessionReauthentication :one
+SELECT session.reauthenticated_at, session.idle_expires_at, session.absolute_expires_at,
+    clock_timestamp()::timestamptz AS observed_at
+FROM identity_sessions AS session
+JOIN identity_accounts AS account ON account.subject = session.account_subject
+WHERE session.id = $1
+  AND account.subject = $2
+  AND account.retired_at IS NULL
+  AND session.revoked_at IS NULL
+  AND session.idle_expires_at > clock_timestamp()
+  AND session.absolute_expires_at > clock_timestamp()
+`
+
+type GetSessionReauthenticationParams struct {
+	SessionID pgtype.UUID
+	Subject   string
+}
+
+type GetSessionReauthenticationRow struct {
+	ReauthenticatedAt pgtype.Timestamptz
+	IdleExpiresAt     pgtype.Timestamptz
+	AbsoluteExpiresAt pgtype.Timestamptz
+	ObservedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) GetSessionReauthentication(ctx context.Context, arg GetSessionReauthenticationParams) (GetSessionReauthenticationRow, error) {
+	row := q.db.QueryRow(ctx, getSessionReauthentication, arg.SessionID, arg.Subject)
+	var i GetSessionReauthenticationRow
+	err := row.Scan(
+		&i.ReauthenticatedAt,
+		&i.IdleExpiresAt,
+		&i.AbsoluteExpiresAt,
+		&i.ObservedAt,
+	)
+	return i, err
+}
+
+const queueSessionReauthenticationCheck = `-- name: QueueSessionReauthenticationCheck :execrows
+UPDATE identity_sessions SET reauthenticated_at = reauthenticated_at
+WHERE id = $1
+`
+
+func (q *Queries) QueueSessionReauthenticationCheck(ctx context.Context, sessionID pgtype.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, queueSessionReauthenticationCheck, sessionID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const recordRotatedRefreshToken = `-- name: RecordRotatedRefreshToken :exec
 INSERT INTO identity_rotated_refresh_tokens (token_hash, session_id)
 VALUES ($1, $2)
@@ -241,4 +291,13 @@ func (q *Queries) RotateCurrentRefreshToken(ctx context.Context, arg RotateCurre
 	var i RotateCurrentRefreshTokenRow
 	err := row.Scan(&i.IssuedAt, &i.IdleExpiresAt, &i.AbsoluteExpiresAt)
 	return i, err
+}
+
+const setReauthenticationDeadline = `-- name: SetReauthenticationDeadline :exec
+SELECT set_config('flowspace.reauthentication_deadline', $1::timestamptz::text, true)
+`
+
+func (q *Queries) SetReauthenticationDeadline(ctx context.Context, deadline pgtype.Timestamptz) error {
+	_, err := q.db.Exec(ctx, setReauthenticationDeadline, deadline)
+	return err
 }

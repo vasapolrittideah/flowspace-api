@@ -92,6 +92,8 @@ func TestIdentityRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
+	t.Run("re-authentication migration", func(t *testing.T) { testReauthenticationMigration(t, db, pool) })
+	t.Run("re-authentication guard", func(t *testing.T) { testReauthenticationGuard(t, pool) })
 	t.Run("refresh rotation and replay", func(t *testing.T) { testRefreshSessionRepository(t, pool) })
 	t.Run("provider-only refresh", func(t *testing.T) { testProviderOnlyRefresh(t, pool) })
 	t.Run("current session logout", func(t *testing.T) { testCurrentSessionLogout(t, pool) })
@@ -467,6 +469,7 @@ func testSignupTransaction(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 		if err != nil || result.Subject == "" || result.AccessToken == "" || result.RefreshToken == "" {
 			t.Fatalf("signup result = %+v, error = %v", result, err)
 		}
+		assertInitialReauthenticationWindow(t, pool, result.Subject)
 		var challengeID pgtype.UUID
 		var verifier, nonce, ciphertext, refreshHash []byte
 		var keyVersion int32
@@ -635,6 +638,7 @@ func testPasswordLoginRepository(t *testing.T, pool *pgxpool.Pool) {
 	if err != nil || identity.Subject != "login-subject" || identity.SessionID == "" {
 		t.Fatalf("invalid access token: %v", err)
 	}
+	assertInitialReauthenticationWindow(t, pool, identity.Subject)
 	verified, err := app.NewSessionCheckService(identitypostgres.NewSessionRepository(pool)).CheckSession(ctx, inbound.CheckSessionInput{Subject: identity.Subject, SessionID: identity.SessionID})
 	if err != nil || verified {
 		t.Fatalf("new session check = %t, error = %v", verified, err)
@@ -989,6 +993,7 @@ func testAccountClaimRepository(t *testing.T, pool *pgxpool.Pool) {
 		if err != nil || result.Subject == "" || result.Subject == old.subject || result.AccessToken == "" || result.RefreshToken == "" {
 			t.Fatalf("claim result = %+v, error = %v", result, err)
 		}
+		assertInitialReauthenticationWindow(t, pool, result.Subject)
 		var retired, verified, consumed, verificationReplaced sql.NullTime
 		var passwordHash string
 		if err := pool.QueryRow(ctx, `SELECT retired_at FROM identity_accounts WHERE subject = $1`, old.subject).Scan(&retired); err != nil || !retired.Valid {
@@ -1742,6 +1747,7 @@ func testAllSessionLogout(t *testing.T, pool *pgxpool.Pool) {
 	if err := logout.LogoutAllSessions(ctx, input); err != nil {
 		t.Fatalf("logout = %v", err)
 	}
+	assertRevokedReauthenticationWindows(t, pool, input.Subject)
 	for _, id := range []string{currentID, otherID} {
 		if _, err := check.CheckSession(ctx, inbound.CheckSessionInput{Subject: input.Subject, SessionID: id}); !errors.Is(err, outbound.ErrUnauthenticated) {
 			t.Fatalf("revoked session %s = %v", id, err)

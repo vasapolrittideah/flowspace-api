@@ -387,6 +387,7 @@ func testProviderSessionRepository(t *testing.T, ctx context.Context, pool *pgxp
 				!result.SessionExpiresAt.After(result.RefreshTokenExpiresAt) || !result.RefreshTokenExpiresAt.After(result.AccessTokenExpiresAt) {
 				t.Fatalf("result = %+v, %v", result.Subject, err)
 			}
+			assertInitialReauthenticationWindow(t, pool, result.Subject)
 			if _, err := claim(service, handoff, "192.0.2.80"); !errors.Is(err, app.ErrProviderHandoffRejected) {
 				t.Fatalf("claimed a handoff twice: %v", err)
 			}

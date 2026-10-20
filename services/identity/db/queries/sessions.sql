@@ -22,10 +22,29 @@ WHERE account.subject = sqlc.arg(subject)
   AND session.absolute_expires_at > statement_timestamp();
 
 -- name: CreateSession :one
-INSERT INTO identity_sessions (account_subject, refresh_token_hash, idle_expires_at, absolute_expires_at)
+INSERT INTO identity_sessions (account_subject, refresh_token_hash, reauthenticated_at, idle_expires_at, absolute_expires_at)
 VALUES (sqlc.arg(account_subject), sqlc.arg(refresh_token_hash),
-    statement_timestamp() + INTERVAL '30 days', statement_timestamp() + INTERVAL '90 days')
+    statement_timestamp(), statement_timestamp() + INTERVAL '30 days', statement_timestamp() + INTERVAL '90 days')
 RETURNING id, created_at, idle_expires_at, absolute_expires_at;
+
+-- name: GetSessionReauthentication :one
+SELECT session.reauthenticated_at, session.idle_expires_at, session.absolute_expires_at,
+    clock_timestamp()::timestamptz AS observed_at
+FROM identity_sessions AS session
+JOIN identity_accounts AS account ON account.subject = session.account_subject
+WHERE session.id = sqlc.arg(session_id)
+  AND account.subject = sqlc.arg(subject)
+  AND account.retired_at IS NULL
+  AND session.revoked_at IS NULL
+  AND session.idle_expires_at > clock_timestamp()
+  AND session.absolute_expires_at > clock_timestamp();
+
+-- name: SetReauthenticationDeadline :exec
+SELECT set_config('flowspace.reauthentication_deadline', sqlc.arg(deadline)::timestamptz::text, true);
+
+-- name: QueueSessionReauthenticationCheck :execrows
+UPDATE identity_sessions SET reauthenticated_at = reauthenticated_at
+WHERE id = sqlc.arg(session_id);
 
 -- name: FindRefreshSession :one
 SELECT id FROM identity_sessions WHERE refresh_token_hash = sqlc.arg(token_hash)

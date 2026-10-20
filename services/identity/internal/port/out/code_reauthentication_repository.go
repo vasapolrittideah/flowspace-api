@@ -10,7 +10,7 @@ import (
 type ReauthenticationCodeIssueTransaction interface {
 	ReauthenticationTransaction
 	GetActiveAccountForSession(ctx context.Context, subject, sessionID string) (AccountState, error)
-	LatestReauthenticationCodeIssue(ctx context.Context, subject string) (time.Time, error)
+	GetLatestReauthenticationCodeIssue(ctx context.Context, subject string) (time.Time, error)
 	CanIssueCode(ctx context.Context, subject string) (bool, error)
 	ReplaceReauthenticationChallenge(ctx context.Context, subject string) error
 	CreateReauthenticationChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error)

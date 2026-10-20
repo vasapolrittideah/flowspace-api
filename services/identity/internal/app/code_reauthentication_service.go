@@ -54,7 +54,7 @@ func (s *CodeReauthenticationService) issue(ctx context.Context, tx outbound.Rea
 	if !account.EmailVerified {
 		return ErrReauthenticationEmailUnverified
 	}
-	last, err := tx.LatestReauthenticationCodeIssue(ctx, input.Subject)
+	last, err := tx.GetLatestReauthenticationCodeIssue(ctx, input.Subject)
 	if err != nil {
 		return err
 	}

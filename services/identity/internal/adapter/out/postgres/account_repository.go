@@ -519,8 +519,8 @@ func (r *AccountRepository) WithinCodeReauthenticationTransaction(ctx context.Co
 	return r.withinReauthenticationTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 
-func (t *accountTransaction) LatestReauthenticationCodeIssue(ctx context.Context, subject string) (time.Time, error) {
-	issued, err := t.queries.LatestReauthenticationCodeIssue(ctx, subject)
+func (t *accountTransaction) GetLatestReauthenticationCodeIssue(ctx context.Context, subject string) (time.Time, error) {
+	issued, err := t.queries.GetLatestReauthenticationCodeIssue(ctx, subject)
 	return issued.Time, err
 }
 

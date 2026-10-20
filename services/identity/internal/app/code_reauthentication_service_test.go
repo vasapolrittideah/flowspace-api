@@ -70,7 +70,7 @@ func (r *codeReauthenticationRepository) RequireCommitBefore(deadline time.Time)
 	}
 }
 
-func (r *codeReauthenticationRepository) LatestReauthenticationCodeIssue(context.Context, string) (time.Time, error) {
+func (r *codeReauthenticationRepository) GetLatestReauthenticationCodeIssue(context.Context, string) (time.Time, error) {
 	return r.last, r.step("latest")
 }
 

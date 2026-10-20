@@ -155,7 +155,8 @@ WITH terminal AS (
        OR challenge.email_local <> account.email_local
        OR challenge.email_domain <> account.email_domain
        OR account.retired_at IS NOT NULL
-       OR (account.email_verified_at IS NOT NULL AND challenge.purpose <> 'password-reset')
+       OR (account.email_verified_at IS NOT NULL AND challenge.purpose NOT IN ('password-reset', 'reauthenticate'))
+       OR (account.email_verified_at IS NULL AND challenge.purpose IN ('password-reset', 'reauthenticate'))
     FOR UPDATE OF account, challenge, delivery SKIP LOCKED
 )
 DELETE FROM identity_challenge_deliveries AS delivery

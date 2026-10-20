@@ -22,6 +22,7 @@ type AccountRepository struct{ pool *pgxpool.Pool }
 
 var (
 	_ outbound.AccountRepository                  = (*AccountRepository)(nil)
+	_ outbound.CodeReauthenticationRepository     = (*AccountRepository)(nil)
 	_ outbound.PasswordReauthenticationRepository = (*AccountRepository)(nil)
 	_ outbound.PasswordLoginRepository            = (*AccountRepository)(nil)
 	_ outbound.AllSessionLogoutRepository         = (*AccountRepository)(nil)
@@ -112,6 +113,10 @@ func (t *accountTransaction) LockSessionForReauthentication(ctx context.Context,
 }
 
 func (r *AccountRepository) WithinPasswordReauthenticationTransaction(ctx context.Context, fn func(outbound.PasswordReauthenticationTransaction) error) (domain.ReauthenticationWindow, error) {
+	return r.withinReauthenticationTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (r *AccountRepository) withinReauthenticationTransaction(ctx context.Context, fn func(*accountTransaction) error) (domain.ReauthenticationWindow, error) {
 	var transaction *accountTransaction
 	if err := r.withinTransaction(ctx, func(tx *accountTransaction) error { transaction = tx; return fn(tx) }); err != nil {
 		return domain.ReauthenticationWindow{}, err
@@ -504,4 +509,35 @@ func (r *AccountRepository) RevokeAll(ctx context.Context, subject, sessionID st
 		_, err := tx.queries.RevokeAccountSessions(ctx, subject)
 		return err
 	})
+}
+
+func (r *AccountRepository) WithinReauthenticationCodeIssueTransaction(ctx context.Context, fn func(outbound.ReauthenticationCodeIssueTransaction) error) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (r *AccountRepository) WithinCodeReauthenticationTransaction(ctx context.Context, fn func(outbound.CodeReauthenticationTransaction) error) (domain.ReauthenticationWindow, error) {
+	return r.withinReauthenticationTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (t *accountTransaction) GetLatestReauthenticationCodeIssue(ctx context.Context, subject string) (time.Time, error) {
+	issued, err := t.queries.GetLatestReauthenticationCodeIssue(ctx, subject)
+	return issued.Time, err
+}
+
+func (t *accountTransaction) ReplaceReauthenticationChallenge(ctx context.Context, subject string) error {
+	if err := t.replaceChallenge(ctx, subject, "reauthenticate"); err != nil {
+		return err
+	}
+	_, err := t.queries.DeleteReplacedChallengeDeliveries(ctx, sqlc.DeleteReplacedChallengeDeliveriesParams{
+		AccountSubject: subject, Purpose: "reauthenticate",
+	})
+	return err
+}
+
+func (t *accountTransaction) CreateReauthenticationChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error) {
+	return t.createChallenge(ctx, subject, email, "reauthenticate", verifier)
+}
+
+func (t *accountTransaction) GetCurrentReauthenticationChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
+	return t.getCurrentChallenge(ctx, subject, "reauthenticate")
 }

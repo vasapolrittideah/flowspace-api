@@ -23,6 +23,10 @@ func ReauthenticationRPCError(err error) error {
 	switch {
 	case err == nil:
 		return nil
+	case errors.Is(err, app.ErrInvalidReauthenticationCode):
+		return invalidSignupArgument("code", "is invalid")
+	case errors.Is(err, app.ErrReauthenticationEmailUnverified):
+		return status.Error(codes.FailedPrecondition, "verified email required")
 	case errors.Is(err, app.ErrInvalidCredentials):
 		return status.Error(codes.InvalidArgument, "invalid credentials")
 	case errors.Is(err, domain.ErrInvalidPassword):
@@ -71,4 +75,51 @@ func (h *IdentityHandler) ReauthenticateWithPassword(ctx context.Context, reques
 		return nil, ReauthenticationRPCError(err)
 	}
 	return &identityv1.ReauthenticateWithPasswordResponse{ReauthenticationExpiresAt: timestamppb.New(result.ExpiresAt)}, nil
+}
+
+func (h *IdentityHandler) RequestReauthenticationCode(ctx context.Context, request *identityv1.RequestReauthenticationCodeRequest) (*identityv1.RequestReauthenticationCodeResponse, error) {
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	identity, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	source, err := h.sourceAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if h.codeReauthentication == nil {
+		return nil, ReauthenticationRPCError(app.ErrReauthenticationUnavailable)
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if err := h.codeReauthentication.RequestReauthenticationCode(ctx, inbound.RequestReauthenticationCodeInput{Subject: identity.Subject, SessionID: identity.SessionID, Source: source}); err != nil {
+		return nil, ReauthenticationRPCError(err)
+	}
+	return &identityv1.RequestReauthenticationCodeResponse{Accepted: true}, nil
+}
+
+func (h *IdentityHandler) ReauthenticateWithCode(ctx context.Context, request *identityv1.ReauthenticateWithCodeRequest) (*identityv1.ReauthenticateWithCodeResponse, error) {
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	identity, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	source, err := h.sourceAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if h.codeReauthentication == nil {
+		return nil, ReauthenticationRPCError(app.ErrReauthenticationUnavailable)
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	result, err := h.codeReauthentication.ReauthenticateWithCode(ctx, inbound.ReauthenticateWithCodeInput{Subject: identity.Subject, SessionID: identity.SessionID, Source: source, Code: request.GetCode()})
+	if err != nil {
+		return nil, ReauthenticationRPCError(err)
+	}
+	return &identityv1.ReauthenticateWithCodeResponse{ReauthenticationExpiresAt: timestamppb.New(result.ExpiresAt)}, nil
 }

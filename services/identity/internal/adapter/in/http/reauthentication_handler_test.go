@@ -138,3 +138,123 @@ func TestPasswordReauthenticationREST(t *testing.T) {
 		}
 	}
 }
+
+type codeReauthenticationStub struct {
+	request inbound.RequestReauthenticationCodeInput
+	proof   inbound.ReauthenticateWithCodeInput
+	err     error
+}
+
+func (s *codeReauthenticationStub) RequestReauthenticationCode(ctx context.Context, input inbound.RequestReauthenticationCodeInput) error {
+	s.request = input
+	deadline, ok := ctx.Deadline()
+	if !ok || time.Until(deadline) > 5*time.Second {
+		return errors.New("missing deadline")
+	}
+	return s.err
+}
+
+func (s *codeReauthenticationStub) ReauthenticateWithCode(ctx context.Context, input inbound.ReauthenticateWithCodeInput) (inbound.ReauthenticateWithCodeResult, error) {
+	s.proof = input
+	deadline, ok := ctx.Deadline()
+	if !ok || time.Until(deadline) > 5*time.Second {
+		return inbound.ReauthenticateWithCodeResult{}, errors.New("missing deadline")
+	}
+	return inbound.ReauthenticateWithCodeResult{ExpiresAt: time.Unix(1800000000, 0)}, s.err
+}
+
+func TestCodeReauthenticationHandler(t *testing.T) {
+	stub := &codeReauthenticationStub{}
+	handler := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil).WithCodeReauthentication(stub)
+	ctx := peer.NewContext(t.Context(), &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.1"), Port: 42}})
+	ctx = metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer access-proof"))
+	requested, err := handler.RequestReauthenticationCode(ctx, &identityv1.RequestReauthenticationCodeRequest{})
+	if err != nil || !requested.GetAccepted() || stub.request.Subject != "subject-proof" || stub.request.SessionID != "session-proof" || stub.request.Source != "192.0.2.1" {
+		t.Fatalf("request=%v err=%v", requested, err)
+	}
+	proof, err := handler.ReauthenticateWithCode(ctx, &identityv1.ReauthenticateWithCodeRequest{Code: "012345"})
+	if err != nil || !proof.GetReauthenticationExpiresAt().AsTime().Equal(time.Unix(1800000000, 0)) || stub.proof.Code != "012345" || stub.proof.Subject != "subject-proof" || stub.proof.SessionID != "session-proof" || stub.proof.Source != "192.0.2.1" {
+		t.Fatalf("proof=%v err=%v", proof, err)
+	}
+}
+
+func TestCodeReauthenticationHandlerErrors(t *testing.T) {
+	stub := &codeReauthenticationStub{}
+	handler := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil).WithCodeReauthentication(stub)
+	ctx := peer.NewContext(t.Context(), &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.1"), Port: 42}})
+	ctx = metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer access-proof"))
+	for _, test := range []struct {
+		err  error
+		code codes.Code
+	}{{app.ErrInvalidReauthenticationCode, codes.InvalidArgument}, {app.ErrReauthenticationEmailUnverified, codes.FailedPrecondition}, {app.ErrRateLimited, codes.ResourceExhausted}, {app.ErrLimitUnavailable, codes.Unavailable}, {outbound.ErrUnauthenticated, codes.Unauthenticated}, {context.Canceled, codes.Canceled}, {context.DeadlineExceeded, codes.DeadlineExceeded}, {errors.New("private code store"), codes.Unavailable}} {
+		stub.err = test.err
+		if _, err := handler.RequestReauthenticationCode(ctx, &identityv1.RequestReauthenticationCodeRequest{}); status.Code(err) != test.code || strings.Contains(status.Convert(err).Message(), "private") {
+			t.Fatalf("request error=%v", err)
+		}
+		if _, err := handler.ReauthenticateWithCode(ctx, &identityv1.ReauthenticateWithCodeRequest{Code: "012345"}); status.Code(err) != test.code || strings.Contains(status.Convert(err).Message(), "private") {
+			t.Fatalf("proof error=%v", err)
+		}
+	}
+}
+
+func TestCodeReauthenticationHandlerAdmission(t *testing.T) {
+	handler := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil).WithCodeReauthentication(&codeReauthenticationStub{})
+	ctx := metadata.NewIncomingContext(t.Context(), metadata.Pairs("authorization", "Bearer access-proof"))
+	ctx = peer.NewContext(ctx, &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.1"), Port: 42}})
+	for _, call := range []func() error{
+		func() error {
+			_, err := handler.RequestReauthenticationCode(t.Context(), &identityv1.RequestReauthenticationCodeRequest{})
+			return err
+		},
+		func() error {
+			_, err := handler.ReauthenticateWithCode(t.Context(), &identityv1.ReauthenticateWithCodeRequest{Code: "012345"})
+			return err
+		},
+	} {
+		if err := call(); status.Code(err) != codes.Unauthenticated {
+			t.Fatal(err)
+		}
+	}
+	if _, err := handler.RequestReauthenticationCode(ctx, nil); status.Code(err) != codes.InvalidArgument {
+		t.Fatal(err)
+	}
+	if _, err := handler.ReauthenticateWithCode(ctx, nil); status.Code(err) != codes.InvalidArgument {
+		t.Fatal(err)
+	}
+	empty := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil)
+	if _, err := empty.RequestReauthenticationCode(ctx, &identityv1.RequestReauthenticationCodeRequest{}); status.Code(err) != codes.Unavailable {
+		t.Fatal(err)
+	}
+	if _, err := empty.ReauthenticateWithCode(ctx, &identityv1.ReauthenticateWithCodeRequest{Code: "012345"}); status.Code(err) != codes.Unavailable {
+		t.Fatal(err)
+	}
+}
+
+func TestCodeReauthenticationREST(t *testing.T) {
+	stub := &codeReauthenticationStub{}
+	mux := runtime.NewServeMux()
+	handler := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil).WithCodeReauthentication(stub)
+	if err := identityv1.RegisterIdentityServiceHandlerServer(t.Context(), mux, handler); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/v1/reauthentication-codes", "/v1/code-reauthentications"} {
+		for _, auth := range []string{"Bearer access-proof", ""} {
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, path, strings.NewReader(`{"code":"012345"}`))
+			if path == "/v1/reauthentication-codes" {
+				request = httptest.NewRequestWithContext(t.Context(), http.MethodPost, path, strings.NewReader(`{}`))
+			}
+			request.Header.Set("Content-Type", "application/json")
+			request.Header.Set("Authorization", auth)
+			request.RemoteAddr = "192.0.2.1:42"
+			response := httptest.NewRecorder()
+			NewIdentityRequestHandler(mux, nil).ServeHTTP(response, request)
+			want := http.StatusOK
+			if auth == "" {
+				want = http.StatusUnauthorized
+			}
+			if response.Code != want {
+				t.Fatalf("%s status=%d body=%s", path, response.Code, response.Body)
+			}
+		}
+	}
+}

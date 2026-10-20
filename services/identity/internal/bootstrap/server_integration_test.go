@@ -25,6 +25,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
+	deliverycrypto "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
 	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
@@ -123,7 +124,7 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	if response.Code != http.StatusOK || !bytes.Contains(response.Body.Bytes(), []byte(`"accepted":true`)) {
 		t.Fatalf("claim-code response = %d, %s", response.Code, response.Body.String())
 	}
-	proofToken, proofSession := testPasswordReauthenticationAPI(t, server, dsn, privateKey)
+	proofToken, proofSession, proofCode := testPasswordReauthenticationAPI(t, server, dsn, privateKey)
 	var apiData metricdata.ResourceMetrics
 	if err := apiReader.Collect(ctx, &apiData); err != nil {
 		t.Fatal(err)
@@ -136,6 +137,33 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 		if strings.Contains(observed, secret) {
 			t.Fatal("telemetry exposed credential data")
 		}
+	}
+	codeFields := []any{}
+	for _, entry := range logs.All() {
+		codeFields = append(codeFields, entry.Message)
+		for name, value := range entry.ContextMap() {
+			if name != "trace_id" && name != "request_id" {
+				codeFields = append(codeFields, logStringValues(value))
+			}
+		}
+	}
+	for _, span := range spans.GetSpans() {
+		codeFields = append(codeFields, span.Name, span.Attributes, span.Status)
+		for _, event := range span.Events {
+			codeFields = append(codeFields, event.Name, event.Attributes)
+		}
+	}
+	for _, scope := range apiData.ScopeMetrics {
+		for _, measured := range scope.Metrics {
+			if histogram, ok := measured.Data.(metricdata.Histogram[float64]); ok {
+				for _, point := range histogram.DataPoints {
+					codeFields = append(codeFields, point.Attributes)
+				}
+			}
+		}
+	}
+	if strings.Contains(fmt.Sprint(codeFields...), proofCode) {
+		t.Fatal("telemetry exposed re-authentication code")
 	}
 	metricText := fmt.Sprint(apiData)
 	for _, identifier := range []string{"api-reauth", proofSession} {
@@ -319,7 +347,30 @@ func applyIdentityMigration(ctx context.Context, dsn string) error {
 	return goose.UpContext(ctx, db, ".")
 }
 
-func testPasswordReauthenticationAPI(t *testing.T, server *APIServer, dsn string, key ed25519.PrivateKey) (string, string) {
+func logStringValues(value any) []string {
+	switch value := value.(type) {
+	case string:
+		return []string{value}
+	case []string:
+		return value
+	case map[string]any:
+		var values []string
+		for _, nested := range value {
+			values = append(values, logStringValues(nested)...)
+		}
+		return values
+	case []any:
+		var values []string
+		for _, nested := range value {
+			values = append(values, logStringValues(nested)...)
+		}
+		return values
+	default:
+		return nil
+	}
+}
+
+func testPasswordReauthenticationAPI(t *testing.T, server *APIServer, dsn string, key ed25519.PrivateKey) (string, string, string) {
 	t.Helper()
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -382,9 +433,59 @@ func testPasswordReauthenticationAPI(t *testing.T, server *APIServer, dsn string
 	if next := call(`{"password":"correct café battery staple"}`, "Bearer "+access, 200); !bytes.Equal(body, next) {
 		t.Fatal("REST retry moved expiry")
 	}
+
+	var code string
+	callCode := func(path, body, authorization string, want int) []byte {
+		t.Helper()
+		request := httptest.NewRequestWithContext(ctx, http.MethodPost, path, strings.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Authorization", authorization)
+		request.RemoteAddr = "192.0.2.215:42"
+		response := httptest.NewRecorder()
+		server.public.Handler.ServeHTTP(response, request)
+		if response.Code != want {
+			t.Fatalf("%s status=%d body=%s", path, response.Code, response.Body)
+		}
+		if strings.Contains(response.Body.String(), access) || code != "" && want >= 400 && strings.Contains(response.Body.String(), code) {
+			t.Fatal("code response exposed a credential")
+		}
+		return response.Body.Bytes()
+	}
+	callCode("/v1/reauthentication-codes", `{}`, "Bearer "+access, 400)
+	callCode("/v1/reauthentication-codes", `{}`, "", 401)
+	if _, err := pool.Exec(ctx, `UPDATE identity_accounts SET email_verified_at=statement_timestamp() WHERE subject='api-reauth'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET reauthenticated_at=NULL WHERE id=$1`, id); err != nil {
+		t.Fatal(err)
+	}
+	accepted := callCode("/v1/reauthentication-codes", `{}`, "Bearer "+access, 200)
+	if !bytes.Contains(accepted, []byte(`"accepted":true`)) {
+		t.Fatal("code request was not accepted")
+	}
+	var challengeID string
+	var material outbound.DeliveryMaterial
+	if err := pool.QueryRow(ctx, `SELECT challenge.id::text,delivery.key_version,delivery.nonce,delivery.ciphertext FROM identity_challenges challenge JOIN identity_challenge_deliveries delivery ON delivery.challenge_id=challenge.id WHERE challenge.account_subject='api-reauth' AND challenge.purpose='reauthenticate'`).Scan(&challengeID, &material.KeyVersion, &material.Nonce, &material.Ciphertext); err != nil {
+		t.Fatal(err)
+	}
+	opener, err := deliverycrypto.NewDeliveryProtector(bytes.Repeat([]byte{2}, 32), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, code, err = opener.Open(challengeID, "reauthenticate", "api-reauth", material)
+	if err != nil {
+		t.Fatal(err)
+	}
+	callCode("/v1/code-reauthentications", `{"code":"invalid"}`, "Bearer "+access, 400)
+	callCode("/v1/code-reauthentications", `{"code":"`+code+`"}`, "", 401)
+	codeProof := callCode("/v1/code-reauthentications", `{"code":"`+code+`"}`, "Bearer "+access, 200)
+	if err := json.Unmarshal(codeProof, &response); err != nil || response.ExpiresAt.IsZero() {
+		t.Fatal("code response missing expiry")
+	}
+	callCode("/v1/code-reauthentications", `{"code":"`+code+`"}`, "Bearer "+access, 400)
 	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET revoked_at=clock_timestamp() WHERE id=$1`, id); err != nil {
 		t.Fatal(err)
 	}
 	call(`{"password":"correct café battery staple"}`, "Bearer "+access, 401)
-	return access, id
+	return access, id, code
 }

@@ -30,12 +30,18 @@ type IdentityHandler struct {
 	claims                   inbound.AccountClaimService
 	passwordLogin            inbound.PasswordLoginService
 	passwordReauthentication inbound.PasswordReauthenticationService
+	codeReauthentication     inbound.CodeReauthenticationService
 	providerLogin            inbound.ProviderLoginService
 	refresh                  inbound.SessionRefreshService
 	currentLogout            inbound.CurrentSessionLogoutService
 	allLogout                inbound.AllSessionLogoutService
 	verifier                 outbound.AccessTokenVerifier
 	trusted                  []netip.Prefix
+}
+
+func (h *IdentityHandler) WithCodeReauthentication(service inbound.CodeReauthenticationService) *IdentityHandler {
+	h.codeReauthentication = service
+	return h
 }
 
 func (h *IdentityHandler) WithPasswordReauthentication(service inbound.PasswordReauthenticationService) *IdentityHandler {

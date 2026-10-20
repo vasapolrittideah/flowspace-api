@@ -146,7 +146,7 @@ func (w *EmailWorker) countDelivery(ctx context.Context, kind, outcome string) {
 
 func validDeliveryPurpose(purpose string) bool {
 	switch purpose {
-	case string(domain.PurposeVerifyEmail), string(domain.PurposeClaimAccount), string(domain.PurposePasswordReset):
+	case string(domain.PurposeVerifyEmail), string(domain.PurposeClaimAccount), string(domain.PurposePasswordReset), string(domain.PurposeReauthenticate):
 		return true
 	default:
 		return false

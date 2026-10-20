@@ -124,6 +124,20 @@ func (q *Queries) GetCurrentChallengeForUpdate(ctx context.Context, arg GetCurre
 	return i, err
 }
 
+const getLatestReauthenticationCodeIssue = `-- name: GetLatestReauthenticationCodeIssue :one
+SELECT max(issued_at)::timestamptz AS issued_at
+FROM identity_challenges
+WHERE account_subject = $1
+  AND purpose = 'reauthenticate'
+`
+
+func (q *Queries) GetLatestReauthenticationCodeIssue(ctx context.Context, accountSubject string) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, getLatestReauthenticationCodeIssue, accountSubject)
+	var issued_at pgtype.Timestamptz
+	err := row.Scan(&issued_at)
+	return issued_at, err
+}
+
 const incrementChallengeWrongGuess = `-- name: IncrementChallengeWrongGuess :one
 UPDATE identity_challenges
 SET wrong_guesses = wrong_guesses + 1

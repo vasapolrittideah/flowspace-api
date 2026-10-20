@@ -77,7 +77,7 @@ func (r *DeliveryRepository) WithCurrentDelivery(ctx context.Context, challengeI
 
 func isCurrentDelivery(account sqlc.GetDeliveryAccountForUpdateRow, challenge sqlc.GetDeliveryChallengeForUpdateRow) bool {
 	emailEligible := !account.EmailVerifiedAt.Valid
-	if challenge.Purpose == "password-reset" {
+	if challenge.Purpose == "password-reset" || challenge.Purpose == "reauthenticate" {
 		emailEligible = account.EmailVerifiedAt.Valid
 	}
 	return !account.RetiredAt.Valid && emailEligible && !challenge.ReplacedAt.Valid &&

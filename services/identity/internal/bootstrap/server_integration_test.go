@@ -7,15 +7,28 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/x509"
 	"database/sql"
+	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+
+	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
+	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 
 	"github.com/pressly/goose/v3"
 	"github.com/testcontainers/testcontainers-go"
@@ -83,6 +96,12 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	}
 	core, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(core)
+	apiReader := sdkmetric.NewManualReader()
+	apiMetrics := sdkmetric.NewMeterProvider(sdkmetric.WithReader(apiReader))
+	oldMetrics := otel.GetMeterProvider()
+	otel.SetMeterProvider(apiMetrics)
+	t.Cleanup(func() { otel.SetMeterProvider(oldMetrics); _ = apiMetrics.Shutdown(context.Background()) })
+	spans := recordSpans(t)
 	server, err := NewAPIServer(ctx, config, logger)
 	if err != nil {
 		t.Fatal(err)
@@ -103,6 +122,26 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	server.public.Handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK || !bytes.Contains(response.Body.Bytes(), []byte(`"accepted":true`)) {
 		t.Fatalf("claim-code response = %d, %s", response.Code, response.Body.String())
+	}
+	proofToken, proofSession := testPasswordReauthenticationAPI(t, server, dsn, privateKey)
+	var apiData metricdata.ResourceMetrics
+	if err := apiReader.Collect(ctx, &apiData); err != nil {
+		t.Fatal(err)
+	}
+	observed := fmt.Sprint(logs.All(), spans.GetSpans(), apiData)
+	if !strings.Contains(observed, "/v1/password-reauthentications") {
+		t.Fatal("missing reauthentication telemetry")
+	}
+	for _, secret := range []string{"api-reauth@example.com", "correct café battery staple", "wrong reauth password", proofToken} {
+		if strings.Contains(observed, secret) {
+			t.Fatal("telemetry exposed credential data")
+		}
+	}
+	metricText := fmt.Sprint(apiData)
+	for _, identifier := range []string{"api-reauth", proofSession} {
+		if strings.Contains(metricText, identifier) {
+			t.Fatal("metric attributes exposed an identity")
+		}
 	}
 	runCtx, stop := context.WithCancel(ctx)
 	result := make(chan error, 1)
@@ -278,4 +317,74 @@ func applyIdentityMigration(ctx context.Context, dsn string) error {
 		return err
 	}
 	return goose.UpContext(ctx, db, ".")
+}
+
+func testPasswordReauthenticationAPI(t *testing.T, server *APIServer, dsn string, key ed25519.PrivateKey) (string, string) {
+	t.Helper()
+	ctx := t.Context()
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	password := "correct café battery staple"
+	hash, err := domain.HashPassword(ctx, password, func(context.Context, string) (bool, error) { return false, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	queries := identitysqlc.New(pool)
+	if _, err := queries.CreateAccount(ctx, identitysqlc.CreateAccountParams{Subject: "api-reauth", EmailLocal: "api-reauth", EmailDomain: "example.com", PasswordHash: hash}); err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256([]byte("api-reauth"))
+	session, err := queries.CreateSession(ctx, identitysqlc.CreateSessionParams{AccountSubject: "api-reauth", RefreshTokenHash: digest[:]})
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := uuid.UUID(session.ID.Bytes).String()
+	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET reauthenticated_at=NULL WHERE id=$1`, id); err != nil {
+		t.Fatal(err)
+	}
+	signer, err := token.NewSigner(key, "local-1", "urn:flowspace:identity:local", "flowspace-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	access, err := signer.Sign(outbound.AccessTokenClaims{Subject: "api-reauth", SessionID: id, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(5 * time.Minute), ID: uuid.NewString()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	call := func(body, authorization string, want int) []byte {
+		t.Helper()
+		request := httptest.NewRequestWithContext(ctx, http.MethodPost, "/v1/password-reauthentications", strings.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Authorization", authorization)
+		request.RemoteAddr = "192.0.2.215:42"
+		response := httptest.NewRecorder()
+		server.public.Handler.ServeHTTP(response, request)
+		if response.Code != want {
+			t.Fatalf("password reauthentication REST=%d body=%s", response.Code, response.Body)
+		}
+		if strings.Contains(response.Body.String(), access) {
+			t.Fatal("error/response exposed bearer token")
+		}
+		return response.Body.Bytes()
+	}
+	call(`{"password":"wrong reauth password"}`, "Bearer "+access, 400)
+	call(`{}`, "Bearer "+access, 400)
+	call(`{"password":"correct café battery staple"}`, "", 401)
+	body := call(`{"password":"correct café battery staple"}`, "Bearer "+access, 200)
+	var response struct {
+		ExpiresAt time.Time `json:"reauthenticationExpiresAt"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil || response.ExpiresAt.IsZero() {
+		t.Fatalf("expiry absent: %v", err)
+	}
+	if next := call(`{"password":"correct café battery staple"}`, "Bearer "+access, 200); !bytes.Equal(body, next) {
+		t.Fatal("REST retry moved expiry")
+	}
+	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET revoked_at=clock_timestamp() WHERE id=$1`, id); err != nil {
+		t.Fatal(err)
+	}
+	call(`{"password":"correct café battery staple"}`, "Bearer "+access, 401)
+	return access, id
 }

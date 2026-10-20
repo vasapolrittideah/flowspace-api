@@ -21,16 +21,17 @@ import (
 type AccountRepository struct{ pool *pgxpool.Pool }
 
 var (
-	_ outbound.AccountRepository               = (*AccountRepository)(nil)
-	_ outbound.PasswordLoginRepository         = (*AccountRepository)(nil)
-	_ outbound.AllSessionLogoutRepository      = (*AccountRepository)(nil)
-	_ outbound.EmailVerificationCodeRepository = (*AccountRepository)(nil)
-	_ outbound.EmailVerificationRepository     = (*AccountRepository)(nil)
-	_ outbound.ClaimCodeRepository             = (*AccountRepository)(nil)
-	_ outbound.AccountClaimRepository          = (*AccountRepository)(nil)
-	_ outbound.PasswordResetCodeRepository     = (*AccountRepository)(nil)
-	_ outbound.PasswordResetRepository         = (*AccountRepository)(nil)
-	_ outbound.ProviderSessionRepository       = (*AccountRepository)(nil)
+	_ outbound.AccountRepository                  = (*AccountRepository)(nil)
+	_ outbound.PasswordReauthenticationRepository = (*AccountRepository)(nil)
+	_ outbound.PasswordLoginRepository            = (*AccountRepository)(nil)
+	_ outbound.AllSessionLogoutRepository         = (*AccountRepository)(nil)
+	_ outbound.EmailVerificationCodeRepository    = (*AccountRepository)(nil)
+	_ outbound.EmailVerificationRepository        = (*AccountRepository)(nil)
+	_ outbound.ClaimCodeRepository                = (*AccountRepository)(nil)
+	_ outbound.AccountClaimRepository             = (*AccountRepository)(nil)
+	_ outbound.PasswordResetCodeRepository        = (*AccountRepository)(nil)
+	_ outbound.PasswordResetRepository            = (*AccountRepository)(nil)
+	_ outbound.ProviderSessionRepository          = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
@@ -72,6 +73,7 @@ type accountTransaction struct {
 	queries                  *sqlc.Queries
 	session                  *SessionRepository
 	reauthenticationSession  pgtype.UUID
+	reauthenticationSubject  string
 	reauthenticationDeadline time.Time
 }
 
@@ -105,7 +107,32 @@ func (t *accountTransaction) LockSessionForReauthentication(ctx context.Context,
 		return domain.ReauthenticationWindow{}, time.Time{}, err
 	}
 	t.reauthenticationSession = id
+	t.reauthenticationSubject = subject
 	return domain.ReauthenticationWindow{AuthenticatedAt: row.ReauthenticatedAt.Time, IdleExpiresAt: row.IdleExpiresAt.Time, AbsoluteExpiresAt: row.AbsoluteExpiresAt.Time}, row.ObservedAt.Time, nil
+}
+
+func (r *AccountRepository) WithinPasswordReauthenticationTransaction(ctx context.Context, fn func(outbound.PasswordReauthenticationTransaction) error) (domain.ReauthenticationWindow, error) {
+	var transaction *accountTransaction
+	if err := r.withinTransaction(ctx, func(tx *accountTransaction) error { transaction = tx; return fn(tx) }); err != nil {
+		return domain.ReauthenticationWindow{}, err
+	}
+	// The deferred trigger sets the proof time while COMMIT runs.
+	row, err := sqlc.New(r.pool).GetSessionReauthentication(ctx, sqlc.GetSessionReauthenticationParams{Subject: transaction.reauthenticationSubject, SessionID: transaction.reauthenticationSession})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ReauthenticationWindow{}, outbound.ErrUnauthenticated
+	}
+	if err != nil {
+		return domain.ReauthenticationWindow{}, err
+	}
+	return domain.ReauthenticationWindow{AuthenticatedAt: row.ReauthenticatedAt.Time, IdleExpiresAt: row.IdleExpiresAt.Time, AbsoluteExpiresAt: row.AbsoluteExpiresAt.Time}, nil
+}
+
+func (t *accountTransaction) ReauthenticateSession(ctx context.Context, subject, sessionID string) error {
+	id, err := parseUUID(sessionID)
+	if err != nil || subject != t.reauthenticationSubject || id != t.reauthenticationSession {
+		return outbound.ErrUnauthenticated
+	}
+	return t.queries.RequestSessionReauthentication(ctx, id)
 }
 
 func (t *accountTransaction) RequireCommitBefore(deadline time.Time) {

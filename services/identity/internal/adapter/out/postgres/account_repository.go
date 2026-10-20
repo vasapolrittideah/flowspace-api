@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
@@ -41,15 +43,36 @@ func (r *AccountRepository) withinTransaction(ctx context.Context, fn func(*acco
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	if err := fn(&accountTransaction{queries: sqlc.New(tx), session: NewSessionRepository(tx)}); err != nil {
+	transaction := &accountTransaction{queries: sqlc.New(tx), session: NewSessionRepository(tx)}
+	if err := fn(transaction); err != nil {
 		return err
 	}
-	return tx.Commit(ctx)
+	if !transaction.reauthenticationDeadline.IsZero() {
+		if err := transaction.queries.SetReauthenticationDeadline(ctx, pgtype.Timestamptz{Time: transaction.reauthenticationDeadline, Valid: true}); err != nil {
+			return err
+		}
+		// Queue the deferred check after the work, so it also covers a delayed COMMIT.
+		rows, err := transaction.queries.QueueSessionReauthenticationCheck(ctx, transaction.reauthenticationSession)
+		if err != nil {
+			return err
+		}
+		if rows != 1 {
+			return outbound.ErrUnauthenticated
+		}
+	}
+	err = tx.Commit(ctx)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "P0001" && pgErr.ConstraintName == "identity_sessions_reauthentication_deadline" {
+		return outbound.ErrReauthenticationRequired
+	}
+	return err
 }
 
 type accountTransaction struct {
-	queries *sqlc.Queries
-	session *SessionRepository
+	queries                  *sqlc.Queries
+	session                  *SessionRepository
+	reauthenticationSession  pgtype.UUID
+	reauthenticationDeadline time.Time
 }
 
 var (
@@ -62,7 +85,34 @@ var (
 	_ outbound.PasswordResetCodeTransaction     = (*accountTransaction)(nil)
 	_ outbound.PasswordResetTransaction         = (*accountTransaction)(nil)
 	_ outbound.ProviderSessionTransaction       = (*accountTransaction)(nil)
+	_ outbound.ReauthenticationTransaction      = (*accountTransaction)(nil)
 )
+
+func (t *accountTransaction) LockSessionForReauthentication(ctx context.Context, subject, sessionID string) (domain.ReauthenticationWindow, time.Time, error) {
+	// After the transaction holds the account and session locks, read the wall clock.
+	if _, err := t.GetActiveAccountForSession(ctx, subject, sessionID); err != nil {
+		return domain.ReauthenticationWindow{}, time.Time{}, err
+	}
+	id, err := parseUUID(sessionID)
+	if err != nil {
+		return domain.ReauthenticationWindow{}, time.Time{}, outbound.ErrUnauthenticated
+	}
+	row, err := t.queries.GetSessionReauthentication(ctx, sqlc.GetSessionReauthenticationParams{Subject: subject, SessionID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ReauthenticationWindow{}, time.Time{}, outbound.ErrUnauthenticated
+	}
+	if err != nil {
+		return domain.ReauthenticationWindow{}, time.Time{}, err
+	}
+	t.reauthenticationSession = id
+	return domain.ReauthenticationWindow{AuthenticatedAt: row.ReauthenticatedAt.Time, IdleExpiresAt: row.IdleExpiresAt.Time, AbsoluteExpiresAt: row.AbsoluteExpiresAt.Time}, row.ObservedAt.Time, nil
+}
+
+func (t *accountTransaction) RequireCommitBefore(deadline time.Time) {
+	if t.reauthenticationDeadline.IsZero() || deadline.Before(t.reauthenticationDeadline) {
+		t.reauthenticationDeadline = deadline
+	}
+}
 
 func (t *accountTransaction) CreateAccount(ctx context.Context, subject, email, passwordHash string) error {
 	local, domain, ok := strings.Cut(email, "@")

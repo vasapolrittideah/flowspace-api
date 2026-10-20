@@ -150,6 +150,7 @@ func testPasswordResetRepository(t *testing.T, pool *pgxpool.Pool) {
 	if err := service.ResetPassword(ctx, input); !errors.Is(err, app.ErrInvalidPasswordResetCode) {
 		t.Fatalf("consumed code = %v", err)
 	}
+	assertRevokedReauthenticationWindows(t, pool, subject)
 	wrongPurposeCode, wrongPurposeVerifier, _, err := domain.NewChallenge(key, subject, email, domain.PurposeVerifyEmail, time.Now())
 	if err != nil {
 		t.Fatal(err)

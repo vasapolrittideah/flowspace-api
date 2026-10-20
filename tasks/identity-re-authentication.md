@@ -41,9 +41,9 @@ Tasks are tracked in the [flowspace-api](https://github.com/users/vasapolrittide
 
 ### Checkpoint: Contract and window
 
-- [ ] The 5 RPC routes match the approved contract, and generated output matches the source Protobuf.
-- [ ] A new session from signup, account claim, password login, or provider login has an open window that closes after 10 minutes and that a refresh does not extend.
-- [ ] The test-only sensitive method returns `PermissionDenied` with the reason `REAUTHENTICATION_REQUIRED` outside the window.
+- [x] The 5 RPC routes match the approved contract, and generated output matches the source Protobuf.
+- [x] A new session from signup, account claim, password login, or provider login has an open window that closes after 10 minutes and that a refresh does not extend.
+- [x] The test-only sensitive method returns `PermissionDenied` with the reason `REAUTHENTICATION_REQUIRED` outside the window.
 
 ### Phase 2: Re-authentication methods
 

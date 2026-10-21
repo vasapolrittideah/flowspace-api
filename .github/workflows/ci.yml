@@ -45,6 +45,8 @@ jobs:
           go-version-file: go.mod
       - name: Lint workflows
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -pyflakes= .github/workflows/*.yml
+      - name: Check error files
+        run: go run ./scripts/check-error-files
       - name: Scan for secrets
         run: |
           go run github.com/zricethezav/gitleaks/v8@v8.18.4 detect --no-git --source . --redact --no-banner

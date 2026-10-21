@@ -392,26 +392,26 @@ func (r *AccountRepository) FindAccountForClaim(ctx context.Context, email strin
 	return outbound.ClaimAccount{Subject: account.Subject, EmailVerified: account.EmailVerifiedAt.Valid}, true, nil
 }
 
-func (t *accountTransaction) GetCurrentClaimChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
+func (t *accountTransaction) GetCurrentClaimChallenge(ctx context.Context, subject string) (domain.Challenge, bool, error) {
 	return t.getCurrentChallenge(ctx, subject, "claim-account")
 }
 
-func (t *accountTransaction) getCurrentChallenge(ctx context.Context, subject, purpose string) (outbound.ChallengeState, bool, error) {
+func (t *accountTransaction) getCurrentChallenge(ctx context.Context, subject, purpose string) (domain.Challenge, bool, error) {
 	challenge, err := t.queries.GetCurrentChallengeForUpdate(ctx, sqlc.GetCurrentChallengeForUpdateParams{
 		AccountSubject: subject, Purpose: purpose,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return outbound.ChallengeState{}, false, nil
+		return domain.Challenge{}, false, nil
 	}
 	if err != nil {
-		return outbound.ChallengeState{}, false, err
+		return domain.Challenge{}, false, err
 	}
 	var verifier [32]byte
 	if len(challenge.CodeVerifier) != len(verifier) {
-		return outbound.ChallengeState{}, false, errors.New("invalid challenge verifier")
+		return domain.Challenge{}, false, errors.New("invalid challenge verifier")
 	}
 	copy(verifier[:], challenge.CodeVerifier)
-	return outbound.ChallengeState{
+	return domain.Challenge{
 		ID: uuid.UUID(challenge.ID.Bytes).String(), Email: challenge.EmailLocal + "@" + challenge.EmailDomain,
 		Verifier: verifier, WrongGuesses: challenge.WrongGuesses, ExpiresAt: challenge.ExpiresAt.Time,
 	}, true, nil
@@ -464,7 +464,7 @@ func (r *AccountRepository) WithinVerificationTransaction(ctx context.Context, f
 	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 
-func (t *accountTransaction) GetCurrentVerificationChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
+func (t *accountTransaction) GetCurrentVerificationChallenge(ctx context.Context, subject string) (domain.Challenge, bool, error) {
 	return t.getCurrentChallenge(ctx, subject, "verify-email")
 }
 
@@ -505,7 +505,7 @@ func (r *AccountRepository) WithinPasswordResetTransaction(ctx context.Context, 
 	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 
-func (t *accountTransaction) GetCurrentPasswordResetChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
+func (t *accountTransaction) GetCurrentPasswordResetChallenge(ctx context.Context, subject string) (domain.Challenge, bool, error) {
 	return t.getCurrentChallenge(ctx, subject, "password-reset")
 }
 
@@ -576,6 +576,6 @@ func (t *accountTransaction) CreateReauthenticationChallenge(ctx context.Context
 	return t.createChallenge(ctx, subject, email, "reauthenticate", verifier)
 }
 
-func (t *accountTransaction) GetCurrentReauthenticationChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
+func (t *accountTransaction) GetCurrentReauthenticationChallenge(ctx context.Context, subject string) (domain.Challenge, bool, error) {
 	return t.getCurrentChallenge(ctx, subject, "reauthenticate")
 }

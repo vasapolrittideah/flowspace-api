@@ -1,10 +1,14 @@
 package outbound
 
-import "context"
+import (
+	"context"
+
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
+)
 
 type PasswordResetTransaction interface {
 	GetAccountForPasswordRecovery(ctx context.Context, email string) (PasswordRecoveryAccount, bool, error)
-	GetCurrentPasswordResetChallenge(ctx context.Context, subject string) (ChallengeState, bool, error)
+	GetCurrentPasswordResetChallenge(ctx context.Context, subject string) (domain.Challenge, bool, error)
 	IncrementChallengeWrongGuess(ctx context.Context, challengeID string) error
 	ConsumeChallenge(ctx context.Context, challengeID string) (bool, error)
 	ReplacePasswordResetChallenge(ctx context.Context, subject string) error

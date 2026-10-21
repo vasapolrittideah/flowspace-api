@@ -34,7 +34,7 @@ func (r *accountClaimRepository) WithinAccountClaimTransaction(_ context.Context
 type accountClaimTransaction struct {
 	account      outbound.ClaimAccount
 	found        bool
-	challenge    outbound.ChallengeState
+	challenge    domain.Challenge
 	hasChallenge bool
 	wrongGuesses int
 	consumed     bool
@@ -49,7 +49,7 @@ func (t *accountClaimTransaction) GetAccountForClaim(context.Context, string) (o
 	return t.account, t.found, nil
 }
 
-func (t *accountClaimTransaction) GetCurrentClaimChallenge(context.Context, string) (outbound.ChallengeState, bool, error) {
+func (t *accountClaimTransaction) GetCurrentClaimChallenge(context.Context, string) (domain.Challenge, bool, error) {
 	return t.challenge, t.hasChallenge, nil
 }
 
@@ -108,7 +108,7 @@ func TestAccountClaimReplacesUnverifiedSubject(t *testing.T) {
 	}
 	tx := &accountClaimTransaction{
 		account: outbound.ClaimAccount{Subject: "old-subject"}, found: true,
-		challenge: outbound.ChallengeState{ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expiry}, hasChallenge: true,
+		challenge: domain.Challenge{ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expiry}, hasChallenge: true,
 	}
 	repo := &accountClaimRepository{account: tx.account, found: true, tx: tx}
 	input := inbound.ClaimAccountInput{Email: "User@EXAMPLE.COM", Code: code, NewPassword: "correct horse battery staple", Source: "192.0.2.1"}
@@ -148,7 +148,7 @@ func TestAccountClaimRejectsInvalidAndIneligibleCodes(t *testing.T) {
 			}
 			tx := &accountClaimTransaction{
 				account: outbound.ClaimAccount{Subject: "old-subject", EmailVerified: test.verified}, found: test.found,
-				challenge: outbound.ChallengeState{ID: "challenge", Email: "User@example.com", Verifier: verificationVerifier, ExpiresAt: challengeExpiry}, hasChallenge: test.challenge,
+				challenge: domain.Challenge{ID: "challenge", Email: "User@example.com", Verifier: verificationVerifier, ExpiresAt: challengeExpiry}, hasChallenge: test.challenge,
 			}
 			repo := &accountClaimRepository{account: tx.account, found: test.found, tx: tx}
 			result, err := newAccountClaimService(repo).ClaimUnverifiedAccount(context.Background(), inbound.ClaimAccountInput{

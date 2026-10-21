@@ -40,8 +40,8 @@ func (t resetPreflightTransaction) GetAccountForPasswordRecovery(context.Context
 	return t.account, t.found, t.getErr
 }
 
-func (t resetPreflightTransaction) GetCurrentPasswordResetChallenge(context.Context, string) (outbound.ChallengeState, bool, error) {
-	return outbound.ChallengeState{}, false, t.challengeErr
+func (t resetPreflightTransaction) GetCurrentPasswordResetChallenge(context.Context, string) (domain.Challenge, bool, error) {
+	return domain.Challenge{}, false, t.challengeErr
 }
 
 func (resetPreflightTransaction) IncrementChallengeWrongGuess(context.Context, string) error {

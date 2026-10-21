@@ -21,7 +21,7 @@ type ReauthenticationCodeIssueTransaction interface {
 type CodeReauthenticationTransaction interface {
 	ReauthenticationTransaction
 	GetActiveAccountForSession(ctx context.Context, subject, sessionID string) (AccountState, error)
-	GetCurrentReauthenticationChallenge(ctx context.Context, subject string) (ChallengeState, bool, error)
+	GetCurrentReauthenticationChallenge(ctx context.Context, subject string) (domain.Challenge, bool, error)
 	IncrementChallengeWrongGuess(ctx context.Context, challengeID string) error
 	ConsumeChallenge(ctx context.Context, challengeID string) (bool, error)
 	ReauthenticateSession(ctx context.Context, subject, sessionID string) error

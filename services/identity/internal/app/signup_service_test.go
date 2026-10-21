@@ -64,8 +64,8 @@ func (t *signupTransaction) CreateOutboxEvent(_ context.Context, _ string) error
 	return nil
 }
 
-func (*signupTransaction) GetCurrentVerificationChallenge(context.Context, string) (output.ChallengeState, bool, error) {
-	return output.ChallengeState{}, false, errors.New("unexpected challenge lookup")
+func (*signupTransaction) GetCurrentVerificationChallenge(context.Context, string) (domain.Challenge, bool, error) {
+	return domain.Challenge{}, false, errors.New("unexpected challenge lookup")
 }
 
 func (*signupTransaction) IncrementChallengeWrongGuess(context.Context, string) error {

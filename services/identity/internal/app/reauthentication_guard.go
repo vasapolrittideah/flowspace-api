@@ -7,11 +7,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var (
-	ErrReauthenticationRequired    = outbound.ErrReauthenticationRequired
-	ErrReauthenticationUnavailable = errors.New("re-authentication unavailable")
-)
-
 // RequireReauthentication guards the caller's transaction at admission and before commit.
 func RequireReauthentication(ctx context.Context, tx outbound.ReauthenticationTransaction, subject, sessionID string) error {
 	if subject == "" || sessionID == "" {

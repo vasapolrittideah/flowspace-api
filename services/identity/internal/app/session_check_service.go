@@ -8,8 +8,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var ErrSessionCheckUnavailable = errors.New("session check unavailable")
-
 type SessionCheckService struct {
 	repository outbound.SessionCheckRepository
 }

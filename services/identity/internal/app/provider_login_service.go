@@ -12,15 +12,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var (
-	ErrProviderLoginUnavailable = errors.New("provider login unavailable")
-	ErrInvalidProviderCallback  = errors.New("invalid provider callback")
-	// ErrProviderHandoffRejected covers an unknown, pending, expired,
-	// exhausted, failed, or claimed attempt alike.
-	ErrProviderHandoffRejected    = errors.New("provider handoff rejected")
-	ErrProviderAccountUnavailable = errors.New("provider account unavailable")
-)
-
 // ProviderClient is the registered OAuth client for one provider. Identity
 // verifies callbacks; a provider without it can start but not complete login.
 type ProviderClient struct {

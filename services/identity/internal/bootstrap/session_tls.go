@@ -5,12 +5,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
-	"errors"
 	"slices"
 	"strings"
 )
-
-var errInvalidSessionTLS = errors.New("invalid session TLS configuration")
 
 func newSessionTLSConfig(config APIConfig) (*tls.Config, error) {
 	enabled, err := sessionRPCEnabled(config)

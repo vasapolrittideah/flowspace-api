@@ -112,7 +112,7 @@ func (s *CodeReauthenticationService) ReauthenticateWithCode(ctx context.Context
 			invalid = true
 			return nil
 		}
-		sessionExpiry, err = s.openWindow(ctx, tx, input.Subject, input.SessionID)
+		sessionExpiry, err = openWindow(ctx, tx, input.Subject, input.SessionID)
 		if err != nil {
 			return err
 		}
@@ -167,7 +167,14 @@ func (s *CodeReauthenticationService) verifyCode(ctx context.Context, tx outboun
 	return check != domain.CodeAccepted, nil
 }
 
-func (s *CodeReauthenticationService) openWindow(ctx context.Context, tx outbound.CodeReauthenticationTransaction, subject, sessionID string) (time.Time, error) {
+type reauthenticationWindowOpener interface {
+	outbound.ReauthenticationTransaction
+	ReauthenticateSession(ctx context.Context, subject, sessionID string) error
+}
+
+// openWindow opens a closed window of the session at commit and keeps an open
+// one. It returns the session deadline that the commit must meet.
+func openWindow(ctx context.Context, tx reauthenticationWindowOpener, subject, sessionID string) (time.Time, error) {
 	window, now, err := tx.LockSessionForReauthentication(ctx, subject, sessionID)
 	if err != nil {
 		return time.Time{}, err

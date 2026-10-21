@@ -5,9 +5,13 @@ import (
 	"time"
 )
 
-// ProviderAttempt binds one provider login attempt to its proofs. The attempt
-// token and state are stored only as keyed verifiers.
+// ProviderAttempt binds one provider attempt to its proofs. The attempt
+// token and state are stored only as keyed verifiers. A re-authentication
+// attempt also binds the subject and session that started it. A login attempt
+// leaves both empty.
 type ProviderAttempt struct {
+	Subject              string
+	SessionID            string
 	Provider             string
 	AttemptTokenVerifier [32]byte
 	StateVerifier        [32]byte

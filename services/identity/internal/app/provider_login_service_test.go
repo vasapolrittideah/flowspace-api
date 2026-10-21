@@ -31,11 +31,12 @@ type providerAttemptRepository struct {
 	recordErr     error
 	failed        []string
 	handoffFails  [][32]byte
+	handoffErr    error
 }
 
 func (r *providerAttemptRepository) RecordFailedProviderHandoff(_ context.Context, attempt [32]byte) error {
 	r.handoffFails = append(r.handoffFails, attempt)
-	return nil
+	return r.handoffErr
 }
 
 func (r *providerAttemptRepository) ConsumeProviderState(_ context.Context, provider string, state [32]byte) (outbound.ProviderAttemptProof, bool, error) {

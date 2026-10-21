@@ -13,6 +13,7 @@ import (
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
@@ -20,17 +21,17 @@ import (
 )
 
 func ReauthenticationRPCError(err error) error {
-	switch {
-	case err == nil:
+	if err == nil {
 		return nil
-	case errors.Is(err, app.ErrInvalidReauthenticationCode):
-		return invalidSignupArgument("code", "is invalid")
+	}
+	if invalid := reauthenticationArgumentError(err); invalid != nil {
+		return invalid
+	}
+	switch {
 	case errors.Is(err, app.ErrReauthenticationEmailUnverified):
 		return status.Error(codes.FailedPrecondition, "verified email required")
-	case errors.Is(err, app.ErrInvalidCredentials):
-		return status.Error(codes.InvalidArgument, "invalid credentials")
-	case errors.Is(err, domain.ErrInvalidPassword):
-		return invalidSignupArgument("password", "is invalid")
+	case errors.Is(err, app.ErrProviderHandoffRejected), errors.Is(err, app.ErrProviderAccountUnavailable):
+		return status.Error(codes.FailedPrecondition, "provider re-authentication failed")
 	case errors.Is(err, app.ErrRateLimited):
 		return status.Error(codes.ResourceExhausted, "re-authentication limit exceeded")
 	case errors.Is(err, app.ErrReauthenticationRequired):
@@ -48,6 +49,29 @@ func ReauthenticationRPCError(err error) error {
 	default:
 		return status.Error(codes.Unavailable, "re-authentication unavailable")
 	}
+}
+
+// reauthenticationArgumentError returns the InvalidArgument error of a
+// rejected proof, or nil for any other error.
+func reauthenticationArgumentError(err error) error {
+	for _, field := range []struct {
+		err  error
+		name string
+	}{
+		{app.ErrInvalidReauthenticationCode, "code"},
+		{domain.ErrInvalidPassword, "password"},
+		{domain.ErrInvalidProvider, "provider"},
+		{domain.ErrInvalidAttemptToken, "attempt_token"},
+		{domain.ErrInvalidHandoffCode, "handoff_code"},
+	} {
+		if errors.Is(err, field.err) {
+			return invalidSignupArgument(field.name, "is invalid")
+		}
+	}
+	if errors.Is(err, app.ErrInvalidCredentials) {
+		return status.Error(codes.InvalidArgument, "invalid credentials")
+	}
+	return nil
 }
 
 func (h *IdentityHandler) ReauthenticateWithPassword(ctx context.Context, request *identityv1.ReauthenticateWithPasswordRequest) (*identityv1.ReauthenticateWithPasswordResponse, error) {
@@ -122,4 +146,65 @@ func (h *IdentityHandler) ReauthenticateWithCode(ctx context.Context, request *i
 		return nil, ReauthenticationRPCError(err)
 	}
 	return &identityv1.ReauthenticateWithCodeResponse{ReauthenticationExpiresAt: timestamppb.New(result.ExpiresAt)}, nil
+}
+
+func (h *IdentityHandler) StartProviderReauthentication(ctx context.Context, request *identityv1.StartProviderReauthenticationRequest) (*identityv1.StartProviderReauthenticationResponse, error) {
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	identity, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(metadata.ValueFromIncomingContext(ctx, "idempotency-key")) != 0 {
+		return nil, invalidSignupArgument("idempotency_key", "is not supported")
+	}
+	provider, known := providerNames[request.GetProvider()]
+	if !known {
+		return nil, invalidSignupArgument("provider", "is invalid")
+	}
+	source, err := h.sourceAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if h.providerReauthentication == nil {
+		return nil, ReauthenticationRPCError(app.ErrReauthenticationUnavailable)
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	result, err := h.providerReauthentication.StartProviderReauthentication(ctx, inbound.StartProviderReauthenticationInput{
+		Subject: identity.Subject, SessionID: identity.SessionID, Provider: string(provider), Source: source,
+	})
+	if err != nil {
+		return nil, ReauthenticationRPCError(err)
+	}
+	return &identityv1.StartProviderReauthenticationResponse{
+		AuthorizationUrl: result.AuthorizationURL, AttemptToken: result.AttemptToken, AttemptExpiresAt: timestamppb.New(result.ExpiresAt),
+	}, nil
+}
+
+func (h *IdentityHandler) CompleteProviderReauthentication(ctx context.Context, request *identityv1.CompleteProviderReauthenticationRequest) (*identityv1.CompleteProviderReauthenticationResponse, error) {
+	if request == nil {
+		return nil, invalidSignupArgument("request", "is required")
+	}
+	identity, err := h.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	source, err := h.sourceAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if h.providerReauthentication == nil {
+		return nil, ReauthenticationRPCError(app.ErrReauthenticationUnavailable)
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	result, err := h.providerReauthentication.CompleteProviderReauthentication(ctx, inbound.CompleteProviderReauthenticationInput{
+		Subject: identity.Subject, SessionID: identity.SessionID, AttemptToken: request.GetAttemptToken(), HandoffCode: request.GetHandoffCode(), Source: source,
+	})
+	if err != nil {
+		return nil, ReauthenticationRPCError(err)
+	}
+	return &identityv1.CompleteProviderReauthenticationResponse{ReauthenticationExpiresAt: timestamppb.New(result.ExpiresAt)}, nil
 }

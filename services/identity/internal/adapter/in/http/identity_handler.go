@@ -31,6 +31,7 @@ type IdentityHandler struct {
 	passwordLogin            inbound.PasswordLoginService
 	passwordReauthentication inbound.PasswordReauthenticationService
 	codeReauthentication     inbound.CodeReauthenticationService
+	providerReauthentication inbound.ProviderReauthenticationService
 	providerLogin            inbound.ProviderLoginService
 	refresh                  inbound.SessionRefreshService
 	currentLogout            inbound.CurrentSessionLogoutService
@@ -41,6 +42,11 @@ type IdentityHandler struct {
 
 func (h *IdentityHandler) WithCodeReauthentication(service inbound.CodeReauthenticationService) *IdentityHandler {
 	h.codeReauthentication = service
+	return h
+}
+
+func (h *IdentityHandler) WithProviderReauthentication(service inbound.ProviderReauthenticationService) *IdentityHandler {
+	h.providerReauthentication = service
 	return h
 }
 

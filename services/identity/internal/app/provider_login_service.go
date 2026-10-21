@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -56,13 +57,25 @@ func (s *ProviderLoginService) WithSessions(sessions outbound.ProviderSessionRep
 }
 
 func (s *ProviderLoginService) StartProviderLogin(ctx context.Context, input inbound.StartProviderLoginInput) (inbound.StartProviderLoginResult, error) {
+	return s.start(ctx, input, s.repository, outbound.ProviderAttempt{})
+}
+
+type providerAttemptCreator interface {
+	CreateProviderAttempt(ctx context.Context, attempt outbound.ProviderAttempt) (time.Time, error)
+}
+
+// start stores a new attempt with the binding of attempt in attempts and
+// returns its authorization URL.
+func (s *ProviderLoginService) start(ctx context.Context, input inbound.StartProviderLoginInput, attempts providerAttemptCreator,
+	attempt outbound.ProviderAttempt,
+) (inbound.StartProviderLoginResult, error) {
 	provider := domain.Provider(input.Provider)
 	authorization, known := providerAuthorization[provider]
 	if !known {
 		return inbound.StartProviderLoginResult{}, domain.ErrInvalidProvider
 	}
 	client, configured := s.clients[provider]
-	if !configured || s.repository == nil || s.sourceLimit == nil || len(s.verifierKey) != 32 {
+	if !configured || attempts == nil || s.sourceLimit == nil || len(s.verifierKey) != 32 {
 		return inbound.StartProviderLoginResult{}, ErrProviderLoginUnavailable
 	}
 	if err := s.sourceLimit(ctx, input.Source); err != nil {
@@ -72,14 +85,11 @@ func (s *ProviderLoginService) StartProviderLogin(ctx context.Context, input inb
 	if err != nil {
 		return inbound.StartProviderLoginResult{}, ErrProviderLoginUnavailable
 	}
-	expiresAt, err := s.repository.CreateProviderAttempt(ctx, outbound.ProviderAttempt{
-		Provider:             string(provider),
-		AttemptTokenVerifier: domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretAttemptToken, secrets.AttemptToken),
-		StateVerifier:        domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretState, secrets.State),
-		CodeVerifier:         secrets.CodeVerifier,
-		Nonce:                secrets.Nonce,
-		CallbackURL:          client.CallbackURL,
-	})
+	attempt.Provider = string(provider)
+	attempt.AttemptTokenVerifier = domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretAttemptToken, secrets.AttemptToken)
+	attempt.StateVerifier = domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretState, secrets.State)
+	attempt.CodeVerifier, attempt.Nonce, attempt.CallbackURL = secrets.CodeVerifier, secrets.Nonce, client.CallbackURL
+	expiresAt, err := attempts.CreateProviderAttempt(ctx, attempt)
 	if err != nil {
 		return inbound.StartProviderLoginResult{}, unavailable(err)
 	}
@@ -187,7 +197,7 @@ func (s *ProviderLoginService) CreateProviderSession(ctx context.Context, input 
 	})
 	switch {
 	case errors.Is(err, ErrProviderHandoffRejected):
-		return inbound.CreateProviderSessionResult{}, s.rejectHandoff(ctx, attempt, input.Source)
+		return inbound.CreateProviderSessionResult{}, s.rejectHandoff(ctx, attempt, input.Source, s.failureLimit)
 	case err != nil:
 		return inbound.CreateProviderSessionResult{}, unavailable(err)
 	case !linked:
@@ -254,11 +264,12 @@ func (s *ProviderLoginService) createAccount(ctx context.Context, tx outbound.Pr
 	return outbound.LinkedAccount{Subject: subject.String(), EmailVerified: verified}, true, nil
 }
 
-func (s *ProviderLoginService) rejectHandoff(ctx context.Context, attempt [32]byte, source string) error {
+// rejectHandoff counts a rejected handoff against the attempt and the source.
+func (s *ProviderLoginService) rejectHandoff(ctx context.Context, attempt [32]byte, source string, failureLimit func(context.Context, string) error) error {
 	if err := s.repository.RecordFailedProviderHandoff(ctx, attempt); err != nil {
 		return unavailable(err)
 	}
-	if err := s.failureLimit(ctx, source); err != nil {
+	if err := failureLimit(ctx, source); err != nil {
 		return err
 	}
 	return ErrProviderHandoffRejected

@@ -11,7 +11,7 @@
 // runs through Docker, as the current user so that the container can read the
 // temporary directory.
 //
-//   node scripts/test-alert-queries.mjs [rules file]
+//   node scripts/checks/test-alert-queries.mjs [rules file]
 
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const testsDir = join(root, 'tests/alerts');
 const rulesFile = process.argv[2] ?? join(root, 'deploy/overlays/local/observability/alerting/rules.json');
 const image = 'quay.io/prometheus/prometheus:v3.15.0';

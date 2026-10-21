@@ -14,7 +14,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 - The diff scope, such as `git diff main...HEAD`.
 - The branch name and the checkpoint commits, such as `git log main..HEAD`.
 - The PR title, description, and labels.
-- The output of `node scripts/check-pr-metadata.mjs` for these inputs.
+- The output of `node scripts/checks/check-pr-metadata.mjs` for these inputs.
 
 ## Process
 
@@ -22,7 +22,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 2. List the changed files and the other inputs. For each one, find every matching convention in the `Conventions` tables of `AGENTS.md`. One artifact can match several conventions. For example, a PR matches the pull request convention, the commit message convention, and the label convention. Skip the Markdown and English prose convention, the planning conventions, and the ADR convention, because `writing-reviewer`, `planning-reviewer`, and `adr-reviewer` check them. Check the label convention for the PR only.
 3. Read each matching convention in full, including its template, rules, exclusions, and examples.
 4. Check each artifact against each rule of its conventions. Check the scope and exclusions of a convention before you report a finding, because some conventions exclude paths such as `.agents/` and `.claude/`.
-5. Skip the rules that the comment at the top of `scripts/check-pr-metadata.mjs` lists, because the caller runs that script before the review, and CI runs it again on each PR change. If its output has a finding, report it as Required. If you did not get its output, check those rules too, and say so in the report.
+5. Skip the rules that the comment at the top of `scripts/checks/check-pr-metadata.mjs` lists, because the caller runs that script before the review, and CI runs it again on each PR change. If its output has a finding, report it as Required. If you did not get its output, check those rules too, and say so in the report.
 6. Check that the change does not weaken `CONSTRAINTS.md`.
 7. For each term that the change adds or gives a new meaning, check that `GLOSSARY.md` defines it and that no other changed file defines it, as the [Glossary entry](../../docs/conventions/glossary-entries.md) conventions state.
 

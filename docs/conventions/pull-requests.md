@@ -126,7 +126,7 @@ A PR has a title, [What changed](#what-changed), [Why](#why), [Breaking changes]
 - Before you open or update a PR, run `task check:task`, `task git:diff:check`, and each command in the [Verification](github-issues.md#verification) list of each related Issue. If Markdown changes, also run `task markdown:check`.
 - If a focused check proves behavior that these commands do not cover, add it.
 - Before you open or update a PR, run the metadata check with these steps:
-  1. Run `node scripts/check-pr-metadata.mjs --title "<title>" --labels "<label>,<label>" --body-file <description-file>`.
+  1. Run `node scripts/checks/check-pr-metadata.mjs --title "<title>" --labels "<label>,<label>" --body-file <description-file>`.
   2. Fix each finding.
 
   The script makes sure that the branch name, checkpoint commits, title, labels, and description follow the conventions. The rules that need no judgment come from this convention, the [Branch name](branch-names.md) convention, the [Commit message](commit-messages.md) convention, and the [GitHub label](github-labels.md) convention. They also come from the `simple-english` skill that the [Markdown and English prose](markdown-and-english-prose.md) convention requires. The [PR metadata](../../.github/workflows/pr-metadata.yml) workflow runs the same check after each change to the PR.

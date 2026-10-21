@@ -84,7 +84,7 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | review role | A check of 1 aspect of a change, such as the code or the conventions, that a reviewer runs before a commit or a PR. The [Review roles](.agents/rules/review-roles.md) rules list the roles. |
 | reviewer | An agent that runs 1 review role. |
 | runner | A module in `.agents/scripts/review-runners/` that starts the CLI of 1 agent for a review. |
-| service paths | The paths of a service, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service. |
+| service paths | The paths of a service, with the service name in place of `<service>`: `services/<service>/`, `contracts/proto/flowspace/<service>/`, `contracts/events/flowspace/<service>/`, `deploy/base/<service>/`, `deploy/overlays/local/<service>/`, `docs/specs/<service>-*`, `tasks/<service>-*`, `docs/<service>-*`, `docs/security/<service>-*`, `scripts/local/*<service>*`, the `<service>:*` tasks in `Taskfile.yaml`, and the Bruno requests in `tests/smoke/bruno/` that call the service. |
 | staged tree | The Git tree object of the files that `git add` prepared for the next commit. |
 | type label | A `type:*` label that names the type of a change. |
 | work for later | Work that a PR does not do but shows to be needed, such as a gap that the PR finds or a step that its goal still needs. |

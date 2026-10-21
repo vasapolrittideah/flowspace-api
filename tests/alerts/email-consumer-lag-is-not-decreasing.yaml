@@ -1,5 +1,5 @@
 # Regression tests for the query of the `Email consumer lag is not decreasing`
-# rule. scripts/test-alert-queries.mjs writes the query to rules.json and runs
+# rule. scripts/checks/test-alert-queries.mjs writes the query to rules.json and runs
 # promtool. The worker reports the lag every 30 seconds, and `_` is a missing
 # sample, such as while the worker is stopped.
 rule_files: [rules.json]

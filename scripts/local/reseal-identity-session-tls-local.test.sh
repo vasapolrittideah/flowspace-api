@@ -3,8 +3,8 @@ set -eu
 
 root=$(mktemp -d)
 trap 'rm -rf "$root"' EXIT
-mkdir -p "$root/scripts" "$root/bin" "$root/state" "$root/.secrets/identity-session" "$root/deploy/overlays/local/identity" "$root/deploy/overlays/local/workspace"
-cp scripts/reseal-identity-session-tls-local.sh "$root/scripts/"
+mkdir -p "$root/scripts/local" "$root/bin" "$root/state" "$root/.secrets/identity-session" "$root/deploy/overlays/local/identity" "$root/deploy/overlays/local/workspace"
+cp scripts/local/reseal-identity-session-tls-local.sh "$root/scripts/local/"
 certs="$root/.secrets/identity-session"
 openssl genpkey -algorithm ED25519 -out "$certs/ca.key"
 openssl req -new -x509 -key "$certs/ca.key" -out "$certs/ca.crt" -days 365 -subj '/CN=Test CA' -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' -addext 'keyUsage=critical,keyCertSign,cRLSign'
@@ -63,7 +63,7 @@ esac
 SH
 chmod +x "$root/bin/kubectl" "$root/bin/helm" "$root/bin/kubeseal"
 
-PATH="$root/bin:$PATH" sh "$root/scripts/reseal-identity-session-tls-local.sh" > "$root/state/output"
+PATH="$root/bin:$PATH" sh "$root/scripts/local/reseal-identity-session-tls-local.sh" > "$root/state/output"
 for name in identity workspace; do
   grep -q "name: $name-session-tls" "$root/deploy/overlays/local/$name/session-tls-sealed-secret.yaml"
   grep -q "tls.key: encrypted-$name" "$root/deploy/overlays/local/$name/session-tls-sealed-secret.yaml"
@@ -73,13 +73,13 @@ grep -q -- '--version 2.19.1' "$root/state/helm"
 for name in identity workspace; do
   printf 'previous manifest\n' > "$root/deploy/overlays/local/$name/session-tls-sealed-secret.yaml"
 done
-if FLOWSPACE_RESEAL_TEST_FAIL_WORKSPACE=1 PATH="$root/bin:$PATH" sh "$root/scripts/reseal-identity-session-tls-local.sh" > "$root/state/output" 2>&1; then
+if FLOWSPACE_RESEAL_TEST_FAIL_WORKSPACE=1 PATH="$root/bin:$PATH" sh "$root/scripts/local/reseal-identity-session-tls-local.sh" > "$root/state/output" 2>&1; then
   exit 1
 fi
 for name in identity workspace; do
   test "$(cat "$root/deploy/overlays/local/$name/session-tls-sealed-secret.yaml")" = 'previous manifest'
 done
 
-if FLOWSPACE_RESEAL_TEST_CONTEXT=k3d-other PATH="$root/bin:$PATH" sh "$root/scripts/reseal-identity-session-tls-local.sh" > "$root/state/output" 2>&1; then
+if FLOWSPACE_RESEAL_TEST_CONTEXT=k3d-other PATH="$root/bin:$PATH" sh "$root/scripts/local/reseal-identity-session-tls-local.sh" > "$root/state/output" 2>&1; then
   exit 1
 fi

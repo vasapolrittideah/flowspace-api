@@ -15,7 +15,7 @@ After Tilt deploys Identity, run these checks in another terminal:
 
 ```sh
 task secrets
-sh scripts/smoke-identity-session-local.sh
+sh scripts/local/smoke-identity-session-local.sh
 ```
 
 The setup script installs the pinned Sealed Secrets controller, creates one local CA and three leaf certificates, seals separate Identity and Workspace Secrets, validates both manifests, and sets the Workspace certificate fingerprint in Identity's allowlist. It stops if any private key already exists. Keep `.secrets/identity-session/` outside Git. Back up the CA key and the controller keys outside Git before relying on the encrypted manifests after a cluster rebuild. The CA private key must never enter Kubernetes.
@@ -58,7 +58,7 @@ After Tilt starts, make sure that both SealedSecrets show `True` in another term
 
 ```sh
 kubectl --context k3d-flowspace -n flowspace-local get sealedsecret identity-session-tls workspace-session-tls -o 'custom-columns=NAME:.metadata.name,SYNCED:.status.conditions[0].status'
-sh scripts/smoke-identity-session-local.sh
+sh scripts/local/smoke-identity-session-local.sh
 ```
 
 The Workspace allowlist stays the same because this procedure reuses its certificate.

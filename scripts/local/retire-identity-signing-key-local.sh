@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 test "$#" -eq 0
 config=deploy/overlays/local/identity/kustomization.yaml
 state=.secrets/identity-signing-old-key-last-use

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 umask 077
 certs=.secrets/identity-session
 test "$(kubectl config current-context)" = k3d-flowspace
@@ -44,4 +44,4 @@ awk -v fingerprint="$fingerprint" '/SESSION_CALLER_ALLOWLIST=/ { count++; sub(/S
 mv "$certs/kustomization.yaml" "$config"
 mv "$certs/identity-sealed.yaml" deploy/overlays/local/identity/session-tls-sealed-secret.yaml
 mv "$certs/workspace-sealed.yaml" deploy/overlays/local/workspace/session-tls-sealed-secret.yaml
-printf 'Local session TLS is sealed. Run tilt up, task secrets, and sh scripts/smoke-identity-session-local.sh.\n'
+printf 'Local session TLS is sealed. Run tilt up, task secrets, and sh scripts/local/smoke-identity-session-local.sh.\n'

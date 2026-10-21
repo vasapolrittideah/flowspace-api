@@ -17,7 +17,7 @@ type signupRepository struct {
 	transaction *signupTransaction
 }
 
-func (r *signupRepository) WithinTransaction(_ context.Context, fn func(output.AccountTransaction) error) error {
+func (r *signupRepository) WithinTransaction(_ context.Context, fn func(output.SignupTransaction) error) error {
 	if err := fn(r.transaction); err != nil {
 		return err
 	}

@@ -128,6 +128,9 @@ func TestIdentityRepository(t *testing.T) {
 	t.Run("password reset consumes proof and revokes sessions atomically", func(t *testing.T) {
 		testPasswordResetRepository(t, pool)
 	})
+	t.Run("password reset writes reject missing accounts and malformed challenge IDs", func(t *testing.T) {
+		testPasswordResetWriteFailures(t, pool)
+	})
 	t.Run("invalid reset codes keep practical timing across account states", func(t *testing.T) {
 		testPasswordResetInvalidCodeTiming(t, pool)
 	})
@@ -145,7 +148,7 @@ func TestIdentityRepository(t *testing.T) {
 func insertTracedOutboxEvent(ctx context.Context, t *testing.T, pool *pgxpool.Pool, subject string) string {
 	t.Helper()
 	var challengeID string
-	err := identitypostgres.NewAccountRepository(pool).WithinTransaction(ctx, func(tx outbound.AccountTransaction) error {
+	err := identitypostgres.NewAccountRepository(pool).WithinTransaction(ctx, func(tx outbound.SignupTransaction) error {
 		if err := tx.CreateAccount(ctx, subject, subject+"@example.com", "$argon2id$test"); err != nil {
 			return err
 		}
@@ -1934,4 +1937,44 @@ func testAllSessionLogout(t *testing.T, pool *pgxpool.Pool) {
 			t.Fatalf("old session survived logout: %v", err)
 		}
 	})
+}
+
+func testPasswordResetWriteFailures(t *testing.T, pool *pgxpool.Pool) {
+	ctx := context.Background()
+	repository := identitypostgres.NewAccountRepository(pool)
+	const missingSubject = "password-reset-missing-subject"
+	hasMessage := func(message string) func(error) bool {
+		return func(err error) bool { return err != nil && err.Error() == message }
+	}
+	for _, test := range []struct {
+		name  string
+		write func(outbound.PasswordResetTransaction) error
+		match func(error) bool
+	}{
+		{
+			name:  "malformed challenge ID",
+			write: func(tx outbound.PasswordResetTransaction) error { return tx.DeleteChallengeDelivery(ctx, "not-a-uuid") },
+			match: uuid.IsInvalidLengthError,
+		},
+		{
+			name: "missing password account",
+			write: func(tx outbound.PasswordResetTransaction) error {
+				return tx.UpdatePasswordHash(ctx, missingSubject, "hash")
+			},
+			match: hasMessage("password account unavailable"),
+		},
+		{
+			name: "missing notice account",
+			write: func(tx outbound.PasswordResetTransaction) error {
+				return tx.QueuePasswordChangeNotice(ctx, missingSubject)
+			},
+			match: hasMessage("password notice account unavailable"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := repository.WithinPasswordResetTransaction(ctx, test.write); !test.match(err) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
 }

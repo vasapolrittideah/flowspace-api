@@ -14,7 +14,7 @@ import (
 var ErrSignupUnavailable = errors.New("signup unavailable")
 
 type SignupService struct {
-	repository  outbound.AccountRepository
+	repository  outbound.SignupRepository
 	signer      outbound.TokenSigner
 	protector   outbound.DeliveryProtector
 	limit       func(context.Context, string) error
@@ -24,7 +24,7 @@ type SignupService struct {
 
 var _ inbound.SignupService = (*SignupService)(nil)
 
-func NewSignupService(repository outbound.AccountRepository, signer outbound.TokenSigner, protector outbound.DeliveryProtector,
+func NewSignupService(repository outbound.SignupRepository, signer outbound.TokenSigner, protector outbound.DeliveryProtector,
 	limit func(context.Context, string) error, compromised func(context.Context, string) (bool, error), verifierKey []byte,
 ) *SignupService {
 	return &SignupService{
@@ -53,7 +53,7 @@ func (s *SignupService) CreateAccount(ctx context.Context, request inbound.Creat
 		return inbound.CreateAccountResult{}, ErrSignupUnavailable
 	}
 	var result inbound.CreateAccountResult
-	err = s.repository.WithinTransaction(ctx, func(tx outbound.AccountTransaction) error {
+	err = s.repository.WithinTransaction(ctx, func(tx outbound.SignupTransaction) error {
 		var recordErr error
 		result, recordErr = s.createRecords(ctx, tx, subject.String(), email, hash)
 		return recordErr
@@ -67,7 +67,7 @@ func (s *SignupService) CreateAccount(ctx context.Context, request inbound.Creat
 	return result, nil
 }
 
-func (s *SignupService) createRecords(ctx context.Context, tx outbound.AccountTransaction, subject, email, hash string) (inbound.CreateAccountResult, error) {
+func (s *SignupService) createRecords(ctx context.Context, tx outbound.SignupTransaction, subject, email, hash string) (inbound.CreateAccountResult, error) {
 	if err := tx.CreateAccount(ctx, subject, email, hash); err != nil {
 		return inbound.CreateAccountResult{}, err
 	}

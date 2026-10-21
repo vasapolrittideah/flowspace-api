@@ -56,7 +56,7 @@ func (d *commitDelayTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, _ pg
 
 // sensitiveTestChange creates an account only through the guarded transaction.
 func sensitiveTestChange(ctx context.Context, pool *pgxpool.Pool, subject, sessionID, marker string, work func() error) error {
-	err := identitypostgres.NewAccountRepository(pool).WithinTransaction(ctx, func(tx outbound.AccountTransaction) error {
+	err := identitypostgres.NewAccountRepository(pool).WithinTransaction(ctx, func(tx outbound.SignupTransaction) error {
 		guarded, ok := tx.(outbound.ReauthenticationTransaction)
 		if !ok {
 			return errors.New("transaction has no re-authentication guard")

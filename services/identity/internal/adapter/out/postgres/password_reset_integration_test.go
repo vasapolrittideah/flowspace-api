@@ -489,6 +489,10 @@ func testPasswordRecoveryForProviderAccounts(t *testing.T, pool *pgxpool.Pool) {
 		}); err != nil {
 			t.Fatalf("reset = %v", err)
 		}
+		var remaining int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM identity_challenge_deliveries WHERE challenge_id = $1`, challengeID).Scan(&remaining); err != nil || remaining != 0 {
+			t.Fatalf("deliveries after reset = %d, %v", remaining, err)
+		}
 		var hash, linkedSubject string
 		if err := pool.QueryRow(ctx, `SELECT account.password_hash, link.account_subject FROM identity_accounts AS account
 			JOIN identity_provider_links AS link ON link.account_subject = account.subject

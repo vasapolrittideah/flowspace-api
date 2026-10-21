@@ -53,9 +53,9 @@ Tasks are tracked in the [flowspace-api](https://github.com/users/vasapolrittide
 
 ### Checkpoint: Re-authentication methods
 
-- [ ] Each method opens the window of the current session only and keeps the end time while the window is open.
-- [ ] Each method counts against the shared limits of its kind and fails closed when the limit store is unavailable.
-- [ ] A code or a provider result of another purpose cannot open the window, and a re-authentication code cannot claim, reset, or verify.
+- [x] Each method opens the window of the current session only and keeps the end time while the window is open.
+- [x] Each method counts against the shared limits of its kind and fails closed when the limit store is unavailable.
+- [x] A code or a provider result of another purpose cannot open the window, and a re-authentication code cannot claim, reset, or verify.
 
 ### Phase 3: Completion checks
 

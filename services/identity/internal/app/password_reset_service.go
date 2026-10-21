@@ -10,11 +10,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var (
-	ErrInvalidPasswordResetCode = errors.New("invalid password reset code")
-	ErrPasswordResetUnavailable = errors.New("password reset unavailable")
-)
-
 type PasswordResetService struct {
 	repository   outbound.PasswordResetRepository
 	sourceLimit  func(context.Context, string) error

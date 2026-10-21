@@ -1,15 +1,12 @@
 package http
 
 import (
-	"errors"
 	"net"
 	"net/http"
 	"net/netip"
 	"slices"
 	"strings"
 )
-
-var ErrInvalidSourceAddress = errors.New("invalid source address")
 
 func TrustedProxies(cidrs []string) ([]netip.Prefix, error) {
 	proxies := make([]netip.Prefix, 0, len(cidrs))

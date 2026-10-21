@@ -2,13 +2,10 @@ package app
 
 import (
 	"context"
-	"errors"
 
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
-
-var ErrAllLogoutUnavailable = errors.New("all-session logout unavailable")
 
 type AllSessionLogoutService struct {
 	repository outbound.AllSessionLogoutRepository

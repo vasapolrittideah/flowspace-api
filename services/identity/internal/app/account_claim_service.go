@@ -12,11 +12,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var (
-	ErrInvalidClaimCode = errors.New("invalid claim code")
-	ErrClaimUnavailable = errors.New("account claim unavailable")
-)
-
 type AccountClaimService struct {
 	repository   outbound.AccountClaimRepository
 	signer       outbound.TokenSigner

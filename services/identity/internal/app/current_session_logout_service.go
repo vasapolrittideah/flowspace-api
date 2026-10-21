@@ -8,8 +8,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var ErrCurrentLogoutUnavailable = errors.New("current session logout unavailable")
-
 type CurrentSessionLogoutService struct {
 	repository outbound.CurrentSessionLogoutRepository
 }

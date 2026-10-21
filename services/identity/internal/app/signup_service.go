@@ -11,8 +11,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var ErrSignupUnavailable = errors.New("signup unavailable")
-
 type SignupService struct {
 	repository  outbound.SignupRepository
 	signer      outbound.TokenSigner

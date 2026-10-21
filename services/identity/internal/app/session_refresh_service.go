@@ -12,12 +12,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var (
-	ErrInvalidRefreshToken    = errors.New("invalid refresh token")
-	ErrUnauthenticatedRefresh = errors.New("refresh token not authenticated")
-	ErrRefreshUnavailable     = errors.New("refresh unavailable")
-)
-
 type SessionRefreshService struct {
 	repository outbound.SessionRefreshRepository
 	signer     outbound.TokenSigner

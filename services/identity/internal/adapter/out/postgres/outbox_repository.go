@@ -14,8 +14,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var ErrOutboxClaimLost = errors.New("outbox claim expired")
-
 type OutboxRepository struct{ queries *sqlc.Queries }
 
 var _ outbound.OutboxRepository = (*OutboxRepository)(nil)

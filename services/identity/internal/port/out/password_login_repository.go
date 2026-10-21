@@ -2,12 +2,6 @@ package outbound
 
 import "context"
 
-type PasswordAccount struct {
-	Subject       string
-	PasswordHash  string
-	EmailVerified bool
-}
-
 type PasswordSessionTransaction interface {
 	SessionRepository
 	LockPasswordAccount(ctx context.Context, subject string) (PasswordAccount, error)

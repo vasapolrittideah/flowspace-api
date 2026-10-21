@@ -10,11 +10,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var (
-	ErrInvalidReauthenticationCode     = errors.New("invalid re-authentication code")
-	ErrReauthenticationEmailUnverified = errors.New("verified email required")
-)
-
 type CodeReauthenticationService struct {
 	repository                                        outbound.CodeReauthenticationRepository
 	protector                                         outbound.DeliveryProtector

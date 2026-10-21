@@ -2,12 +2,6 @@ package outbound
 
 import "context"
 
-type PasswordRecoveryAccount struct {
-	Subject       string
-	EmailVerified bool
-	HasPassword   bool
-}
-
 type PasswordResetCodeTransaction interface {
 	GetAccountForPasswordRecovery(ctx context.Context, email string) (PasswordRecoveryAccount, bool, error)
 	CanIssueCode(ctx context.Context, subject string) (bool, error)

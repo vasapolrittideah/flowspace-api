@@ -10,8 +10,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var ErrClaimCodeUnavailable = errors.New("claim code unavailable")
-
 // ponytail: This fixed floor masks paths under 150 ms; measure and raise it if eligible requests exceed that time.
 const claimResponseFloor = 150 * time.Millisecond
 

@@ -43,8 +43,6 @@ func NewProviderIdentity(clientID, clientSecret string, endpoints Endpoints, cli
 	return &ProviderIdentity{clientID: clientID, clientSecret: clientSecret, endpoints: endpoints, client: client}
 }
 
-var errRejected = errors.New("github rejected the request")
-
 func (p *ProviderIdentity) VerifyProviderIdentity(ctx context.Context, exchange outbound.ProviderCodeExchange) (outbound.ProviderIdentity, error) {
 	config := oauth2.Config{
 		ClientID: p.clientID, ClientSecret: p.clientSecret, RedirectURL: exchange.CallbackURL,

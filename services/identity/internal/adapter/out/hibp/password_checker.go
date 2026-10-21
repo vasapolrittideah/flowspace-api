@@ -5,15 +5,12 @@ import (
 	"context"
 	"crypto"
 	"encoding/hex"
-	"errors"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
-
-var ErrPasswordCheck = errors.New("password check unavailable")
 
 type PasswordChecker struct{ client *http.Client }
 

@@ -10,8 +10,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var ErrPasswordResetCodeUnavailable = errors.New("password recovery request unavailable")
-
 type PasswordResetCodeService struct {
 	repository  outbound.PasswordResetCodeRepository
 	protector   outbound.DeliveryProtector

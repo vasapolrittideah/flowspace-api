@@ -11,8 +11,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var ErrDeliveryMaterialGone = errors.New("delivery material unavailable")
-
 type DeliveryRepository struct{ pool *pgxpool.Pool }
 
 var _ outbound.DeliveryRepository = (*DeliveryRepository)(nil)

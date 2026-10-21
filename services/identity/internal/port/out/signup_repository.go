@@ -1,11 +1,6 @@
 package outbound
 
-import (
-	"context"
-	"errors"
-)
-
-var ErrAccountExists = errors.New("account already exists")
+import "context"
 
 type SignupTransaction interface {
 	SessionRepository

@@ -2,7 +2,6 @@ package email
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/smtp"
@@ -11,8 +10,6 @@ import (
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
-
-var ErrMailDelivery = errors.New("mail delivery failed")
 
 type MailpitSender struct {
 	address string

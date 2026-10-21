@@ -94,7 +94,7 @@ WHERE provider = $1
   AND state_verifier = $2
   AND state_consumed_at IS NULL
   AND expires_at > statement_timestamp()
-RETURNING id, code_verifier, nonce, callback_url
+RETURNING id, code_verifier, nonce, callback_url, purpose
 `
 
 type ConsumeProviderLoginStateParams struct {
@@ -107,6 +107,7 @@ type ConsumeProviderLoginStateRow struct {
 	CodeVerifier string
 	Nonce        pgtype.Text
 	CallbackUrl  string
+	Purpose      string
 }
 
 func (q *Queries) ConsumeProviderLoginState(ctx context.Context, arg ConsumeProviderLoginStateParams) (ConsumeProviderLoginStateRow, error) {
@@ -117,6 +118,7 @@ func (q *Queries) ConsumeProviderLoginState(ctx context.Context, arg ConsumeProv
 		&i.CodeVerifier,
 		&i.Nonce,
 		&i.CallbackUrl,
+		&i.Purpose,
 	)
 	return i, err
 }

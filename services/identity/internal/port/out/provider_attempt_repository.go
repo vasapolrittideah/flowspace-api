@@ -5,28 +5,15 @@ import (
 	"time"
 )
 
-// ProviderAttempt binds one provider attempt to its proofs. The attempt
-// token and state are stored only as keyed verifiers. A re-authentication
-// attempt also binds the subject and session that started it. A login attempt
-// leaves both empty.
-type ProviderAttempt struct {
-	Subject              string
-	SessionID            string
-	Provider             string
-	AttemptTokenVerifier [32]byte
-	StateVerifier        [32]byte
-	CodeVerifier         string
-	Nonce                string
-	CallbackURL          string
-}
-
-// ProviderAttemptProof is the stored proof for an attempt whose state was
-// consumed by a callback.
+// ProviderAttemptProof is the stored proof for an attempt after a callback
+// consumes its state. Reauthentication is true for an attempt with the
+// re-authentication purpose.
 type ProviderAttemptProof struct {
-	ID           string
-	CodeVerifier string
-	Nonce        string
-	CallbackURL  string
+	ID               string
+	Reauthentication bool
+	CodeVerifier     string
+	Nonce            string
+	CallbackURL      string
 }
 
 type ProviderAttemptRepository interface {

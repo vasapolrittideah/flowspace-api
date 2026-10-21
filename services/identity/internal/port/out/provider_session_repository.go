@@ -2,15 +2,6 @@ package outbound
 
 import "context"
 
-// ProviderResult is the verified provider identity of a claimed attempt.
-type ProviderResult struct {
-	Provider      string
-	Subject       string
-	Email         string
-	EmailVerified bool
-	HostedDomain  string
-}
-
 // LinkedAccount is the active account linked to a provider identity.
 type LinkedAccount struct {
 	Subject       string

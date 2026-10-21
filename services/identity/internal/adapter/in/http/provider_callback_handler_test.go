@@ -15,14 +15,15 @@ import (
 
 type fakeProviderCallback struct {
 	fakeProviderLogin
-	callback inbound.CompleteProviderCallbackInput
-	code     string
-	err      error
+	callback         inbound.CompleteProviderCallbackInput
+	code             string
+	reauthentication bool
+	err              error
 }
 
-func (s *fakeProviderCallback) CompleteProviderCallback(_ context.Context, input inbound.CompleteProviderCallbackInput) (string, error) {
+func (s *fakeProviderCallback) CompleteProviderCallback(_ context.Context, input inbound.CompleteProviderCallbackInput) (inbound.ProviderCallbackResult, error) {
 	s.callback = input
-	return s.code, s.err
+	return inbound.ProviderCallbackResult{HandoffCode: s.code, Reauthentication: s.reauthentication}, s.err
 }
 
 func serveProviderCallback(t *testing.T, service inbound.ProviderLoginService, target string) *httptest.ResponseRecorder {
@@ -62,6 +63,24 @@ func TestProviderCallbackShowsHandoffCodeOnce(t *testing.T) {
 	for _, secret := range []string{"state-value", "provider-code", "accessToken", "refreshToken"} {
 		if strings.Contains(body, secret) {
 			t.Fatalf("callback page contains %s", secret)
+		}
+	}
+}
+
+func TestProviderCallbackNamesTheAttemptPurpose(t *testing.T) {
+	for _, test := range []struct {
+		reauthentication    bool
+		title, want, absent string
+	}{
+		{false, "<title>Flowspace sign-in</title>", "Copy your sign-in code", "re-authentication"},
+		{true, "<title>Flowspace re-authentication</title>", "Copy your re-authentication code", "sign-in"},
+	} {
+		service := &fakeProviderCallback{code: "handoff-code-value", reauthentication: test.reauthentication}
+		response := serveProviderCallback(t, service, "/v1/provider-login-callbacks/github?state=state-value&code=provider-code")
+		checkCallbackPageHeaders(t, response)
+		body := response.Body.String()
+		if response.Code != http.StatusOK || !strings.Contains(body, test.title) || !strings.Contains(body, test.want) || strings.Contains(body, test.absent) || strings.Count(body, "handoff-code-value") != 1 {
+			t.Fatalf("re-authentication %t: callback = %d %s", test.reauthentication, response.Code, body)
 		}
 	}
 }

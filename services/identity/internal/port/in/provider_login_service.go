@@ -2,18 +2,11 @@ package inbound
 
 import (
 	"context"
-	"time"
 )
 
 type StartProviderLoginInput struct {
 	Provider string
 	Source   string
-}
-
-type StartProviderLoginResult struct {
-	AuthorizationURL string
-	AttemptToken     string
-	ExpiresAt        time.Time
 }
 
 // CompleteProviderCallbackInput is the provider response to a callback route.
@@ -24,6 +17,13 @@ type CompleteProviderCallbackInput struct {
 	Code     string
 	Denied   bool
 	Source   string
+}
+
+// ProviderCallbackResult is the one-time handoff code of a callback.
+// Reauthentication is true when the attempt has the re-authentication purpose.
+type ProviderCallbackResult struct {
+	HandoffCode      string
+	Reauthentication bool
 }
 
 type CreateProviderSessionInput struct {
@@ -37,9 +37,9 @@ type CreateProviderSessionResult = CreatePasswordSessionResult
 
 type ProviderLoginService interface {
 	StartProviderLogin(ctx context.Context, input StartProviderLoginInput) (StartProviderLoginResult, error)
-	// CompleteProviderCallback validates a provider callback and returns a
-	// one-time handoff code.
-	CompleteProviderCallback(ctx context.Context, input CompleteProviderCallbackInput) (string, error)
+	// CompleteProviderCallback makes sure that a provider callback is valid.
+	// It returns a one-time handoff code and the purpose of the attempt.
+	CompleteProviderCallback(ctx context.Context, input CompleteProviderCallbackInput) (ProviderCallbackResult, error)
 	// CreateProviderSession claims a provider result with both handoff proofs
 	// and creates one session for the linked account.
 	CreateProviderSession(ctx context.Context, input CreateProviderSessionInput) (CreateProviderSessionResult, error)

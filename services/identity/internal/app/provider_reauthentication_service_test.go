@@ -246,7 +246,7 @@ func TestCompleteProviderReauthenticationRejectsUnlinkedProviderAccount(t *testi
 	if !errors.Is(err, app.ErrProviderAccountUnavailable) || !result.ExpiresAt.IsZero() {
 		t.Fatalf("result = %+v, error = %v", result, err)
 	}
-	// The claim commits, so the handoff code cannot be retried.
+	// The claim commits, so the caller cannot retry the handoff code.
 	if len(f.repository.writes) != 0 || f.repository.commits != 1 || len(f.failures) != 0 || len(f.attempts.handoffFails) != 0 {
 		t.Fatalf("writes = %v, commits = %d, failures = %v", f.repository.writes, f.repository.commits, f.failures)
 	}

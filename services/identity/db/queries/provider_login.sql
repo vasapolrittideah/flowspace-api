@@ -17,7 +17,7 @@ WHERE provider = sqlc.arg(provider)
   AND state_verifier = sqlc.arg(state_verifier)
   AND state_consumed_at IS NULL
   AND expires_at > statement_timestamp()
-RETURNING id, code_verifier, nonce, callback_url;
+RETURNING id, code_verifier, nonce, callback_url, purpose;
 
 -- name: RecordProviderLoginResult :execrows
 UPDATE identity_provider_login_attempts

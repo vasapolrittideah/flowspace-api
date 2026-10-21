@@ -64,7 +64,7 @@ type providerAttemptCreator interface {
 	CreateProviderAttempt(ctx context.Context, attempt outbound.ProviderAttempt) (time.Time, error)
 }
 
-// start stores a new attempt with the binding of attempt in attempts and
+// start stores a new attempt in attempts with the binding from attempt and
 // returns its authorization URL.
 func (s *ProviderLoginService) start(ctx context.Context, input inbound.StartProviderLoginInput, attempts providerAttemptCreator,
 	attempt outbound.ProviderAttempt,
@@ -112,49 +112,49 @@ func (s *ProviderLoginService) start(ctx context.Context, input inbound.StartPro
 	}, nil
 }
 
-func (s *ProviderLoginService) CompleteProviderCallback(ctx context.Context, input inbound.CompleteProviderCallbackInput) (string, error) {
+func (s *ProviderLoginService) CompleteProviderCallback(ctx context.Context, input inbound.CompleteProviderCallbackInput) (inbound.ProviderCallbackResult, error) {
 	if s.repository == nil || s.callbackLimit == nil || len(s.verifierKey) != 32 {
-		return "", ErrProviderLoginUnavailable
+		return inbound.ProviderCallbackResult{}, ErrProviderLoginUnavailable
 	}
 	// The limit counts every callback, including invalid ones.
 	if err := s.callbackLimit(ctx, input.Source); err != nil {
-		return "", err
+		return inbound.ProviderCallbackResult{}, err
 	}
 	provider := domain.Provider(input.Provider)
 	if _, known := providerAuthorization[provider]; !known || input.State == "" {
-		return "", ErrInvalidProviderCallback
+		return inbound.ProviderCallbackResult{}, ErrInvalidProviderCallback
 	}
 	identity := s.clients[provider].Identity
 	if identity == nil {
-		return "", ErrProviderLoginUnavailable
+		return inbound.ProviderCallbackResult{}, ErrProviderLoginUnavailable
 	}
 	proof, found, err := s.repository.ConsumeProviderState(ctx, string(provider),
 		domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretState, input.State))
 	if err != nil {
-		return "", unavailable(err)
+		return inbound.ProviderCallbackResult{}, unavailable(err)
 	}
 	if !found {
-		return "", ErrInvalidProviderCallback
+		return inbound.ProviderCallbackResult{}, ErrInvalidProviderCallback
 	}
 	result, err := s.verify(ctx, identity, proof, input)
 	if err != nil {
 		// The state is already consumed, so a lost failure record cannot reopen the attempt.
 		_ = s.repository.FailProviderAttempt(context.WithoutCancel(ctx), proof.ID)
-		return "", err
+		return inbound.ProviderCallbackResult{}, err
 	}
 	code, err := domain.NewProviderHandoffCode()
 	if err != nil {
-		return "", ErrProviderLoginUnavailable
+		return inbound.ProviderCallbackResult{}, ErrProviderLoginUnavailable
 	}
 	stored, err := s.repository.RecordProviderResult(ctx, proof.ID, result,
 		domain.ProviderSecretVerifier(s.verifierKey, domain.ProviderSecretHandoffCode, code))
 	if err != nil {
-		return "", unavailable(err)
+		return inbound.ProviderCallbackResult{}, unavailable(err)
 	}
 	if !stored {
-		return "", ErrInvalidProviderCallback
+		return inbound.ProviderCallbackResult{}, ErrInvalidProviderCallback
 	}
-	return code, nil
+	return inbound.ProviderCallbackResult{HandoffCode: code, Reauthentication: proof.Reauthentication}, nil
 }
 
 func (s *ProviderLoginService) verify(ctx context.Context, identity outbound.ProviderIdentityVerifier, proof outbound.ProviderAttemptProof,

@@ -80,20 +80,20 @@ func testProviderReauthentication(t *testing.T, pool *pgxpool.Pool, db *sql.DB) 
 		return subject, providerSubject, session(t, subject), session(t, subject)
 	}
 	// callback completes the provider callback of a started attempt for the provider identity.
-	callback := func(t *testing.T, s providerReauthenticationServices, provider, providerSubject string, result inbound.StartProviderLoginResult) string {
+	callback := func(t *testing.T, s providerReauthenticationServices, provider, providerSubject string, result inbound.StartProviderLoginResult, reauthentication bool) string {
 		t.Helper()
 		authorization, err := url.Parse(result.AuthorizationURL)
 		if err != nil {
 			t.Fatal(err)
 		}
 		*identity = outbound.ProviderIdentity{Subject: providerSubject, Email: "other@example.com", EmailVerified: true}
-		code, err := s.login.CompleteProviderCallback(ctx, inbound.CompleteProviderCallbackInput{
+		callback, err := s.login.CompleteProviderCallback(ctx, inbound.CompleteProviderCallbackInput{
 			Provider: provider, State: authorization.Query().Get("state"), Code: "provider-code", Source: "192.0.2.240",
 		})
-		if err != nil {
-			t.Fatal(err)
+		if err != nil || callback.Reauthentication != reauthentication {
+			t.Fatalf("callback re-authentication = %t, want %t, error = %v", callback.Reauthentication, reauthentication, err)
 		}
-		return code
+		return callback.HandoffCode
 	}
 	start := func(t *testing.T, s providerReauthenticationServices, subject, sessionID, provider, providerSubject string) (string, string) {
 		t.Helper()
@@ -103,7 +103,7 @@ func testProviderReauthentication(t *testing.T, pool *pgxpool.Pool, db *sql.DB) 
 		if err != nil {
 			t.Fatal(err)
 		}
-		return result.AttemptToken, callback(t, s, provider, providerSubject, result)
+		return result.AttemptToken, callback(t, s, provider, providerSubject, result, true)
 	}
 	complete := func(s providerReauthenticationServices, subject, sessionID, token, code string) (inbound.CompleteProviderReauthenticationResult, error) {
 		return s.reauthenticate.CompleteProviderReauthentication(ctx, inbound.CompleteProviderReauthenticationInput{
@@ -180,7 +180,7 @@ func testProviderReauthentication(t *testing.T, pool *pgxpool.Pool, db *sql.DB) 
 		if err != nil {
 			t.Fatal(err)
 		}
-		code := callback(t, services, "google", providerSubject, result)
+		code := callback(t, services, "google", providerSubject, result, false)
 		if _, err := complete(services, subject, id, result.AttemptToken, code); !errors.Is(err, app.ErrProviderHandoffRejected) {
 			t.Fatalf("a login attempt re-authenticated: %v", err)
 		}

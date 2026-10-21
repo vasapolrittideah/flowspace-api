@@ -26,29 +26,6 @@ func (r *ProviderAttemptRepository) CreateProviderAttempt(ctx context.Context, a
 	return createProviderAttempt(ctx, sqlc.New(r.pool), attempt)
 }
 
-// createProviderAttempt stores an attempt with the re-authentication purpose
-// when it binds a session, and with the login purpose otherwise.
-func createProviderAttempt(ctx context.Context, queries *sqlc.Queries, attempt outbound.ProviderAttempt) (time.Time, error) {
-	params := sqlc.CreateProviderLoginAttemptParams{
-		Provider:             attempt.Provider,
-		AttemptTokenVerifier: attempt.AttemptTokenVerifier[:],
-		StateVerifier:        attempt.StateVerifier[:],
-		CodeVerifier:         attempt.CodeVerifier,
-		Nonce:                pgtype.Text{String: attempt.Nonce, Valid: attempt.Nonce != ""},
-		CallbackUrl:          attempt.CallbackURL,
-		Purpose:              "login",
-	}
-	if attempt.SessionID != "" {
-		session, err := parseUUID(attempt.SessionID)
-		if err != nil || attempt.Subject == "" {
-			return time.Time{}, outbound.ErrUnauthenticated
-		}
-		params.Purpose, params.AccountSubject, params.SessionID = "reauthenticate", pgtype.Text{String: attempt.Subject, Valid: true}, session
-	}
-	expiresAt, err := queries.CreateProviderLoginAttempt(ctx, params)
-	return expiresAt.Time, err
-}
-
 func (r *ProviderAttemptRepository) ConsumeProviderState(ctx context.Context, provider string, stateVerifier [32]byte) (outbound.ProviderAttemptProof, bool, error) {
 	row, err := sqlc.New(r.pool).ConsumeProviderLoginState(ctx, sqlc.ConsumeProviderLoginStateParams{Provider: provider, StateVerifier: stateVerifier[:]})
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -58,7 +35,8 @@ func (r *ProviderAttemptRepository) ConsumeProviderState(ctx context.Context, pr
 		return outbound.ProviderAttemptProof{}, false, err
 	}
 	return outbound.ProviderAttemptProof{
-		ID: uuid.UUID(row.ID.Bytes).String(), CodeVerifier: row.CodeVerifier, Nonce: row.Nonce.String, CallbackURL: row.CallbackUrl,
+		ID: uuid.UUID(row.ID.Bytes).String(), Reauthentication: row.Purpose == providerAttemptReauthentication,
+		CodeVerifier: row.CodeVerifier, Nonce: row.Nonce.String, CallbackURL: row.CallbackUrl,
 	}, true, nil
 }
 

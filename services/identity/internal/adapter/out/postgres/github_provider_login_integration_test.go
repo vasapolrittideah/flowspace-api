@@ -86,9 +86,10 @@ func testGitHubProviderLogin(t *testing.T, ctx context.Context, pool *pgxpool.Po
 		return started.AttemptToken, authorization.Query().Get("state")
 	}
 	callback := func(providerName, state string) (string, error) {
-		return service.CompleteProviderCallback(ctx, inbound.CompleteProviderCallbackInput{
+		result, err := service.CompleteProviderCallback(ctx, inbound.CompleteProviderCallbackInput{
 			Provider: providerName, State: state, Code: "github-code", Source: "192.0.2.95",
 		})
+		return result.HandoffCode, err
 	}
 	login := func(t *testing.T, userID, emails string, emailStatus int) (inbound.CreateProviderSessionResult, error) {
 		t.Helper()

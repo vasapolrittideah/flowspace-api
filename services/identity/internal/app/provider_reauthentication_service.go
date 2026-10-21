@@ -86,7 +86,7 @@ func (s *ProviderReauthenticationService) CompleteProviderReauthentication(ctx c
 
 // claim claims the provider result of the session and opens its window when
 // the provider identity is linked to the subject. An unlinked result stays
-// claimed, so it cannot be retried.
+// claimed, so the caller cannot retry it.
 func (s *ProviderReauthenticationService) claim(ctx context.Context, tx outbound.ProviderReauthenticationTransaction,
 	input inbound.CompleteProviderReauthenticationInput, attempt, handoff [32]byte,
 ) (bool, error) {

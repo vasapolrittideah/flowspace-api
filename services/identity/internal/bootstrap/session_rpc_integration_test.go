@@ -337,13 +337,13 @@ func testProviderAccountPrivateSessionCheck(ctx context.Context, t *testing.T, p
 	if err != nil {
 		t.Fatal(err)
 	}
-	handoff, err := service.CompleteProviderCallback(ctx, inbound.CompleteProviderCallbackInput{
+	callback, err := service.CompleteProviderCallback(ctx, inbound.CompleteProviderCallbackInput{
 		Provider: "github", State: authorization.Query().Get("state"), Code: "provider-code", Source: "192.0.2.71",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	session, err := service.CreateProviderSession(ctx, inbound.CreateProviderSessionInput{AttemptToken: started.AttemptToken, HandoffCode: handoff, Source: "192.0.2.71"})
+	session, err := service.CreateProviderSession(ctx, inbound.CreateProviderSessionInput{AttemptToken: started.AttemptToken, HandoffCode: callback.HandoffCode, Source: "192.0.2.71"})
 	if err != nil || session.EmailVerified {
 		t.Fatalf("provider session = %q verified %t, %v", session.Subject, session.EmailVerified, err)
 	}

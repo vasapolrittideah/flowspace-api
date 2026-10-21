@@ -16,6 +16,7 @@ UPDATE identity_provider_login_attempts
 SET session_claimed_at = statement_timestamp()
 WHERE attempt_token_verifier = $1
   AND handoff_code_verifier = $2
+  AND purpose = 'login'
   AND session_claimed_at IS NULL
   AND handoff_failures < 5
   AND expires_at > statement_timestamp()
@@ -45,6 +46,44 @@ func (q *Queries) ClaimProviderLoginResult(ctx context.Context, arg ClaimProvide
 		&i.ProviderEmailVerified,
 		&i.ProviderHostedDomain,
 	)
+	return i, err
+}
+
+const claimProviderReauthenticationResult = `-- name: ClaimProviderReauthenticationResult :one
+UPDATE identity_provider_login_attempts
+SET reauthentication_claimed_at = statement_timestamp()
+WHERE attempt_token_verifier = $1
+  AND handoff_code_verifier = $2
+  AND purpose = 'reauthenticate'
+  AND account_subject = $3
+  AND session_id = $4
+  AND reauthentication_claimed_at IS NULL
+  AND handoff_failures < 5
+  AND expires_at > statement_timestamp()
+RETURNING provider, provider_subject
+`
+
+type ClaimProviderReauthenticationResultParams struct {
+	AttemptTokenVerifier []byte
+	HandoffCodeVerifier  []byte
+	AccountSubject       pgtype.Text
+	SessionID            pgtype.UUID
+}
+
+type ClaimProviderReauthenticationResultRow struct {
+	Provider        string
+	ProviderSubject pgtype.Text
+}
+
+func (q *Queries) ClaimProviderReauthenticationResult(ctx context.Context, arg ClaimProviderReauthenticationResultParams) (ClaimProviderReauthenticationResultRow, error) {
+	row := q.db.QueryRow(ctx, claimProviderReauthenticationResult,
+		arg.AttemptTokenVerifier,
+		arg.HandoffCodeVerifier,
+		arg.AccountSubject,
+		arg.SessionID,
+	)
+	var i ClaimProviderReauthenticationResultRow
+	err := row.Scan(&i.Provider, &i.ProviderSubject)
 	return i, err
 }
 
@@ -129,11 +168,13 @@ func (q *Queries) CreateProviderLink(ctx context.Context, arg CreateProviderLink
 
 const createProviderLoginAttempt = `-- name: CreateProviderLoginAttempt :one
 INSERT INTO identity_provider_login_attempts (
-    provider, attempt_token_verifier, state_verifier, code_verifier, nonce, callback_url, expires_at
+    provider, attempt_token_verifier, state_verifier, code_verifier, nonce, callback_url, expires_at,
+    purpose, account_subject, session_id
 )
 VALUES (
     $1, $2, $3, $4,
-    $5, $6, statement_timestamp() + INTERVAL '10 minutes'
+    $5, $6, statement_timestamp() + INTERVAL '10 minutes',
+    $7, $8, $9
 )
 RETURNING expires_at
 `
@@ -145,6 +186,9 @@ type CreateProviderLoginAttemptParams struct {
 	CodeVerifier         string
 	Nonce                pgtype.Text
 	CallbackUrl          string
+	Purpose              string
+	AccountSubject       pgtype.Text
+	SessionID            pgtype.UUID
 }
 
 func (q *Queries) CreateProviderLoginAttempt(ctx context.Context, arg CreateProviderLoginAttemptParams) (pgtype.Timestamptz, error) {
@@ -155,6 +199,9 @@ func (q *Queries) CreateProviderLoginAttempt(ctx context.Context, arg CreateProv
 		arg.CodeVerifier,
 		arg.Nonce,
 		arg.CallbackUrl,
+		arg.Purpose,
+		arg.AccountSubject,
+		arg.SessionID,
 	)
 	var expires_at pgtype.Timestamptz
 	err := row.Scan(&expires_at)
@@ -215,11 +262,35 @@ func (q *Queries) GetLinkedAccountForUpdate(ctx context.Context, arg GetLinkedAc
 	return i, err
 }
 
+const hasProviderLink = `-- name: HasProviderLink :one
+SELECT EXISTS (
+    SELECT 1
+    FROM identity_provider_links
+    WHERE provider = $1
+      AND provider_subject = $2
+      AND account_subject = $3
+)
+`
+
+type HasProviderLinkParams struct {
+	Provider        string
+	ProviderSubject string
+	AccountSubject  string
+}
+
+func (q *Queries) HasProviderLink(ctx context.Context, arg HasProviderLinkParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasProviderLink, arg.Provider, arg.ProviderSubject, arg.AccountSubject)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const recordProviderHandoffFailure = `-- name: RecordProviderHandoffFailure :exec
 UPDATE identity_provider_login_attempts
 SET handoff_failures = handoff_failures + 1
 WHERE attempt_token_verifier = $1
   AND session_claimed_at IS NULL
+  AND reauthentication_claimed_at IS NULL
   AND handoff_failures < 5
   AND expires_at > statement_timestamp()
 `

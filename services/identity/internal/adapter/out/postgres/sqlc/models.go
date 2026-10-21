@@ -81,24 +81,28 @@ type IdentityProviderLink struct {
 }
 
 type IdentityProviderLoginAttempt struct {
-	ID                    pgtype.UUID
-	Provider              string
-	AttemptTokenVerifier  []byte
-	StateVerifier         []byte
-	CodeVerifier          string
-	Nonce                 pgtype.Text
-	CallbackUrl           string
-	CreatedAt             pgtype.Timestamptz
-	ExpiresAt             pgtype.Timestamptz
-	StateConsumedAt       pgtype.Timestamptz
-	FailedAt              pgtype.Timestamptz
-	ProviderSubject       pgtype.Text
-	ProviderEmail         pgtype.Text
-	ProviderEmailVerified pgtype.Bool
-	ProviderHostedDomain  pgtype.Text
-	HandoffCodeVerifier   []byte
-	HandoffFailures       int16
-	SessionClaimedAt      pgtype.Timestamptz
+	ID                        pgtype.UUID
+	Provider                  string
+	AttemptTokenVerifier      []byte
+	StateVerifier             []byte
+	CodeVerifier              string
+	Nonce                     pgtype.Text
+	CallbackUrl               string
+	CreatedAt                 pgtype.Timestamptz
+	ExpiresAt                 pgtype.Timestamptz
+	StateConsumedAt           pgtype.Timestamptz
+	FailedAt                  pgtype.Timestamptz
+	ProviderSubject           pgtype.Text
+	ProviderEmail             pgtype.Text
+	ProviderEmailVerified     pgtype.Bool
+	ProviderHostedDomain      pgtype.Text
+	HandoffCodeVerifier       []byte
+	HandoffFailures           int16
+	SessionClaimedAt          pgtype.Timestamptz
+	Purpose                   string
+	AccountSubject            pgtype.Text
+	SessionID                 pgtype.UUID
+	ReauthenticationClaimedAt pgtype.Timestamptz
 }
 
 type IdentityRotatedRefreshToken struct {

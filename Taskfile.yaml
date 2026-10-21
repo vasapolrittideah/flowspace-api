@@ -235,6 +235,7 @@ tasks:
       - node --test .agents/scripts/review.test.mjs
       - task: constraints:floor
       - task: prose:check
+      - go run ./scripts/check-error-files
       - task: format:check
       - task: secrets
 

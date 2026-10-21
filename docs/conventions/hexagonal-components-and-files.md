@@ -1,6 +1,6 @@
 # Hexagonal component and file conventions
 
-This convention names and groups the handwritten Go components and files under `services/<service>/internal/`.
+This convention names and groups the handwritten Go components and files under `services/<service>/internal/`. Its rule for the `errors.go` file also covers the shared Go packages under the root `internal/` folder.
 
 The [Project structure](../project-structure.md) defines their responsibilities, locations, dependency direction, and the bootstrap composition root. [ADR-0003](../adr/0003-hexagonal-layers-inside-each-service.md) explains the Go architecture.
 
@@ -24,8 +24,11 @@ The [Project structure](../project-structure.md) defines their responsibilities,
 
 - Name each handwritten Go file in snake_case after its main component, capability, or domain concept, as a noun phrase, such as `password_login_service.go` or `email.go`.
 - Name each bootstrap file after its server or worker role, such as `server.go`.
-- Put a helper that several files of 1 package share in its own file, named after what it provides, such as `source_address.go` or `errors.go`.
-- Put the interface, input, and result of an inbound port in `port/in/<capability>_service.go`, with the same file name as its service in `app/`.
+- Put a helper that several files of 1 package share in its own file, named after what it provides, such as `source_address.go`.
+- Put each error that a package declares at package level, such as an `errors.New` variable or an error type, in the `errors.go` file of the package. Apply this rule also to a package that has only 1 other file.
+- In a file under `adapter/`, `app/`, or `port/`, put each data type that the methods of only 1 component use, such as a struct that a method takes or returns, in the file of that component.
+- In a file under `adapter/`, `app/`, or `port/`, if the methods of several components use a data type, put it in a concept file. Name the concept file after the concept that the data type represents, such as `account.go`. Apply this rule also to the input or result of an inbound port. A concept file can hold several related data types.
+- Put the interface of an inbound port in `port/in/<capability>_service.go`, with the same file name as its service in `app/`. Place its input and result by the data type rules above.
 - Keep the type, constructor, shared transaction code, and methods of a concrete repository in 1 file.
 - When 1 handler type serves several capabilities, keep its type, constructor, and shared transport helpers in the main handler file. Put the related RPC methods and error mapping in `<capability>_handler.go`.
 - Keep bootstrap wiring in the existing composition root.
@@ -44,6 +47,7 @@ The [Project structure](../project-structure.md) defines their responsibilities,
 - Do not create a file for each method or action.
 - Do not split files only by line count, RPC method, or SQL query.
 - Do not add a handler type or an interface only to split files.
+- Do not collect unrelated data types in a file only because several components use them, such as `types.go` or `shared_types.go`.
 
 ### Tests
 
@@ -82,3 +86,5 @@ These files follow the convention, and each path starts at `services/<service>/i
 | `adapter/out/keycloak/token_verifier.go` | The file of an outbound adapter named for its capability |
 | `adapter/in/http/identity_handler.go` and `adapter/in/http/password_recovery_handler.go` | The `IdentityHandler` type with shared code in its main file and related RPC methods in a capability file |
 | `adapter/out/postgres/account_repository.go` | The `AccountRepository` that `SignupService` and `PasswordLoginService` share, because they use the same data and transaction code |
+| `domain/errors.go` and `port/out/errors.go` | The errors of each package in its `errors.go` file |
+| `port/out/provider_identity.go` | The `ProviderIdentity` data type, which the methods of several outbound ports use, in a file named after its concept |

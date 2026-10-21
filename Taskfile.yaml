@@ -187,6 +187,8 @@ tasks:
     cmds:
       - sh scripts/local/rotate-identity-session-tls-local.test.sh
       - sh scripts/local/reseal-identity-session-tls-local.test.sh
+      - sh scripts/local/setup-identity-session-tls-local.test.sh
+      - sh scripts/local/setup-identity-session-tls-local-success.test.sh
 
   identity:signing-key:retire:
     desc: Remove the prior local signing public key after the overlap

@@ -3,7 +3,6 @@ package authn
 import (
 	"context"
 	"crypto/ed25519"
-	"errors"
 
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
@@ -11,11 +10,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	identityv1 "github.com/vasapolrittideah/flowspace-api/gen/go/flowspace/identity/v1"
-)
-
-var (
-	ErrUnauthenticated = errors.New("unauthenticated")
-	ErrUnavailable     = errors.New("identity unavailable")
 )
 
 type Claims struct {

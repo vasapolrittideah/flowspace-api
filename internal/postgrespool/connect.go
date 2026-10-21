@@ -3,17 +3,11 @@ package postgrespool
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
-)
-
-var (
-	ErrInvalidConfiguration = errors.New("invalid database configuration")
-	ErrUnavailable          = errors.New("database unavailable")
 )
 
 // Pool is a pgx pool that reports its statistics through the global meter

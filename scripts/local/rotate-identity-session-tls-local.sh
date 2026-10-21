@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 umask 077
 
 if test "$#" -ne 1; then
@@ -92,7 +92,7 @@ if test "$name" = workspace; then
   cp "$config" "$rotation/previous-kustomization.yaml"
   if test "$revoke_first" -eq 1; then set_allowlist "$final"; else set_allowlist "$overlap"; fi
   rollout identity-api
-  sh scripts/smoke-identity-session-local.sh "$rotation/new.crt" "$rotation/new.key"
+  sh scripts/local/smoke-identity-session-local.sh "$rotation/new.crt" "$rotation/new.key"
 fi
 
 mv "$rotation/sealed.yaml" "$manifest"
@@ -107,9 +107,9 @@ done
 test "$actual" = "$expected"
 rollout "$name-api"
 if test "$name" = workspace; then
-  sh scripts/smoke-identity-session-local.sh "$rotation/new.crt" "$rotation/new.key"
+  sh scripts/local/smoke-identity-session-local.sh "$rotation/new.crt" "$rotation/new.key"
 else
-  sh scripts/smoke-identity-session-local.sh
+  sh scripts/local/smoke-identity-session-local.sh
 fi
 
 cp "$certs/$name.crt" "$rotation/previous.crt"
@@ -121,7 +121,7 @@ if test "$name" = workspace; then
   if test "$revoke_first" -eq 0; then set_allowlist "$final"; fi
   rollout identity-api
   rollout workspace-api
-  sh scripts/smoke-identity-session-local.sh
+  sh scripts/local/smoke-identity-session-local.sh
 fi
 
 printf '%s certificate rotated. Old key and manifest are in %s; review and commit the changed encrypted manifest.\n' "$name" "$rotation"

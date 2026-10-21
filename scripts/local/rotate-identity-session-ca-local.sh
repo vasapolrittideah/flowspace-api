@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 umask 077
 context=k3d-flowspace
 namespace=flowspace-local
@@ -90,7 +90,7 @@ for name in identity workspace; do
   kubectl --context "$context" -n "$namespace" rollout restart "deployment/$name-api"
   kubectl --context "$context" -n "$namespace" rollout status "deployment/$name-api" --timeout=180s
 done
-sh scripts/smoke-identity-session-local.sh "$rotation/new/workspace.crt" "$rotation/new/workspace.key" "$rotation/new/ca.crt" "$rotation/new/unapproved.crt" "$rotation/new/unapproved.key"
+sh scripts/local/smoke-identity-session-local.sh "$rotation/new/workspace.crt" "$rotation/new/workspace.key" "$rotation/new/ca.crt" "$rotation/new/unapproved.crt" "$rotation/new/unapproved.key"
 
 for name in ca identity workspace unapproved; do
   cp "$certs/$name.crt" "$rotation/previous-$name.crt"
@@ -100,5 +100,5 @@ for name in ca identity workspace unapproved; do
 done
 if test -f "$certs/ca.srl"; then mv "$certs/ca.srl" "$rotation/previous-ca.srl"; fi
 mv "$rotation/new/ca.srl" "$certs/ca.srl"
-sh scripts/smoke-identity-session-local.sh
+sh scripts/local/smoke-identity-session-local.sh
 printf 'Local session CA rotated. Old keys and manifests are in %s; review and commit both encrypted manifests and the allowlist.\n' "$rotation"

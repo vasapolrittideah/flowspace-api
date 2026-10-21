@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 umask 077
 context=k3d-flowspace
 password=.secrets/grafana-admin-password

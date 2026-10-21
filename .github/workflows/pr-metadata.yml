@@ -27,5 +27,5 @@ jobs:
           BODY: ${{ github.event.pull_request.body }}
         run: |
           printf '%s' "$BODY" > "$RUNNER_TEMP/pr-body.md"
-          node scripts/check-pr-metadata.mjs --base="$BASE" --head="$HEAD" --branch="$BRANCH" --author="$AUTHOR" \
+          node scripts/checks/check-pr-metadata.mjs --base="$BASE" --head="$HEAD" --branch="$BRANCH" --author="$AUTHOR" \
             --title="$TITLE" --labels="$LABELS" --body-file="$RUNNER_TEMP/pr-body.md"

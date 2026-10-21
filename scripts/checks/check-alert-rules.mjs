@@ -7,7 +7,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const alertingDir = join(root, 'deploy/overlays/local/observability/alerting');
 const dashboardsDir = join(root, 'deploy/overlays/local/observability/dashboards');
 const runbookBase = 'https://github.com/vasapolrittideah/flowspace-api/blob/main/docs/runbooks/';

@@ -24,7 +24,7 @@
 // PRs that renovate[bot] opens skip the branch, commit, and description checks, because
 // Renovate writes them.
 //
-//   node scripts/check-pr-metadata.mjs [--base <ref>] [--head <ref>] [--branch <name>]
+//   node scripts/checks/check-pr-metadata.mjs [--base <ref>] [--head <ref>] [--branch <name>]
 //     [--author <login>] [--title <text>] [--labels <a,b>] [--body-file <file>]
 
 import { spawnSync } from 'node:child_process';
@@ -429,7 +429,7 @@ function main() {
       ['base', 'head', 'branch', 'author', 'title', 'labels', 'body-file'].map((name) => [name, { type: 'string' }]),
     ),
   });
-  const root = fileURLToPath(new URL('..', import.meta.url));
+  const root = fileURLToPath(new URL('../..', import.meta.url));
   const findings = run(values, loadRules(root));
   // The findings quote PR metadata that any author controls. In GitHub Actions, stop the
   // runner from reading workflow commands in them, such as ::error:: or ##[warning].

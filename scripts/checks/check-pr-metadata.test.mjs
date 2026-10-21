@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 import { checkBody, checkBranch, checkLabels, checkMessage, checkProse, checkSubject, loadRules, run } from './check-pr-metadata.mjs';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const script = fileURLToPath(new URL('check-pr-metadata.mjs', import.meta.url));
 const rules = loadRules(root);
 const claude = 'Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>';

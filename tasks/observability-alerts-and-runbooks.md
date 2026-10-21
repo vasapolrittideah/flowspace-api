@@ -17,7 +17,7 @@ The plan follows the approved [Observability alerts and runbooks](../docs/specs/
 - The rules query the Prometheus data source by a fixed UID that its provisioning file sets. A rule state is normal when its query returns no data, and error when Grafana cannot query Prometheus.
 - Grafana sends email through Mailpit on port 1025 without authentication or TLS. The sender and the recipient are both `alerts@flowspace.local`, so no other address appears in a notification.
 - The existing `mailpit` NetworkPolicy in `deploy/overlays/local/identity/mail-infra-network-policy.yaml` gets one more source, the Grafana pod. No other policy opens Mailpit.
-- A Node script, `scripts/check-alert-rules.mjs`, checks each rule against the contract of the specification. It makes sure that each `runbook_url` names a file in `docs/runbooks/`. A `node --test` file tests the script. CI runs both in the `Lint Markdown` job, because a runbook change can break the check.
+- A Node script, `scripts/checks/check-alert-rules.mjs`, makes sure that each rule follows the contract of the specification. It makes sure that each `runbook_url` names a file in `docs/runbooks/`. A `node --test` file tests the script. CI runs both in the `Lint Markdown` job, because a runbook change can break the check.
 - Each rule task triggers its symptom in the `local` cluster, records the alert email, and runs the first query of its runbook before the PR merges.
 - The tunnel and the `staging` and `production` overlays do not change.
 

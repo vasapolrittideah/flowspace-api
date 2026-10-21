@@ -3,8 +3,8 @@ set -eu
 
 root=$(mktemp -d)
 trap 'rm -rf "$root"' EXIT
-mkdir -p "$root/scripts" "$root/bin" "$root/state" "$root/.secrets"
-cp scripts/setup-grafana-admin-local.sh "$root/scripts/"
+mkdir -p "$root/scripts/local" "$root/bin" "$root/state" "$root/.secrets"
+cp scripts/local/setup-grafana-admin-local.sh "$root/scripts/local/"
 manifest="$root/deploy/overlays/local/observability/grafana-admin-sealed-secret.yaml"
 export FLOWSPACE_GRAFANA_TEST_ROOT="$root"
 
@@ -37,7 +37,7 @@ SH
 chmod +x "$root/bin/kubectl" "$root/bin/helm" "$root/bin/kubeseal"
 
 # The script refuses to run without a password file.
-if PATH="$root/bin:$PATH" sh "$root/scripts/setup-grafana-admin-local.sh" > "$root/state/output" 2>&1; then
+if PATH="$root/bin:$PATH" sh "$root/scripts/local/setup-grafana-admin-local.sh" > "$root/state/output" 2>&1; then
   exit 1
 fi
 grep -q 'Missing .secrets/grafana-admin-password' "$root/state/output"
@@ -45,7 +45,7 @@ test ! -e "$manifest"
 
 # The script seals the password file into the observability overlay.
 printf 'local-test-password' > "$root/.secrets/grafana-admin-password"
-PATH="$root/bin:$PATH" sh "$root/scripts/setup-grafana-admin-local.sh" > "$root/state/output"
+PATH="$root/bin:$PATH" sh "$root/scripts/local/setup-grafana-admin-local.sh" > "$root/state/output"
 grep -q 'name: grafana-admin' "$manifest"
 grep -q 'admin-password: encrypted' "$manifest"
 grep -q -- '--version 2.19.1' "$root/state/helm"
@@ -56,13 +56,13 @@ fi
 
 # A failed validation keeps the previous manifest.
 printf 'previous manifest\n' > "$manifest"
-if FLOWSPACE_GRAFANA_TEST_FAIL_VALIDATE=1 PATH="$root/bin:$PATH" sh "$root/scripts/setup-grafana-admin-local.sh" > "$root/state/output" 2>&1; then
+if FLOWSPACE_GRAFANA_TEST_FAIL_VALIDATE=1 PATH="$root/bin:$PATH" sh "$root/scripts/local/setup-grafana-admin-local.sh" > "$root/state/output" 2>&1; then
   exit 1
 fi
 test "$(cat "$manifest")" = 'previous manifest'
 
 # The script refuses another Kubernetes context.
-if FLOWSPACE_GRAFANA_TEST_CONTEXT=k3d-other PATH="$root/bin:$PATH" sh "$root/scripts/setup-grafana-admin-local.sh" > "$root/state/output" 2>&1; then
+if FLOWSPACE_GRAFANA_TEST_CONTEXT=k3d-other PATH="$root/bin:$PATH" sh "$root/scripts/local/setup-grafana-admin-local.sh" > "$root/state/output" 2>&1; then
   exit 1
 fi
 grep -q 'Select the k3d-flowspace Kubernetes context.' "$root/state/output"

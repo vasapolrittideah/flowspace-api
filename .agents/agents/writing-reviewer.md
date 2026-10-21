@@ -15,8 +15,8 @@ The caller gives you some or all of these inputs. Review each input that you get
 - The checkpoint commits, such as `git log origin/main..HEAD`.
 - The PR title and description.
 - The text of an Issue, a comment, or a milestone, when the change writes one.
-- The output of `node scripts/check-pr-metadata.mjs` for the PR description and the commits.
-- The output of `node scripts/check-prose.mjs` for the Markdown files and code comments that the branch changes.
+- The output of `node scripts/checks/check-pr-metadata.mjs` for the PR description and the commits.
+- The output of `node scripts/checks/check-prose.mjs` for the Markdown files and code comments that the branch changes.
 
 ## Process
 
@@ -25,7 +25,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 3. For a changed file, check only the text that the change adds or changes. If the change edits part of a paragraph or a bullet, check the whole paragraph or bullet, as the `Changes` rules of the convention state.
 4. Check the Markdown format: sentence-case headings, bullets, numbered lists, and tables as the convention chooses them, backticks, and links. `task markdown:lint` checks the numbers of each numbered list.
 5. Check the prose against the simple-english skill in Plain mode. Count the words of each long sentence. The convention treats 20 words for procedural text and 25 for descriptive text as targets, not maximums. In a text that no script reads, also search for the words and marks that the skill forbids, such as `should`, `may`, `might`, `could`, `would`, contractions, semicolons, and dashes used as connectors.
-6. Skip the rules that the comment at the top of each script lists, in the texts that the script reads. `scripts/check-pr-metadata.mjs` reads the PR description and the commit messages. `scripts/check-prose.mjs` reads the Markdown files and the code comments on their own lines. The caller runs both scripts before the review, and CI runs them again on each PR change. If the output of a script has a finding, report it as Required. If you did not get the output of a script, check its rules too, and say so in the report. Check those rules in every other text, such as an Issue, a milestone, or a comment at the end of a code line, because no script reads them.
+6. Skip the rules that the comment at the top of each script lists, in the texts that the script reads. `scripts/checks/check-pr-metadata.mjs` reads the PR description and the commit messages. `scripts/checks/check-prose.mjs` reads the Markdown files and the code comments on their own lines. The caller runs both scripts before the review, and CI runs them again on each PR change. If the output of a script has a finding, report it as Required. If you did not get the output of a script, check its rules too, and say so in the report. Check those rules in every other text, such as an Issue, a milestone, or a comment at the end of a code line, because no script reads them.
 7. Check the prose against the humanizer skill for patterns that make the text sound generated, such as not-X-but-Y contrasts, forced triads, and inflated claims.
 8. Apply the precedence of the convention. A format that another convention or a tool requires comes first, such as a template heading, a Conventional Commits subject, a Go doc comment prefix, or a harness attribution line.
 

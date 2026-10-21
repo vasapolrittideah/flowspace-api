@@ -54,7 +54,7 @@ The caller gives you some or all of these inputs. Review each input that you get
 | --- | --- | --- |
 | `Unit` | Domain rules and application services | An external test package, such as `app_test`, with handwritten fakes for the ports. No mocking library. |
 | `Integration` | Storage adapters, transactions, migrations, broker clients, and scenarios across several files | A `*_integration_test.go` file with the `integration` build tag. It starts real dependencies in containers, such as PostgreSQL, Redpanda, or Mailpit. |
-| `Cluster` | Behavior across deployed services and platform components | A Bruno request in `tests/smoke/bruno/` or a smoke script in `scripts/` against the local cluster. CI does not run it. |
+| `Cluster` | Behavior across deployed services and platform components | A Bruno request in `tests/smoke/bruno/` or a smoke script in `scripts/local/` against the local cluster. CI does not run it. |
 
 - Does each test use the lowest level that can prove its behavior?
 - Does each fake stand in for a port, such as a repository or a clock, and not for a type inside the same layer?

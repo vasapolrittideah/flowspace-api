@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-const repository = fileURLToPath(new URL('../', import.meta.url));
+const repository = fileURLToPath(new URL('../../', import.meta.url));
 
 test('local passwords and Identity keys are created safely and excluded from Git and Docker', () => {
   const temporary = mkdtempSync(join(tmpdir(), 'flowspace-local-secrets-'));
@@ -16,8 +16,8 @@ test('local passwords and Identity keys are created safely and excluded from Git
     mkdirSync(join(root, '.secrets'), { recursive: true });
     mkdirSync(join(root, '.secrets-other'));
     writeFileSync(join(root, 'Taskfile.yaml'), readFileSync(join(repository, 'Taskfile.yaml')));
-    mkdirSync(join(root, 'scripts'));
-    writeFileSync(join(root, 'scripts', 'setup-secrets.mjs'), readFileSync(join(repository, 'scripts', 'setup-secrets.mjs')));
+    mkdirSync(join(root, 'scripts', 'local'), { recursive: true });
+    writeFileSync(join(root, 'scripts', 'local', 'setup-secrets.mjs'), readFileSync(join(repository, 'scripts', 'local', 'setup-secrets.mjs')));
     const passwords = ['keycloak-admin-password', 'workspace-database-password', 'identity-database-password', 'redpanda-bootstrap-password', 'identity-broker-password', 'grafana-admin-password'];
     const keyNames = ['identity-code-verifier-key', 'identity-delivery-key'];
     let previous;

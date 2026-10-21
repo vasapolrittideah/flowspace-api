@@ -24,21 +24,21 @@ jobs:
       - name: Check diff whitespace
         run: git diff --check "$CONSTRAINT_BASE" HEAD
       - name: Test constraint checker
-        run: node --test scripts/constraint-check.test.mjs
+        run: node --test scripts/checks/constraint-check.test.mjs
       - name: Test PR metadata checker
-        run: node --test scripts/check-pr-metadata.test.mjs
+        run: node --test scripts/checks/check-pr-metadata.test.mjs
       - name: Test prose checker
-        run: node --test scripts/check-prose.test.mjs
+        run: node --test scripts/checks/check-prose.test.mjs
       - name: Test review roles and runners
         run: node --test .agents/scripts/review.test.mjs
       - name: Test local session TLS rotation
-        run: sh scripts/rotate-identity-session-tls-local.test.sh
+        run: sh scripts/local/rotate-identity-session-tls-local.test.sh
       - name: Test local signing key retirement
-        run: sh scripts/retire-identity-signing-key-local.test.sh
+        run: sh scripts/local/retire-identity-signing-key-local.test.sh
       - name: Enforce constraint floor
-        run: node scripts/constraint-check.mjs floor --base "$CONSTRAINT_BASE"
+        run: node scripts/checks/constraint-check.mjs floor --base "$CONSTRAINT_BASE"
       - name: Check added prose
-        run: node scripts/check-prose.mjs --base "$CONSTRAINT_BASE" --head HEAD
+        run: node scripts/checks/check-prose.mjs --base "$CONSTRAINT_BASE" --head HEAD
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -46,7 +46,7 @@ jobs:
       - name: Lint workflows
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -pyflakes= .github/workflows/*.yml
       - name: Check error files
-        run: go run ./scripts/check-error-files
+        run: go run ./scripts/checks/check-error-files
       - name: Scan for secrets
         run: |
           go run github.com/zricethezav/gitleaks/v8@v8.18.4 detect --no-git --source . --redact --no-banner
@@ -69,7 +69,7 @@ jobs:
           profile="$(mktemp)"
           trap 'rm -f "$profile"' EXIT
           go test -tags=integration -coverpkg=./... ./... -coverprofile="$profile"
-          node scripts/constraint-check.mjs coverage --base "$CONSTRAINT_BASE" --profile "$profile" --changed-min 80 --total-min 25
+          node scripts/checks/constraint-check.mjs coverage --base "$CONSTRAINT_BASE" --profile "$profile" --changed-min 80 --total-min 25
       - name: Scan reachable dependencies
         if: ${{ !cancelled() }}
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
@@ -99,17 +99,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test local link checker
-        run: node --test scripts/check-local-links.test.mjs
+        run: node --test scripts/checks/check-local-links.test.mjs
       - name: Lint Markdown
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
         with:
           globs: "**/*.md"
       - name: Check local Markdown links
-        run: node scripts/check-local-links.mjs
+        run: node scripts/checks/check-local-links.mjs
       - name: Test alert rule checker
-        run: node --test scripts/check-alert-rules.test.mjs
+        run: node --test scripts/checks/check-alert-rules.test.mjs
       - name: Check alert rules
-        run: node scripts/check-alert-rules.mjs
+        run: node scripts/checks/check-alert-rules.mjs
       - name: Block Draft specifications and plans
         run: |
           if grep -nE '^Status: Draft\.?$|\| Draft \|$' docs/specs/*.md tasks/*.md; then

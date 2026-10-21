@@ -43,6 +43,8 @@ This document defines where backend code belongs and which dependency directions
 │       └── flowspace/<service>/v1/
 ├── internal/
 ├── scripts/
+│   ├── checks/
+│   └── local/
 ├── services/
 │   ├── identity/
 │   ├── workspace/
@@ -78,7 +80,8 @@ Tool configuration stays where the owning tool expects it. Optional output such 
 | `tests/load/` | Controlled cross-service load experiments with explicit thresholds. |
 | `deploy/base/` | Shared Kubernetes application resources. |
 | `deploy/overlays/` | Local, staging, and production-specific Kustomize changes. |
-| `scripts/` | Small repository automation used by local tasks or CI. |
+| `scripts/checks/` | Checks that CI and the review roles run without a cluster, and their tests. |
+| `scripts/local/` | Operations and smoke scripts for the local cluster and `.secrets/`, and their tests. |
 | `docs/` | Current architecture and engineering guidance. |
 | `docs/adr/` | Accepted architectural decisions and their rationale. |
 | `docs/runbooks/` | One runbook for each alert rule. |
@@ -224,7 +227,7 @@ Keep migrations, queries, generated query code, and affected adapter behavior co
 - Put shared application manifests in `deploy/base/` and environment-specific changes in `deploy/overlays/<environment>/`.
 - Keep environment credentials out of source; Git contains only encrypted secret manifests.
 - Use root tool configuration for repository-wide generation and checks because the repository has one Go module.
-- Put a script in `scripts/` only when a short command in `Taskfile.yaml` or the owning tool's configuration is insufficient.
+- If a short command in `Taskfile.yaml` or the owning tool's configuration is insufficient, put the script in `scripts/`. If it uses the local cluster or `.secrets/`, put it in `scripts/local/`. Otherwise, put it in `scripts/checks/`.
 
 Third-party infrastructure uses maintained, pinned packages as accepted in [ADR-0025](adr/0025-environments-overlay-shared-manifests.md). Its exact deployment layout is added when that infrastructure is configured rather than reserved in advance.
 

@@ -1,6 +1,6 @@
 ---
 name: infra-reviewer
-description: Infrastructure reviewer that finds resource, exposure, secret, rollout, and telemetry risks in deployment manifests, Helm values, and local operations scripts. Use when a change adds or changes a file under deploy/, the Tiltfile, the cluster tasks in Taskfile.yaml, or a local operations script in scripts/.
+description: Infrastructure reviewer that finds resource, exposure, secret, rollout, and telemetry risks in deployment manifests, Helm values, and local operations scripts. Use when a change adds or changes a file under deploy/, the Tiltfile, the cluster tasks in Taskfile.yaml, or a file under scripts/local/.
 ---
 
 # Infrastructure reviewer
@@ -104,5 +104,5 @@ The caller gives you some or all of these inputs. Review each input that you get
 
 ## Composition
 
-- **Invoke directly when:** a change adds or changes a file under `deploy/`, the `Tiltfile`, the `cluster:*` tasks in `Taskfile.yaml`, or a local operations script in `scripts/`.
+- **Invoke directly when:** a change adds or changes a file under `deploy/`, the `Tiltfile`, the `cluster:*` tasks in `Taskfile.yaml`, or a file under `scripts/local/`.
 - **Do not invoke from another persona.** If you find an application correctness, security, CI, or convention issue, mention it as a recommendation for the matching role instead of reviewing it.

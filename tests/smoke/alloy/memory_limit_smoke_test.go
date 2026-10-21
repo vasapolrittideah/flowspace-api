@@ -1,7 +1,7 @@
 //go:build smoke
 
 // Package alloy_test proves the memory limiter of the local Alloy. Run it with
-// scripts/smoke-alloy-memory-local.sh, which stops Tempo and forwards the Alloy
+// scripts/local/smoke-alloy-memory-local.sh, which stops Tempo and forwards the Alloy
 // OTLP port.
 package alloy_test
 

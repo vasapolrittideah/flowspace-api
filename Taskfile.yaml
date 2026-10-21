@@ -79,7 +79,7 @@ tasks:
   smoke:observability:
     desc: Check the logs and traces of known requests in the local cluster
     cmds:
-      - sh scripts/smoke-observability-local.sh
+      - sh scripts/local/smoke-observability-local.sh
 
   git:diff:check:
     desc: Check the branch diff for whitespace errors
@@ -119,7 +119,7 @@ tasks:
   markdown:links:
     desc: Check local Markdown links
     cmds:
-      - node scripts/check-local-links.mjs {{.CLI_ARGS}}
+      - node scripts/checks/check-local-links.mjs {{.CLI_ARGS}}
 
   markdown:check:
     desc: Run all Markdown checks
@@ -130,17 +130,17 @@ tasks:
   prose:check:
     desc: Check the prose that the branch adds to Markdown files and code comments
     cmds:
-      - node scripts/check-prose.mjs {{.CLI_ARGS}}
+      - node scripts/checks/check-prose.mjs {{.CLI_ARGS}}
 
   constraints:floor:
     desc: Reject changes that weaken the quality floor
     cmds:
-      - node scripts/constraint-check.mjs floor
+      - node scripts/checks/constraint-check.mjs floor
 
   coverage:
     desc: Test and enforce coverage constraints
     cmds:
-      - sh scripts/coverage.sh
+      - sh scripts/checks/coverage.sh
 
   secrets:
     desc: Scan the working tree for secrets
@@ -150,74 +150,74 @@ tasks:
   secrets:setup:
     desc: Create local password and Identity key files without replacing existing values
     cmds:
-      - node scripts/setup-secrets.mjs
+      - node scripts/local/setup-secrets.mjs
 
   identity:session-tls:setup:
     desc: Issue and seal local Identity session TLS certificates
     cmds:
-      - sh scripts/setup-identity-session-tls-local.sh
+      - sh scripts/local/setup-identity-session-tls-local.sh
 
   identity:session-tls:reseal:
     desc: Reseal local session TLS with the current cluster key
     cmds:
-      - sh scripts/reseal-identity-session-tls-local.sh
+      - sh scripts/local/reseal-identity-session-tls-local.sh
 
   identity:session-tls:rotate-server:
     desc: Replace the local Identity session server certificate
     cmds:
-      - sh scripts/rotate-identity-session-tls-local.sh identity
+      - sh scripts/local/rotate-identity-session-tls-local.sh identity
 
   identity:session-tls:rotate-client:
     desc: Replace the local Workspace session client certificate
     cmds:
-      - sh scripts/rotate-identity-session-tls-local.sh workspace
+      - sh scripts/local/rotate-identity-session-tls-local.sh workspace
 
   identity:session-tls:revoke-client:
     desc: Replace a leaked Workspace session client key without overlap
     cmds:
-      - sh scripts/rotate-identity-session-tls-local.sh workspace-revoke
+      - sh scripts/local/rotate-identity-session-tls-local.sh workspace-revoke
 
   identity:session-tls:rotate-ca:
     desc: Replace the local session CA and all signed certificates
     cmds:
-      - sh scripts/rotate-identity-session-ca-local.sh
+      - sh scripts/local/rotate-identity-session-ca-local.sh
 
   identity:session-tls:test:
     desc: Test local session TLS maintenance without a cluster
     cmds:
-      - sh scripts/rotate-identity-session-tls-local.test.sh
-      - sh scripts/reseal-identity-session-tls-local.test.sh
+      - sh scripts/local/rotate-identity-session-tls-local.test.sh
+      - sh scripts/local/reseal-identity-session-tls-local.test.sh
 
   identity:signing-key:retire:
     desc: Remove the prior local signing public key after the overlap
     cmds:
-      - sh scripts/retire-identity-signing-key-local.sh
+      - sh scripts/local/retire-identity-signing-key-local.sh
 
   identity:signing-key:test:
     desc: Test the local signing key retirement guard
     cmds:
-      - sh scripts/retire-identity-signing-key-local.test.sh
+      - sh scripts/local/retire-identity-signing-key-local.test.sh
 
   observability:grafana-admin:setup:
     desc: Seal the local Grafana admin password
     cmds:
-      - sh scripts/setup-grafana-admin-local.sh
+      - sh scripts/local/setup-grafana-admin-local.sh
 
   observability:alert-rules:check:
     desc: Check the Grafana alert rules against their specification
     cmds:
-      - node --test scripts/check-alert-rules.test.mjs
-      - node scripts/check-alert-rules.mjs
+      - node --test scripts/checks/check-alert-rules.test.mjs
+      - node scripts/checks/check-alert-rules.mjs
 
   observability:grafana-admin:test:
     desc: Test local Grafana admin password sealing without a cluster
     cmds:
-      - sh scripts/setup-grafana-admin-local.test.sh
+      - sh scripts/local/setup-grafana-admin-local.test.sh
 
   secrets:local-test:
     desc: Test local secret paths and Git and Docker exclusions
     cmds:
-      - node --test scripts/local-secrets.test.mjs
+      - node --test scripts/local/local-secrets.test.mjs
 
   vuln:
     desc: Scan reachable Go dependencies for vulnerabilities
@@ -227,15 +227,15 @@ tasks:
   check:fast:
     desc: Run sub-five-second edit checks
     cmds:
-      - node --test scripts/constraint-check.test.mjs
-      - node --test scripts/check-local-links.test.mjs
-      - node --test scripts/check-pr-metadata.test.mjs
-      - node --test scripts/check-prose.test.mjs
+      - node --test scripts/checks/constraint-check.test.mjs
+      - node --test scripts/checks/check-local-links.test.mjs
+      - node --test scripts/checks/check-pr-metadata.test.mjs
+      - node --test scripts/checks/check-prose.test.mjs
       - node --test .agents/scripts/git-guard.test.mjs
       - node --test .agents/scripts/review.test.mjs
       - task: constraints:floor
       - task: prose:check
-      - go run ./scripts/check-error-files
+      - go run ./scripts/checks/check-error-files
       - task: format:check
       - task: secrets
 

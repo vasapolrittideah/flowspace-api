@@ -3,9 +3,9 @@ set -eu
 
 root=$(mktemp -d)
 trap 'rm -rf "$root"' EXIT
-mkdir -p "$root/scripts" "$root/bin" "$root/state" "$root/.secrets/identity-session" "$root/deploy/overlays/local/identity" "$root/deploy/overlays/local/workspace"
-cp scripts/rotate-identity-session-tls-local.sh "$root/scripts/"
-cp scripts/rotate-identity-session-ca-local.sh "$root/scripts/"
+mkdir -p "$root/scripts/local" "$root/bin" "$root/state" "$root/.secrets/identity-session" "$root/deploy/overlays/local/identity" "$root/deploy/overlays/local/workspace"
+cp scripts/local/rotate-identity-session-tls-local.sh "$root/scripts/local/"
+cp scripts/local/rotate-identity-session-ca-local.sh "$root/scripts/local/"
 certs="$root/.secrets/identity-session"
 openssl genpkey -algorithm ED25519 -out "$certs/ca.key"
 openssl req -new -x509 -key "$certs/ca.key" -out "$certs/ca.crt" -days 365 -subj '/CN=Test CA' -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' -addext 'keyUsage=critical,keyCertSign,cRLSign'
@@ -68,17 +68,17 @@ case " $* " in
   *) cat >/dev/null; printf 'kind: SealedSecret\nspec:\n  encryptedData:\n    ca.crt: sealed\n    tls.crt: sealed\n    tls.key: sealed\n' ;;
 esac
 SH
-cat > "$root/scripts/smoke-identity-session-local.sh" <<'SH'
+cat > "$root/scripts/local/smoke-identity-session-local.sh" <<'SH'
 #!/bin/sh
 for file in "$@"; do test -s "$file"; done
 printf 'smoke %s\n' "$#" >> "$FLOWSPACE_TLS_TEST_STATE/log"
 SH
 chmod +x "$root/bin/kubectl" "$root/bin/kubeseal"
 
-PATH="$root/bin:$PATH" sh "$root/scripts/rotate-identity-session-tls-local.sh" identity
-PATH="$root/bin:$PATH" sh "$root/scripts/rotate-identity-session-tls-local.sh" workspace
-PATH="$root/bin:$PATH" sh "$root/scripts/rotate-identity-session-ca-local.sh"
-PATH="$root/bin:$PATH" sh "$root/scripts/rotate-identity-session-tls-local.sh" workspace-revoke
+PATH="$root/bin:$PATH" sh "$root/scripts/local/rotate-identity-session-tls-local.sh" identity
+PATH="$root/bin:$PATH" sh "$root/scripts/local/rotate-identity-session-tls-local.sh" workspace
+PATH="$root/bin:$PATH" sh "$root/scripts/local/rotate-identity-session-ca-local.sh"
+PATH="$root/bin:$PATH" sh "$root/scripts/local/rotate-identity-session-tls-local.sh" workspace-revoke
 test "$(find "$certs" -name previous.key | wc -l | tr -d ' ')" = 3
 test "$(find "$certs" -name 'previous-*.key' | wc -l | tr -d ' ')" = 4
 test "$(grep -c '^patch$' "$root/state/log")" = 4
@@ -138,9 +138,9 @@ LOG
 diff -u "$root/state/expected" "$root/state/log"
 
 printf 'stale' > "$root/state/workspace-cert"
-if PATH="$root/bin:$PATH" sh "$root/scripts/rotate-identity-session-tls-local.sh" workspace > "$root/state/error" 2>&1; then exit 1; fi
+if PATH="$root/bin:$PATH" sh "$root/scripts/local/rotate-identity-session-tls-local.sh" workspace > "$root/state/error" 2>&1; then exit 1; fi
 grep -q 'local certificate does not match' "$root/state/error"
 
 openssl base64 -A -in "$certs/workspace.crt" > "$root/state/workspace-cert"
-if FLOWSPACE_TLS_TEST_FAIL_CREATE=1 PATH="$root/bin:$PATH" sh "$root/scripts/rotate-identity-session-tls-local.sh" identity > "$root/state/error" 2>&1; then exit 1; fi
+if FLOWSPACE_TLS_TEST_FAIL_CREATE=1 PATH="$root/bin:$PATH" sh "$root/scripts/local/rotate-identity-session-tls-local.sh" identity > "$root/state/error" 2>&1; then exit 1; fi
 test "$(grep -c '^apply$' "$root/state/log")" = 5

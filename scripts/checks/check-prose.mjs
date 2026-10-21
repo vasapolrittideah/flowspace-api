@@ -18,7 +18,7 @@
 //
 // Without --head, it checks the working tree, so that it sees changes before a commit.
 //
-//   node scripts/check-prose.mjs [--base <ref>] [--head <ref>]
+//   node scripts/checks/check-prose.mjs [--base <ref>] [--head <ref>]
 
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';

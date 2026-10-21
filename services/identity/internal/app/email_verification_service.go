@@ -76,14 +76,16 @@ func (s *EmailVerificationService) verify(ctx context.Context, tx outbound.Verif
 }
 
 func (s *EmailVerificationService) consume(ctx context.Context, tx outbound.VerificationTransaction, input inbound.VerifyEmailInput,
-	email string, challenge outbound.ChallengeState, found bool,
+	email string, challenge domain.Challenge, found bool,
 ) (bool, error) {
-	if !found || challenge.Email != email || challenge.WrongGuesses >= 5 ||
-		!domain.VerifyChallenge(s.verifierKey, input.Subject, email, domain.PurposeVerifyEmail,
-			input.Code, challenge.Verifier, challenge.ExpiresAt, time.Now()) {
-		if found && challenge.Email == email && challenge.WrongGuesses < 5 && time.Now().Before(challenge.ExpiresAt) {
-			return true, tx.IncrementChallengeWrongGuess(ctx, challenge.ID)
-		}
+	if !found {
+		return true, nil
+	}
+	check := challenge.Check(s.verifierKey, input.Subject, email, domain.PurposeVerifyEmail, input.Code, time.Now())
+	if check == domain.CodeWrongGuess {
+		return true, tx.IncrementChallengeWrongGuess(ctx, challenge.ID)
+	}
+	if check != domain.CodeAccepted {
 		return true, nil
 	}
 	consumed, err := tx.ConsumeChallenge(ctx, challenge.ID)

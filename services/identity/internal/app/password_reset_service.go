@@ -107,18 +107,18 @@ func (s *PasswordResetService) reset(ctx context.Context, tx outbound.PasswordRe
 	return false, applyPasswordReset(ctx, tx, subject, challenge.ID, hash)
 }
 
-func (s *PasswordResetService) verifyResetCode(ctx context.Context, tx outbound.PasswordResetTransaction, email, code string) (string, outbound.ChallengeState, bool, error) {
+func (s *PasswordResetService) verifyResetCode(ctx context.Context, tx outbound.PasswordResetTransaction, email, code string) (string, domain.Challenge, bool, error) {
 	account, found, err := tx.GetAccountForPasswordRecovery(ctx, email)
 	if err != nil {
-		return "", outbound.ChallengeState{}, false, err
+		return "", domain.Challenge{}, false, err
 	}
-	challenge := outbound.ChallengeState{}
+	challenge := domain.Challenge{}
 	current := false
 	eligible := found && account.EmailVerified && account.HasPassword
 	if eligible {
 		challenge, current, err = tx.GetCurrentPasswordResetChallenge(ctx, account.Subject)
 		if err != nil {
-			return "", outbound.ChallengeState{}, false, err
+			return "", domain.Challenge{}, false, err
 		}
 	}
 	subject := account.Subject
@@ -126,16 +126,17 @@ func (s *PasswordResetService) verifyResetCode(ctx context.Context, tx outbound.
 		subject = "unknown-password-reset-account"
 	}
 	// Always perform one keyed verifier comparison for a well-formed code.
-	matched := domain.VerifyChallenge(s.verifierKey, subject, email, domain.PurposePasswordReset,
-		code, challenge.Verifier, time.Now().Add(time.Minute), time.Now())
-	usable := current && challenge.Email == email && challenge.WrongGuesses < 5 && time.Now().Before(challenge.ExpiresAt)
-	if eligible && usable && matched {
+	check := challenge.CheckInFixedTime(s.verifierKey, subject, email, domain.PurposePasswordReset, code, time.Now())
+	if !current {
+		check = domain.CodeRejected
+	}
+	if eligible && check == domain.CodeAccepted {
 		return account.Subject, challenge, false, nil
 	}
-	if usable {
-		return "", outbound.ChallengeState{}, true, tx.IncrementChallengeWrongGuess(ctx, challenge.ID)
+	if check == domain.CodeWrongGuess {
+		return "", domain.Challenge{}, true, tx.IncrementChallengeWrongGuess(ctx, challenge.ID)
 	}
-	return "", outbound.ChallengeState{}, true, nil
+	return "", domain.Challenge{}, true, nil
 }
 
 func applyPasswordReset(ctx context.Context, tx outbound.PasswordResetTransaction, subject, challengeID, hash string) error {

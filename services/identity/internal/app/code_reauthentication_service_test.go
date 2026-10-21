@@ -16,7 +16,7 @@ type codeReauthenticationRepository struct {
 	account                    outbound.AccountState
 	window                     domain.ReauthenticationWindow
 	now, last, deadline        time.Time
-	challenge                  outbound.ChallengeState
+	challenge                  domain.Challenge
 	commitErr, errorAt         error
 	fail                       string
 	allowed                    bool
@@ -83,7 +83,7 @@ func (r *codeReauthenticationRepository) ReplaceReauthenticationChallenge(contex
 }
 
 func (r *codeReauthenticationRepository) CreateReauthenticationChallenge(_ context.Context, _, email string, verifier [32]byte) (string, error) {
-	r.challenge = outbound.ChallengeState{ID: "challenge", Email: email, Verifier: verifier, ExpiresAt: r.now.Add(10 * time.Minute)}
+	r.challenge = domain.Challenge{ID: "challenge", Email: email, Verifier: verifier, ExpiresAt: r.now.Add(10 * time.Minute)}
 	r.last = r.now
 	return "challenge", r.step("create")
 }
@@ -98,7 +98,7 @@ func (r *codeReauthenticationRepository) CreateOutboxEvent(context.Context, stri
 	return r.step("outbox")
 }
 
-func (r *codeReauthenticationRepository) GetCurrentReauthenticationChallenge(context.Context, string) (outbound.ChallengeState, bool, error) {
+func (r *codeReauthenticationRepository) GetCurrentReauthenticationChallenge(context.Context, string) (domain.Challenge, bool, error) {
 	return r.challenge, r.challenge.ID != "", r.step("challenge")
 }
 
@@ -207,7 +207,7 @@ func TestReauthenticationCodeRejectsExpiredAndCrossPurposeProof(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		r.challenge = outbound.ChallengeState{ID: "challenge", Email: r.account.Email, Verifier: verifier, ExpiresAt: expiry}
+		r.challenge = domain.Challenge{ID: "challenge", Email: r.account.Email, Verifier: verifier, ExpiresAt: expiry}
 		if purpose == domain.PurposeReauthenticate {
 			r.now = expiry
 		}

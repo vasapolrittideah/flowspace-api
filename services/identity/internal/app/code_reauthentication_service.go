@@ -135,40 +135,41 @@ func (s *CodeReauthenticationService) ReauthenticateWithCode(ctx context.Context
 	return inbound.ReauthenticateWithCodeResult{ExpiresAt: window.ExpiresAt()}, nil
 }
 
-func (s *CodeReauthenticationService) checkCode(ctx context.Context, tx outbound.CodeReauthenticationTransaction, input inbound.ReauthenticateWithCodeInput) (outbound.ChallengeState, bool, error) {
+func (s *CodeReauthenticationService) checkCode(ctx context.Context, tx outbound.CodeReauthenticationTransaction, input inbound.ReauthenticateWithCodeInput) (domain.Challenge, bool, error) {
 	_, now, err := tx.LockSessionForReauthentication(ctx, input.Subject, input.SessionID)
 	if err != nil {
-		return outbound.ChallengeState{}, false, err
+		return domain.Challenge{}, false, err
 	}
 	account, err := tx.GetActiveAccountForSession(ctx, input.Subject, input.SessionID)
 	if err != nil {
-		return outbound.ChallengeState{}, false, err
+		return domain.Challenge{}, false, err
 	}
 	if err := s.guessSourceLimit(ctx, input.Source); err != nil {
-		return outbound.ChallengeState{}, false, err
+		return domain.Challenge{}, false, err
 	}
 	if err := s.guessAccountLimit(ctx, input.Subject); err != nil {
-		return outbound.ChallengeState{}, false, err
+		return domain.Challenge{}, false, err
 	}
 	if !account.EmailVerified || !validVerificationCode(input.Code) {
-		return outbound.ChallengeState{}, true, nil
+		return domain.Challenge{}, true, nil
 	}
 	challenge, found, err := tx.GetCurrentReauthenticationChallenge(ctx, input.Subject)
 	if err != nil {
-		return outbound.ChallengeState{}, false, err
+		return domain.Challenge{}, false, err
 	}
 	invalid, err := s.verifyCode(ctx, tx, input, account.Email, challenge, found, now)
 	return challenge, invalid, err
 }
 
-func (s *CodeReauthenticationService) verifyCode(ctx context.Context, tx outbound.CodeReauthenticationTransaction, input inbound.ReauthenticateWithCodeInput, email string, challenge outbound.ChallengeState, found bool, now time.Time) (bool, error) {
-	if found && challenge.Email == email && challenge.WrongGuesses < 5 && domain.VerifyChallenge(s.verifierKey, input.Subject, email, domain.PurposeReauthenticate, input.Code, challenge.Verifier, challenge.ExpiresAt, now) {
-		return false, nil
+func (s *CodeReauthenticationService) verifyCode(ctx context.Context, tx outbound.CodeReauthenticationTransaction, input inbound.ReauthenticateWithCodeInput, email string, challenge domain.Challenge, found bool, now time.Time) (bool, error) {
+	if !found {
+		return true, nil
 	}
-	if found && challenge.Email == email && challenge.WrongGuesses < 5 && now.Before(challenge.ExpiresAt) {
+	check := challenge.Check(s.verifierKey, input.Subject, email, domain.PurposeReauthenticate, input.Code, now)
+	if check == domain.CodeWrongGuess {
 		return true, tx.IncrementChallengeWrongGuess(ctx, challenge.ID)
 	}
-	return true, nil
+	return check != domain.CodeAccepted, nil
 }
 
 func (s *CodeReauthenticationService) openWindow(ctx context.Context, tx outbound.CodeReauthenticationTransaction, subject, sessionID string) (time.Time, error) {

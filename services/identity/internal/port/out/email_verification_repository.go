@@ -2,6 +2,8 @@ package outbound
 
 import (
 	"context"
+
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 )
 
 // VerificationCodeDeliveryTransaction stores a verification challenge with
@@ -25,7 +27,7 @@ type EmailVerificationCodeRepository interface {
 
 type VerificationTransaction interface {
 	GetActiveAccountForSession(ctx context.Context, subject, sessionID string) (AccountState, error)
-	GetCurrentVerificationChallenge(ctx context.Context, subject string) (ChallengeState, bool, error)
+	GetCurrentVerificationChallenge(ctx context.Context, subject string) (domain.Challenge, bool, error)
 	IncrementChallengeWrongGuess(ctx context.Context, challengeID string) error
 	ConsumeChallenge(ctx context.Context, challengeID string) (bool, error)
 	MarkEmailVerified(ctx context.Context, subject string) (bool, error)

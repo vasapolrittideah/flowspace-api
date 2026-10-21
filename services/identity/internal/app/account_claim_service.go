@@ -112,20 +112,19 @@ func (s *AccountClaimService) claim(ctx context.Context, tx outbound.AccountClai
 }
 
 func (s *AccountClaimService) checkClaimChallenge(ctx context.Context, tx outbound.AccountClaimTransaction,
-	subject, email, code string, challenge outbound.ChallengeState, found bool,
+	subject, email, code string, challenge domain.Challenge, found bool,
 ) (bool, error) {
 	if !validVerificationCode(code) {
 		return true, nil
 	}
-	if !found || challenge.Email != email || challenge.WrongGuesses >= 5 ||
-		!domain.VerifyChallenge(s.verifierKey, subject, email, domain.PurposeClaimAccount,
-			code, challenge.Verifier, challenge.ExpiresAt, time.Now()) {
-		if found && challenge.Email == email && challenge.WrongGuesses < 5 && time.Now().Before(challenge.ExpiresAt) {
-			return true, tx.IncrementChallengeWrongGuess(ctx, challenge.ID)
-		}
+	if !found {
 		return true, nil
 	}
-	return false, nil
+	check := challenge.Check(s.verifierKey, subject, email, domain.PurposeClaimAccount, code, time.Now())
+	if check == domain.CodeWrongGuess {
+		return true, tx.IncrementChallengeWrongGuess(ctx, challenge.ID)
+	}
+	return check != domain.CodeAccepted, nil
 }
 
 func (s *AccountClaimService) replaceAccount(ctx context.Context, tx outbound.AccountClaimTransaction,

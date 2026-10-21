@@ -118,3 +118,101 @@ func TestReauthenticationChallengePurposeAndExpiry(t *testing.T) {
 		}
 	}
 }
+
+func TestChallengeCheckAppliesStoredChallengeRules(t *testing.T) {
+	key := bytes.Repeat([]byte{3}, 32)
+	now := time.Date(2026, 10, 21, 0, 0, 0, 0, time.UTC)
+	code, verifier, expiresAt, err := NewChallenge(key, "subject", "User@example.com", PurposeVerifyEmail, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrongCode := "000000"
+	if code == wrongCode {
+		wrongCode = "000001"
+	}
+	stored := Challenge{ID: "challenge", Email: "User@example.com", Verifier: verifier, WrongGuesses: 4, ExpiresAt: expiresAt}
+	for _, test := range []struct {
+		name      string
+		challenge Challenge
+		email     string
+		code      string
+		now       time.Time
+		want      CodeCheck
+	}{
+		{"correct code", stored, "User@example.com", code, now, CodeAccepted},
+		{"wrong code", stored, "User@example.com", wrongCode, now, CodeWrongGuess},
+		{"wrong email", stored, "Other@example.com", code, now, CodeRejected},
+		{"other local part case", stored, "user@example.com", code, now, CodeRejected},
+		{"wrong-guess limit", Challenge{Email: "User@example.com", Verifier: verifier, WrongGuesses: 5, ExpiresAt: expiresAt}, "User@example.com", code, now, CodeRejected},
+		{"expiry", stored, "User@example.com", code, expiresAt, CodeRejected},
+		{"wrong code after expiry", stored, "User@example.com", wrongCode, expiresAt, CodeRejected},
+		{"just before expiry", stored, "User@example.com", code, expiresAt.Add(-time.Nanosecond), CodeAccepted},
+		{"zero challenge", Challenge{}, "User@example.com", code, now, CodeRejected},
+	} {
+		if got := test.challenge.Check(key, "subject", test.email, PurposeVerifyEmail, test.code, test.now); got != test.want {
+			t.Errorf("%s: Check() = %v, want %v", test.name, got, test.want)
+		}
+	}
+}
+
+func TestChallengeMatchesComparesCodeWithoutStoredState(t *testing.T) {
+	key := bytes.Repeat([]byte{4}, 32)
+	now := time.Date(2026, 10, 21, 0, 0, 0, 0, time.UTC)
+	code, verifier, expiresAt, err := NewChallenge(key, "subject", "User@example.com", PurposePasswordReset, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	spent := Challenge{Email: "Other@example.com", Verifier: verifier, WrongGuesses: 5, ExpiresAt: expiresAt}
+	if !spent.matches(key, "subject", "User@example.com", PurposePasswordReset, code) {
+		t.Fatal("matching code rejected")
+	}
+	if spent.open("User@example.com", now) {
+		t.Fatal("spent challenge is open")
+	}
+	if (Challenge{}).matches(key, "subject", "User@example.com", PurposePasswordReset, code) {
+		t.Fatal("zero challenge matched a code")
+	}
+	if !(Challenge{Email: "User@example.com", WrongGuesses: 4, ExpiresAt: expiresAt}).open("User@example.com", now) {
+		t.Fatal("current challenge is not open")
+	}
+}
+
+func TestChallengeCheckInFixedTimeAlwaysComparesTheCode(t *testing.T) {
+	key := bytes.Repeat([]byte{5}, 32)
+	now := time.Date(2026, 10, 21, 0, 0, 0, 0, time.UTC)
+	code, verifier, expiresAt, err := NewChallenge(key, "subject", "User@example.com", PurposePasswordReset, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	open := Challenge{Email: "User@example.com", Verifier: verifier, ExpiresAt: expiresAt}
+	if got := open.CheckInFixedTime(key, "subject", "User@example.com", PurposePasswordReset, code, now); got != CodeAccepted {
+		t.Fatalf("CheckInFixedTime() = %v, want accepted", got)
+	}
+	comparison := testing.AllocsPerRun(100, func() {
+		open.matches(key, "subject", "User@example.com", PurposePasswordReset, code)
+	})
+	if comparison == 0 {
+		t.Fatal("a keyed comparison made no allocations")
+	}
+	for _, test := range []struct {
+		name      string
+		challenge Challenge
+		now       time.Time
+	}{
+		{"open", open, now},
+		{"zero challenge", Challenge{}, now},
+		{"expired", open, expiresAt},
+		{"wrong-guess limit", Challenge{Email: "User@example.com", Verifier: verifier, WrongGuesses: 5, ExpiresAt: expiresAt}, now},
+		{"other email", Challenge{Email: "Other@example.com", Verifier: verifier, ExpiresAt: expiresAt}, now},
+	} {
+		if got := test.challenge.CheckInFixedTime(key, "subject", "User@example.com", PurposePasswordReset, code, test.now); test.name != "open" && got != CodeRejected {
+			t.Errorf("%s: CheckInFixedTime() = %v, want rejected", test.name, got)
+		}
+		allocs := testing.AllocsPerRun(100, func() {
+			test.challenge.CheckInFixedTime(key, "subject", "User@example.com", PurposePasswordReset, code, test.now)
+		})
+		if allocs != comparison {
+			t.Errorf("%s: %v allocations, want %v from 1 keyed comparison", test.name, allocs, comparison)
+		}
+	}
+}

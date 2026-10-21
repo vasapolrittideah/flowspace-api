@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	inbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/in"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
@@ -32,7 +33,7 @@ func (r verificationRepository) WithinVerificationTransaction(_ context.Context,
 type verificationTransaction struct {
 	signupTransaction
 	account        outbound.AccountState
-	challenge      outbound.ChallengeState
+	challenge      domain.Challenge
 	consumptions   int
 	consumeBlocked bool
 	markBlocked    bool
@@ -42,7 +43,7 @@ type verificationTransaction struct {
 	steps          []string
 }
 
-func (t *verificationTransaction) GetCurrentVerificationChallenge(context.Context, string) (outbound.ChallengeState, bool, error) {
+func (t *verificationTransaction) GetCurrentVerificationChallenge(context.Context, string) (domain.Challenge, bool, error) {
 	return t.challenge, t.challenge.ID != "", nil
 }
 

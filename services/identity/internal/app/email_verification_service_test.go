@@ -18,7 +18,7 @@ func TestVerifyEmailConsumesCurrentCodeAndReturnsVerifiedOnRetry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &verificationTransaction{account: outbound.AccountState{Email: "User@example.com"}, challenge: outbound.ChallengeState{
+	tx := &verificationTransaction{account: outbound.AccountState{Email: "User@example.com"}, challenge: domain.Challenge{
 		ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expires,
 	}}
 	service := app.NewEmailVerificationService(verificationRepository{tx: tx},
@@ -89,7 +89,7 @@ func TestVerifyEmailRejectsInvalidCodesAndFailedTransitions(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tx := &verificationTransaction{
 				account: outbound.AccountState{Email: "User@example.com"}, err: test.accountErr,
-				challenge:      outbound.ChallengeState{ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expires},
+				challenge:      domain.Challenge{ID: "challenge", Email: "User@example.com", Verifier: verifier, ExpiresAt: expires},
 				consumeBlocked: test.consumeBlocked, markBlocked: test.markBlocked, markErr: test.markErr,
 			}
 			service := app.NewEmailVerificationService(verificationRepository{tx: tx},

@@ -21,7 +21,7 @@ import (
 type AccountRepository struct{ pool *pgxpool.Pool }
 
 var (
-	_ outbound.AccountRepository                  = (*AccountRepository)(nil)
+	_ outbound.SignupRepository                   = (*AccountRepository)(nil)
 	_ outbound.CodeReauthenticationRepository     = (*AccountRepository)(nil)
 	_ outbound.PasswordReauthenticationRepository = (*AccountRepository)(nil)
 	_ outbound.PasswordLoginRepository            = (*AccountRepository)(nil)
@@ -79,7 +79,7 @@ type accountTransaction struct {
 }
 
 var (
-	_ outbound.AccountTransaction               = (*accountTransaction)(nil)
+	_ outbound.SignupTransaction                = (*accountTransaction)(nil)
 	_ outbound.VerificationCodeIssueTransaction = (*accountTransaction)(nil)
 	_ outbound.VerificationTransaction          = (*accountTransaction)(nil)
 	_ outbound.ClaimCodeTransaction             = (*accountTransaction)(nil)
@@ -278,7 +278,7 @@ func parseUUID(value string) (pgtype.UUID, error) {
 	return pgtype.UUID{Bytes: id, Valid: true}, nil
 }
 
-func (r *AccountRepository) WithinTransaction(ctx context.Context, fn func(outbound.AccountTransaction) error) error {
+func (r *AccountRepository) WithinTransaction(ctx context.Context, fn func(outbound.SignupTransaction) error) error {
 	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
 }
 
@@ -499,6 +499,44 @@ func (t *accountTransaction) ReplacePasswordResetChallenge(ctx context.Context, 
 
 func (t *accountTransaction) CreatePasswordResetChallenge(ctx context.Context, subject, email string, verifier [32]byte) (string, error) {
 	return t.createChallenge(ctx, subject, email, "password-reset", verifier)
+}
+
+func (r *AccountRepository) WithinPasswordResetTransaction(ctx context.Context, fn func(outbound.PasswordResetTransaction) error) error {
+	return r.withinTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (t *accountTransaction) GetCurrentPasswordResetChallenge(ctx context.Context, subject string) (outbound.ChallengeState, bool, error) {
+	return t.getCurrentChallenge(ctx, subject, "password-reset")
+}
+
+func (t *accountTransaction) DeleteChallengeDelivery(ctx context.Context, challengeID string) error {
+	id, err := parseUUID(challengeID)
+	if err != nil {
+		return err
+	}
+	_, err = t.queries.DeleteChallengeDelivery(ctx, id)
+	return err
+}
+
+func (t *accountTransaction) UpdatePasswordHash(ctx context.Context, subject, hash string) error {
+	changed, err := t.queries.UpdatePasswordHash(ctx, sqlc.UpdatePasswordHashParams{Subject: subject, PasswordHash: hash})
+	if err == nil && changed != 1 {
+		return errors.New("password account unavailable")
+	}
+	return err
+}
+
+func (t *accountTransaction) RevokePasswordSessions(ctx context.Context, subject string) error {
+	_, err := t.queries.RevokeAccountSessions(ctx, subject)
+	return err
+}
+
+func (t *accountTransaction) QueuePasswordChangeNotice(ctx context.Context, subject string) error {
+	_, err := t.queries.QueuePasswordChangeNotice(ctx, subject)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return errors.New("password notice account unavailable")
+	}
+	return err
 }
 
 func (r *AccountRepository) RevokeAll(ctx context.Context, subject, sessionID string) error {

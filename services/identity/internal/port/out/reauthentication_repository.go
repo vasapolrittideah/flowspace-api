@@ -2,13 +2,10 @@ package outbound
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 )
-
-var ErrReauthenticationRequired = errors.New("re-authentication required")
 
 // ReauthenticationTransaction holds the session locks until the caller commits.
 type ReauthenticationTransaction interface {

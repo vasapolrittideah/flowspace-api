@@ -9,11 +9,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrLoginUnavailable   = errors.New("password login unavailable")
-)
-
 const unknownAccountVerifier = "$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 type PasswordLoginService struct {

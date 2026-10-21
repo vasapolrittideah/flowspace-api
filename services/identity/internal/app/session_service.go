@@ -5,13 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"errors"
 	"time"
 
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
-
-var ErrSessionIssue = errors.New("session issuance failed")
 
 type SessionTokens struct {
 	AccessToken           string

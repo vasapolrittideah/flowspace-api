@@ -12,12 +12,6 @@ import (
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
 
-var (
-	ErrInvalidLimitKey  = errors.New("invalid limit key")
-	ErrLimitUnavailable = errors.New("limit repository unavailable")
-	ErrRateLimited      = errors.New("rate limit exceeded")
-)
-
 type LimitService struct{ repository outbound.LimitRepository }
 
 func NewLimitService(repository outbound.LimitRepository) *LimitService {

@@ -29,12 +29,6 @@ const (
 	noticeKind        = "password-change-notice"
 )
 
-var (
-	ErrInvalidDeliveryEvent = errors.New("invalid delivery event")
-	ErrEmailDelivery        = errors.New("email delivery failed")
-	ErrDeliveryBroker       = errors.New("delivery broker failed")
-)
-
 type EmailWorker struct {
 	client     *kgo.Client
 	repository outbound.DeliveryRepository

@@ -5,12 +5,9 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/json"
-	"errors"
 
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 )
-
-var ErrDeliveryProtection = errors.New("delivery protection failed")
 
 type DeliveryProtector struct {
 	aead    cipher.AEAD

@@ -33,6 +33,7 @@ var (
 	_ outbound.PasswordResetCodeRepository        = (*AccountRepository)(nil)
 	_ outbound.PasswordResetRepository            = (*AccountRepository)(nil)
 	_ outbound.ProviderSessionRepository          = (*AccountRepository)(nil)
+	_ outbound.ProviderReauthenticationRepository = (*AccountRepository)(nil)
 )
 
 func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
@@ -79,16 +80,17 @@ type accountTransaction struct {
 }
 
 var (
-	_ outbound.SignupTransaction                = (*accountTransaction)(nil)
-	_ outbound.VerificationCodeIssueTransaction = (*accountTransaction)(nil)
-	_ outbound.VerificationTransaction          = (*accountTransaction)(nil)
-	_ outbound.ClaimCodeTransaction             = (*accountTransaction)(nil)
-	_ outbound.AccountClaimTransaction          = (*accountTransaction)(nil)
-	_ outbound.PasswordSessionTransaction       = (*accountTransaction)(nil)
-	_ outbound.PasswordResetCodeTransaction     = (*accountTransaction)(nil)
-	_ outbound.PasswordResetTransaction         = (*accountTransaction)(nil)
-	_ outbound.ProviderSessionTransaction       = (*accountTransaction)(nil)
-	_ outbound.ReauthenticationTransaction      = (*accountTransaction)(nil)
+	_ outbound.SignupTransaction                   = (*accountTransaction)(nil)
+	_ outbound.VerificationCodeIssueTransaction    = (*accountTransaction)(nil)
+	_ outbound.VerificationTransaction             = (*accountTransaction)(nil)
+	_ outbound.ClaimCodeTransaction                = (*accountTransaction)(nil)
+	_ outbound.AccountClaimTransaction             = (*accountTransaction)(nil)
+	_ outbound.PasswordSessionTransaction          = (*accountTransaction)(nil)
+	_ outbound.PasswordResetCodeTransaction        = (*accountTransaction)(nil)
+	_ outbound.PasswordResetTransaction            = (*accountTransaction)(nil)
+	_ outbound.ProviderSessionTransaction          = (*accountTransaction)(nil)
+	_ outbound.ReauthenticationTransaction         = (*accountTransaction)(nil)
+	_ outbound.ProviderReauthenticationTransaction = (*accountTransaction)(nil)
 )
 
 func (t *accountTransaction) LockSessionForReauthentication(ctx context.Context, subject, sessionID string) (domain.ReauthenticationWindow, time.Time, error) {
@@ -361,6 +363,37 @@ func (t *accountTransaction) CreateProviderAccount(ctx context.Context, account 
 		Provider: account.Provider, ProviderSubject: account.ProviderSubject, AccountSubject: account.Subject,
 	})
 	return err == nil, err
+}
+
+func (r *AccountRepository) WithinProviderReauthenticationTransaction(ctx context.Context, fn func(outbound.ProviderReauthenticationTransaction) error) (domain.ReauthenticationWindow, error) {
+	return r.withinReauthenticationTransaction(ctx, func(tx *accountTransaction) error { return fn(tx) })
+}
+
+func (t *accountTransaction) CreateProviderAttempt(ctx context.Context, attempt outbound.ProviderAttempt) (time.Time, error) {
+	return createProviderAttempt(ctx, t.queries, attempt)
+}
+
+func (t *accountTransaction) ClaimProviderReauthenticationResult(ctx context.Context, subject, sessionID string, attemptVerifier, handoffVerifier [32]byte,
+) (outbound.ProviderResult, bool, error) {
+	id, err := parseUUID(sessionID)
+	if err != nil {
+		return outbound.ProviderResult{}, false, outbound.ErrUnauthenticated
+	}
+	row, err := t.queries.ClaimProviderReauthenticationResult(ctx, sqlc.ClaimProviderReauthenticationResultParams{
+		AttemptTokenVerifier: attemptVerifier[:], HandoffCodeVerifier: handoffVerifier[:],
+		AccountSubject: pgtype.Text{String: subject, Valid: true}, SessionID: id,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outbound.ProviderResult{}, false, nil
+	}
+	if err != nil {
+		return outbound.ProviderResult{}, false, err
+	}
+	return outbound.ProviderResult{Provider: row.Provider, Subject: row.ProviderSubject.String}, true, nil
+}
+
+func (t *accountTransaction) HasProviderLink(ctx context.Context, subject, provider, providerSubject string) (bool, error) {
+	return t.queries.HasProviderLink(ctx, sqlc.HasProviderLinkParams{Provider: provider, ProviderSubject: providerSubject, AccountSubject: subject})
 }
 
 func (r *AccountRepository) WithinClaimCodeTransaction(ctx context.Context, fn func(outbound.ClaimCodeTransaction) error) error {

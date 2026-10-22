@@ -112,7 +112,7 @@ func (s *CodeReauthenticationService) ReauthenticateWithCode(ctx context.Context
 			invalid = true
 			return nil
 		}
-		sessionExpiry, err = s.openWindow(ctx, tx, input.Subject, input.SessionID)
+		sessionExpiry, err = openWindow(ctx, tx, input.Subject, input.SessionID)
 		if err != nil {
 			return err
 		}
@@ -165,28 +165,6 @@ func (s *CodeReauthenticationService) verifyCode(ctx context.Context, tx outboun
 		return true, tx.IncrementChallengeWrongGuess(ctx, challenge.ID)
 	}
 	return check != domain.CodeAccepted, nil
-}
-
-func (s *CodeReauthenticationService) openWindow(ctx context.Context, tx outbound.CodeReauthenticationTransaction, subject, sessionID string) (time.Time, error) {
-	window, now, err := tx.LockSessionForReauthentication(ctx, subject, sessionID)
-	if err != nil {
-		return time.Time{}, err
-	}
-	if !window.IsOpen(now) {
-		if err := tx.ReauthenticateSession(ctx, subject, sessionID); err != nil {
-			return time.Time{}, err
-		}
-	}
-	deadline := sessionReauthenticationDeadline(window)
-	tx.RequireCommitBefore(deadline)
-	return deadline, nil
-}
-
-func sessionReauthenticationDeadline(window domain.ReauthenticationWindow) time.Time {
-	if window.IdleExpiresAt.Before(window.AbsoluteExpiresAt) {
-		return window.IdleExpiresAt
-	}
-	return window.AbsoluteExpiresAt
 }
 
 func codeReauthenticationError(err error) error {

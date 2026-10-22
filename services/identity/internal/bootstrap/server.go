@@ -122,6 +122,7 @@ func NewAPIServer(ctx context.Context, config APIConfig, logger *zap.Logger) (*A
 		WithPasswordLogin(app.NewPasswordLoginService(accountRepo, signer, limits.PasswordLogin)).
 		WithPasswordReauthentication(app.NewPasswordReauthenticationService(accountRepo, limits.PasswordLogin)).
 		WithCodeReauthentication(app.NewCodeReauthenticationService(accountRepo, protector, limits.CodeRequest, limits.WrongCode, limits.AccountWrongCode, verifierKey)).
+		WithProviderReauthentication(app.NewProviderReauthenticationService(providerLogin, accountRepo, limits.ProviderSessionFailure)).
 		WithProviderLogin(providerLogin).
 		WithRefreshSession(app.NewSessionRefreshService(postgres.NewSessionRefreshRepository(pool.Pool), signer)).
 		WithCurrentSessionLogout(app.NewCurrentSessionLogoutService(postgres.NewSessionRepository(pool.Pool))).

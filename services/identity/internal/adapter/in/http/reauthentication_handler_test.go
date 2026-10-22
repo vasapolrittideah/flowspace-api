@@ -258,3 +258,167 @@ func TestCodeReauthenticationREST(t *testing.T) {
 		}
 	}
 }
+
+type providerReauthenticationStub struct {
+	start    inbound.StartProviderReauthenticationInput
+	complete inbound.CompleteProviderReauthenticationInput
+	err      error
+	calls    int
+}
+
+func (s *providerReauthenticationStub) StartProviderReauthentication(ctx context.Context, input inbound.StartProviderReauthenticationInput) (inbound.StartProviderLoginResult, error) {
+	s.calls++
+	s.start = input
+	deadline, ok := ctx.Deadline()
+	if !ok || time.Until(deadline) > 5*time.Second {
+		return inbound.StartProviderLoginResult{}, errors.New("missing deadline")
+	}
+	return inbound.StartProviderLoginResult{AuthorizationURL: "https://github.com/login/oauth/authorize?state=s", AttemptToken: "attempt", ExpiresAt: time.Unix(1800000000, 0)}, s.err
+}
+
+func (s *providerReauthenticationStub) CompleteProviderReauthentication(ctx context.Context, input inbound.CompleteProviderReauthenticationInput) (inbound.CompleteProviderReauthenticationResult, error) {
+	s.calls++
+	s.complete = input
+	deadline, ok := ctx.Deadline()
+	if !ok || time.Until(deadline) > 5*time.Second {
+		return inbound.CompleteProviderReauthenticationResult{}, errors.New("missing deadline")
+	}
+	return inbound.CompleteProviderReauthenticationResult{ExpiresAt: time.Unix(1800000000, 0)}, s.err
+}
+
+func providerReauthenticationContext(t *testing.T) context.Context {
+	t.Helper()
+	ctx := peer.NewContext(t.Context(), &peer.Peer{Addr: &net.TCPAddr{IP: net.ParseIP("192.0.2.1"), Port: 42}})
+	return metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer access-proof"))
+}
+
+func TestProviderReauthenticationHandler(t *testing.T) {
+	stub := &providerReauthenticationStub{}
+	handler := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil).WithProviderReauthentication(stub)
+	ctx := providerReauthenticationContext(t)
+
+	started, err := handler.StartProviderReauthentication(ctx, &identityv1.StartProviderReauthenticationRequest{Provider: identityv1.Provider_PROVIDER_GITHUB})
+	if err != nil || started.GetAuthorizationUrl() != "https://github.com/login/oauth/authorize?state=s" || started.GetAttemptToken() != "attempt" ||
+		!started.GetAttemptExpiresAt().AsTime().Equal(time.Unix(1800000000, 0)) ||
+		stub.start != (inbound.StartProviderReauthenticationInput{Subject: "subject-proof", SessionID: "session-proof", Provider: "github", Source: "192.0.2.1"}) {
+		t.Fatalf("start = %v, error = %v, input = %+v", started, err, stub.start)
+	}
+	completed, err := handler.CompleteProviderReauthentication(ctx, &identityv1.CompleteProviderReauthenticationRequest{AttemptToken: "attempt", HandoffCode: "handoff"})
+	if err != nil || !completed.GetReauthenticationExpiresAt().AsTime().Equal(time.Unix(1800000000, 0)) ||
+		stub.complete != (inbound.CompleteProviderReauthenticationInput{Subject: "subject-proof", SessionID: "session-proof", AttemptToken: "attempt", HandoffCode: "handoff", Source: "192.0.2.1"}) {
+		t.Fatalf("complete = %v, error = %v, input = %+v", completed, err, stub.complete)
+	}
+}
+
+func TestProviderReauthenticationHandlerErrors(t *testing.T) {
+	stub := &providerReauthenticationStub{}
+	handler := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil).WithProviderReauthentication(stub)
+	ctx := providerReauthenticationContext(t)
+	for _, test := range []struct {
+		err  error
+		code codes.Code
+	}{
+		{domain.ErrInvalidProvider, codes.InvalidArgument},
+		{domain.ErrInvalidAttemptToken, codes.InvalidArgument},
+		{domain.ErrInvalidHandoffCode, codes.InvalidArgument},
+		{app.ErrProviderHandoffRejected, codes.FailedPrecondition},
+		{app.ErrProviderAccountUnavailable, codes.FailedPrecondition},
+		{app.ErrRateLimited, codes.ResourceExhausted},
+		{app.ErrLimitUnavailable, codes.Unavailable},
+		{outbound.ErrUnauthenticated, codes.Unauthenticated},
+		{context.Canceled, codes.Canceled},
+		{errors.New("private provider store"), codes.Unavailable},
+	} {
+		stub.err = test.err
+		if _, err := handler.StartProviderReauthentication(ctx, &identityv1.StartProviderReauthenticationRequest{Provider: identityv1.Provider_PROVIDER_GOOGLE}); status.Code(err) != test.code || strings.Contains(status.Convert(err).Message(), "private") {
+			t.Fatalf("start error %v = %v, want %v", test.err, err, test.code)
+		}
+		if _, err := handler.CompleteProviderReauthentication(ctx, &identityv1.CompleteProviderReauthenticationRequest{AttemptToken: "attempt", HandoffCode: "handoff"}); status.Code(err) != test.code || strings.Contains(status.Convert(err).Message(), "private") {
+			t.Fatalf("complete error %v = %v, want %v", test.err, err, test.code)
+		}
+	}
+}
+
+func TestProviderReauthenticationHandlerAdmission(t *testing.T) {
+	stub := &providerReauthenticationStub{}
+	handler := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil).WithProviderReauthentication(stub)
+	ctx := providerReauthenticationContext(t)
+	start := &identityv1.StartProviderReauthenticationRequest{Provider: identityv1.Provider_PROVIDER_GOOGLE}
+	complete := &identityv1.CompleteProviderReauthenticationRequest{AttemptToken: "attempt", HandoffCode: "handoff"}
+	if _, err := handler.StartProviderReauthentication(t.Context(), start); status.Code(err) != codes.Unauthenticated {
+		t.Fatal(err)
+	}
+	if _, err := handler.CompleteProviderReauthentication(t.Context(), complete); status.Code(err) != codes.Unauthenticated {
+		t.Fatal(err)
+	}
+	for _, request := range []*identityv1.StartProviderReauthenticationRequest{nil, {}, {Provider: identityv1.Provider(99)}} {
+		if _, err := handler.StartProviderReauthentication(ctx, request); status.Code(err) != codes.InvalidArgument {
+			t.Fatalf("start %v error = %v", request, err)
+		}
+	}
+	retry := metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer access-proof", "idempotency-key", "retry"))
+	if _, err := handler.StartProviderReauthentication(retry, start); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("idempotency error = %v", err)
+	}
+	if _, err := handler.CompleteProviderReauthentication(ctx, nil); status.Code(err) != codes.InvalidArgument {
+		t.Fatal(err)
+	}
+	if stub.calls != 0 {
+		t.Fatalf("rejected requests reached the service %d times", stub.calls)
+	}
+	empty := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil)
+	if _, err := empty.StartProviderReauthentication(ctx, start); status.Code(err) != codes.Unavailable {
+		t.Fatal(err)
+	}
+	if _, err := empty.CompleteProviderReauthentication(ctx, complete); status.Code(err) != codes.Unavailable {
+		t.Fatal(err)
+	}
+}
+
+func TestProviderReauthenticationREST(t *testing.T) {
+	stub := &providerReauthenticationStub{}
+	mux := runtime.NewServeMux()
+	handler := NewIdentityHandler(nil, nil, nil, nil, reauthenticationVerifier{}, nil).WithProviderReauthentication(stub)
+	if err := identityv1.RegisterIdentityServiceHandlerServer(t.Context(), mux, handler); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		path, body, authorization string
+		idempotencyKey            bool
+		want                      int
+		fields                    []string
+	}{
+		{"/v1/provider-reauthentication-attempts", `{"provider":"PROVIDER_GITHUB"}`, "Bearer access-proof", false, http.StatusOK, []string{
+			`"authorizationUrl":"https://github.com/login/oauth/authorize?state=s"`, `"attemptToken":"attempt"`, `"attemptExpiresAt":"2027-01-15T08:00:00Z"`,
+		}},
+		{"/v1/provider-reauthentication-attempts", `{"provider":"PROVIDER_GITHUB"}`, "", false, http.StatusUnauthorized, nil},
+		{"/v1/provider-reauthentication-attempts", `{"provider":"PROVIDER_GITHUB"}`, "Bearer access-proof", true, http.StatusBadRequest, nil},
+		{"/v1/provider-reauthentication-attempts", `{"provider":"PROVIDER_OKTA"}`, "Bearer access-proof", false, http.StatusBadRequest, nil},
+		{"/v1/provider-reauthentications", `{"attemptToken":"attempt","handoffCode":"handoff"}`, "Bearer access-proof", false, http.StatusOK, []string{
+			`"reauthenticationExpiresAt":"2027-01-15T08:00:00Z"`,
+		}},
+		{"/v1/provider-reauthentications", `{"attemptToken":"attempt","handoffCode":"handoff"}`, "", false, http.StatusUnauthorized, nil},
+	} {
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, test.path, strings.NewReader(test.body))
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Authorization", test.authorization)
+		if test.idempotencyKey {
+			request.Header["Idempotency-Key"] = []string{""}
+		}
+		request.RemoteAddr = "192.0.2.1:42"
+		response := httptest.NewRecorder()
+		NewIdentityRequestHandler(mux, nil).ServeHTTP(response, request)
+		if response.Code != test.want {
+			t.Fatalf("%s status = %d, want %d, body = %s", test.path, response.Code, test.want, response.Body)
+		}
+		for _, field := range test.fields {
+			if !strings.Contains(response.Body.String(), field) {
+				t.Fatalf("%s response lacks %s: %s", test.path, field, response.Body)
+			}
+		}
+	}
+	if stub.calls != 2 || stub.start != (inbound.StartProviderReauthenticationInput{Subject: "subject-proof", SessionID: "session-proof", Provider: "github", Source: "192.0.2.1"}) ||
+		stub.complete != (inbound.CompleteProviderReauthenticationInput{Subject: "subject-proof", SessionID: "session-proof", AttemptToken: "attempt", HandoffCode: "handoff", Source: "192.0.2.1"}) {
+		t.Fatalf("service calls = %d, start = %+v, complete = %+v", stub.calls, stub.start, stub.complete)
+	}
+}

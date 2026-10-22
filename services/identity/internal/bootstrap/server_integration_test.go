@@ -483,6 +483,11 @@ func testPasswordReauthenticationAPI(t *testing.T, server *APIServer, dsn string
 		t.Fatal("code response missing expiry")
 	}
 	callCode("/v1/code-reauthentications", `{"code":"`+code+`"}`, "Bearer "+access, 400)
+	// No provider client is configured, so a valid start is unavailable.
+	callCode("/v1/provider-reauthentication-attempts", `{"provider":"PROVIDER_GITHUB"}`, "", 401)
+	callCode("/v1/provider-reauthentication-attempts", `{"provider":"PROVIDER_GITHUB"}`, "Bearer "+access, 503)
+	callCode("/v1/provider-reauthentications", `{"attemptToken":"invalid","handoffCode":"invalid"}`, "", 401)
+	callCode("/v1/provider-reauthentications", `{"attemptToken":"invalid","handoffCode":"invalid"}`, "Bearer "+access, 400)
 	if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET revoked_at=clock_timestamp() WHERE id=$1`, id); err != nil {
 		t.Fatal(err)
 	}

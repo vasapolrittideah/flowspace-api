@@ -1,10 +1,12 @@
 -- name: CreateProviderLoginAttempt :one
 INSERT INTO identity_provider_login_attempts (
-    provider, attempt_token_verifier, state_verifier, code_verifier, nonce, callback_url, expires_at
+    provider, attempt_token_verifier, state_verifier, code_verifier, nonce, callback_url, expires_at,
+    purpose, account_subject, session_id
 )
 VALUES (
     sqlc.arg(provider), sqlc.arg(attempt_token_verifier), sqlc.arg(state_verifier), sqlc.arg(code_verifier),
-    sqlc.narg(nonce), sqlc.arg(callback_url), statement_timestamp() + INTERVAL '10 minutes'
+    sqlc.narg(nonce), sqlc.arg(callback_url), statement_timestamp() + INTERVAL '10 minutes',
+    sqlc.arg(purpose), sqlc.narg(account_subject), sqlc.narg(session_id)
 )
 RETURNING expires_at;
 
@@ -15,7 +17,7 @@ WHERE provider = sqlc.arg(provider)
   AND state_verifier = sqlc.arg(state_verifier)
   AND state_consumed_at IS NULL
   AND expires_at > statement_timestamp()
-RETURNING id, code_verifier, nonce, callback_url;
+RETURNING id, code_verifier, nonce, callback_url, purpose;
 
 -- name: RecordProviderLoginResult :execrows
 UPDATE identity_provider_login_attempts
@@ -43,16 +45,31 @@ UPDATE identity_provider_login_attempts
 SET session_claimed_at = statement_timestamp()
 WHERE attempt_token_verifier = sqlc.arg(attempt_token_verifier)
   AND handoff_code_verifier = sqlc.arg(handoff_code_verifier)
+  AND purpose = 'login'
   AND session_claimed_at IS NULL
   AND handoff_failures < 5
   AND expires_at > statement_timestamp()
 RETURNING provider, provider_subject, provider_email, provider_email_verified, provider_hosted_domain;
+
+-- name: ClaimProviderReauthenticationResult :one
+UPDATE identity_provider_login_attempts
+SET reauthentication_claimed_at = statement_timestamp()
+WHERE attempt_token_verifier = sqlc.arg(attempt_token_verifier)
+  AND handoff_code_verifier = sqlc.arg(handoff_code_verifier)
+  AND purpose = 'reauthenticate'
+  AND account_subject = sqlc.arg(account_subject)
+  AND session_id = sqlc.arg(session_id)
+  AND reauthentication_claimed_at IS NULL
+  AND handoff_failures < 5
+  AND expires_at > statement_timestamp()
+RETURNING provider, provider_subject;
 
 -- name: RecordProviderHandoffFailure :exec
 UPDATE identity_provider_login_attempts
 SET handoff_failures = handoff_failures + 1
 WHERE attempt_token_verifier = sqlc.arg(attempt_token_verifier)
   AND session_claimed_at IS NULL
+  AND reauthentication_claimed_at IS NULL
   AND handoff_failures < 5
   AND expires_at > statement_timestamp();
 
@@ -81,3 +98,12 @@ RETURNING subject;
 -- name: CreateProviderLink :exec
 INSERT INTO identity_provider_links (provider, provider_subject, account_subject)
 VALUES (sqlc.arg(provider), sqlc.arg(provider_subject), sqlc.arg(account_subject));
+
+-- name: HasProviderLink :one
+SELECT EXISTS (
+    SELECT 1
+    FROM identity_provider_links
+    WHERE provider = sqlc.arg(provider)
+      AND provider_subject = sqlc.arg(provider_subject)
+      AND account_subject = sqlc.arg(account_subject)
+);

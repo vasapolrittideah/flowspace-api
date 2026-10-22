@@ -23,15 +23,7 @@ func NewProviderAttemptRepository(pool *pgxpool.Pool) *ProviderAttemptRepository
 }
 
 func (r *ProviderAttemptRepository) CreateProviderAttempt(ctx context.Context, attempt outbound.ProviderAttempt) (time.Time, error) {
-	expiresAt, err := sqlc.New(r.pool).CreateProviderLoginAttempt(ctx, sqlc.CreateProviderLoginAttemptParams{
-		Provider:             attempt.Provider,
-		AttemptTokenVerifier: attempt.AttemptTokenVerifier[:],
-		StateVerifier:        attempt.StateVerifier[:],
-		CodeVerifier:         attempt.CodeVerifier,
-		Nonce:                pgtype.Text{String: attempt.Nonce, Valid: attempt.Nonce != ""},
-		CallbackUrl:          attempt.CallbackURL,
-	})
-	return expiresAt.Time, err
+	return createProviderAttempt(ctx, sqlc.New(r.pool), attempt)
 }
 
 func (r *ProviderAttemptRepository) ConsumeProviderState(ctx context.Context, provider string, stateVerifier [32]byte) (outbound.ProviderAttemptProof, bool, error) {
@@ -43,7 +35,8 @@ func (r *ProviderAttemptRepository) ConsumeProviderState(ctx context.Context, pr
 		return outbound.ProviderAttemptProof{}, false, err
 	}
 	return outbound.ProviderAttemptProof{
-		ID: uuid.UUID(row.ID.Bytes).String(), CodeVerifier: row.CodeVerifier, Nonce: row.Nonce.String, CallbackURL: row.CallbackUrl,
+		ID: uuid.UUID(row.ID.Bytes).String(), Reauthentication: row.Purpose == providerAttemptReauthentication,
+		CodeVerifier: row.CodeVerifier, Nonce: row.Nonce.String, CallbackURL: row.CallbackUrl,
 	}, true, nil
 }
 

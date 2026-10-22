@@ -19,6 +19,15 @@ type ProviderIdentity struct {
 	HostedDomain  string
 }
 
+// ProviderResult is the verified provider identity of a claimed attempt.
+type ProviderResult struct {
+	Provider      string
+	Subject       string
+	Email         string
+	EmailVerified bool
+	HostedDomain  string
+}
+
 // ProviderIdentityVerifier exchanges an authorization code and verifies the
 // provider identity. It returns domain.ErrInvalidProviderProof for rejected
 // proof and domain.ErrProviderUnavailable for a failed provider call.

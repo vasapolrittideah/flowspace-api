@@ -31,11 +31,12 @@ type providerAttemptRepository struct {
 	recordErr     error
 	failed        []string
 	handoffFails  [][32]byte
+	handoffErr    error
 }
 
 func (r *providerAttemptRepository) RecordFailedProviderHandoff(_ context.Context, attempt [32]byte) error {
 	r.handoffFails = append(r.handoffFails, attempt)
-	return nil
+	return r.handoffErr
 }
 
 func (r *providerAttemptRepository) ConsumeProviderState(_ context.Context, provider string, state [32]byte) (outbound.ProviderAttemptProof, bool, error) {
@@ -224,7 +225,19 @@ func (f *providerCallbackFixture) complete(t *testing.T, input inbound.CompleteP
 	if input.Source == "" {
 		input.Source = "192.0.2.1"
 	}
-	return f.service.CompleteProviderCallback(t.Context(), input)
+	result, err := f.service.CompleteProviderCallback(t.Context(), input)
+	return result.HandoffCode, err
+}
+
+func TestCompleteProviderCallbackReturnsAttemptPurpose(t *testing.T) {
+	for _, reauthentication := range []bool{false, true} {
+		f := newProviderCallbackFixture(nil)
+		f.repository.proof.Reauthentication = reauthentication
+		result, err := f.service.CompleteProviderCallback(t.Context(), inbound.CompleteProviderCallbackInput{Provider: "google", State: "state", Code: "code", Source: "192.0.2.1"})
+		if err != nil || result.HandoffCode == "" || result.Reauthentication != reauthentication {
+			t.Fatalf("re-authentication %t: result = %+v, error = %v", reauthentication, result, err)
+		}
+	}
 }
 
 func TestCompleteProviderCallbackStoresResultAndReturnsHandoffCode(t *testing.T) {

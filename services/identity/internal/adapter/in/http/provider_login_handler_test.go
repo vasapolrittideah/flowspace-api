@@ -44,8 +44,8 @@ func (s *fakeProviderLogin) StartProviderLogin(_ context.Context, input inbound.
 	}, nil
 }
 
-func (s *fakeProviderLogin) CompleteProviderCallback(context.Context, inbound.CompleteProviderCallbackInput) (string, error) {
-	return "", errors.New("not used")
+func (s *fakeProviderLogin) CompleteProviderCallback(context.Context, inbound.CompleteProviderCallbackInput) (inbound.ProviderCallbackResult, error) {
+	return inbound.ProviderCallbackResult{}, errors.New("not used")
 }
 
 func (s *fakeProviderLogin) CreateProviderSession(_ context.Context, input inbound.CreateProviderSessionInput) (inbound.CreateProviderSessionResult, error) {

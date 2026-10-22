@@ -138,6 +138,10 @@ func testPasswordReauthentication(t *testing.T, pool *pgxpool.Pool, db *sql.DB) 
 		if _, err := newService(pool).ReauthenticateWithPassword(ctx, input); err != nil {
 			t.Fatalf("failed attempts locked session/account: %v", err)
 		}
+		session, err := login.CreatePasswordSession(ctx, inbound.CreatePasswordSessionInput{Email: email, Password: password, Source: "192.0.2.211"})
+		if err != nil || session.Subject != subject || session.AccessToken == "" || session.RefreshToken == "" {
+			t.Fatalf("login after the limit window = %+v, %v", session.Subject, err)
+		}
 	})
 	t.Run("no password and inactive sessions keep the window closed", func(t *testing.T) {
 		subject, id, _ := seed(t)

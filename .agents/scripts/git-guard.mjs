@@ -2,7 +2,8 @@
 // input, and both block the command on exit code 2. The hook enforces the rules that
 // the GitHub ruleset on main cannot enforce. The hook blocks these commands:
 // - `git commit` without the reviewer approvals for the staged tree.
-// - `gh pr merge`.
+// - `gh pr merge`, each `gh api` call to the merge endpoint of a PR, and each GraphQL call that
+//   merges a PR or enables auto-merge.
 // - Each `gh stack` command, because the extension creates and merges PRs without these checks.
 // - `gh pr create` and `gh pr edit` without the approvals of convention-reviewer and
 //   writing-reviewer, of planning-reviewer when the branch changes a specification or a plan,
@@ -23,7 +24,12 @@ const BRANCH_ROLES = [
 ];
 // test-reviewer reviews handwritten Go code. Buf writes `gen/`, and sqlc writes each `sqlc/` directory.
 const TESTED_GO_PATH = /^(?!gen\/)(?!(?:.*\/)?sqlc\/).*\.go$/;
-const WRAPPERS = new Set(['command', 'exec', 'env', 'time', 'nohup', 'builtin']);
+// The REST endpoint and the GraphQL mutations that merge a PR or let GitHub merge it later.
+// An endpoint can be a path or a full URL, with a query string or a fragment.
+const MERGE_ENDPOINT = /(^|\/)pulls\/[^/?#]+\/merge\/?([?#]|$)/;
+const GRAPHQL_ENDPOINT = /(^|\/)graphql\/?([?#]|$)/;
+const MERGE_MUTATION = /\b(mergePullRequest|enablePullRequestAutoMerge|enqueuePullRequest)\b/;
+const WRAPPERS =new Set(['command', 'exec', 'env', 'time', 'nohup', 'builtin']);
 const COMMIT_VALUE_OPTIONS = new Set(['-m', '-F', '-C', '-c', '-t', '--message', '--file', '--reuse-message',
   '--reedit-message', '--template', '--author', '--date', '--fixup', '--squash', '--trailer', '--cleanup']);
 const COMMIT_CONTENT_OPTIONS = new Set(['-a', '--all', '-i', '--include', '-o', '--only', '-p', '--patch',
@@ -110,6 +116,9 @@ export function shellCommands(line) {
       }
     } else if (/\s/.test(ch)) {
       endWord();
+    } else if ('{}'.includes(ch) && inWord) {
+      // A brace inside a word is literal, such as in `repos/{owner}/{repo}` or `${HOME}`.
+      word += ch;
     } else if (';&|(){}'.includes(ch)) {
       endCommand();
     } else {
@@ -236,6 +245,50 @@ export function ghPr(args) {
   return sawPr && action ? { action, args: rest } : undefined;
 }
 
+// Returns whether a `gh api` command calls the GraphQL endpoint.
+export function ghApiGraphql(args) {
+  return ghCommand(args) === 'api' && args.some((arg) => GRAPHQL_ENDPOINT.test(arg));
+}
+
+// Returns whether a `gh api` command merges a PR, adds it to a merge queue, or enables
+// auto-merge. A GraphQL query can come from the shell line or from a file, so the check reads the
+// whole line and each file. Standard input and a file that it cannot read count as a merge.
+export function ghApiMerges(args, line, readFile) {
+  if (ghCommand(args) !== 'api') {
+    return false;
+  }
+  // gh accepts many forms of the method flag, such as `-iX PUT`, so the hook blocks each call
+  // to the merge endpoint and does not read the method. `gh pr view` shows whether a PR is merged.
+  if (args.some((arg) => MERGE_ENDPOINT.test(arg))) {
+    return true;
+  }
+  const files = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === '--input') {
+      files.push(args[i + 1]);
+      i += 1;
+    } else if (arg.startsWith('--input=')) {
+      files.push(arg.slice('--input='.length));
+    } else if (arg.includes('=@')) {
+      files.push(arg.slice(arg.indexOf('=@') + 2));
+    }
+  }
+  if (!ghApiGraphql(args)) {
+    return false;
+  }
+  return [line, ...files].some((source) => {
+    if (source === undefined || source === '-') {
+      return true;
+    }
+    try {
+      return MERGE_MUTATION.test(source === line ? line : readFile(source));
+    } catch {
+      return true;
+    }
+  });
+}
+
 // Returns the body file of `gh pr create` or `gh pr edit`, or a problem when the body is not
 // in exactly one file.
 export function prBody(args) {
@@ -263,6 +316,8 @@ export function prBody(args) {
   return { file: files[0] };
 }
 
+const MERGE_REASON = 'The maintainer merges pull requests. Do not run `gh pr merge`, merge through `gh api`, or enable auto-merge.';
+
 // Decides whether to block the command. `run(cmd, args, cwd)` returns { status, stdout }.
 export function decide({ command, cwd }, { run, exists, read }) {
   const gits = gitCommands(command, cwd);
@@ -275,12 +330,22 @@ export function decide({ command, cwd }, { run, exists, read }) {
       reason: 'Do not combine `cd` with `git commit` or `gh pr`. Use `git -C <dir>` and run `gh` from the repository root.',
     };
   }
+  // The hook reads GraphQL query files from cwd, so a `cd` on the same line can hide the real file.
+  if (gits.some((git) => git.sub === 'gh' && ghApiGraphql(git.args)) && gits.some((git) => git.sub === 'cd')) {
+    return {
+      block: true,
+      reason: 'Do not combine `cd` with a GraphQL `gh api` call. Run it from the directory of its query files.',
+    };
+  }
   for (const git of gits) {
     if (git.sub === 'gh' && ghCommand(git.args) === 'stack') {
       return {
         block: true,
         reason: 'Do not run `gh stack`. Its commands create and merge PRs without the checks of this hook. Use `git` and `gh pr create --base`, as ADR-0040 states.',
       };
+    }
+    if (git.sub === 'gh' && ghApiMerges(git.args, command, (file) => read(resolve(git.dir, file)))) {
+      return { block: true, reason: MERGE_REASON };
     }
     const out = (args) => {
       const result = run('git', args, git.dir);
@@ -290,7 +355,7 @@ export function decide({ command, cwd }, { run, exists, read }) {
     if (isPr(git)) {
       const { action, args: prArgs } = prOf(git);
       if (action === 'merge') {
-        return { block: true, reason: 'The maintainer merges pull requests. Do not run `gh pr merge` or enable auto-merge.' };
+        return { block: true, reason: MERGE_REASON };
       }
       if (gits.length > 1) {
         return { block: true, reason: `Run \`gh pr ${action}\` as its own command.` };

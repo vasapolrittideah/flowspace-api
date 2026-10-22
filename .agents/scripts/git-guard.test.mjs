@@ -49,6 +49,10 @@ test('shellCommands respects quotes and shell operators', () => {
     ['printf', '%s', 'a; git commit; b'],
     ['git', 'status'],
   ]);
+  assert.deepEqual(shellCommands('gh api repos/{owner}/{repo}/pulls -X PUT; { git status; }'), [
+    ['gh', 'api', 'repos/{owner}/{repo}/pulls', '-X', 'PUT'],
+    ['git', 'status'],
+  ]);
   assert.deepEqual(shellCommands('git -C "/my repo" commit --file m.txt'), [
     ['git', '-C', '/my repo', 'commit', '--file', 'm.txt'],
   ]);
@@ -196,6 +200,64 @@ test('a staged migration also needs migration-reviewer', () => {
 test('gh pr merge is always blocked', () => {
   assert.equal(decideWith('gh pr merge 12 --squash').block, true);
   assert.equal(decideWith('gh pr merge --auto --squash').block, true);
+});
+
+test('gh api calls that merge a PR or enable auto-merge are blocked', () => {
+  FILES['/repo/merge.graphql'] = 'mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }';
+  for (const command of [
+    'gh api -X PUT repos/owner/repo/pulls/12/merge',
+    'gh api --method PUT repos/{owner}/{repo}/pulls/12/merge -f merge_method=squash',
+    'gh api --method=put /repos/owner/repo/pulls/12/merge',
+    'gh api -XPUT repos/owner/repo/pulls/12/merge/',
+    'gh api -X=PUT repos/owner/repo/pulls/12/merge',
+    'gh api -iX PUT repos/owner/repo/pulls/12/merge',
+    'gh api repos/owner/repo/pulls/12/merge',
+    'gh -R owner/repo api -X PUT repos/owner/repo/pulls/12/merge',
+    `gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'`,
+    `gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {pullRequestId: "x"}) { clientMutationId } }'`,
+    `gh api graphql --raw-field query='mutation { enqueuePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'`,
+    `echo '{"query":"mutation { mergePullRequest(input: {}) { clientMutationId } }"}' | gh api graphql --input -`,
+    'gh api graphql -F query=@merge.graphql',
+    'gh api graphql --input merge.graphql',
+    'gh api graphql --input=merge.graphql',
+    'gh api graphql -F query=@missing.graphql',
+    'cat payload.json | gh api graphql --input -',
+    'gh api graphql -F query=@- < mutation.graphql',
+    'gh api repos/{owner}/{repo}/pulls/12/merge -X PUT',
+    `gh api -X PUT 'repos/owner/repo/pulls/12/merge?merge_method=squash'`,
+    'gh api -X PUT https://api.github.com/repos/owner/repo/pulls/12/merge#x',
+    `gh api -X POST https://api.github.com/graphql -f query='mutation { mergePullRequest(input: {}) { clientMutationId } }'`,
+    'gh api /graphql/ --input merge.graphql',
+  ]) {
+    const result = decideWith(command);
+    assert.equal(result.block, true, command);
+    assert.match(result.reason, /maintainer merges/, command);
+  }
+});
+
+test('a GraphQL call that shares its line with cd is blocked', () => {
+  // The hook reads a query file from the directory where the line starts, not from the directory after cd.
+  FILES['/repo/query.graphql'] = 'query { viewer { login } }';
+  for (const command of ['cd sub && gh api graphql -F query=@query.graphql', 'cd sub; gh api https://api.github.com/graphql --input query.graphql']) {
+    const result = decideWith(command);
+    assert.equal(result.block, true, command);
+    assert.match(result.reason, /cd/, command);
+  }
+  assert.equal(decideWith('gh api graphql -F query=@query.graphql').block, false);
+  assert.equal(decideWith('cd sub && gh api repos/owner/repo/pulls/12').block, false);
+});
+
+test('other gh api calls are not blocked', () => {
+  for (const command of [
+    'gh api repos/owner/repo/pulls/12',
+    'gh api repos/owner/repo/pulls/12/merges',
+    'gh api -X PATCH repos/owner/repo/pulls/12 -f title=x',
+    `gh api graphql -f query='mutation { disablePullRequestAutoMerge(input: {pullRequestId: "x"}) { clientMutationId } }'`,
+    `gh api graphql -f query='query { repository(owner: "o", name: "r") { pullRequest(number: 1) { mergeable } } }'`,
+    'echo "gh api -X PUT repos/owner/repo/pulls/12/merge"',
+  ]) {
+    assert.equal(decideWith(command).block, false, command);
+  }
 });
 
 test('every gh stack command is blocked', () => {

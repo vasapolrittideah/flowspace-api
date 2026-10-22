@@ -2,7 +2,7 @@
 
 Module ID: `identity-re-authentication`
 
-Status: Approved
+Status: Implemented
 
 ## Objective
 

@@ -171,6 +171,22 @@ service IdentityService {
     };
   }
 
+  // Lists the active sessions of the subject in 1 validated access token.
+  // Requires exactly 1 Authorization bearer header.
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse) {
+    option (google.api.http) = {get: "/v1/sessions"};
+  }
+
+  // Revokes 1 other session of the subject in 1 validated access token.
+  // Requires exactly 1 Authorization bearer header and an open
+  // re-authentication window.
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse) {
+    option (google.api.http) = {
+      post: "/v1/sessions/{session_id}:revoke"
+      body: "*"
+    };
+  }
+
   // Returns the current email state for an active session; inactive sessions
   // return Unauthenticated.
   // Requires an authenticated service caller and has no public HTTP route.
@@ -359,6 +375,58 @@ message LogoutAllSessionsRequest {}
 message LogoutAllSessionsResponse {
   bool revoked = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
+
+enum SignInMethod {
+  // The session started before Identity recorded the sign-in method.
+  SIGN_IN_METHOD_UNSPECIFIED = 0;
+  SIGN_IN_METHOD_PASSWORD = 1;
+  SIGN_IN_METHOD_GOOGLE = 2;
+  SIGN_IN_METHOD_GITHUB = 3;
+}
+
+message Session {
+  string session_id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool current = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  SignInMethod sign_in_method = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp created_at = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The value uses IPv4 dotted or IPv6 text form, or is empty when the address
+  // is unknown.
+  string created_ip_address = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The value has at most 512 bytes, or is empty.
+  string created_user_agent = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Examples are "Chrome on macOS" and "Unknown device".
+  string created_device = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The time of the last successful refresh, or created_at before the first
+  // refresh.
+  google.protobuf.Timestamp last_used_at = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The value uses the same form as created_ip_address.
+  string last_used_ip_address = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The value has at most 512 bytes, or is empty.
+  string last_used_user_agent = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string last_used_device = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The value is the earlier of the idle expiry and the absolute expiry.
+  google.protobuf.Timestamp expires_at = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Sessions are ordered by last_used_at from newest to oldest, then by
+// session_id in ascending byte order.
+message ListSessionsRequest {
+  // A value of 0 uses the default of 20. The maximum is 100.
+  int32 page_size = 1;
+  // An opaque token that works only for the subject that received it.
+  string page_token = 2;
+}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string next_page_token = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message RevokeSessionRequest {
+  string session_id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RevokeSessionResponse {}
 
 message CheckSessionRequest {
   string subject = 1 [(google.api.field_behavior) = REQUIRED];

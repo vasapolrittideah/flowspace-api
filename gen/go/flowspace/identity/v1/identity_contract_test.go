@@ -202,3 +202,131 @@ func TestProviderLoginFailureUsesHTTP400(t *testing.T) {
 		t.Fatalf("gRPC FailedPrecondition maps to HTTP %d, want 400", got)
 	}
 }
+
+func TestSessionManagementRPCContract(t *testing.T) {
+	service := File_flowspace_identity_v1_identity_service_proto.Services().ByName("IdentityService")
+	tests := []struct {
+		name, verb, route, body string
+		request, response       []string
+		required                []string
+	}{
+		{"ListSessions", "GET", "/v1/sessions", "", []string{"page_size", "page_token"}, []string{"sessions", "next_page_token"}, nil},
+		{"RevokeSession", "POST", "/v1/sessions/{session_id}:revoke", "*", []string{"session_id"}, nil, []string{"session_id"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			method := service.Methods().ByName(protoreflect.Name(test.name))
+			if method == nil {
+				t.Fatal("RPC missing")
+			}
+			if got := messageFields(method.Input()); !slices.Equal(got, test.request) {
+				t.Fatalf("request fields = %v, want %v", got, test.request)
+			}
+			if got := messageFields(method.Output()); !slices.Equal(got, test.response) {
+				t.Fatalf("response fields = %v, want %v", got, test.response)
+			}
+			if got := fieldsWithBehavior(method.Input(), annotations.FieldBehavior_REQUIRED); !slices.Equal(got, test.required) {
+				t.Fatalf("required fields = %v, want %v", got, test.required)
+			}
+			rule, ok := proto.GetExtension(method.Options(), annotations.E_Http).(*annotations.HttpRule)
+			if !ok {
+				t.Fatal("public RPC has no HTTP rule")
+			}
+			route := rule.GetGet()
+			if test.verb == "POST" {
+				route = rule.GetPost()
+			}
+			if route != test.route || rule.GetBody() != test.body {
+				t.Fatalf("HTTP rule = %v, want %s %s with body %q", rule, test.verb, test.route, test.body)
+			}
+		})
+	}
+}
+
+func TestSessionResourceIsOutputOnly(t *testing.T) {
+	session := (&Session{}).ProtoReflect().Descriptor()
+	want := []string{
+		"session_id", "current", "sign_in_method", "created_at", "created_ip_address", "created_user_agent", "created_device",
+		"last_used_at", "last_used_ip_address", "last_used_user_agent", "last_used_device", "expires_at",
+	}
+	if got := messageFields(session); !slices.Equal(got, want) {
+		t.Fatalf("session fields = %v, want %v", got, want)
+	}
+	if got := fieldsWithBehavior(session, annotations.FieldBehavior_OUTPUT_ONLY); !slices.Equal(got, want) {
+		t.Fatalf("output-only fields = %v, want %v", got, want)
+	}
+}
+
+func TestSessionJSONUsesSpecifiedNames(t *testing.T) {
+	session := (&Session{}).ProtoReflect().Descriptor()
+	want := []string{
+		"sessionId", "current", "signInMethod", "createdAt", "createdIpAddress", "createdUserAgent", "createdDevice",
+		"lastUsedAt", "lastUsedIpAddress", "lastUsedUserAgent", "lastUsedDevice", "expiresAt",
+	}
+	got := make([]string, session.Fields().Len())
+	for i := range got {
+		got[i] = session.Fields().Get(i).JSONName()
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("session JSON names = %v, want %v", got, want)
+	}
+	encoded, err := protojson.Marshal(&Session{SignInMethod: SignInMethod_SIGN_IN_METHOD_GITHUB})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(encoded), `"signInMethod":"SIGN_IN_METHOD_GITHUB"`) {
+		t.Fatalf("session JSON = %s", encoded)
+	}
+}
+
+func TestListSessionsReturnsSessionResources(t *testing.T) {
+	field := (&ListSessionsResponse{}).ProtoReflect().Descriptor().Fields().ByName("sessions")
+	if field == nil || !field.IsList() || field.Message() == nil || field.Message().FullName() != "flowspace.identity.v1.Session" {
+		t.Fatalf("sessions field = %v, want repeated flowspace.identity.v1.Session", field)
+	}
+}
+
+func TestSignInMethodHasFourValues(t *testing.T) {
+	values := SignInMethod(0).Descriptor().Values()
+	names := make([]string, values.Len())
+	for i := range names {
+		if values.Get(i).Number() != protoreflect.EnumNumber(i) {
+			t.Fatalf("%s = %d, want %d", values.Get(i).Name(), values.Get(i).Number(), i)
+		}
+		names[i] = string(values.Get(i).Name())
+	}
+	want := []string{"SIGN_IN_METHOD_UNSPECIFIED", "SIGN_IN_METHOD_PASSWORD", "SIGN_IN_METHOD_GOOGLE", "SIGN_IN_METHOD_GITHUB"}
+	if !slices.Equal(names, want) {
+		t.Fatalf("sign-in methods = %v, want %v", names, want)
+	}
+}
+
+func TestSessionManagementUsesCanonicalHTTPStatuses(t *testing.T) {
+	for _, test := range []struct {
+		code codes.Code
+		want int
+	}{
+		{codes.InvalidArgument, http.StatusBadRequest},
+		{codes.Unauthenticated, http.StatusUnauthorized},
+		{codes.FailedPrecondition, http.StatusBadRequest},
+		{codes.PermissionDenied, http.StatusForbidden},
+		{codes.NotFound, http.StatusNotFound},
+		{codes.Unavailable, http.StatusServiceUnavailable},
+	} {
+		if got := runtime.HTTPStatusFromCode(test.code); got != test.want {
+			t.Fatalf("gRPC %s maps to HTTP %d, want %d", test.code, got, test.want)
+		}
+	}
+}
+
+func fieldsWithBehavior(message protoreflect.MessageDescriptor, behavior annotations.FieldBehavior) []string {
+	var names []string
+	for _, name := range messageFields(message) {
+		field := message.Fields().ByName(protoreflect.Name(name))
+		behaviors, _ := proto.GetExtension(field.Options(), annotations.E_FieldBehavior).([]annotations.FieldBehavior)
+		if slices.Contains(behaviors, behavior) {
+			names = append(names, name)
+		}
+	}
+	return names
+}

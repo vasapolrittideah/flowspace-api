@@ -37,6 +37,8 @@ const (
 	IdentityService_ReauthenticateWithCode_FullMethodName            = "/flowspace.identity.v1.IdentityService/ReauthenticateWithCode"
 	IdentityService_StartProviderReauthentication_FullMethodName     = "/flowspace.identity.v1.IdentityService/StartProviderReauthentication"
 	IdentityService_CompleteProviderReauthentication_FullMethodName  = "/flowspace.identity.v1.IdentityService/CompleteProviderReauthentication"
+	IdentityService_ListSessions_FullMethodName                      = "/flowspace.identity.v1.IdentityService/ListSessions"
+	IdentityService_RevokeSession_FullMethodName                     = "/flowspace.identity.v1.IdentityService/RevokeSession"
 	IdentityService_CheckSession_FullMethodName                      = "/flowspace.identity.v1.IdentityService/CheckSession"
 )
 
@@ -98,6 +100,13 @@ type IdentityServiceClient interface {
 	// Completes a linked provider proof from the session that started the attempt.
 	// Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
 	CompleteProviderReauthentication(ctx context.Context, in *CompleteProviderReauthenticationRequest, opts ...grpc.CallOption) (*CompleteProviderReauthenticationResponse, error)
+	// Lists the active sessions of the subject in 1 validated access token.
+	// Requires exactly 1 Authorization bearer header.
+	ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error)
+	// Revokes 1 other session of the subject in 1 validated access token.
+	// Requires exactly 1 Authorization bearer header and an open
+	// re-authentication window.
+	RevokeSession(ctx context.Context, in *RevokeSessionRequest, opts ...grpc.CallOption) (*RevokeSessionResponse, error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -292,6 +301,26 @@ func (c *identityServiceClient) CompleteProviderReauthentication(ctx context.Con
 	return out, nil
 }
 
+func (c *identityServiceClient) ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSessionsResponse)
+	err := c.cc.Invoke(ctx, IdentityService_ListSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *identityServiceClient) RevokeSession(ctx context.Context, in *RevokeSessionRequest, opts ...grpc.CallOption) (*RevokeSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeSessionResponse)
+	err := c.cc.Invoke(ctx, IdentityService_RevokeSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *identityServiceClient) CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*CheckSessionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CheckSessionResponse)
@@ -360,6 +389,13 @@ type IdentityServiceServer interface {
 	// Completes a linked provider proof from the session that started the attempt.
 	// Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
 	CompleteProviderReauthentication(context.Context, *CompleteProviderReauthenticationRequest) (*CompleteProviderReauthenticationResponse, error)
+	// Lists the active sessions of the subject in 1 validated access token.
+	// Requires exactly 1 Authorization bearer header.
+	ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error)
+	// Revokes 1 other session of the subject in 1 validated access token.
+	// Requires exactly 1 Authorization bearer header and an open
+	// re-authentication window.
+	RevokeSession(context.Context, *RevokeSessionRequest) (*RevokeSessionResponse, error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -427,6 +463,12 @@ func (UnimplementedIdentityServiceServer) StartProviderReauthentication(context.
 }
 func (UnimplementedIdentityServiceServer) CompleteProviderReauthentication(context.Context, *CompleteProviderReauthenticationRequest) (*CompleteProviderReauthenticationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CompleteProviderReauthentication not implemented")
+}
+func (UnimplementedIdentityServiceServer) ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSessions not implemented")
+}
+func (UnimplementedIdentityServiceServer) RevokeSession(context.Context, *RevokeSessionRequest) (*RevokeSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeSession not implemented")
 }
 func (UnimplementedIdentityServiceServer) CheckSession(context.Context, *CheckSessionRequest) (*CheckSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckSession not implemented")
@@ -776,6 +818,42 @@ func _IdentityService_CompleteProviderReauthentication_Handler(srv interface{}, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IdentityService_ListSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).ListSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_ListSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).ListSessions(ctx, req.(*ListSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdentityService_RevokeSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).RevokeSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_RevokeSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).RevokeSession(ctx, req.(*RevokeSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IdentityService_CheckSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CheckSessionRequest)
 	if err := dec(in); err != nil {
@@ -872,6 +950,14 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CompleteProviderReauthentication",
 			Handler:    _IdentityService_CompleteProviderReauthentication_Handler,
+		},
+		{
+			MethodName: "ListSessions",
+			Handler:    _IdentityService_ListSessions_Handler,
+		},
+		{
+			MethodName: "RevokeSession",
+			Handler:    _IdentityService_RevokeSession_Handler,
 		},
 		{
 			MethodName: "CheckSession",

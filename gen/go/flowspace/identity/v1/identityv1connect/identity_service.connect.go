@@ -87,6 +87,12 @@ const (
 	// IdentityServiceCompleteProviderReauthenticationProcedure is the fully-qualified name of the
 	// IdentityService's CompleteProviderReauthentication RPC.
 	IdentityServiceCompleteProviderReauthenticationProcedure = "/flowspace.identity.v1.IdentityService/CompleteProviderReauthentication"
+	// IdentityServiceListSessionsProcedure is the fully-qualified name of the IdentityService's
+	// ListSessions RPC.
+	IdentityServiceListSessionsProcedure = "/flowspace.identity.v1.IdentityService/ListSessions"
+	// IdentityServiceRevokeSessionProcedure is the fully-qualified name of the IdentityService's
+	// RevokeSession RPC.
+	IdentityServiceRevokeSessionProcedure = "/flowspace.identity.v1.IdentityService/RevokeSession"
 	// IdentityServiceCheckSessionProcedure is the fully-qualified name of the IdentityService's
 	// CheckSession RPC.
 	IdentityServiceCheckSessionProcedure = "/flowspace.identity.v1.IdentityService/CheckSession"
@@ -148,6 +154,13 @@ type IdentityServiceClient interface {
 	// Completes a linked provider proof from the session that started the attempt.
 	// Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
 	CompleteProviderReauthentication(context.Context, *connect.Request[v1.CompleteProviderReauthenticationRequest]) (*connect.Response[v1.CompleteProviderReauthenticationResponse], error)
+	// Lists the active sessions of the subject in 1 validated access token.
+	// Requires exactly 1 Authorization bearer header.
+	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	// Revokes 1 other session of the subject in 1 validated access token.
+	// Requires exactly 1 Authorization bearer header and an open
+	// re-authentication window.
+	RevokeSession(context.Context, *connect.Request[v1.RevokeSessionRequest]) (*connect.Response[v1.RevokeSessionResponse], error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -273,6 +286,18 @@ func NewIdentityServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(identityServiceMethods.ByName("CompleteProviderReauthentication")),
 			connect.WithClientOptions(opts...),
 		),
+		listSessions: connect.NewClient[v1.ListSessionsRequest, v1.ListSessionsResponse](
+			httpClient,
+			baseURL+IdentityServiceListSessionsProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("ListSessions")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeSession: connect.NewClient[v1.RevokeSessionRequest, v1.RevokeSessionResponse](
+			httpClient,
+			baseURL+IdentityServiceRevokeSessionProcedure,
+			connect.WithSchema(identityServiceMethods.ByName("RevokeSession")),
+			connect.WithClientOptions(opts...),
+		),
 		checkSession: connect.NewClient[v1.CheckSessionRequest, v1.CheckSessionResponse](
 			httpClient,
 			baseURL+IdentityServiceCheckSessionProcedure,
@@ -302,6 +327,8 @@ type identityServiceClient struct {
 	reauthenticateWithCode            *connect.Client[v1.ReauthenticateWithCodeRequest, v1.ReauthenticateWithCodeResponse]
 	startProviderReauthentication     *connect.Client[v1.StartProviderReauthenticationRequest, v1.StartProviderReauthenticationResponse]
 	completeProviderReauthentication  *connect.Client[v1.CompleteProviderReauthenticationRequest, v1.CompleteProviderReauthenticationResponse]
+	listSessions                      *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
+	revokeSession                     *connect.Client[v1.RevokeSessionRequest, v1.RevokeSessionResponse]
 	checkSession                      *connect.Client[v1.CheckSessionRequest, v1.CheckSessionResponse]
 }
 
@@ -401,6 +428,16 @@ func (c *identityServiceClient) CompleteProviderReauthentication(ctx context.Con
 	return c.completeProviderReauthentication.CallUnary(ctx, req)
 }
 
+// ListSessions calls flowspace.identity.v1.IdentityService.ListSessions.
+func (c *identityServiceClient) ListSessions(ctx context.Context, req *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
+	return c.listSessions.CallUnary(ctx, req)
+}
+
+// RevokeSession calls flowspace.identity.v1.IdentityService.RevokeSession.
+func (c *identityServiceClient) RevokeSession(ctx context.Context, req *connect.Request[v1.RevokeSessionRequest]) (*connect.Response[v1.RevokeSessionResponse], error) {
+	return c.revokeSession.CallUnary(ctx, req)
+}
+
 // CheckSession calls flowspace.identity.v1.IdentityService.CheckSession.
 func (c *identityServiceClient) CheckSession(ctx context.Context, req *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error) {
 	return c.checkSession.CallUnary(ctx, req)
@@ -462,6 +499,13 @@ type IdentityServiceHandler interface {
 	// Completes a linked provider proof from the session that started the attempt.
 	// Requires exactly 1 Authorization bearer header. Returns no Flowspace token.
 	CompleteProviderReauthentication(context.Context, *connect.Request[v1.CompleteProviderReauthenticationRequest]) (*connect.Response[v1.CompleteProviderReauthenticationResponse], error)
+	// Lists the active sessions of the subject in 1 validated access token.
+	// Requires exactly 1 Authorization bearer header.
+	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	// Revokes 1 other session of the subject in 1 validated access token.
+	// Requires exactly 1 Authorization bearer header and an open
+	// re-authentication window.
+	RevokeSession(context.Context, *connect.Request[v1.RevokeSessionRequest]) (*connect.Response[v1.RevokeSessionResponse], error)
 	// Returns the current email state for an active session; inactive sessions
 	// return Unauthenticated.
 	// Requires an authenticated service caller and has no public HTTP route.
@@ -583,6 +627,18 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 		connect.WithSchema(identityServiceMethods.ByName("CompleteProviderReauthentication")),
 		connect.WithHandlerOptions(opts...),
 	)
+	identityServiceListSessionsHandler := connect.NewUnaryHandler(
+		IdentityServiceListSessionsProcedure,
+		svc.ListSessions,
+		connect.WithSchema(identityServiceMethods.ByName("ListSessions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	identityServiceRevokeSessionHandler := connect.NewUnaryHandler(
+		IdentityServiceRevokeSessionProcedure,
+		svc.RevokeSession,
+		connect.WithSchema(identityServiceMethods.ByName("RevokeSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	identityServiceCheckSessionHandler := connect.NewUnaryHandler(
 		IdentityServiceCheckSessionProcedure,
 		svc.CheckSession,
@@ -627,6 +683,10 @@ func NewIdentityServiceHandler(svc IdentityServiceHandler, opts ...connect.Handl
 			identityServiceStartProviderReauthenticationHandler.ServeHTTP(w, r)
 		case IdentityServiceCompleteProviderReauthenticationProcedure:
 			identityServiceCompleteProviderReauthenticationHandler.ServeHTTP(w, r)
+		case IdentityServiceListSessionsProcedure:
+			identityServiceListSessionsHandler.ServeHTTP(w, r)
+		case IdentityServiceRevokeSessionProcedure:
+			identityServiceRevokeSessionHandler.ServeHTTP(w, r)
 		case IdentityServiceCheckSessionProcedure:
 			identityServiceCheckSessionHandler.ServeHTTP(w, r)
 		default:
@@ -708,6 +768,14 @@ func (UnimplementedIdentityServiceHandler) StartProviderReauthentication(context
 
 func (UnimplementedIdentityServiceHandler) CompleteProviderReauthentication(context.Context, *connect.Request[v1.CompleteProviderReauthenticationRequest]) (*connect.Response[v1.CompleteProviderReauthenticationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.CompleteProviderReauthentication is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.ListSessions is not implemented"))
+}
+
+func (UnimplementedIdentityServiceHandler) RevokeSession(context.Context, *connect.Request[v1.RevokeSessionRequest]) (*connect.Response[v1.RevokeSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flowspace.identity.v1.IdentityService.RevokeSession is not implemented"))
 }
 
 func (UnimplementedIdentityServiceHandler) CheckSession(context.Context, *connect.Request[v1.CheckSessionRequest]) (*connect.Response[v1.CheckSessionResponse], error) {

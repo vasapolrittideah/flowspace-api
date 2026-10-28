@@ -5,6 +5,8 @@
 package sqlc
 
 import (
+	"net/netip"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -119,4 +121,10 @@ type IdentitySession struct {
 	AbsoluteExpiresAt pgtype.Timestamptz
 	RevokedAt         pgtype.Timestamptz
 	ReauthenticatedAt pgtype.Timestamptz
+	SignInMethod      pgtype.Text
+	CreatedIpAddress  *netip.Addr
+	CreatedUserAgent  pgtype.Text
+	LastUsedAt        pgtype.Timestamptz
+	LastUsedIpAddress *netip.Addr
+	LastUsedUserAgent pgtype.Text
 }

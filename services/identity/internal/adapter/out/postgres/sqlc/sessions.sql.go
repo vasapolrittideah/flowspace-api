@@ -227,6 +227,7 @@ WHERE account_subject = $1
   AND revoked_at IS NULL
 `
 
+// The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 func (q *Queries) RevokeAccountSessions(ctx context.Context, accountSubject string) (int64, error) {
 	result, err := q.db.Exec(ctx, revokeAccountSessions, accountSubject)
 	if err != nil {
@@ -253,6 +254,7 @@ type RevokeCurrentSessionParams struct {
 	Subject   string
 }
 
+// The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 func (q *Queries) RevokeCurrentSession(ctx context.Context, arg RevokeCurrentSessionParams) (int64, error) {
 	result, err := q.db.Exec(ctx, revokeCurrentSession, arg.SessionID, arg.Subject)
 	if err != nil {
@@ -266,6 +268,7 @@ UPDATE identity_sessions SET revoked_at = statement_timestamp()
 WHERE id = $1 AND revoked_at IS NULL
 `
 
+// The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 func (q *Queries) RevokeRefreshSession(ctx context.Context, sessionID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, revokeRefreshSession, sessionID)
 	return err

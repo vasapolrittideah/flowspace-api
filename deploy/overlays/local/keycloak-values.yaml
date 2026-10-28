@@ -34,7 +34,7 @@ extraVolumeMounts: |
 cache:
   stack: custom
 
-# ponytail: local-only H2; add PostgreSQL in the identity persistence slice.
+# shortcut: local-only H2, add PostgreSQL in the identity persistence slice.
 database:
   vendor: dev-file
 

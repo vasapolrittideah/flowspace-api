@@ -53,6 +53,7 @@ This file defines each term that has a narrower or different meaning in Flowspac
 | gap | An item in the acceptance criteria or the verification of an Issue that failed or did not run. |
 | module plan | A plan that breaks an approved module specification into tasks. Each task becomes 1 GitHub Issue. |
 | ordinary task | A task that is not the final Prove task. |
+| partial proof | A success criterion or threat ID that a test of the final Prove task proves only in part, while the module can still close, as [ADR-0051](docs/adr/0051-final-prove-task-evidence-lives-in-module-evidence-files.md) states. |
 | task | 1 piece of work that 1 PR completes. |
 
 ## Code and tests

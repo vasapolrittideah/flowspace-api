@@ -58,3 +58,4 @@ The [ADR convention](../conventions/adrs.md) defines the format of a record and 
 | [0048](0048-identity-publishes-account-lifecycle-events.md) | Identity publishes account lifecycle events | Accepted |
 | [0049](0049-opt-in-totp-and-recovery-codes-protect-identity-accounts.md) | Opt-in TOTP and recovery codes protect Identity accounts | Accepted; scoped exception to [0011](0011-idempotency-keys-protect-non-idempotent-creates.md) |
 | [0050](0050-remembered-devices-skip-the-mfa-login-step-for-30-days.md) | Remembered devices skip the MFA login step for 30 days | Accepted; scoped exception to [0049](0049-opt-in-totp-and-recovery-codes-protect-identity-accounts.md) |
+| [0051](0051-final-prove-task-evidence-lives-in-module-evidence-files.md) | Final Prove task evidence lives in module evidence files | Accepted; scoped exception to [0043](0043-squash-commits-keep-only-the-pull-request-title.md) |

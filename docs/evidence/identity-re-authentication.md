@@ -1,0 +1,39 @@
+# Evidence: Identity re-authentication
+
+Module ID: `identity-re-authentication`
+
+This evidence proves the [Identity re-authentication](../specs/identity-re-authentication.md) specification.
+
+## Coverage
+
+Tests prove these criteria and threat IDs:
+
+| Criteria and threat IDs | Tests |
+| --- | --- |
+| Criterion 1 and `ID-T09` | `TestIdentityRepository/signup commits account session code and outbox without broker`, `TestIdentityRepository/account claims replace one unverified identity/success retires the old subject and cannot replay tokens`, `TestIdentityRepository/password login commits one session and hides missing accounts`, and `TestIdentityRepository/provider sessions claim one handoff for a linked account/a linked identity keeps the account email and state when its provider email changes` for a new session of each kind that starts with an open window, and `TestIdentityRepository/re-authentication guard/open window commits the sensitive change` for a sensitive change in that window |
+| Criteria 2 and 3, `ID-T12`, and `ID-T19` | `TestReauthenticationWindow` for the 10-minute end and the session expiry, and `TestIdentityRepository/re-authentication guard/closed and absent windows change nothing`, `TestIdentityRepository/re-authentication guard/refresh preserves the closed window`, and `TestIdentityRepository/re-authentication guard/commit after the final check crosses expiry and rolls back` for a closed window, a refresh, and a change that commits after the window ends |
+| Criteria 4 and 5 and `ID-T19` | `TestIdentityRepository/password re-authentication/successful delayed commit starts the full window` for an end time 10 minutes after the commit, `TestIdentityRepository/re-authentication through the public routes/a closed window opens with a password and keeps its end time for a provider proof` for a second method that keeps the end time, and `TestIdentityRepository/password re-authentication/proof retry isolation and concurrent replicas` for a retry that keeps the end time |
+| Criterion 6 and `ID-T01` | `TestPasswordReauthenticationRejectsBeforeHashAndFailsClosed` for the same error for a wrong password and an account without a password, and `TestIdentityRepository/password re-authentication/no password and inactive sessions keep the window closed` for a closed window after both |
+| Criteria 7, 8, and 9 and `ID-T03` | `TestIdentityRepository/code re-authentication/verified code reaches Mailpit and opens one window`, `TestIdentityRepository/code re-authentication/unverified account receives no code`, `TestIdentityRepository/code re-authentication/other-purpose codes cannot reauthenticate`, and `TestIdentityRepository/code re-authentication/reauthentication code cannot claim reset or verify` for a code through Mailpit that works once, no code for an unverified email, and no use of a code for another purpose |
+| Criteria 10, 11, and 12, `ID-T06`, `ID-T07`, `ID-T08`, and `ID-T09` | `TestIdentityRepository/provider re-authentication/a linked provider opens the window of the starting session only`, `TestIdentityRepository/provider re-authentication/an unlinked or foreign provider account keeps the window closed`, `TestIdentityRepository/provider re-authentication/a link of another provider with the same provider subject does not match`, `TestIdentityRepository/provider re-authentication/a login attempt cannot complete re-authentication`, and `TestIdentityRepository/provider re-authentication/an older replica cannot claim a re-authentication attempt as login` for a linked Google or GitHub account, an unlinked or foreign provider account, another session, provider login, and cross-purpose claims |
+| Criterion 13 and `ID-T09` | `TestIdentityRepository/re-authentication guard/two sessions of one subject keep separate windows` and `TestIdentityRepository/re-authentication through the public routes/a provider proof of 1 session leaves another session closed` for a window that opens for 1 session only |
+| Criterion 14 and `ID-T13` | `TestIdentityRepository/re-authentication through the public routes/logout, all-session logout, and password reset end an open window` for each way that a session ends |
+| Criteria 15 and 16, `ID-T02`, and `ID-T16` | `TestPasswordReauthenticationRejectsBeforeHashAndFailsClosed` for a full limit before password hashing, and `TestIdentityRepository/password re-authentication/password login and reauthentication share limits across replicas`, `TestIdentityRepository/code re-authentication/wrong-guess limits are shared with verification`, `TestIdentityRepository/code re-authentication/source guess limit is shared across purposes and accounts`, and `TestIdentityRepository/provider re-authentication/start and rejected completion share the provider-login limits across replicas` for shared limits across replicas, an active session, and a login after the limit window, and `TestIdentityRepository/code re-authentication/account issue limit includes all older purposes` for no code after a full code-request limit |
+| Criterion 17 and `ID-T17` | `TestReauthenticationTelemetryOmitsSecrets` for logs, spans, metric attributes, and error responses of the password and provider methods, and `TestIdentityAPIAndWorkerStart` for the telemetry of the email-code method |
+| `ID-T12` | `TestIdentityRepository/code re-authentication/concurrent sessions consume one code once across replicas` and `TestIdentityRepository/provider re-authentication/concurrent completions from 2 replicas open 1 window` for 1 window from concurrent proofs |
+| `ID-T15` | `TestPasswordReauthenticationREST`, `TestCodeReauthenticationHandlerAdmission`, `TestProviderReauthenticationHandlerAdmission`, and `TestProviderReauthenticationREST` for malformed bodies and provider values, and for `Idempotency-Key` on the provider start, and `TestReauthenticationCodeKeepsOpenWindowAndCommitsWrongGuesses` for a malformed code |
+| `ID-T16` | `TestIdentityRepository/password re-authentication/unavailable limit store fails closed`, `TestIdentityRepository/password re-authentication/failure after proof write rolls back`, `TestIdentityRepository/code re-authentication/limit-store outage fails closed`, `TestIdentityRepository/provider re-authentication/an unavailable limit store or an inactive session opens no window`, `TestIdentityRepository/re-authentication through the public routes/an unavailable database or provider keeps a closed window closed`, and `TestIdentityRepository/re-authentication guard/work errors and cancellations roll back the sensitive change` for an unavailable limit store, database, or provider and a cancellation, and `TestRequireReauthenticationFailures` and `TestCompleteProviderReauthenticationFailsClosed` for a timeout |
+
+## Local checks
+
+The checks ran against k3d `flowspace-local` with `identity-api`, `identity-worker`, Mailpit, and Redpanda, after `tilt up` of this branch.
+
+| Check | Result |
+| --- | --- |
+| `task smoke:bruno` | Passed criteria 5, 6, and 7, 56/56 requests: steps 45 to 56 re-authenticated a new session with its password and with a code from Mailpit, rejected a missing token, a wrong password, and a wrong or used code, and kept the end time for the code |
+| GitHub provider login with a real GitHub account | Passed: the callback page showed a sign-in code, and provider login created a provider-only account with an unverified email and 1 GitHub link |
+| GitHub provider re-authentication of that session with a real GitHub account, after its window was closed in PostgreSQL | Passed criterion 10: the callback page asked for a re-authentication code, the completion returned an end time 10 minutes after the proof, and the window of the starting session opened. The account kept 1 session and 1 link, Identity issued no token, and a retry returned 400 |
+
+## Gaps
+
+None.

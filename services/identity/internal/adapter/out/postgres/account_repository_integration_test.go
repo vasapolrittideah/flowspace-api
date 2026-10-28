@@ -97,6 +97,7 @@ func TestIdentityRepository(t *testing.T) {
 	t.Run("password re-authentication", func(t *testing.T) { testPasswordReauthentication(t, pool, db) })
 	t.Run("code re-authentication", func(t *testing.T) { testCodeReauthentication(t, pool, db) })
 	t.Run("provider re-authentication", func(t *testing.T) { testProviderReauthentication(t, pool, db) })
+	t.Run("re-authentication through the public routes", func(t *testing.T) { testReauthenticationAPI(t, pool) })
 	t.Run("refresh rotation and replay", func(t *testing.T) { testRefreshSessionRepository(t, pool) })
 	t.Run("provider-only refresh", func(t *testing.T) { testProviderOnlyRefresh(t, pool) })
 	t.Run("current session logout", func(t *testing.T) { testCurrentSessionLogout(t, pool) })

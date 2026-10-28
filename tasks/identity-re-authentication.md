@@ -2,7 +2,7 @@
 
 Module ID: `identity-re-authentication`
 
-Status: Approved
+Status: Complete
 
 ## Overview
 
@@ -63,8 +63,8 @@ Tasks are tracked in the [flowspace-api](https://github.com/users/vasapolrittide
 
 ### Checkpoint: Complete
 
-- [ ] REST, PostgreSQL, Mailpit, callback, concurrency, failure, limit, telemetry, and Bruno smoke tests cover the success criteria and threat IDs of the specification.
-- [ ] Required repository checks pass without weaker settings.
+- [x] REST, PostgreSQL, Mailpit, callback, concurrency, failure, limit, telemetry, and Bruno smoke tests cover the success criteria and threat IDs of the specification.
+- [x] Required repository checks pass without weaker settings.
 
 ## Risks and controls
 

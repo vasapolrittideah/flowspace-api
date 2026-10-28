@@ -1,0 +1,30 @@
+meta {
+  name: Reject a malformed re-authentication handoff code
+  type: http
+  seq: 56
+}
+
+post {
+  url: {{baseUrl}}/v1/provider-reauthentications
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{reauthenticationAccessToken}}
+}
+
+body:json {
+  {
+    "attemptToken": "{{githubReauthenticationAttemptToken}}",
+    "handoffCode": "not-a-handoff-code"
+  }
+}
+
+tests {
+  test("a malformed handoff code is invalid input without an end time", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(JSON.stringify(res.getBody())).to.not.include("reauthenticationExpiresAt");
+  });
+}

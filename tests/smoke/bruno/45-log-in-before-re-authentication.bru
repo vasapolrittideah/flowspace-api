@@ -1,0 +1,32 @@
+meta {
+  name: Log in before re-authentication
+  type: http
+  seq: 45
+}
+
+post {
+  url: {{baseUrl}}/v1/password-sessions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{newPassword}}"
+  }
+}
+
+tests {
+  test("a new session for re-authentication starts with an open window", function () {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body.subject).to.equal(bru.getVar("subject"));
+    bru.setVar("reauthenticationAccessToken", body.accessToken);
+    bru.setVar("reauthenticationLoginTime", Date.now());
+  });
+}

@@ -1,0 +1,32 @@
+meta {
+  name: Request re-authentication code
+  type: http
+  seq: 49
+}
+
+post {
+  url: {{baseUrl}}/v1/reauthentication-codes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{reauthenticationAccessToken}}
+}
+
+body:json {
+  {}
+}
+
+script:pre-request {
+  // Identity issues 1 code for each account in each minute, and step 27 issued a reset code.
+  await new Promise(resolve => setTimeout(resolve, 61000));
+}
+
+tests {
+  test("a verified account gets a re-authentication code", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal({ accepted: true });
+  });
+}

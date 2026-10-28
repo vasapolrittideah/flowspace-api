@@ -15,8 +15,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -25,9 +27,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
+	httptransport "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/in/http"
 	deliverycrypto "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/crypto"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres"
 	identitysqlc "github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/postgres/sqlc"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/adapter/out/token"
+	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/app"
 	"github.com/vasapolrittideah/flowspace-api/services/identity/internal/domain"
 	outbound "github.com/vasapolrittideah/flowspace-api/services/identity/internal/port/out"
 
@@ -493,4 +498,205 @@ func testPasswordReauthenticationAPI(t *testing.T, server *APIServer, dsn string
 	}
 	call(`{"password":"correct café battery staple"}`, "Bearer "+access, 401)
 	return access, id, code
+}
+
+var reauthenticationCallbackCode = regexp.MustCompile(`<code>([A-Za-z0-9_-]{43})</code>`)
+
+// reauthenticationAPI serves the public routes with the production services,
+// PostgreSQL, and a GitHub client whose identity verifier returns a fixed
+// provider identity.
+type reauthenticationAPI struct {
+	t        *testing.T
+	pool     *pgxpool.Pool
+	handler  http.Handler
+	verifier *token.Verifier
+	// rejected holds the body of each error response for the secret scan.
+	rejected []string
+}
+
+func newReauthenticationAPI(t *testing.T, logger *zap.Logger) *reauthenticationAPI {
+	t.Helper()
+	ctx := t.Context()
+	database, err := postgrescontainer.Run(ctx, "postgres:18-alpine",
+		postgrescontainer.WithDatabase("identity"), postgrescontainer.WithUsername("identity"),
+		postgrescontainer.WithPassword("identity"), postgrescontainer.BasicWaitStrategies())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = testcontainers.TerminateContainer(database) })
+	dsn, err := database.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := applyIdentityMigration(ctx, dsn); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signer, err := token.NewSigner(privateKey, "reauthentication-key", "urn:flowspace:identity:local", "flowspace-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifier, err := token.NewVerifier(map[string]ed25519.PublicKey{"reauthentication-key": publicKey}, "urn:flowspace:identity:local", "flowspace-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := bytes.Repeat([]byte{4}, 32)
+	clients := map[domain.Provider]app.ProviderClient{domain.ProviderGitHub: {
+		ClientID: "github-client", CallbackURL: "https://api.example.com/v1/provider-login-callbacks/github",
+		Identity: fixedProviderIdentity{Subject: "github-reauthentication-subject", Email: "Other@Example.com", EmailVerified: true},
+	}}
+	accounts := postgres.NewAccountRepository(pool)
+	limits := app.NewLimitService(postgres.NewLimitRepository(pool))
+	providerLogin := app.NewProviderLoginService(postgres.NewProviderAttemptRepository(pool), limits.ProviderLoginStart, limits.ProviderCallback, key, clients)
+	identity := httptransport.NewIdentityHandler(nil, nil, nil, nil, verifier, nil).
+		WithPasswordLogin(app.NewPasswordLoginService(accounts, signer, limits.PasswordLogin)).
+		WithPasswordReauthentication(app.NewPasswordReauthenticationService(accounts, limits.PasswordLogin)).
+		WithProviderReauthentication(app.NewProviderReauthenticationService(providerLogin, accounts, limits.ProviderSessionFailure)).
+		WithCurrentSessionLogout(app.NewCurrentSessionLogoutService(postgres.NewSessionRepository(pool))).
+		WithAllSessionLogout(app.NewAllSessionLogoutService(accounts))
+	handler, err := newPublicHandler(ctx, identity, httptransport.NewProviderCallbackHandler(providerLogin, nil), logger, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &reauthenticationAPI{t: t, pool: pool, handler: handler, verifier: verifier}
+}
+
+func (a *reauthenticationAPI) call(method, path, body, access string, want int) []byte {
+	a.t.Helper()
+	request := httptest.NewRequestWithContext(a.t.Context(), method, path, strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	if access != "" {
+		request.Header.Set("Authorization", "Bearer "+access)
+	}
+	request.RemoteAddr = "192.0.2.180:42"
+	response := httptest.NewRecorder()
+	a.handler.ServeHTTP(response, request)
+	if response.Code != want {
+		a.t.Fatalf("%s %s status = %d, want %d, body = %s", method, path, response.Code, want, response.Body)
+	}
+	if response.Code >= http.StatusBadRequest {
+		a.rejected = append(a.rejected, response.Body.String())
+	}
+	return response.Body.Bytes()
+}
+
+// login creates a password session and returns its access token and session ID.
+func (a *reauthenticationAPI) login(email, password string) (string, string) {
+	a.t.Helper()
+	var session struct{ AccessToken string }
+	if err := json.Unmarshal(a.call(http.MethodPost, "/v1/password-sessions", fmt.Sprintf(`{"email":%q,"password":%q}`, email, password), "", http.StatusOK), &session); err != nil {
+		a.t.Fatal(err)
+	}
+	identity, err := a.verifier.Verify(session.AccessToken)
+	if err != nil {
+		a.t.Fatal(err)
+	}
+	return session.AccessToken, identity.SessionID
+}
+
+// providerProof starts provider re-authentication with access, completes the
+// callback page, and returns the attempt token and the handoff code.
+func (a *reauthenticationAPI) providerProof(access string) (string, string) {
+	a.t.Helper()
+	var started struct{ AuthorizationURL, AttemptToken string }
+	if err := json.Unmarshal(a.call(http.MethodPost, "/v1/provider-reauthentication-attempts", `{"provider":"PROVIDER_GITHUB"}`, access, http.StatusOK), &started); err != nil {
+		a.t.Fatal(err)
+	}
+	authorization, err := url.Parse(started.AuthorizationURL)
+	if err != nil {
+		a.t.Fatal(err)
+	}
+	page := a.call(http.MethodGet, "/v1/provider-login-callbacks/github?code=provider-code-secret&state="+url.QueryEscape(authorization.Query().Get("state")), "", "", http.StatusOK)
+	match := reauthenticationCallbackCode.FindSubmatch(page)
+	if match == nil || !bytes.Contains(page, []byte("Copy your re-authentication code")) {
+		a.t.Fatalf("callback page = %s", page)
+	}
+	return started.AttemptToken, string(match[1])
+}
+
+// TestReauthenticationTelemetryOmitsSecrets runs password and provider
+// re-authentication through the public handler of the API server, and scans
+// its logs, spans, metrics, and error responses.
+func TestReauthenticationTelemetryOmitsSecrets(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	spans := recordSpans(t)
+	reader := sdkmetric.NewManualReader()
+	meters := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	previous := otel.GetMeterProvider()
+	otel.SetMeterProvider(meters)
+	t.Cleanup(func() { otel.SetMeterProvider(previous); _ = meters.Shutdown(context.Background()) })
+	api := newReauthenticationAPI(t, zap.New(core))
+	ctx := t.Context()
+
+	const subject, email, password = "reauthentication-api", "Reauth.User@example.com", "correct café battery staple"
+	hash, err := domain.HashPassword(ctx, password, func(context.Context, string) (bool, error) { return false, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := api.pool.Exec(ctx, `INSERT INTO identity_accounts (subject, email_local, email_domain, password_hash, email_verified_at)
+		VALUES ($1, 'Reauth.User', 'example.com', $2, statement_timestamp())`, subject, hash); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := api.pool.Exec(ctx, `INSERT INTO identity_provider_links (provider, provider_subject, account_subject)
+		VALUES ('github', 'github-reauthentication-subject', $1)`, subject); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := api.login(email, password)
+	second, _ := api.login(email, password)
+	api.call(http.MethodPost, "/v1/password-reauthentications", fmt.Sprintf(`{"password":%q}`, password), first, http.StatusOK)
+	attempt, handoff := api.providerProof(first)
+	proof := fmt.Sprintf(`{"attemptToken":%q,"handoffCode":%q}`, attempt, handoff)
+	api.call(http.MethodPost, "/v1/provider-reauthentications", proof, second, http.StatusBadRequest)
+	api.call(http.MethodPost, "/v1/provider-reauthentications", proof, first, http.StatusOK)
+	api.call(http.MethodPost, "/v1/session-logouts", `{}`, first, http.StatusOK)
+	secrets := []string{first, second, attempt, handoff}
+
+	// The telemetry and the error responses of every request above contain no
+	// secret, provider subject, or full email address.
+	var data metricdata.ResourceMetrics
+	if err := reader.Collect(ctx, &data); err != nil {
+		t.Fatal(err)
+	}
+	var recorded []any
+	for _, entry := range logs.All() {
+		recorded = append(recorded, entry.Message)
+		// Random identifiers can contain the digits of a short code.
+		for name, value := range entry.ContextMap() {
+			if name != "trace_id" && name != "request_id" {
+				recorded = append(recorded, logStringValues(value))
+			}
+		}
+	}
+	for _, span := range spans.GetSpans() {
+		recorded = append(recorded, span.Name, span.Attributes, span.Status)
+		for _, event := range span.Events {
+			recorded = append(recorded, event.Name, event.Attributes)
+		}
+	}
+	for _, scope := range data.ScopeMetrics {
+		for _, measured := range scope.Metrics {
+			if histogram, ok := measured.Data.(metricdata.Histogram[float64]); ok {
+				for _, point := range histogram.DataPoints {
+					recorded = append(recorded, point.Attributes)
+				}
+			}
+		}
+	}
+	if logs.Len() == 0 || len(spans.GetSpans()) == 0 || len(api.rejected) == 0 {
+		t.Fatal("the requests recorded no telemetry or no error response")
+	}
+	text := fmt.Sprint(append(recorded, api.rejected)...)
+	for _, secret := range append(secrets, password, "provider-code-secret", "github-reauthentication-subject", email, "Reauth.User@example.com", "Other@Example.com") {
+		if secret != "" && strings.Contains(text, secret) {
+			t.Fatal("telemetry or an error response contains a secret, a provider subject, or a full email address")
+		}
+	}
 }

@@ -1,0 +1,30 @@
+meta {
+  name: Reject provider re-authentication with an idempotency key
+  type: http
+  seq: 54
+}
+
+post {
+  url: {{baseUrl}}/v1/provider-reauthentication-attempts
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{reauthenticationAccessToken}}
+  Idempotency-Key: bruno-retry
+}
+
+body:json {
+  {
+    "provider": "PROVIDER_GITHUB"
+  }
+}
+
+tests {
+  test("the start of provider re-authentication rejects Idempotency-Key", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getBody()).to.not.have.property("attemptToken");
+  });
+}

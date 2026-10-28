@@ -152,6 +152,7 @@ loop:
 			stop()
 			if !time.Now().Before(nextPurge) {
 				w.purgeProviderAttempts(runCtx)
+				w.purgeSessionDeviceData(runCtx)
 				nextPurge = time.Now().Add(time.Minute)
 			}
 		}
@@ -191,6 +192,16 @@ func (w *Worker) purgeProviderAttempts(ctx context.Context) {
 	defer cancel()
 	if err := postgres.NewProviderAttemptRepository(w.pool.Pool).PurgeExpired(purgeCtx); err != nil {
 		w.logger.Warn("provider_attempt_purge_failed")
+	}
+}
+
+// purgeSessionDeviceData deletes the device data of expired sessions each
+// minute, so the data stays at most about 1 minute after a session expires.
+func (w *Worker) purgeSessionDeviceData(ctx context.Context) {
+	purgeCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+	if err := postgres.NewSessionRepository(w.pool.Pool).PurgeExpiredDeviceData(purgeCtx); err != nil {
+		w.logger.Warn("session_device_data_purge_failed")
 	}
 }
 

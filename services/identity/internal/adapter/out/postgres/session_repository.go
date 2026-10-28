@@ -61,3 +61,11 @@ func (r *SessionRepository) RevokeCurrent(ctx context.Context, subject, sessionI
 	}
 	return nil
 }
+
+// PurgeExpiredDeviceData deletes the IP addresses and user agents of expired
+// sessions. An expired session never returns to use, so its device data has
+// no purpose.
+func (r *SessionRepository) PurgeExpiredDeviceData(ctx context.Context) error {
+	_, err := r.queries.DeleteExpiredSessionDeviceData(ctx)
+	return err
+}

@@ -2,7 +2,7 @@
 
 Module ID: `identity-re-authentication`
 
-This evidence proves the [Identity re-authentication](../specs/identity-re-authentication.md) specification.
+This evidence proves the [Identity re-authentication](../specs/identity-re-authentication.md) specification in [PR #541](https://github.com/vasapolrittideah/flowspace-api/pull/541).
 
 ## Coverage
 

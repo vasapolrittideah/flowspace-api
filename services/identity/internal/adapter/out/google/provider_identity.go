@@ -64,7 +64,7 @@ func (p *ProviderIdentity) VerifyProviderIdentity(ctx context.Context, exchange 
 	if raw == "" {
 		return outbound.ProviderIdentity{}, domain.ErrInvalidProviderProof
 	}
-	// ponytail: a failed signing-key fetch is reported as invalid proof, not as an outage.
+	// shortcut: this code reports a failed signing-key fetch as invalid proof instead of an outage, split the two errors when an outage must be visible.
 	idToken, err := p.verifier.Verify(ctx, raw)
 	if err != nil {
 		if ctx.Err() != nil {

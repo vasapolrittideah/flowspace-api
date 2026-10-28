@@ -170,42 +170,48 @@ These rules apply to a PR with a contract or generator change. The `Contract che
 
 ## Final Prove task PR
 
-A PR that completes the final Prove task of a module plan also records the evidence that CI does not keep. GitHub shows the PR on the Issue, so the Issue needs no comment.
+A PR that completes the final Prove task of a module plan also adds the evidence file of the module, as the [Module evidence](module-evidence.md) conventions state. GitHub shows the PR on the Issue, so the Issue needs no comment.
 
 - Use the title `test(<scope, if any>): prove <capability> spec`. Write the capability name in lowercase, except for names and abbreviations, such as `test(observability): prove observability alerts and runbooks spec`.
-- At the end of [What changed](#what-changed), write the evidence.
-- If a test proves a success criterion only in part, such as with a fake provider instead of a real one, state in [Risks or limitations](#risks-or-limitations) why the module can still close.
+- Write [What changed](#what-changed) as the template below states.
 - If an item of the Issue fails or does not run, state the gap in [Risks or limitations](#risks-or-limitations), and use `Refs` instead of `Closes` for the Issue.
+- Do not state a partial proof in Risks or limitations. The Gaps section of the evidence file states it.
 
-The evidence has a [Stack sentence](#stack-sentence) and a [Local checks table](#local-checks-table).
+The What changed section has a [Result sentence](#result-sentence), a [Status table](#status-table), [Added work](#added-work), and an [Evidence sentence](#evidence-sentence).
 
 ```markdown
-The checks ran against <local stack, if any>.
+## What changed
 
-| Check | Result |
-| --- | --- |
-| `<command>` | <result> |
+<result sentence>
+
+| Value | Before | After |
+| --- | --- | --- |
+| Status of the specification and of its row in the specification index | `Approved` | `Implemented` |
+| Status of the plan | `Approved` | `Complete` |
+
+- <added test, check, or fix>
+
+`docs/evidence/<module-id>.md` records the evidence.
 ```
 
-### Stack sentence
+### Result sentence
 
-- Name the local cluster or environment and each service that a check ran against, such as "k3d `flowspace-local` with Mailpit".
-- If no local check applies, do not write the sentence.
+- State that the specification is proved, such as "Tests and local checks prove each success criterion and threat ID of the Identity re-authentication specification."
+- If an item of the Issue failed or did not run, state that the specification is not proved yet.
 
-### Local checks table
+### Status table
 
-- Write 1 row for each local check that CI does not run, such as `task smoke:bruno`.
-- If no such check applies, write "No local check applies outside CI." instead of the table.
-- Do not include the checks that [CI](../../.github/workflows/ci.yml) runs, such as `task check:task` or the Buf commands.
+- Write the 2 rows of the template as they are, when every item of the Issue passes.
+- If an item failed or did not run, omit the table, because the statuses do not change.
 
-#### Local checks table columns
+### Added work
 
-- Write the columns in this order.
+- Write 1 bullet for each test, local check, or fix that the PR adds.
+- Do not repeat the rows of the evidence file.
 
-| Column | How to write |
-| --- | --- |
-| `Check` | The command, such as `` `task smoke:bruno` ``. |
-| `Result` | `Passed` or `Failed`, followed by the passed and total counts when the check reports them, such as "Passed 44/44 requests". |
+### Evidence sentence
+
+- Write the path of the evidence file in backticks, without a link.
 
 ## Automatic build PR
 

@@ -37,6 +37,7 @@ This document defines where backend code belongs and which dependency directions
 │       └── production/
 ├── docs/
 │   ├── adr/
+│   ├── evidence/
 │   └── runbooks/
 ├── gen/
 │   └── go/
@@ -84,6 +85,7 @@ Tool configuration stays where the owning tool expects it. Optional output such 
 | `scripts/local/` | Operations and smoke scripts for the local cluster and `.secrets/`, and their tests. |
 | `docs/` | Current architecture and engineering guidance. |
 | `docs/adr/` | Accepted architectural decisions and their rationale. |
+| `docs/evidence/` | One evidence file for each module that its final Prove task proved. |
 | `docs/runbooks/` | One runbook for each alert rule. |
 | `.github/workflows/` | Repository CI workflows. |
 

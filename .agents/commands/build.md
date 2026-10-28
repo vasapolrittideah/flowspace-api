@@ -41,7 +41,7 @@ In `single` mode, the work starts from one module with an `Approved` plan. It im
 
 ## Open the PR
 
-1. Inspect the complete diff, push the branch, and open the PR, as the [pull request conventions](../../docs/conventions/pull-requests.md) and the [label conventions](../../docs/conventions/github-labels.md) state. For the final Prove task, also follow the [final Prove task PR rules](../../docs/conventions/pull-requests.md#final-prove-task-pr).
+1. Inspect the complete diff, push the branch, and open the PR, as the [pull request conventions](../../docs/conventions/pull-requests.md) and the [label conventions](../../docs/conventions/github-labels.md) state. For the final Prove task, also follow the [final Prove task PR rules](../../docs/conventions/pull-requests.md#final-prove-task-pr), and add the PR number to the evidence file as the [module evidence workflow](../../docs/conventions/module-evidence.md#workflow) states.
 2. Wait for CI, and fix each failure that the pull request conventions require you to fix.
 3. Check the passed items of the Issue, and leave each gap unchecked, as the Issue workflow states:
    1. Immediately before the edit, run `gh issue view <issue-number> --json body --jq .body`, and copy the body to a temporary file.

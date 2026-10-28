@@ -117,7 +117,7 @@ Module ID: `<module ID, if any>`
 
 ## Final Prove task
 
-The final Prove task checks the approved specification through tests and review. Its PR records the evidence that CI does not keep, as the [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state.
+The final Prove task checks the approved specification through tests and review. Its PR adds the evidence file of the module, as the [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules and the [Module evidence](module-evidence.md) conventions state.
 
 - When every item passes, change the statuses of the specification and the plan in the PR of the task, as the [Status and approval](module-specs.md#status-and-approval) rules of the module specification convention and the [Status and approval](module-plans.md#status-and-approval) rules of the module plan convention state.
 - If an item fails or does not run, keep the specification and plan statuses unchanged. Keep the Issue and the final plan checkpoint open until the gap is resolved. The [Final Prove task PR](pull-requests.md#final-prove-task-pr) rules state how the PR refers to the Issue.
@@ -143,7 +143,7 @@ Module ID: `<module ID>`
 
 ## Files likely touched
 
-- `<specification, plan, or test path>`
+- `<specification, plan, evidence, or test path>`
 
 <attribution line, if any>
 ```
@@ -163,7 +163,7 @@ Module ID: `<module ID>`
 
 ### Final Prove acceptance criteria
 
-- Require a test, or a local check that the PR description records, for each success criterion of the specification and for each threat ID in its [Testing strategy](module-specs.md#testing-strategy).
+- Require a test, or a local check that the evidence file records, for each success criterion of the specification and for each threat ID in its [Testing strategy](module-specs.md#testing-strategy).
 - Add an item for each public, private, failure, and cross-service path that the module has.
 - If the module has public REST routes, require Bruno smoke tests under `tests/smoke/bruno/` that run against a running service.
 - Follow the other [Acceptance criteria](#acceptance-criteria) rules.
@@ -176,7 +176,7 @@ Module ID: `<module ID>`
 
 ### Final Prove files likely touched
 
-- Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, and the likely test paths.
+- Include `docs/specs/<module-id>.md`, `tasks/<module-id>.md`, `docs/evidence/<module-id>.md`, and the likely test paths.
 - Follow the other [Files likely touched](#files-likely-touched) rules.
 
 ### Final Prove attribution line

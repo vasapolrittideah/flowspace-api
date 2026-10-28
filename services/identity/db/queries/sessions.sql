@@ -107,3 +107,12 @@ WHERE session.id = sqlc.arg(session_id)
   AND session.revoked_at IS NULL
   AND session.idle_expires_at > statement_timestamp()
   AND session.absolute_expires_at > statement_timestamp();
+
+-- name: DeleteExpiredSessionDeviceData :execrows
+-- The idle expiry is never after the absolute expiry, so it is the session expiry.
+UPDATE identity_sessions
+SET created_ip_address = NULL, created_user_agent = NULL,
+    last_used_ip_address = NULL, last_used_user_agent = NULL
+WHERE idle_expires_at <= statement_timestamp()
+  AND (created_ip_address IS NOT NULL OR created_user_agent IS NOT NULL
+    OR last_used_ip_address IS NOT NULL OR last_used_user_agent IS NOT NULL);

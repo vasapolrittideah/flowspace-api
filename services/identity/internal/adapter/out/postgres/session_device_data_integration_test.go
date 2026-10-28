@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -115,7 +116,7 @@ func testSessionDeviceDataDeletion(t *testing.T, pool *pgxpool.Pool) {
 		t.Helper()
 		for _, id := range revoked {
 			if !deleted(t, id) {
-				t.Fatalf("revoked session %s kept its device data", id)
+				t.Fatalf("session %s kept its device data", id)
 			}
 		}
 		for _, id := range kept {
@@ -243,5 +244,57 @@ func testSessionDeviceDataDeletion(t *testing.T, pool *pgxpool.Pool) {
 			t.Fatalf("rolled-back session revoked = %t, %v", revoked, err)
 		}
 		expect(t, nil, []string{first})
+	})
+	t.Run("expiry cleanup deletes only expired device data", func(t *testing.T) {
+		subject := account(t)
+		before, _ := session(t, subject)
+		at, _ := session(t, subject)
+		after, _ := session(t, subject)
+		lastUsedOnly, _ := session(t, subject)
+		agentOnly, _ := session(t, subject)
+		if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET created_ip_address = NULL, created_user_agent = NULL WHERE id = $1`, lastUsedOnly); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET created_ip_address = NULL, last_used_ip_address = NULL, last_used_user_agent = NULL
+			WHERE id = $1`, agentOnly); err != nil {
+			t.Fatal(err)
+		}
+		expire := func(id, expiry string) {
+			t.Helper()
+			if _, err := pool.Exec(ctx, `UPDATE identity_sessions SET created_at = statement_timestamp() - INTERVAL '2 hours',
+				last_used_at = statement_timestamp() - INTERVAL '2 hours', idle_expires_at = `+expiry+` WHERE id = $1`, id); err != nil {
+				t.Fatal(err)
+			}
+		}
+		// A session expires at its exact expiry time, so the cleanup that runs at that time deletes its data.
+		expire(before, `clock_timestamp() + INTERVAL '3 seconds'`)
+		expire(after, `statement_timestamp() - INTERVAL '59 minutes'`)
+		expire(lastUsedOnly, `statement_timestamp() - INTERVAL '1 minute'`)
+		expire(agentOnly, `statement_timestamp() - INTERVAL '1 minute'`)
+		cleanup := identitypostgres.NewSessionRepository(pool)
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+		if _, err := tx.Exec(ctx, `UPDATE identity_sessions SET created_at = statement_timestamp() - INTERVAL '2 hours',
+			last_used_at = statement_timestamp() - INTERVAL '2 hours', idle_expires_at = transaction_timestamp() WHERE id = $1`, at); err != nil {
+			t.Fatal(err)
+		}
+		if err := identitypostgres.NewSessionRepository(tx).PurgeExpiredDeviceData(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if err := cleanup.PurgeExpiredDeviceData(ctx); err != nil {
+			t.Fatal(err)
+		}
+		expect(t, []string{at, after, lastUsedOnly, agentOnly}, []string{before})
+		time.Sleep(3100 * time.Millisecond)
+		if err := cleanup.PurgeExpiredDeviceData(ctx); err != nil {
+			t.Fatal(err)
+		}
+		expect(t, []string{before}, nil)
 	})
 }

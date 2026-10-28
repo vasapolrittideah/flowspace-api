@@ -1,62 +1,62 @@
 {
   "adr-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-opus-5-5",
     "effort": "high"
   },
   "ci-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-sonnet-5-5",
     "effort": "high"
   },
   "code-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6-astra",
+    "runner": "claude",
+    "model": "claude-opus-5-5",
     "effort": "medium"
   },
   "contract-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-sonnet-5-5",
     "effort": "high"
   },
   "convention-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-sonnet-5-5",
     "effort": "high"
   },
   "infra-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-sonnet-5-5",
     "effort": "high"
   },
   "migration-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6-astra",
+    "runner": "claude",
+    "model": "claude-opus-5-5",
     "effort": "high"
   },
   "planning-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-opus-5-5",
     "effort": "high"
   },
   "security-auditor": {
-    "runner": "codex",
-    "model": "gpt-6-astra",
+    "runner": "claude",
+    "model": "claude-opus-5-5",
     "effort": "high"
   },
   "spec-conformance-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-opus-5-5",
     "effort": "high"
   },
   "test-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-opus-5-5",
     "effort": "high"
   },
   "writing-reviewer": {
-    "runner": "codex",
-    "model": "gpt-6.1-sol",
+    "runner": "claude",
+    "model": "claude-sonnet-5-5",
     "effort": "high"
   }
 }

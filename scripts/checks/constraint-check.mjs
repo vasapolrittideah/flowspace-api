@@ -29,11 +29,15 @@ export function parseDiff(diff) {
   let oldFile = '';
   let file = '';
   let newLine = 0;
+  // A hunk line `--- x` or `+++ x` is a removed `-- x` or an added `++ x`, so read headers only before the first hunk.
+  let inHeader = false;
 
   for (const line of diff.split('\n')) {
-    if (line.startsWith('--- ')) {
+    if (line.startsWith('diff ')) {
+      inHeader = true;
+    } else if (inHeader && line.startsWith('--- ')) {
       oldFile = normalizeDiffPath(line.slice(4));
-    } else if (line.startsWith('+++ ')) {
+    } else if (inHeader && line.startsWith('+++ ')) {
       const nextFile = normalizeDiffPath(line.slice(4));
       if (nextFile === '/dev/null') {
         file = oldFile;
@@ -42,11 +46,14 @@ export function parseDiff(diff) {
         file = nextFile;
       }
     } else if (line.startsWith('@@ ')) {
+      inHeader = false;
       newLine = Number(line.match(/\+(\d+)/)?.[1] ?? 0);
-    } else if (line.startsWith('+') && !line.startsWith('+++')) {
+    } else if (inHeader) {
+      continue;
+    } else if (line.startsWith('+')) {
       added.push({ file, line: newLine, text: line.slice(1) });
       newLine += 1;
-    } else if (line.startsWith('-') && !line.startsWith('---')) {
+    } else if (line.startsWith('-')) {
       removed.push({ file, text: line.slice(1) });
     } else if (line.startsWith(' ')) {
       newLine += 1;

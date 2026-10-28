@@ -76,6 +76,23 @@ test('floor guard accepts merged test files only when functions and assertions r
   assert.deepEqual(floorFindings(parseDiff(moved.replace('+t.Fatal("second failed")', '+t.Fatal("other failed")'))), [{ rule: 'assertion-removed', file: 'second_test.go' }]);
 });
 
+test('diff parser keeps removed and added lines that look like file headers', () => {
+  const diff = [
+    'diff --git a/db/migrations/001_init.sql b/db/migrations/001_init.sql',
+    '--- a/db/migrations/001_init.sql',
+    '+++ b/db/migrations/001_init.sql',
+    '@@ -1,2 +1,2 @@',
+    '--- old comment',
+    '+++ new comment',
+    ' SELECT 1;',
+  ].join('\n');
+
+  const { added, removed } = parseDiff(diff);
+
+  assert.deepEqual(removed, [{ file: 'db/migrations/001_init.sql', text: '-- old comment' }]);
+  assert.deepEqual(added, [{ file: 'db/migrations/001_init.sql', line: 1, text: '++ new comment' }]);
+});
+
 test('changed-line coverage counts instrumented added Go lines', () => {
   const diff = [
     'diff --git a/service.go b/service.go',

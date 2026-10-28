@@ -34,7 +34,7 @@ FOR EACH ROW WHEN (NEW.revoked_at IS NOT NULL)
 EXECUTE FUNCTION identity_delete_revoked_session_device_data();
 
 -- +goose Down
--- Deploy older code before rollback. This discards the device data and the
+-- Deploy older code before the rollback. This discards the device data and the
 -- sign-in method of each session.
 DROP TRIGGER identity_sessions_delete_revoked_device_data ON identity_sessions;
 DROP FUNCTION identity_delete_revoked_session_device_data();

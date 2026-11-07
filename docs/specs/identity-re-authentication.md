@@ -2,11 +2,11 @@
 
 Module ID: `identity-re-authentication`
 
-Status: Implemented
+Status: Approved
 
 ## Objective
 
-Let a signed-in user prove their identity again before a sensitive action, such as a change to a credential, an email address, a provider link, or the account itself. A session alone shows only that someone signed in on that device, up to 90 days earlier. Re-authentication shows that the owner still controls the session now. The first users are API clients, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md).
+Let a signed-in user prove their identity again before a sensitive action, such as a change to a credential, an email address, a provider link, or the account itself. A session alone shows only that someone signed in on that device, up to 90 days earlier. Re-authentication shows that the owner still controls the session now. The first users are API clients and the web frontend, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md).
 
 The user can prove their identity with the account password, with a Google or GitHub account that is linked to the account, or with a 6-digit code sent to the verified account email. Each method gives the same result: the current session is re-authenticated for 10 minutes. Each provider-only account and each password account has at least 1 method.
 
@@ -29,12 +29,16 @@ These decisions apply:
 
 - [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md): Identity owns sessions, passwords, provider links, and email codes, and it makes sure on the server that each session is valid.
 - [ADR-0045](../adr/0045-provider-re-authentication-reuses-the-one-time-handoff.md): provider re-authentication reuses the callback and the one-time handoff of provider login for the current session, and `StartProviderReauthentication` rejects `Idempotency-Key`.
+- [ADR-0052](../adr/0052-browser-sessions-keep-the-refresh-token-in-an-httponly-cookie.md): Identity checks the exact `Origin` and the content type of each request that uses a cookie.
+- [ADR-0053](../adr/0053-browser-provider-flows-redirect-the-handoff-code-to-the-frontend.md): for an attempt with a return URL, Identity keeps the attempt token in a `__Host-` cookie and redirects the callback to the frontend with the handoff code in the fragment. This is a scoped exception to ADR-0045.
 
 ## Contract
 
 Use package `flowspace.identity.v1` and service `IdentityService`.
 
-The `provider` field uses the existing `Provider` enum of provider login and accepts only `PROVIDER_GOOGLE` and `PROVIDER_GITHUB`. `PROVIDER_UNSPECIFIED` and unknown values are malformed. The `code` field is a string of exactly 6 ASCII digits, and leading zeroes are significant, as in the [Identity signup and email verification](identity-signup-and-email-verification.md) specification.
+The `provider` field uses the existing `Provider` enum of provider login and accepts only `PROVIDER_GOOGLE` and `PROVIDER_GITHUB`. `PROVIDER_UNSPECIFIED` and unknown values are malformed. The `code` field is a string of exactly 6 ASCII digits, and leading zeroes are significant, as in the [Identity signup and email verification](identity-signup-and-email-verification.md) specification. The `return_url` field follows the [Identity provider login](identity-provider-login.md) specification.
+
+The re-authentication attempt cookie is named `__Host-flowspace-reauthentication-attempt`. Its value is the attempt token.
 
 ### Methods
 
@@ -43,8 +47,8 @@ The `provider` field uses the existing `Provider` enum of provider login and acc
 | `ReauthenticateWithPassword` | `POST /v1/password-reauthentications` | `password` (required) | `reauthentication_expires_at` |
 | `RequestReauthenticationCode` | `POST /v1/reauthentication-codes` | None | `accepted` |
 | `ReauthenticateWithCode` | `POST /v1/code-reauthentications` | `code` (required) | `reauthentication_expires_at` |
-| `StartProviderReauthentication` | `POST /v1/provider-reauthentication-attempts` | `provider` (required) | `authorization_url`, `attempt_token`, `attempt_expires_at` |
-| `CompleteProviderReauthentication` | `POST /v1/provider-reauthentications` | `attempt_token` (required), `handoff_code` (required) | `reauthentication_expires_at` |
+| `StartProviderReauthentication` | `POST /v1/provider-reauthentication-attempts` | `provider` (required), `return_url` | `authorization_url`, `attempt_token`, `attempt_expires_at` |
+| `CompleteProviderReauthentication` | `POST /v1/provider-reauthentications` | `attempt_token`, `handoff_code` (required) | `reauthentication_expires_at` |
 
 ### Method requirements
 
@@ -65,7 +69,7 @@ Re-authentication result:
 | `reauthentication_expires_at` | `reauthenticationExpiresAt` | The server time when the re-authentication window of the current session ends, output only |
 | `accepted` | `accepted` | `true` when Identity accepted the code request, output only |
 | `authorization_url` | `authorizationUrl` | The provider authorization URL that the user opens in a browser, output only |
-| `attempt_token` | `attemptToken` | The secret token of the provider attempt, at least 128 random bits, output only |
+| `attempt_token` | `attemptToken` | The secret token of the provider attempt, at least 128 random bits, or an empty string when the request has a return URL, output only |
 | `attempt_expires_at` | `attemptExpiresAt` | The server time when the provider attempt expires, output only |
 
 ### Published events
@@ -78,13 +82,14 @@ Re-authentication result:
 
 | Condition | gRPC status | HTTP status |
 | --- | --- | --- |
-| Malformed request | `InvalidArgument` | 400 |
+| Malformed request, or a `return_url` that is not on the configured list | `InvalidArgument` | 400 |
 | Wrong password, or the account has no password | `InvalidArgument` | 400 |
 | Wrong, expired, or used code | `InvalidArgument` | 400 |
 | Missing, invalid, or inactive session | `Unauthenticated` | 401 |
 | The account email is not verified, so Identity cannot send a code | `FailedPrecondition` | 400 |
 | The provider attempt is unknown, expired, used, or failed, or the provider account is not linked to the subject | `FailedPrecondition` | 400 |
 | A client calls a sensitive method outside the re-authentication window | `PermissionDenied` | 403 |
+| A provider request with a return URL or a completion that reads the attempt cookie fails the `Origin` or content type check | `PermissionDenied` | 403 |
 | A limit is reached | `ResourceExhausted` | 429 |
 | Identity, its limit store, or the provider is unavailable | `Unavailable` | 503 |
 
@@ -122,9 +127,12 @@ Re-authentication result:
 
 ### Provider method
 
-- `StartProviderReauthentication` creates a provider attempt that is bound to the subject and the session of the access token and has the re-authentication purpose. It uses the provider protocol, the callback route, the callback page, and the 10-minute attempt expiry of provider login.
+- `StartProviderReauthentication` creates a provider attempt that is bound to the subject and the session of the access token and has the re-authentication purpose. It uses the provider protocol, the callback route, the 10-minute attempt expiry, and the API client and browser redirect handoffs of provider login.
+- A request with `return_url` must pass the `Origin` and content type checks. Identity checks `return_url` against `PROVIDER_RETURN_URLS`, leaves the `attempt_token` field empty, and sets the re-authentication attempt cookie with the attributes and expiry of the login attempt cookie. The callback then redirects to the return URL with the handoff code or a callback error code in the fragment.
 - The callback route reads the purpose from the attempt. A provider result for 1 purpose cannot complete an attempt of the other purpose.
 - `CompleteProviderReauthentication` succeeds only from the session that started the attempt, with the matching attempt token and handoff code. The provider name and provider subject must match an existing provider link of the subject.
+- When a `CompleteProviderReauthentication` request has an empty `attempt_token` field, Identity reads the attempt token from the re-authentication attempt cookie. Such a request must pass the `Origin` and content type checks. A request with an empty `attempt_token` field and no cookie returns `FailedPrecondition`.
+- Identity reads the re-authentication attempt cookie only in `CompleteProviderReauthentication`. It sends an expired cookie after a successful completion and after a failure that ends the attempt, such as an unknown, expired, used, or failed attempt, or a provider account that is not linked. A failure that leaves the attempt usable, such as a full limit or an unavailable dependency, keeps the cookie.
 - The provider email and its verified state do not matter. Identity changes no account, link, email, or session other than the re-authentication time of the current session, and it issues no token.
 - A provider subject that is not linked to the subject, or that is linked to another subject, returns `FailedPrecondition` and changes no link.
 - If the start response is lost, the client starts a new attempt and the old attempt expires. If the completion response is lost, the window is open. A retry returns `FailedPrecondition` because the handoff code is used.
@@ -153,6 +161,7 @@ Logs, traces, metrics, errors, and security events record the method and the out
 
 - Passwords, codes, attempt tokens, handoff codes, provider authorization codes, and provider tokens.
 - Access tokens, refresh tokens, and full email addresses.
+- The `Cookie` and `Set-Cookie` headers, and the `Location` header of a callback redirect.
 - Provider subjects, session IDs, and subject IDs in metric labels.
 
 ## Testing strategy
@@ -178,7 +187,12 @@ Logs, traces, metrics, errors, and security events record the method and the out
 | A malformed provider value, code, or request body reaches the methods (`ID-T15`) | Unit |
 | An unavailable limit store, database, or provider, a timeout, or a cancellation opens the window (`ID-T16`) | Integration |
 | Telemetry or errors contain a password, code, token, or full email (`ID-T17`) | Integration |
-| The flow fails end to end through the generated REST routes, Mailpit, and the callback page | Cluster |
+| A return URL that is not on the list is accepted, or a browser completion works without its attempt cookie (`ID-T27`) | Unit, Integration |
+| A start with `return_url` returns the attempt token in the response body (`ID-T26`) | Unit |
+| A re-authentication attempt cookie completes a login or a link, or a login or link cookie completes a re-authentication (`ID-T27`) | Integration |
+| A browser request from another origin, with no `Origin`, or with a form content type starts or completes an attempt (`ID-T23`) | Unit |
+| The attempt cookie has wrong attributes, stays after an ending failure, or is cleared after a failure that leaves the attempt usable (`ID-T24`) | Unit |
+| The flow fails end to end through the generated REST routes, Mailpit, the callback page, and the browser redirect | Cluster |
 
 ## Implementation boundaries
 
@@ -210,4 +224,6 @@ Never do these actions:
 14. Given a session has an open window, When the session logs out or a password reset revokes it, Then its access token cannot call a sensitive method.
 15. Given a re-authentication limit is full, When the session tries again, Then Identity returns `ResourceExhausted` without password hashing, a code, or a provider attempt.
 16. Given repeated failed re-authentication attempts, When the limits are reached, Then the session stays active, and the account can still log in after the limit window.
-17. Given the re-authentication tests run, When a test inspects logs, traces, metrics, and errors, Then they contain no password, code, token, handoff code, or full email address.
+17. Given a browser on an allowed origin starts provider re-authentication with a `return_url` from the list and completes the provider callback, When it calls `CompleteProviderReauthentication` with an empty `attempt_token` field and the handoff code from the fragment, Then the window of that session opens, and the response sends an expired re-authentication attempt cookie.
+18. Given a browser that holds a login or link attempt cookie but no re-authentication attempt cookie, When it calls `CompleteProviderReauthentication` with an empty `attempt_token` field, Then Identity returns `FailedPrecondition`, and the window stays closed.
+19. Given the re-authentication tests run, When a test inspects logs, traces, metrics, and errors, Then they contain no password, code, token, handoff code, or full email address.

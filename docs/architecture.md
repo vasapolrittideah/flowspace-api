@@ -191,6 +191,8 @@ Event, outbox, deduplication, schema, and backup retention must cover the suppor
 Before real teams:
 
 - Use real email delivery and add MFA for account protection.
+- Decide how a provider-only user gets access back after losing the provider account.
+- Test the provider-login limits for each source address with users behind shared networks.
 - Add encrypted backup storage independent of the server.
 - Back up every service database, broker state, Schema Registry, identity data, configuration, and secret-controller keys.
 - Align event retention, offsets, deduplication history, and restored database state.

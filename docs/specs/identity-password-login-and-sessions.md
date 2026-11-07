@@ -17,7 +17,7 @@ The scope covers password login, token issuance, refresh-token delivery in the b
 This capability excludes these items:
 
 - Password reset, provider login and link, email changes, session listing, and MFA. Their specifications use the session and delivery rules of this specification.
-- The CORS rules of the other public services. [ADR-0052](../adr/0052-browser-sessions-keep-the-refresh-token-in-an-httponly-cookie.md) sets them, and each service applies them when it serves the web frontend.
+- The CORS rules of the other public services, which each service applies when it serves the web frontend.
 - The remembered-device token of [ADR-0050](../adr/0050-remembered-devices-skip-the-mfa-login-step-for-30-days.md) in a browser.
 - Workspace membership and role decisions.
 
@@ -27,7 +27,7 @@ These decisions apply:
 - [ADR-0032](../adr/0032-identity-signup-recovers-with-login.md): password login recovers a lost signup or claim response.
 - [ADR-0033](../adr/0033-identity-token-issuance-does-not-replay-responses.md): login and refresh reject `Idempotency-Key` and never replay a token pair.
 - [ADR-0036](../adr/0036-authenticate-internal-session-checks-with-mutual-tls.md): `CheckSession` uses mutual TLS and a caller allowlist.
-- ADR-0052: a browser client receives the refresh token in a `__Host-` HttpOnly cookie on the Identity hostname, and Identity checks the exact `Origin` of each request that uses the cookie. This is a scoped exception to the rule of ADR-0031 that clients send refresh tokens only to the refresh endpoint.
+- [ADR-0052](../adr/0052-browser-sessions-keep-the-refresh-token-in-an-httponly-cookie.md): a browser client receives the refresh token in a `__Host-` HttpOnly cookie on the Identity hostname, and Identity checks the exact `Origin` of each request that uses the cookie. This is a scoped exception to the rule of ADR-0031 that clients send refresh tokens only to the refresh endpoint.
 
 ## Contract
 
@@ -52,7 +52,7 @@ The refresh-token cookie is named `__Host-flowspace-refresh`. Its value is the o
 | RPC | Authentication | Retry |
 | --- | --- | --- |
 | `CreatePasswordSession` | None | Rejects `Idempotency-Key` under [ADR-0033](../adr/0033-identity-token-issuance-does-not-replay-responses.md) |
-| `RefreshSession` | None | Rejects `Idempotency-Key` under ADR-0033 |
+| `RefreshSession` | None | Rejects `Idempotency-Key` under [ADR-0033](../adr/0033-identity-token-issuance-does-not-replay-responses.md) |
 | `LogoutCurrentSession` | Bearer access token | Safe to retry |
 | `LogoutAllSessions` | Bearer access token | Safe to retry |
 | `CheckSession` | Service mTLS under [ADR-0036](../adr/0036-authenticate-internal-session-checks-with-mutual-tls.md) | Safe to retry |

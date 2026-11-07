@@ -47,7 +47,7 @@ The login attempt cookie is named `__Host-flowspace-login-attempt`. Its value is
 | RPC | Authentication | Retry |
 | --- | --- | --- |
 | `StartProviderLogin` | None | Rejects `Idempotency-Key` under [ADR-0034](../adr/0034-provider-login-uses-a-one-time-handoff.md) |
-| `CreateProviderSession` | None | Rejects `Idempotency-Key` under ADR-0034 |
+| `CreateProviderSession` | None | Rejects `Idempotency-Key` under [ADR-0034](../adr/0034-provider-login-uses-a-one-time-handoff.md) |
 
 ### HTTP-only endpoints
 

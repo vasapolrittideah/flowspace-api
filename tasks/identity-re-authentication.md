@@ -2,11 +2,13 @@
 
 Module ID: `identity-re-authentication`
 
-Status: Complete
+Status: Approved
 
 ## Overview
 
 Let a signed-in session prove its owner again with a password, an email code, or a linked provider, and open a 10-minute re-authentication window. Each new session starts with an open window, and a guard lets a later sensitive method refuse a session whose window is closed. No public sensitive method exists in this module.
+
+Phases 4 and 5 add the browser redirect handoff to the provider method. A browser start with a return URL keeps the attempt token in a `__Host-flowspace-reauthentication-attempt` cookie, and the completion reads that cookie.
 
 The plan follows the approved [Identity re-authentication](../docs/specs/identity-re-authentication.md) specification.
 
@@ -16,6 +18,7 @@ The plan follows the approved [Identity re-authentication](../docs/specs/identit
 - Store 1 nullable re-authentication time on each session. Keep the window guard in the application layer so that each later sensitive method calls it in its own transaction. A test-only method proves the guard, as the specification requires.
 - Reuse the existing limit buckets of password login, email codes, and provider login. Add no new limit table.
 - Reuse the provider attempts, the callback route, and the handoff of [ADR-0034](../docs/adr/0034-provider-login-uses-a-one-time-handoff.md). Add a purpose, a subject, and a session ID to each attempt, as [ADR-0045](../docs/adr/0045-provider-re-authentication-reuses-the-one-time-handoff.md) states.
+- Reuse the return URL column, the return URL check, the callback redirect, and the attempt cookie helpers of the `identity-provider-login` plan, as [ADR-0053](../docs/adr/0053-browser-provider-flows-redirect-the-handoff-code-to-the-frontend.md) states. The re-authentication purpose adds only its own cookie name and its completion route.
 
 ## Dependency graph
 
@@ -28,6 +31,11 @@ flowchart TD
     Password --> Prove[Final re-authentication proof]
     Code --> Prove
     Provider --> Prove
+    Prove --> BrowserContract[Browser re-authentication contract]
+    ProviderContract[Browser provider-login contract] --> BrowserContract
+    ProviderBrowser[Browser redirect handoff of provider login] --> BrowserProvider[Provider re-authentication from the attempt cookie]
+    BrowserContract --> BrowserProvider
+    BrowserProvider --> BrowserProve[Final browser re-authentication proof]
 ```
 
 ## Task list
@@ -61,10 +69,30 @@ Tasks are tracked in the [flowspace-api](https://github.com/users/vasapolrittide
 
 - Task 6: [#513 Prove Identity re-authentication against its specification](https://github.com/vasapolrittideah/flowspace-api/issues/513)
 
-### Checkpoint: Complete
+### Checkpoint: Completion checks
 
 - [x] REST, PostgreSQL, Mailpit, callback, concurrency, failure, limit, telemetry, and Bruno smoke tests cover the success criteria and threat IDs of the specification.
 - [x] Required repository checks pass without weaker settings.
+
+### Phase 4: Browser provider re-authentication
+
+- Task 7: [#564 Define the browser provider re-authentication contract](https://github.com/vasapolrittideah/flowspace-api/issues/564)
+- Task 8: [#565 Re-authenticate with a provider through the browser redirect](https://github.com/vasapolrittideah/flowspace-api/issues/565)
+
+### Checkpoint: Browser provider re-authentication
+
+- [ ] `StartProviderReauthentication` accepts `return_url`, `CompleteProviderReauthentication` accepts an empty `attempt_token`, and generated output matches the source Protobuf.
+- [ ] A browser start sets the re-authentication attempt cookie, and a completion from that cookie opens the window of the starting session only.
+- [ ] A login or link attempt cookie cannot complete a re-authentication, and an ending failure clears the cookie.
+
+### Phase 5: Browser completion checks
+
+- Task 9: [#566 Prove Identity re-authentication against its specification](https://github.com/vasapolrittideah/flowspace-api/issues/566)
+
+### Checkpoint: Complete
+
+- [ ] REST, callback, PostgreSQL, cookie, telemetry, and Bruno smoke tests cover each success criterion and each threat ID of the specification, including criteria 17 and 18 and `ID-T23`, `ID-T24`, `ID-T26`, and `ID-T27`.
+- [ ] Required repository checks pass without weaker settings.
 
 ## Risks and controls
 
@@ -77,4 +105,6 @@ Tasks are tracked in the [flowspace-api](https://github.com/users/vasapolrittide
 | A rollback lets older code complete a re-authentication attempt as provider login. | A provider result creates an unexpected session. | Document the deletion of pending re-authentication attempts before a rollback in Task 5. |
 | A dependency failure, a timeout, or a cancellation opens a window. | A session gets a window without a committed proof. | Return a result only after the commit. Test failures and cancellations in Tasks 3 to 6. |
 | An expiry, a refresh, or a retry extends a window. | A session keeps the window longer than 10 minutes. | Test the boundary, the refresh, and the open-window retry with a controlled clock in Tasks 2 to 6. |
+| A cookie of another purpose completes a re-authentication. | A login or link attempt becomes a step-up proof. | Read only the re-authentication attempt cookie in `CompleteProviderReauthentication`, and test the other cookies in Task 8. |
+| A browser completion skips the `Origin` check. | Another site completes a re-authentication with the cookie of the victim. | Reuse the browser checks of the password login plan, and test a wrong and a missing `Origin` in Task 8. |
 | Telemetry or errors contain a password, a code, or a token. | A secret becomes reusable. | Capture logs, traces, and errors in tests of each method and in Task 6. |

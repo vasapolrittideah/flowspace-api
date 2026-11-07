@@ -2,7 +2,7 @@
 
 Module ID: `identity-provider-login`
 
-Status: Draft
+Status: Approved
 
 ## Objective
 

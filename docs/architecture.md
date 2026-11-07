@@ -53,7 +53,7 @@ Only owners may grant or modify administrator access.
 - Email verification and password reset use six-digit codes. An identity needs a verified email before it can use Workspace.
 - Identity issues signed access tokens and rotating refresh tokens. Protected services verify access tokens and check live session state with Identity on every request.
 - Mailpit captures verification and password-reset email in learning environments.
-- API clients come first. Browser authentication and token storage remain open for the later web release.
+- API clients come first. Browser clients keep the refresh token in an HttpOnly cookie, as [ADR-0052](adr/0052-browser-sessions-keep-the-refresh-token-in-an-httponly-cookie.md) states, and get provider handoff codes through a redirect, as [ADR-0053](adr/0053-browser-provider-flows-redirect-the-handoff-code-to-the-frontend.md) states.
 
 ## Service boundaries
 
@@ -223,13 +223,13 @@ Required failure experiments:
 
 Keep these here until accepted; then update the owning ADR.
 
-- Edge details: hostnames, access allowlists, proxy headers, origin TLS, and administrative access.
+- Edge details: hostnames, access allowlists, proxy headers, origin TLS, and administrative access. [ADR-0052](adr/0052-browser-sessions-keep-the-refresh-token-in-an-httponly-cookie.md) requires the frontend and the public API to share 1 registrable domain, and gives Identity its own hostname.
 - Runtime topology: exact namespace, replica, resource, and retention settings.
 - Delivery gates: CI stages, image promotion, smoke-test location, and migration ordering.
 - Observability: telemetry settings and alert contact points for staging and production. [ADR-0037](adr/0037-local-logs-and-traces-use-disposable-single-host-stores.md), [ADR-0038](adr/0038-local-metrics-reach-a-single-host-prometheus-through-alloy.md), and [ADR-0039](adr/0039-local-alerts-run-in-grafana-and-notify-through-mailpit.md) decide local logs, traces, metrics, and alerts.
 - Recovery: backup destination and tooling, schedule, and recovery objectives.
 - Capacity: workload model and pass/fail thresholds.
-- Frontend: technology, browser-session handling, and token storage.
+- Frontend: technology.
 - Product specifications: invitation lifecycle and assignment/notification triggers.
 - Readiness: close or accept the Identity threat model risks, pin versions, and set the implementation time budget.
 

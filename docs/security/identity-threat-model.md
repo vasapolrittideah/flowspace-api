@@ -2,13 +2,13 @@
 
 Status: Initial model for specification and implementation review.
 
-Last reviewed: 2026-09-23.
+Last reviewed: 2026-11-07.
 
 ## Purpose
 
 This document models threats to the Flowspace Identity service defined by [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md). It turns security risks into controls and test evidence. Each Identity feature specification must reference the applicable threat IDs.
 
-The model covers email and password accounts, six-digit email codes, Google and GitHub login, provider linking, access tokens, refresh tokens, logout, and internal session checks. It covers API clients first. A later browser release needs a separate review of token storage, cookies, cross-site request forgery, and browser code.
+The model covers email and password accounts, six-digit email codes, Google and GitHub login, provider linking, access tokens, refresh tokens, logout, and internal session checks. It covers API clients and the web frontend. For the web frontend, it covers the refresh-token cookie and the Cross-Origin Resource Sharing (CORS) rules of [ADR-0052](../adr/0052-browser-sessions-keep-the-refresh-token-in-an-httponly-cookie.md). It also covers the attempt cookies and the fragment handoff of [ADR-0053](../adr/0053-browser-provider-flows-redirect-the-handoff-code-to-the-frontend.md). The security of the frontend code itself needs its own review.
 
 Workspace roles and resource authorization remain outside this model. Identity proves who the caller is and whether the session is active. Workspace and the other protected services decide what that subject can do.
 
@@ -35,7 +35,7 @@ Identity must meet these objectives:
 
 ```mermaid
 flowchart LR
-    Client[API client or later browser] -->|Public HTTPS| Edge[Public edge]
+    Client[API client or browser] -->|Public HTTPS| Edge[Public edge]
     Edge -->|Public Identity API| Identity[Identity service]
     Identity --> IdentityDB[(Identity PostgreSQL)]
     Identity -->|Opaque delivery IDs| Broker[Redpanda]
@@ -52,6 +52,8 @@ flowchart LR
 | Boundary | Untrusted or sensitive input | Required treatment |
 | --- | --- | --- |
 | Internet client to public edge | Headers, JSON, credentials, tokens, email codes, provider callbacks | Use HTTPS, size limits, strict parsing, safe errors, and endpoint rate limits. |
+| Browser to Identity hostname | The `Origin` header, cookies, return URLs, and CORS preflight requests | Compare the `Origin` and each return URL byte for byte with a configured list. Read each cookie only in its own route. Keep the `Cookie` and `Set-Cookie` headers out of telemetry. |
+| Identity to frontend callback page | The handoff code or a callback error code in the URL fragment | Redirect only to a configured return URL, with `no-store` and `no-referrer`. The frontend removes the fragment before it loads a third-party script or follows a redirect. |
 | Edge to Identity | Forwarded identity, source address, host, scheme, and request ID | Trust only configured proxies. Reject conflicting or malformed forwarded values. |
 | Identity to PostgreSQL | Account, session, challenge, and provider data | Use parameterized queries, transactions, database constraints, and least-privilege credentials. |
 | Identity to email system | Email address, code, template data, and delivery status | Send the minimum data. Do not place codes in logs or telemetry. Treat delivery responses as untrusted. |
@@ -70,6 +72,7 @@ flowchart LR
 | Password hashes and parameters | Confidentiality and integrity | Offline guessing or parameter downgrade weakens every password account. |
 | Six-digit verification and reset codes | Confidentiality, integrity, and single use | Guessing or replay verifies or recovers the wrong account. |
 | Refresh tokens and token hashes | Confidentiality, integrity, and single-use rotation | Theft or a race keeps an unauthorized session alive. |
+| Refresh-token and attempt cookies | Confidentiality and integrity | A script reads the cookie, another host replaces it, or another site makes the browser use it. |
 | Session records | Integrity and availability | Revoked sessions appear active, or valid users lose access. |
 | Email and provider links | Integrity | A provider identity or email address links to the wrong subject. |
 | Provider client secrets and temporary tokens | Confidentiality | An attacker impersonates Flowspace or a user at the provider. |
@@ -106,12 +109,17 @@ STRIDE classifies threats as spoofing, tampering, repudiation, information discl
 | ID-T14 | A protected service skips or forges the live session check. Spoofing and elevation of privilege. | Authenticate each protected service to Identity. Match the token subject and session ID with Identity state. Do not cache a successful check. Deny admission when Identity cannot confirm the session. | Service tests cover a wrong service identity, mismatched subject, revoked session, unavailable Identity, timeout, and malformed response. |
 | ID-T15 | A caller injects data or exploits ambiguous parsing. Tampering and elevation of privilege. | Use strict input limits and one canonical parser at each boundary. Use parameterized SQL. Reject duplicate security headers, malformed Unicode, unknown enum values, and unsupported content types. | Fuzz and boundary tests cover public inputs, token parsing, provider responses, and email fields. Static analysis reports no injection findings. |
 | ID-T16 | Requests exhaust CPU, database connections, email delivery, or provider quotas. Denial of service. | Set body, concurrency, deadline, and endpoint rate limits. Put expensive password work behind cheap shape and limit checks. Bound outbound calls and retries. Keep rate-limit state shared across replicas. | Load tests cover login, code request, code submission, refresh, and session check. Failure tests cover slow email and provider dependencies. |
-| ID-T17 | Logs, metrics, traces, errors, or analytics expose secrets or excess personal data. Information disclosure. | Use an allowlist of telemetry fields. Never record passwords, codes, access tokens, refresh tokens, authorization codes, provider tokens, or private keys. Minimize email and network identifiers. Use safe client errors. | Automated tests inspect captured telemetry and errors. Secret scanning runs on every change. Review defines retention for each personal field. |
+| ID-T17 | Logs, metrics, traces, errors, or analytics expose secrets or excess personal data. Information disclosure. | Use an allowlist of telemetry fields. Never record passwords, codes, access tokens, refresh tokens, authorization codes, provider tokens, private keys, or the `Cookie` and `Set-Cookie` headers. Minimize email and network identifiers. Use safe client errors. | Automated tests inspect captured telemetry and errors. Secret scanning runs on every change. Review defines retention for each personal field. |
 | ID-T18 | A database, backup, or operator compromise exposes credentials and identity data. Information disclosure and tampering. | Use least-privilege credentials, encrypted transport, restricted backup access, and protected secret storage. Keep private signing keys outside the database. Record every privileged security action. | Restore tests prove data integrity. Access reviews cover database, backup, signing key, and audit-log permissions. |
 | ID-T19 | Clock errors extend token or code validity or reject valid credentials. Spoofing and denial of service. | Use a trusted clock source. Enforce expiry on the server. Define one small clock tolerance for signed tokens. Do not extend code or session lifetime from client time. | Tests run before, at, and after every expiry boundary with allowed positive and negative clock skew. |
 | ID-T20 | A compromised dependency or build step steals secrets or changes authentication. Tampering and elevation of privilege. | Pin dependencies and tools. Review new cryptography and provider packages. Keep install and generation reproducible. Run static analysis, secret scanning, and reachable vulnerability scanning. | CI records locked inputs and passes the repository security checks. Reviewers inspect dependency and lockfile changes with authentication code. |
 | ID-T21 | Personal data remains after its purpose or cannot be exported, corrected, or deleted. Information disclosure and repudiation. | Give each stored personal field a purpose and retention rule. Keep subject-owned data findable. Define deletion effects for sessions, provider links, audit records, telemetry, and backups before real-user use. | Data-lifecycle tests trace one subject through export, correction, deletion, retention expiry, and backup restoration. |
 | ID-T22 | A single-host compromise exposes Identity data and signing keys. Spoofing, tampering, and information disclosure. | Keep the learning environment limited to disposable data. Define protected key storage, emergency rotation, independent backups, and incident recovery before preserving user data. | A tabletop exercise covers key theft, token rejection, session revocation, restore, and user notification. The real-user gate records any accepted residual risk. |
+| ID-T23 | Cross-site request forgery makes a browser refresh, sign in, or start or complete a provider attempt with its cookies, or logs the victim in to the account of an attacker. Spoofing and tampering. | Use `SameSite=Strict` cookies on an Identity hostname under the same registrable domain as the frontend. Require an `Origin` header that exactly equals a configured frontend origin for each request that reads a cookie or selects cookie delivery. Reject a missing `Origin` and `null`. Require the `application/json` content type, so that the browser sends a CORS preflight request first. Return `PermissionDenied` before any other work. | Transport tests send each cookie request from another origin, without `Origin`, with `Origin: null`, and with a form content type, and prove that no cookie is read or set and no token is issued. |
+| ID-T24 | Cookie tossing or fixation: another host of the registrable domain, or a script on the Identity hostname, sets a refresh-token or attempt cookie in the browser of the victim. Spoofing and tampering. | Use the `__Host-` prefix with `Secure`, `HttpOnly`, `Path=/`, and no `Domain` attribute, so that the browser rejects the cookie from another host. Give Identity its own hostname that serves only Identity routes and the callback page, with no user content and no third-party scripts. Give the callback page a `Content-Security-Policy` that allows no sources. Give each purpose its own attempt cookie, and read each cookie only in its own route. Send an expired cookie after logout, a failed refresh, and each completion that ends an attempt. | Unit tests check each attribute and each cookie name. Integration tests prove that a cookie of 1 purpose cannot complete another purpose, and that each ending response clears its cookie. The deployment review confirms what the Identity hostname serves. |
+| ID-T25 | A wrong CORS configuration lets another origin read a credentialed response or send a credentialed request. Information disclosure and elevation of privilege. | Answer CORS only for an exact list of frontend origins for each environment, with no wildcard. Allow credentials only in Identity. Allow only the approved methods and request headers. Send `Vary: Origin` on each response whose `Access-Control-Allow-Origin` depends on the request, so that a cache does not serve it to another origin. | Unit tests send allowed, unknown, similar, and `null` origins. Cluster tests prove the headers through the edge, the tunnel, and the staging access policy. |
+| ID-T26 | A cross-site scripting flaw or a malicious dependency in the frontend reads a token or acts as the user. Information disclosure and elevation of privilege. | Keep the refresh token in an HttpOnly cookie and out of each response body for cookie delivery. Keep the access token only in browser memory. Keep the attempt token in an HttpOnly cookie for the browser redirect handoff. Let only 1 refresh run at a time across tabs, so that a race does not revoke the session. | Unit tests prove that cookie delivery leaves the `refresh_token` field and the `attempt_token` field empty. The frontend review covers script sources and the cross-tab refresh lock. |
+| ID-T27 | The browser redirect handoff leaks or injects a handoff code. Examples are an open redirect, a code in a log, a cache, or a `Referer` header, and a crafted redirect link that completes an attempt of another browser. Spoofing and information disclosure. | Compare each return URL byte for byte, without normalization, with a configured list of URLs without fragments. Put the handoff code only in the URL fragment of an HTTP 303 response with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`. Complete a browser attempt only with the attempt cookie that the start set in the same browser. Show the callback page with no handoff code when the callback cannot find its attempt. The frontend removes the fragment before it loads a third-party script or follows a redirect. | Unit tests send return URLs that differ by 1 byte, by case, by a trailing slash, by encoding, and by a fragment. Integration tests prove that a handoff code fails without its attempt cookie and that the redirect has the required headers. Telemetry tests find no handoff code or `Location` header. |
 
 ## Cross-feature security invariants
 
@@ -155,7 +163,8 @@ Feature specifications or later ADRs must resolve these items before implementat
 - Authentication method for internal session checks and JWKS retrieval policy.
 - Provider scopes, redirect URIs, transaction storage, claim validation, verified-email evidence, and outage behavior.
 - Email normalization, email change, provider unlink, account deletion, and subject-retirement rules.
-- Browser token storage and cross-site request protections for the later web release.
+- The exact Identity and frontend hostnames, the allowed origins, and the frontend callback URLs of each environment.
+- The remembered-device token of ADR-0050 in a browser.
 - Personal-data purposes, retention periods, export, correction, deletion, and incident-notification duties.
 
 ## Residual risks and real-user gate
@@ -163,6 +172,8 @@ Feature specifications or later ADRs must resolve these items before implementat
 Six-digit email codes have limited entropy. Rate limits, short expiry, single use, and mailbox security reduce this risk but do not remove it. Email verification and password recovery do not provide phishing-resistant authentication.
 
 Bearer access tokens work for any party that steals them until expiry or session revocation. Live session checks reduce the window after detected theft or logout. They also make Identity an availability dependency for protected requests.
+
+A cross-site scripting flaw in the frontend can use the access token in memory and call `RefreshSession` while the page runs, as `ID-T26` states. The HttpOnly cookie stops the flaw from taking the refresh token out of the browser, but it does not stop the flaw from acting as the user. A script on the Identity hostname can also set a `__Host-` cookie, as `ID-T24` states. A frontend on another site, such as a preview domain, gets no cookie and cannot use provider flows.
 
 The initial single-host environment has one administrative and physical failure domain. Backups improve recovery but do not prevent an active host compromise from stealing runtime secrets. The project must review this residual risk and the signing-key design before it preserves real-user data.
 

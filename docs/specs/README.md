@@ -5,10 +5,10 @@ This index lists the module specifications. Follow the [Module specification](..
 | Module | Specification | Depends on | Status |
 | --- | --- | --- | --- |
 | `identity-signup-and-email-verification` | [Identity signup and email verification](identity-signup-and-email-verification.md) | None | Implemented |
-| `identity-password-login-and-sessions` | [Identity password login and sessions](identity-password-login-and-sessions.md) | `identity-signup-and-email-verification` | Implemented |
+| `identity-password-login-and-sessions` | [Identity password login and sessions](identity-password-login-and-sessions.md) | `identity-signup-and-email-verification` | Approved |
 | `identity-password-recovery` | [Identity password recovery](identity-password-recovery.md) | `identity-signup-and-email-verification`, `identity-password-login-and-sessions` | Implemented |
-| `identity-provider-login` | [Identity provider login](identity-provider-login.md) | `identity-signup-and-email-verification`, `identity-password-login-and-sessions` | Implemented |
-| `identity-re-authentication` | [Identity re-authentication](identity-re-authentication.md) | `identity-signup-and-email-verification`, `identity-password-login-and-sessions`, `identity-provider-login` | Implemented |
+| `identity-provider-login` | [Identity provider login](identity-provider-login.md) | `identity-signup-and-email-verification`, `identity-password-login-and-sessions` | Approved |
+| `identity-re-authentication` | [Identity re-authentication](identity-re-authentication.md) | `identity-signup-and-email-verification`, `identity-password-login-and-sessions`, `identity-provider-login` | Approved |
 | `identity-session-management` | [Identity session management](identity-session-management.md) | `identity-password-login-and-sessions`, `identity-provider-login`, `identity-re-authentication` | Approved |
 | `identity-password-change` | [Identity password change](identity-password-change.md) | `identity-signup-and-email-verification`, `identity-password-recovery`, `identity-re-authentication`, `identity-session-management` | Approved |
 | `identity-provider-unlink` | [Identity provider unlink](identity-provider-unlink.md) | `identity-provider-login`, `identity-re-authentication`, `identity-session-management`, `identity-password-change` | Approved |

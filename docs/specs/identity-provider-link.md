@@ -2,11 +2,11 @@
 
 Module ID: `identity-provider-link`
 
-Status: Approved
+Status: Draft
 
 ## Objective
 
-Let a signed-in user link a Google or GitHub account to their Flowspace account, so that the provider account signs in to it and re-authenticates it. The user proves control of the provider account through the provider flow, and Identity links the account that the provider proved, never an account with a matching email address. The first users are API clients, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md).
+Let a signed-in user link a Google or GitHub account to their Flowspace account, so that the provider account signs in to it and re-authenticates it. The user proves control of the provider account through the provider flow, and Identity links the account that the provider proved, never an account with a matching email address. The first users are API clients and the web frontend, and all data is disposable under [ADR-0022](../adr/0022-single-host-storage-holds-disposable-data.md).
 
 An account links at most 1 account of each provider, and a provider account links to at most 1 Flowspace account. Identity never moves a link between Flowspace accounts.
 
@@ -26,21 +26,25 @@ These decisions apply:
 
 - [ADR-0013](../adr/0013-acting-identity-comes-from-the-token.md): the account comes from the access token, never from the request.
 - [ADR-0031](../adr/0031-flowspace-owns-authentication-and-revocable-sessions.md): a signed-in user links a provider explicitly, and matching email addresses never link accounts.
-- [ADR-0034](../adr/0034-provider-login-uses-a-one-time-handoff.md): the provider callback, the handoff page, and the attempt rules come from provider login.
+- [ADR-0034](../adr/0034-provider-login-uses-a-one-time-handoff.md): the provider callback, the handoff page for an API client, and the attempt rules come from provider login.
 - [ADR-0046](../adr/0046-provider-link-reuses-the-one-time-handoff.md): provider link reuses the callback and the one-time handoff for the current session, and `StartProviderLink` rejects `Idempotency-Key`.
+- [ADR-0052](../adr/0052-browser-sessions-keep-the-refresh-token-in-an-httponly-cookie.md): Identity checks the exact `Origin` and the content type of each request that uses a cookie.
+- [ADR-0053](../adr/0053-browser-provider-flows-redirect-the-handoff-code-to-the-frontend.md): for an attempt with a return URL, Identity keeps the attempt token in a `__Host-` cookie and redirects the callback to the frontend with the handoff code in the fragment. This is a scoped exception to ADR-0034 and ADR-0046.
 
 ## Contract
 
 Use package `flowspace.identity.v1` and service `IdentityService`.
 
-The `provider` field uses the existing `Provider` enum of provider login and accepts only `PROVIDER_GOOGLE` and `PROVIDER_GITHUB`. `PROVIDER_UNSPECIFIED` and unknown values are malformed.
+The `provider` field uses the existing `Provider` enum of provider login and accepts only `PROVIDER_GOOGLE` and `PROVIDER_GITHUB`. `PROVIDER_UNSPECIFIED` and unknown values are malformed. The `return_url` field follows the [Identity provider login](identity-provider-login.md) specification.
+
+The link attempt cookie is named `__Host-flowspace-link-attempt`. Its value is the attempt token.
 
 ### Methods
 
 | RPC | Public HTTP route | Request fields | Response fields |
 | --- | --- | --- | --- |
-| `StartProviderLink` | `POST /v1/provider-link-attempts` | `provider` (required) | `authorization_url`, `attempt_token`, `attempt_expires_at` |
-| `CompleteProviderLink` | `POST /v1/provider-links` | `attempt_token` (required), `handoff_code` (required) | None |
+| `StartProviderLink` | `POST /v1/provider-link-attempts` | `provider` (required), `return_url` | `authorization_url`, `attempt_token`, `attempt_expires_at` |
+| `CompleteProviderLink` | `POST /v1/provider-links` | `attempt_token`, `handoff_code` (required) | None |
 
 ### Method requirements
 
@@ -56,18 +60,19 @@ Link attempt:
 | Protobuf field | JSON field | Meaning |
 | --- | --- | --- |
 | `authorization_url` | `authorizationUrl` | The provider authorization URL that the user opens in a browser, output only |
-| `attempt_token` | `attemptToken` | The secret token of the attempt, at least 128 random bits, output only |
+| `attempt_token` | `attemptToken` | The secret token of the attempt, at least 128 random bits, or an empty string when the request has a return URL, output only |
 | `attempt_expires_at` | `attemptExpiresAt` | The server time when the attempt expires, 10 minutes after its start, output only |
 
 ### Errors
 
 | Condition | gRPC status | HTTP status |
 | --- | --- | --- |
-| Malformed request or provider value | `InvalidArgument` | 400 |
+| Malformed request or provider value, or a `return_url` that is not on the configured list | `InvalidArgument` | 400 |
 | Missing, invalid, or inactive session | `Unauthenticated` | 401 |
 | The attempt is unknown, expired, failed, of another purpose, or of another session, or the handoff code is wrong | `FailedPrecondition` | 400 |
 | The account already links another account of the provider | `FailedPrecondition` | 400 |
 | A client calls `StartProviderLink` or `CompleteProviderLink` outside the re-authentication window | `PermissionDenied` | 403 |
+| A request with a return URL or a completion that reads the attempt cookie fails the `Origin` or content type check | `PermissionDenied` | 403 |
 | The provider account is linked to another Flowspace account | `AlreadyExists` | 409 |
 | A limit is reached | `ResourceExhausted` | 429 |
 | Identity, its database, its limit store, or the provider is unavailable | `Unavailable` | 503 |
@@ -79,7 +84,8 @@ The 2 `FailedPrecondition` conditions use 2 different safe messages. The account
 ### Starting a link
 
 - `StartProviderLink` and `CompleteProviderLink` are sensitive methods under the [Identity re-authentication](identity-re-authentication.md) specification. `StartProviderLink` makes sure that the session of the access token has an open re-authentication window before it creates the attempt, so that the user does not visit the provider for nothing.
-- `StartProviderLink` creates an attempt with the link purpose that is bound to the subject and the session of the access token. It uses the provider protocol, the callback route, the callback page, and the 10-minute attempt expiry of the [Identity provider login](identity-provider-login.md) specification.
+- `StartProviderLink` creates an attempt with the link purpose that is bound to the subject and the session of the access token. It uses the provider protocol, the callback route, the 10-minute attempt expiry, and the API client and browser redirect handoffs of the Identity provider login specification.
+- A request with `return_url` must pass the `Origin` and content type checks. Identity checks `return_url` against `PROVIDER_RETURN_URLS`, leaves the `attempt_token` field empty, and sets the link attempt cookie with the attributes and expiry of the login attempt cookie. The callback then redirects to the return URL with the handoff code or a callback error code in the fragment.
 - For Google, the link attempt asks only for the `openid` scope. For GitHub, it asks for no extra scope, and Identity reads only the stable numeric user `id` from the authenticated user endpoint.
 - If the start response is lost, the client starts a new attempt and the old attempt expires.
 
@@ -87,6 +93,8 @@ The 2 `FailedPrecondition` conditions use 2 different safe messages. The account
 
 - The callback route reads the purpose from the attempt. A provider result for login or re-authentication cannot complete a link attempt, and a link result cannot complete another purpose.
 - `CompleteProviderLink` succeeds only from the session that started the attempt, with the matching attempt token and handoff code.
+- When a `CompleteProviderLink` request has an empty `attempt_token` field, Identity reads the attempt token from the link attempt cookie. Such a request must pass the `Origin` and content type checks. A request with an empty `attempt_token` field and no cookie returns `FailedPrecondition`.
+- Identity reads the link attempt cookie only in `CompleteProviderLink`. It sends an expired cookie after a successful completion and after a failure that ends the attempt. A failure that leaves the attempt unchanged keeps the cookie, so that the user can re-authenticate and retry the same attempt. A provider re-authentication leaves the page, so the frontend keeps the link handoff code across it or starts a new link attempt after it.
 - `CompleteProviderLink` makes sure that the re-authentication window is open in the same transaction as the link. A window that closes while the user is at the provider makes the completion fail. The user re-authenticates and retries the same attempt before it expires, or starts a new attempt.
 - Identity links the provider name and the provider subject that the callback proved. The proof of the provider account is not a re-authentication of the session.
 - The provider email, its verified state, and its match with the account email do not matter. The email address and the verified-email state of the account do not change.
@@ -121,6 +129,7 @@ Logs, traces, metrics, errors, and security events record the outcome of `StartP
 
 - Provider subjects, provider authorization codes, and provider tokens.
 - Attempt tokens, handoff codes, access tokens, and refresh tokens.
+- The `Cookie` and `Set-Cookie` headers, and the `Location` header of a callback redirect.
 - Full email addresses.
 - Session IDs and subject IDs in metric labels.
 
@@ -145,7 +154,11 @@ Logs, traces, metrics, errors, and security events record the outcome of `StartP
 | A provider failure, a timeout, or a cancellation leaves a link or a consumed attempt (`ID-T12`, `ID-T16`) | Integration |
 | A malformed provider value, attempt token, or handoff code reaches the database (`ID-T15`) | Unit |
 | Telemetry or errors contain a provider subject, a token, a code, or a full email (`ID-T17`) | Integration |
-| The flow fails end to end through the generated REST routes, step-up, and the callback page | Cluster |
+| A return URL that is not on the list is accepted, a browser completion works without its attempt cookie, or a cookie of another purpose completes a link (`ID-T27`) | Unit, Integration |
+| A start with `return_url` returns the attempt token in the response body (`ID-T26`) | Unit |
+| A browser request from another origin, with no `Origin`, or with a form content type starts or completes a link (`ID-T23`) | Unit |
+| The attempt cookie has wrong attributes, stays after an ending failure, or is cleared after a failure that leaves the attempt unchanged (`ID-T24`) | Unit |
+| The flow fails end to end through the generated REST routes, step-up, the callback page, and the browser redirect | Cluster |
 
 ## Implementation boundaries
 
@@ -169,4 +182,6 @@ Ask the maintainer before these actions:
 12. Given 2 accounts complete links to the same provider subject at the same time, When both commit, Then exactly 1 account has the link, and the other receives `AlreadyExists`.
 13. Given the provider link limits are full, When the session starts or completes a link, Then Identity returns `ResourceExhausted` without an attempt or a link.
 14. Given a linked GitHub account, When the session re-authenticates with GitHub, Then the re-authentication window opens.
-15. Given the link tests run, When a test inspects logs, traces, metrics, and errors, Then they contain no provider subject, token, code, or full email address.
+15. Given a browser on an allowed origin starts a link with a `return_url` from the list and an open re-authentication window, When it completes the callback and calls `CompleteProviderLink` with an empty `attempt_token` field and the handoff code from the fragment, Then Identity creates the link and sends an expired link attempt cookie.
+16. Given a browser link completion whose re-authentication window closed, When Identity returns `PermissionDenied`, Then the link attempt cookie stays, and after a password or email code re-authentication the browser can retry the same attempt with the same handoff code before it expires.
+17. Given the link tests run, When a test inspects logs, traces, metrics, and errors, Then they contain no provider subject, token, code, or full email address.

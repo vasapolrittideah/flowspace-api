@@ -80,9 +80,9 @@ flowchart TD
 
 ### Task list
 
-- After the plan leaves the `Draft` status, write the tracking sentence "Tasks are tracked in the flowspace-api GitHub Project under the \<capability name\> milestone." Link "flowspace-api" to the [flowspace-api](https://github.com/users/vasapolrittideah/projects/4) GitHub Project, and link the capability name to the milestone of the plan. While the plan is `Draft`, omit the sentence, because the milestone does not exist yet.
+- After the plan leaves the `Draft` status, write the tracking sentence "Tasks are tracked in the flowspace-api GitHub Project under the \<capability name\> milestone." Link "flowspace-api" to the [flowspace-api](https://github.com/users/vasapolrittideah/projects/4) GitHub Project. Link the capability name to the milestone of the plan. While a new plan is `Draft`, omit the sentence, because the milestone does not exist yet.
 - Write each phase heading as `### Phase <N>: <name>`. Name each phase with a noun phrase in sentence case, such as "Export and storage".
-- While the plan is `Draft`, write each task as `- Task <N>: <task title>`. After its Issue exists, replace the task title with a link to the Issue, and use `#<number> <Issue title>` as the link text.
+- Until its Issue exists, write each task as `- Task <N>: <task title>`. After its Issue exists, replace the task title with a link to the Issue, and use `#<number> <Issue title>` as the link text.
 - After the tasks of each phase, write `### Checkpoint: <phase name>` with 1 `- [ ]` item for each outcome. Name the checkpoint of the last phase `### Checkpoint: Complete`.
 - Put the final Prove task alone in the last phase.
 - Do not keep a task checklist apart from the task lines, because the Issues and the GitHub Project hold the status of each task.
@@ -121,7 +121,7 @@ flowchart TD
   1. Write the plan, and write each task as an Issue draft in `tasks/.todo.md` with the [Template](github-issues.md#template).
   2. Show the plan and the drafts to the maintainer in the chat.
   3. When the maintainer agrees with the plan in the chat, create the milestone and the Issues, as the [Links and tracking](#links-and-tracking) rules state.
-  4. After every Issue appears in the GitHub Project with the `Todo` status and in the milestone, replace each task title with its Issue link, add the tracking sentence of the [Task list](#task-list), and delete `tasks/.todo.md`.
+  4. After every Issue appears in the GitHub Project with the `Todo` status and in the milestone, replace each task title with its Issue link. If the plan has no tracking sentence, add the tracking sentence of the [Task list](#task-list). Delete `tasks/.todo.md`.
   5. Change the status to `Approved`, as the [Status and approval](#status-and-approval) rules state.
   6. Open 1 PR with the approved plan and the title `docs(<scope, if any>): approve <capability> plan`. Write the capability name in lowercase, except for names and abbreviations.
 
@@ -141,6 +141,13 @@ flowchart TD
 ### Changes
 
 - If an `Approved` plan adds, removes, or reorders tasks, update the plan, the Issues, and the milestone in 1 PR with the title `docs(<scope, if any>): reapprove <capability> plan`, after the maintainer agrees in the chat. A change that only corrects wording does not need this process.
+- If a reapproved specification changes behavior that a `Complete` plan implemented, add the new work to the same plan instead of a new plan. Follow these steps:
+  1. Change the status of the plan to `Draft`.
+  2. Keep the tracking sentence, the phases, the task links, and the checked checkpoint items that exist. Rename the checkpoint of the old last phase from `### Checkpoint: Complete` to `### Checkpoint: <phase name>`.
+  3. Add 1 or more phases after the old last phase. Continue the task numbers. Put a new final Prove task alone in the new last phase.
+  4. Update the overview, the architecture decisions, the dependency graph, and the risks for the new work. The graph can show the old work as 1 node.
+  5. Deliver the new tasks with steps 1 to 5 of the [Workflow](#workflow). Reuse the milestone of the plan.
+  6. Open 1 PR with the title `docs(<scope, if any>): reapprove <capability> plan`.
 - In the PR that closes the last open Issue of a phase, follow these steps:
   1. Make sure that each outcome of the checkpoint of the phase holds.
   2. Mark the checkpoint items as complete.

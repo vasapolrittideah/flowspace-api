@@ -138,6 +138,7 @@ Tasks are tracked in the [flowspace-api](https://github.com/users/vasapolrittide
 ### Checkpoint: Complete
 
 - [ ] REST, PostgreSQL, CORS, cookie, telemetry, and Bruno smoke tests cover each success criterion and each threat ID of the specification, including criteria 16 to 20 and `ID-T23` to `ID-T26`.
+- [ ] In the local cluster, the CORS headers, a refresh after a reload, and the `Cookie` and `Set-Cookie` headers pass through the public route, and telemetry contains neither header.
 - [ ] Required repository checks pass without weaker settings.
 
 ## Risks and controls
@@ -156,4 +157,5 @@ Tasks are tracked in the [flowspace-api](https://github.com/users/vasapolrittide
 | A CORS answer allows a wrong origin or misses `Vary: Origin`. | Another site reads a credentialed response, or a cache serves it to another origin. | Compare origins byte for byte, and test allowed, similar, unknown, and `null` origins in Task 14. |
 | The `Cookie` or `Set-Cookie` header reaches logs or traces. | A refresh token becomes reusable from telemetry. | Keep both headers out of the request logs and spans, and capture telemetry in Tasks 14 and 17. |
 | A rollback to older code returns the refresh token in the body to a browser. | An injected script reads a reusable credential after the rollback. | State in the PR of Task 15 that the web frontend stops sending `use_refresh_token_cookie` before a rollback. |
+| The edge, the tunnel, or the staging access policy drops CORS or cookie headers. | The browser session works locally but fails in staging. | Prove the headers through the local cluster in Task 17. The deployment work that decides the hostnames proves the edge, the tunnel, and the staging policy, because they are still open proposals in the architecture. |
 | A non-JSON `POST` rule breaks an existing client. | An API client that sends no content type on an empty `POST` fails. | Update the Bruno requests in Task 14, and name the change under Breaking changes in its PR. |

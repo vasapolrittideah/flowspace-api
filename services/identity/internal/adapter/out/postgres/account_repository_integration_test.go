@@ -93,6 +93,8 @@ func TestIdentityRepository(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 	t.Run("re-authentication migration", func(t *testing.T) { testReauthenticationMigration(t, db, pool) })
+	t.Run("session device data migration", func(t *testing.T) { testSessionDeviceDataMigration(t, db, pool) })
+	t.Run("session device data deletion", func(t *testing.T) { testSessionDeviceDataDeletion(t, pool) })
 	t.Run("re-authentication guard", func(t *testing.T) { testReauthenticationGuard(t, pool) })
 	t.Run("password re-authentication", func(t *testing.T) { testPasswordReauthentication(t, pool, db) })
 	t.Run("code re-authentication", func(t *testing.T) { testCodeReauthentication(t, pool, db) })

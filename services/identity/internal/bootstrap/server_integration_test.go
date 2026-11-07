@@ -255,6 +255,18 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 		bytes.Repeat([]byte{6}, 32), bytes.Repeat([]byte{7}, 32)); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := db.ExecContext(ctx, `WITH account AS (
+			INSERT INTO identity_accounts (subject, email_local, email_domain, password_hash)
+			VALUES ('worker-device-data', 'worker-device-data', 'example.com', '$argon2id$test') RETURNING subject
+		)
+		INSERT INTO identity_sessions (account_subject, refresh_token_hash, created_at, last_used_at, idle_expires_at, absolute_expires_at,
+			created_ip_address, created_user_agent, last_used_ip_address, last_used_user_agent)
+		SELECT subject, decode(repeat(seed, 32), 'hex'), statement_timestamp() - INTERVAL '2 hours', statement_timestamp() - INTERVAL '2 hours',
+			statement_timestamp() + expiry, statement_timestamp() + INTERVAL '1 day',
+			'192.0.2.10', 'Mozilla/5.0 created', '2001:db8::1', 'Mozilla/5.0 last used'
+		FROM account, (VALUES ('0a', INTERVAL '-1 minute'), ('0b', INTERVAL '1 hour')) AS seeds (seed, expiry)`); err != nil {
+		t.Fatal(err)
+	}
 	workerReader := sdkmetric.NewManualReader()
 	previousProvider := otel.GetMeterProvider()
 	otel.SetMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(workerReader)))
@@ -272,6 +284,13 @@ func TestIdentityAPIAndWorkerStart(t *testing.T) {
 	var attempts int
 	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM identity_provider_login_attempts`).Scan(&attempts); err != nil || attempts != 0 {
 		t.Fatalf("expired provider attempts after the worker purge = %d, %v", attempts, err)
+	}
+	var expiredData, activeData int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FILTER (WHERE idle_expires_at <= statement_timestamp()),
+		count(*) FILTER (WHERE idle_expires_at > statement_timestamp())
+		FROM identity_sessions WHERE account_subject = 'worker-device-data' AND created_ip_address IS NOT NULL`).Scan(&expiredData, &activeData); err != nil ||
+		expiredData != 0 || activeData != 1 {
+		t.Fatalf("sessions with device data after the worker purge = %d expired, %d active, %v", expiredData, activeData, err)
 	}
 	if err := <-result; err != nil {
 		t.Fatalf("worker shutdown: %v", err)
@@ -332,8 +351,10 @@ func waitForLog(t *testing.T, logs *observer.ObservedLogs, message string) {
 // provider login attempts.
 func waitForPurge(ctx context.Context, db *sql.DB) {
 	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
-		var attempts int
-		if db.QueryRowContext(ctx, `SELECT count(*) FROM identity_provider_login_attempts`).Scan(&attempts) == nil && attempts == 0 {
+		var attempts, sessions int
+		if db.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM identity_provider_login_attempts),
+			(SELECT count(*) FROM identity_sessions WHERE idle_expires_at <= statement_timestamp() AND created_ip_address IS NOT NULL)`).
+			Scan(&attempts, &sessions) == nil && attempts == 0 && sessions == 0 {
 			return
 		}
 	}

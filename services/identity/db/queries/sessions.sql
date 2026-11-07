@@ -83,16 +83,19 @@ WHERE id = sqlc.arg(session_id)
   AND absolute_expires_at > statement_timestamp()
 RETURNING statement_timestamp()::timestamptz AS issued_at, idle_expires_at, absolute_expires_at;
 
+-- The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 -- name: RevokeRefreshSession :exec
 UPDATE identity_sessions SET revoked_at = statement_timestamp()
 WHERE id = sqlc.arg(session_id) AND revoked_at IS NULL;
 
+-- The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 -- name: RevokeAccountSessions :execrows
 UPDATE identity_sessions
 SET revoked_at = statement_timestamp()
 WHERE account_subject = sqlc.arg(account_subject)
   AND revoked_at IS NULL;
 
+-- The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 -- name: RevokeCurrentSession :execrows
 UPDATE identity_sessions AS session
 SET revoked_at = statement_timestamp()
@@ -104,3 +107,12 @@ WHERE session.id = sqlc.arg(session_id)
   AND session.revoked_at IS NULL
   AND session.idle_expires_at > statement_timestamp()
   AND session.absolute_expires_at > statement_timestamp();
+
+-- name: DeleteExpiredSessionDeviceData :execrows
+-- The idle expiry is never after the absolute expiry, so it is the session expiry.
+UPDATE identity_sessions
+SET created_ip_address = NULL, created_user_agent = NULL,
+    last_used_ip_address = NULL, last_used_user_agent = NULL
+WHERE idle_expires_at <= statement_timestamp()
+  AND (created_ip_address IS NOT NULL OR created_user_agent IS NOT NULL
+    OR last_used_ip_address IS NOT NULL OR last_used_user_agent IS NOT NULL);

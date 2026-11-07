@@ -42,6 +42,24 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (C
 	return i, err
 }
 
+const deleteExpiredSessionDeviceData = `-- name: DeleteExpiredSessionDeviceData :execrows
+UPDATE identity_sessions
+SET created_ip_address = NULL, created_user_agent = NULL,
+    last_used_ip_address = NULL, last_used_user_agent = NULL
+WHERE idle_expires_at <= statement_timestamp()
+  AND (created_ip_address IS NOT NULL OR created_user_agent IS NOT NULL
+    OR last_used_ip_address IS NOT NULL OR last_used_user_agent IS NOT NULL)
+`
+
+// The idle expiry is never after the absolute expiry, so it is the session expiry.
+func (q *Queries) DeleteExpiredSessionDeviceData(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredSessionDeviceData)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const findRefreshSession = `-- name: FindRefreshSession :one
 SELECT id FROM identity_sessions WHERE refresh_token_hash = $1
 UNION ALL
@@ -227,6 +245,7 @@ WHERE account_subject = $1
   AND revoked_at IS NULL
 `
 
+// The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 func (q *Queries) RevokeAccountSessions(ctx context.Context, accountSubject string) (int64, error) {
 	result, err := q.db.Exec(ctx, revokeAccountSessions, accountSubject)
 	if err != nil {
@@ -253,6 +272,7 @@ type RevokeCurrentSessionParams struct {
 	Subject   string
 }
 
+// The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 func (q *Queries) RevokeCurrentSession(ctx context.Context, arg RevokeCurrentSessionParams) (int64, error) {
 	result, err := q.db.Exec(ctx, revokeCurrentSession, arg.SessionID, arg.Subject)
 	if err != nil {
@@ -266,6 +286,7 @@ UPDATE identity_sessions SET revoked_at = statement_timestamp()
 WHERE id = $1 AND revoked_at IS NULL
 `
 
+// The identity_sessions_delete_revoked_device_data trigger deletes the device data.
 func (q *Queries) RevokeRefreshSession(ctx context.Context, sessionID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, revokeRefreshSession, sessionID)
 	return err

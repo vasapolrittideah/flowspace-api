@@ -137,3 +137,63 @@ func insertOutboxEvent(ctx context.Context, t *testing.T, pool *postgrespool.Poo
 		t.Fatal(err)
 	}
 }
+
+func TestWorkerPurgesTheDeviceDataOfExpiredSessions(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Minute)
+	defer cancel()
+	database, err := postgrescontainer.Run(ctx, "postgres:18-alpine",
+		postgrescontainer.WithDatabase("identity"), postgrescontainer.WithUsername("identity"),
+		postgrescontainer.WithPassword("identity"), postgrescontainer.BasicWaitStrategies())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = testcontainers.TerminateContainer(database) })
+	dsn, err := database.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := applyIdentityMigration(ctx, dsn); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := postgrespool.Open(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	var expired, active string
+	if err := pool.QueryRow(ctx, `WITH account AS (
+			INSERT INTO identity_accounts (subject, email_local, email_domain, password_hash)
+			VALUES ('device-purge', 'device-purge', 'example.com', '$argon2id$test') RETURNING subject
+		), sessions AS (
+			INSERT INTO identity_sessions (account_subject, refresh_token_hash, created_at, last_used_at, idle_expires_at, absolute_expires_at,
+				created_ip_address, created_user_agent, last_used_ip_address, last_used_user_agent)
+			SELECT subject, decode(repeat(seed, 32), 'hex'), statement_timestamp() - INTERVAL '2 hours', statement_timestamp() - INTERVAL '2 hours',
+				statement_timestamp() + expiry, statement_timestamp() + INTERVAL '1 day',
+				'192.0.2.10', 'Mozilla/5.0 created', '2001:db8::1', 'Mozilla/5.0 last used'
+			FROM account, (VALUES ('01', INTERVAL '-1 minute'), ('02', INTERVAL '1 hour')) AS seeds (seed, expiry)
+			RETURNING id, idle_expires_at
+		)
+		SELECT (SELECT id::text FROM sessions ORDER BY idle_expires_at LIMIT 1), (SELECT id::text FROM sessions ORDER BY idle_expires_at DESC LIMIT 1)`).
+		Scan(&expired, &active); err != nil {
+		t.Fatal(err)
+	}
+	core, logs := observer.New(zap.InfoLevel)
+	worker := &Worker{pool: pool, logger: zap.New(core)}
+	worker.purgeSessionDeviceData(ctx)
+	for id, want := range map[string]bool{expired: true, active: false} {
+		var empty bool
+		if err := pool.QueryRow(ctx, `SELECT created_ip_address IS NULL AND created_user_agent IS NULL
+			AND last_used_ip_address IS NULL AND last_used_user_agent IS NULL FROM identity_sessions WHERE id = $1`, id).Scan(&empty); err != nil {
+			t.Fatal(err)
+		}
+		if empty != want {
+			t.Fatalf("session %s has no device data = %t, want %t", id, empty, want)
+		}
+	}
+
+	pool.Close()
+	worker.purgeSessionDeviceData(ctx)
+	if logs.FilterMessage("session_device_data_purge_failed").Len() != 1 || len(logs.All()) != 1 || len(logs.All()[0].Context) != 0 {
+		t.Fatalf("logs = %v, want 1 purge failure line without fields", logs.All())
+	}
+}
